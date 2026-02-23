@@ -1,0 +1,227 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'incident_providers.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(IncidentFilter)
+final incidentFilterProvider = IncidentFilterProvider._();
+
+final class IncidentFilterProvider
+    extends $NotifierProvider<IncidentFilter, IncidentFilterState> {
+  IncidentFilterProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'incidentFilterProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$incidentFilterHash();
+
+  @$internal
+  @override
+  IncidentFilter create() => IncidentFilter();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(IncidentFilterState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<IncidentFilterState>(value),
+    );
+  }
+}
+
+String _$incidentFilterHash() => r'78c718a731761b927be22812058d3569bbcaa983';
+
+abstract class _$IncidentFilter extends $Notifier<IncidentFilterState> {
+  IncidentFilterState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<IncidentFilterState, IncidentFilterState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<IncidentFilterState, IncidentFilterState>,
+              IncidentFilterState,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(allIncidents)
+final allIncidentsProvider = AllIncidentsProvider._();
+
+final class AllIncidentsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<IncidentResponse>>,
+          List<IncidentResponse>,
+          FutureOr<List<IncidentResponse>>
+        >
+    with
+        $FutureModifier<List<IncidentResponse>>,
+        $FutureProvider<List<IncidentResponse>> {
+  AllIncidentsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'allIncidentsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$allIncidentsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<IncidentResponse>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<IncidentResponse>> create(Ref ref) {
+    return allIncidents(ref);
+  }
+}
+
+String _$allIncidentsHash() => r'5b6af3d529625936a49ae6d2bd9187e8403de9a8';
+
+@ProviderFor(filteredIncidents)
+final filteredIncidentsProvider = FilteredIncidentsProvider._();
+
+final class FilteredIncidentsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<IncidentResponse>>,
+          AsyncValue<List<IncidentResponse>>,
+          AsyncValue<List<IncidentResponse>>
+        >
+    with $Provider<AsyncValue<List<IncidentResponse>>> {
+  FilteredIncidentsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'filteredIncidentsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$filteredIncidentsHash();
+
+  @$internal
+  @override
+  $ProviderElement<AsyncValue<List<IncidentResponse>>> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AsyncValue<List<IncidentResponse>> create(Ref ref) {
+    return filteredIncidents(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AsyncValue<List<IncidentResponse>> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AsyncValue<List<IncidentResponse>>>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$filteredIncidentsHash() => r'5309de630dfba74e101920d61b09c74f56a799ed';
+
+@ProviderFor(singleIncident)
+final singleIncidentProvider = SingleIncidentFamily._();
+
+final class SingleIncidentProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<IncidentResponse>,
+          IncidentResponse,
+          FutureOr<IncidentResponse>
+        >
+    with $FutureModifier<IncidentResponse>, $FutureProvider<IncidentResponse> {
+  SingleIncidentProvider._({
+    required SingleIncidentFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'singleIncidentProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$singleIncidentHash();
+
+  @override
+  String toString() {
+    return r'singleIncidentProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<IncidentResponse> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<IncidentResponse> create(Ref ref) {
+    final argument = this.argument as int;
+    return singleIncident(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SingleIncidentProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$singleIncidentHash() => r'97381d938b57c89a879a51e466fd8899e02beba0';
+
+final class SingleIncidentFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<IncidentResponse>, int> {
+  SingleIncidentFamily._()
+    : super(
+        retry: null,
+        name: r'singleIncidentProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  SingleIncidentProvider call(int id) =>
+      SingleIncidentProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'singleIncidentProvider';
+}
