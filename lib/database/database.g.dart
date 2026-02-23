@@ -3,7 +3,8 @@
 part of 'database.dart';
 
 // ignore_for_file: type=lint
-class $AppUsersTable extends AppUsers with TableInfo<$AppUsersTable, AppUser> {
+class $AppUsersTable extends AppUsers
+    with TableInfo<$AppUsersTable, AppUserDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -112,7 +113,7 @@ class $AppUsersTable extends AppUsers with TableInfo<$AppUsersTable, AppUser> {
   static const String $name = 'app_users';
   @override
   VerificationContext validateIntegrity(
-    Insertable<AppUser> instance, {
+    Insertable<AppUserDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -173,9 +174,9 @@ class $AppUsersTable extends AppUsers with TableInfo<$AppUsersTable, AppUser> {
   @override
   Set<GeneratedColumn> get $primaryKey => {userId};
   @override
-  AppUser map(Map<String, dynamic> data, {String? tablePrefix}) {
+  AppUserDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return AppUser(
+    return AppUserDb(
       userId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}user_id'],
@@ -217,7 +218,7 @@ class $AppUsersTable extends AppUsers with TableInfo<$AppUsersTable, AppUser> {
   }
 }
 
-class AppUser extends DataClass implements Insertable<AppUser> {
+class AppUserDb extends DataClass implements Insertable<AppUserDb> {
   final String userId;
   final String? username;
   final String? fullName;
@@ -226,7 +227,7 @@ class AppUser extends DataClass implements Insertable<AppUser> {
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  const AppUser({
+  const AppUserDb({
     required this.userId,
     this.username,
     this.fullName,
@@ -285,12 +286,12 @@ class AppUser extends DataClass implements Insertable<AppUser> {
     );
   }
 
-  factory AppUser.fromJson(
+  factory AppUserDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return AppUser(
+    return AppUserDb(
       userId: serializer.fromJson<String>(json['userId']),
       username: serializer.fromJson<String?>(json['username']),
       fullName: serializer.fromJson<String?>(json['fullName']),
@@ -316,7 +317,7 @@ class AppUser extends DataClass implements Insertable<AppUser> {
     };
   }
 
-  AppUser copyWith({
+  AppUserDb copyWith({
     String? userId,
     Value<String?> username = const Value.absent(),
     Value<String?> fullName = const Value.absent(),
@@ -325,7 +326,7 @@ class AppUser extends DataClass implements Insertable<AppUser> {
     bool? isActive,
     Value<DateTime?> createdAt = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
-  }) => AppUser(
+  }) => AppUserDb(
     userId: userId ?? this.userId,
     username: username.present ? username.value : this.username,
     fullName: fullName.present ? fullName.value : this.fullName,
@@ -335,8 +336,8 @@ class AppUser extends DataClass implements Insertable<AppUser> {
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
-  AppUser copyWithCompanion(AppUsersCompanion data) {
-    return AppUser(
+  AppUserDb copyWithCompanion(AppUsersCompanion data) {
+    return AppUserDb(
       userId: data.userId.present ? data.userId.value : this.userId,
       username: data.username.present ? data.username.value : this.username,
       fullName: data.fullName.present ? data.fullName.value : this.fullName,
@@ -350,7 +351,7 @@ class AppUser extends DataClass implements Insertable<AppUser> {
 
   @override
   String toString() {
-    return (StringBuffer('AppUser(')
+    return (StringBuffer('AppUserDb(')
           ..write('userId: $userId, ')
           ..write('username: $username, ')
           ..write('fullName: $fullName, ')
@@ -377,7 +378,7 @@ class AppUser extends DataClass implements Insertable<AppUser> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is AppUser &&
+      (other is AppUserDb &&
           other.userId == this.userId &&
           other.username == this.username &&
           other.fullName == this.fullName &&
@@ -388,7 +389,7 @@ class AppUser extends DataClass implements Insertable<AppUser> {
           other.updatedAt == this.updatedAt);
 }
 
-class AppUsersCompanion extends UpdateCompanion<AppUser> {
+class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
   final Value<String> userId;
   final Value<String?> username;
   final Value<String?> fullName;
@@ -420,7 +421,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUser> {
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId);
-  static Insertable<AppUser> custom({
+  static Insertable<AppUserDb> custom({
     Expression<String>? userId,
     Expression<String>? username,
     Expression<String>? fullName,
@@ -519,7 +520,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUser> {
 }
 
 class $BoilerHousesTable extends BoilerHouses
-    with TableInfo<$BoilerHousesTable, BoilerHouse> {
+    with TableInfo<$BoilerHousesTable, BoilerHouseDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -630,7 +631,7 @@ class $BoilerHousesTable extends BoilerHouses
   static const String $name = 'boiler_houses';
   @override
   VerificationContext validateIntegrity(
-    Insertable<BoilerHouse> instance, {
+    Insertable<BoilerHouseDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -695,9 +696,9 @@ class $BoilerHousesTable extends BoilerHouses
   @override
   Set<GeneratedColumn> get $primaryKey => {backendId};
   @override
-  BoilerHouse map(Map<String, dynamic> data, {String? tablePrefix}) {
+  BoilerHouseDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return BoilerHouse(
+    return BoilerHouseDb(
       backendId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}backend_id'],
@@ -739,7 +740,7 @@ class $BoilerHousesTable extends BoilerHouses
   }
 }
 
-class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
+class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
   final int backendId;
   final String? boilerHouseUUID;
   final String? name;
@@ -748,7 +749,7 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
   final String? siteNumber;
   final String? siteManager;
   final DateTime? updatedAt;
-  const BoilerHouse({
+  const BoilerHouseDb({
     required this.backendId,
     this.boilerHouseUUID,
     this.name,
@@ -803,12 +804,12 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
     );
   }
 
-  factory BoilerHouse.fromJson(
+  factory BoilerHouseDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return BoilerHouse(
+    return BoilerHouseDb(
       backendId: serializer.fromJson<int>(json['backendId']),
       boilerHouseUUID: serializer.fromJson<String?>(json['boilerHouseUUID']),
       name: serializer.fromJson<String?>(json['name']),
@@ -834,7 +835,7 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
     };
   }
 
-  BoilerHouse copyWith({
+  BoilerHouseDb copyWith({
     int? backendId,
     Value<String?> boilerHouseUUID = const Value.absent(),
     Value<String?> name = const Value.absent(),
@@ -843,7 +844,7 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
     Value<String?> siteNumber = const Value.absent(),
     Value<String?> siteManager = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
-  }) => BoilerHouse(
+  }) => BoilerHouseDb(
     backendId: backendId ?? this.backendId,
     boilerHouseUUID: boilerHouseUUID.present
         ? boilerHouseUUID.value
@@ -855,8 +856,8 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
     siteManager: siteManager.present ? siteManager.value : this.siteManager,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
-  BoilerHouse copyWithCompanion(BoilerHousesCompanion data) {
-    return BoilerHouse(
+  BoilerHouseDb copyWithCompanion(BoilerHousesCompanion data) {
+    return BoilerHouseDb(
       backendId: data.backendId.present ? data.backendId.value : this.backendId,
       boilerHouseUUID: data.boilerHouseUUID.present
           ? data.boilerHouseUUID.value
@@ -876,7 +877,7 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
 
   @override
   String toString() {
-    return (StringBuffer('BoilerHouse(')
+    return (StringBuffer('BoilerHouseDb(')
           ..write('backendId: $backendId, ')
           ..write('boilerHouseUUID: $boilerHouseUUID, ')
           ..write('name: $name, ')
@@ -903,7 +904,7 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is BoilerHouse &&
+      (other is BoilerHouseDb &&
           other.backendId == this.backendId &&
           other.boilerHouseUUID == this.boilerHouseUUID &&
           other.name == this.name &&
@@ -914,7 +915,7 @@ class BoilerHouse extends DataClass implements Insertable<BoilerHouse> {
           other.updatedAt == this.updatedAt);
 }
 
-class BoilerHousesCompanion extends UpdateCompanion<BoilerHouse> {
+class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
   final Value<int> backendId;
   final Value<String?> boilerHouseUUID;
   final Value<String?> name;
@@ -943,7 +944,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouse> {
     this.siteManager = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
-  static Insertable<BoilerHouse> custom({
+  static Insertable<BoilerHouseDb> custom({
     Expression<int>? backendId,
     Expression<String>? boilerHouseUUID,
     Expression<String>? name,
@@ -1034,7 +1035,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouse> {
 }
 
 class $SavedLocationsTable extends SavedLocations
-    with TableInfo<$SavedLocationsTable, SavedLocation> {
+    with TableInfo<$SavedLocationsTable, SavedLocationDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -1274,7 +1275,7 @@ class $SavedLocationsTable extends SavedLocations
   static const String $name = 'saved_locations';
   @override
   VerificationContext validateIntegrity(
-    Insertable<SavedLocation> instance, {
+    Insertable<SavedLocationDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -1417,9 +1418,9 @@ class $SavedLocationsTable extends SavedLocations
   @override
   Set<GeneratedColumn> get $primaryKey => {backendId};
   @override
-  SavedLocation map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SavedLocationDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SavedLocation(
+    return SavedLocationDb(
       backendId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}backend_id'],
@@ -1501,7 +1502,7 @@ class $SavedLocationsTable extends SavedLocations
   }
 }
 
-class SavedLocation extends DataClass implements Insertable<SavedLocation> {
+class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
   final int backendId;
   final String? locationUUID;
   final String? name;
@@ -1520,7 +1521,7 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
   final bool providesHotWater;
   final bool isStub;
   final DateTime? updatedAt;
-  const SavedLocation({
+  const SavedLocationDb({
     required this.backendId,
     this.locationUUID,
     this.name,
@@ -1633,12 +1634,12 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
     );
   }
 
-  factory SavedLocation.fromJson(
+  factory SavedLocationDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SavedLocation(
+    return SavedLocationDb(
       backendId: serializer.fromJson<int>(json['backendId']),
       locationUUID: serializer.fromJson<String?>(json['locationUUID']),
       name: serializer.fromJson<String?>(json['name']),
@@ -1686,7 +1687,7 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
     };
   }
 
-  SavedLocation copyWith({
+  SavedLocationDb copyWith({
     int? backendId,
     Value<String?> locationUUID = const Value.absent(),
     Value<String?> name = const Value.absent(),
@@ -1705,7 +1706,7 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
     bool? providesHotWater,
     bool? isStub,
     Value<DateTime?> updatedAt = const Value.absent(),
-  }) => SavedLocation(
+  }) => SavedLocationDb(
     backendId: backendId ?? this.backendId,
     locationUUID: locationUUID.present ? locationUUID.value : this.locationUUID,
     name: name.present ? name.value : this.name,
@@ -1733,8 +1734,8 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
     isStub: isStub ?? this.isStub,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
-  SavedLocation copyWithCompanion(SavedLocationsCompanion data) {
-    return SavedLocation(
+  SavedLocationDb copyWithCompanion(SavedLocationsCompanion data) {
+    return SavedLocationDb(
       backendId: data.backendId.present ? data.backendId.value : this.backendId,
       locationUUID: data.locationUUID.present
           ? data.locationUUID.value
@@ -1774,7 +1775,7 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
 
   @override
   String toString() {
-    return (StringBuffer('SavedLocation(')
+    return (StringBuffer('SavedLocationDb(')
           ..write('backendId: $backendId, ')
           ..write('locationUUID: $locationUUID, ')
           ..write('name: $name, ')
@@ -1821,7 +1822,7 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SavedLocation &&
+      (other is SavedLocationDb &&
           other.backendId == this.backendId &&
           other.locationUUID == this.locationUUID &&
           other.name == this.name &&
@@ -1842,7 +1843,7 @@ class SavedLocation extends DataClass implements Insertable<SavedLocation> {
           other.updatedAt == this.updatedAt);
 }
 
-class SavedLocationsCompanion extends UpdateCompanion<SavedLocation> {
+class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
   final Value<int> backendId;
   final Value<String?> locationUUID;
   final Value<String?> name;
@@ -1901,7 +1902,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocation> {
     this.isStub = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
-  static Insertable<SavedLocation> custom({
+  static Insertable<SavedLocationDb> custom({
     Expression<int>? backendId,
     Expression<String>? locationUUID,
     Expression<String>? name,
@@ -2075,7 +2076,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocation> {
 }
 
 class $IncidentsTable extends Incidents
-    with TableInfo<$IncidentsTable, Incident> {
+    with TableInfo<$IncidentsTable, IncidentDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -2302,7 +2303,7 @@ class $IncidentsTable extends Incidents
   static const String $name = 'incidents';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Incident> instance, {
+    Insertable<IncidentDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -2433,9 +2434,9 @@ class $IncidentsTable extends Incidents
   @override
   Set<GeneratedColumn> get $primaryKey => {backendId};
   @override
-  Incident map(Map<String, dynamic> data, {String? tablePrefix}) {
+  IncidentDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Incident(
+    return IncidentDb(
       backendId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}backend_id'],
@@ -2520,7 +2521,7 @@ class $IncidentsTable extends Incidents
       NullAwareTypeConverter.wrap($converterstatus);
 }
 
-class Incident extends DataClass implements Insertable<Incident> {
+class IncidentDb extends DataClass implements Insertable<IncidentDb> {
   final int backendId;
   final String? incidentUUID;
   final int? boilerHouseId;
@@ -2538,7 +2539,7 @@ class Incident extends DataClass implements Insertable<Incident> {
   final String? notificationConfigType;
   final String? notificationConfigRoleIds;
   final String? notificationConfigUserIds;
-  const Incident({
+  const IncidentDb({
     required this.backendId,
     this.incidentUUID,
     this.boilerHouseId,
@@ -2664,12 +2665,12 @@ class Incident extends DataClass implements Insertable<Incident> {
     );
   }
 
-  factory Incident.fromJson(
+  factory IncidentDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Incident(
+    return IncidentDb(
       backendId: serializer.fromJson<int>(json['backendId']),
       incidentUUID: serializer.fromJson<String?>(json['incidentUUID']),
       boilerHouseId: serializer.fromJson<int?>(json['boilerHouseId']),
@@ -2731,7 +2732,7 @@ class Incident extends DataClass implements Insertable<Incident> {
     };
   }
 
-  Incident copyWith({
+  IncidentDb copyWith({
     int? backendId,
     Value<String?> incidentUUID = const Value.absent(),
     Value<int?> boilerHouseId = const Value.absent(),
@@ -2749,7 +2750,7 @@ class Incident extends DataClass implements Insertable<Incident> {
     Value<String?> notificationConfigType = const Value.absent(),
     Value<String?> notificationConfigRoleIds = const Value.absent(),
     Value<String?> notificationConfigUserIds = const Value.absent(),
-  }) => Incident(
+  }) => IncidentDb(
     backendId: backendId ?? this.backendId,
     incidentUUID: incidentUUID.present ? incidentUUID.value : this.incidentUUID,
     boilerHouseId: boilerHouseId.present
@@ -2778,8 +2779,8 @@ class Incident extends DataClass implements Insertable<Incident> {
         ? notificationConfigUserIds.value
         : this.notificationConfigUserIds,
   );
-  Incident copyWithCompanion(IncidentsCompanion data) {
-    return Incident(
+  IncidentDb copyWithCompanion(IncidentsCompanion data) {
+    return IncidentDb(
       backendId: data.backendId.present ? data.backendId.value : this.backendId,
       incidentUUID: data.incidentUUID.present
           ? data.incidentUUID.value
@@ -2824,7 +2825,7 @@ class Incident extends DataClass implements Insertable<Incident> {
 
   @override
   String toString() {
-    return (StringBuffer('Incident(')
+    return (StringBuffer('IncidentDb(')
           ..write('backendId: $backendId, ')
           ..write('incidentUUID: $incidentUUID, ')
           ..write('boilerHouseId: $boilerHouseId, ')
@@ -2869,7 +2870,7 @@ class Incident extends DataClass implements Insertable<Incident> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Incident &&
+      (other is IncidentDb &&
           other.backendId == this.backendId &&
           other.incidentUUID == this.incidentUUID &&
           other.boilerHouseId == this.boilerHouseId &&
@@ -2889,7 +2890,7 @@ class Incident extends DataClass implements Insertable<Incident> {
           other.notificationConfigUserIds == this.notificationConfigUserIds);
 }
 
-class IncidentsCompanion extends UpdateCompanion<Incident> {
+class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
   final Value<int> backendId;
   final Value<String?> incidentUUID;
   final Value<int?> boilerHouseId;
@@ -2945,7 +2946,7 @@ class IncidentsCompanion extends UpdateCompanion<Incident> {
     this.notificationConfigRoleIds = const Value.absent(),
     this.notificationConfigUserIds = const Value.absent(),
   });
-  static Insertable<Incident> custom({
+  static Insertable<IncidentDb> custom({
     Expression<int>? backendId,
     Expression<String>? incidentUUID,
     Expression<int>? boilerHouseId,
@@ -3130,7 +3131,7 @@ class IncidentsCompanion extends UpdateCompanion<Incident> {
 }
 
 class $AffectedHousesTable extends AffectedHouses
-    with TableInfo<$AffectedHousesTable, AffectedHouse> {
+    with TableInfo<$AffectedHousesTable, AffectedHouseDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -3172,7 +3173,7 @@ class $AffectedHousesTable extends AffectedHouses
   static const String $name = 'affected_houses';
   @override
   VerificationContext validateIntegrity(
-    Insertable<AffectedHouse> instance, {
+    Insertable<AffectedHouseDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -3202,9 +3203,9 @@ class $AffectedHousesTable extends AffectedHouses
   @override
   Set<GeneratedColumn> get $primaryKey => {incidentId, savedLocationId};
   @override
-  AffectedHouse map(Map<String, dynamic> data, {String? tablePrefix}) {
+  AffectedHouseDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return AffectedHouse(
+    return AffectedHouseDb(
       incidentId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}incident_id'],
@@ -3222,10 +3223,10 @@ class $AffectedHousesTable extends AffectedHouses
   }
 }
 
-class AffectedHouse extends DataClass implements Insertable<AffectedHouse> {
+class AffectedHouseDb extends DataClass implements Insertable<AffectedHouseDb> {
   final int incidentId;
   final int savedLocationId;
-  const AffectedHouse({
+  const AffectedHouseDb({
     required this.incidentId,
     required this.savedLocationId,
   });
@@ -3244,12 +3245,12 @@ class AffectedHouse extends DataClass implements Insertable<AffectedHouse> {
     );
   }
 
-  factory AffectedHouse.fromJson(
+  factory AffectedHouseDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return AffectedHouse(
+    return AffectedHouseDb(
       incidentId: serializer.fromJson<int>(json['incidentId']),
       savedLocationId: serializer.fromJson<int>(json['savedLocationId']),
     );
@@ -3263,13 +3264,13 @@ class AffectedHouse extends DataClass implements Insertable<AffectedHouse> {
     };
   }
 
-  AffectedHouse copyWith({int? incidentId, int? savedLocationId}) =>
-      AffectedHouse(
+  AffectedHouseDb copyWith({int? incidentId, int? savedLocationId}) =>
+      AffectedHouseDb(
         incidentId: incidentId ?? this.incidentId,
         savedLocationId: savedLocationId ?? this.savedLocationId,
       );
-  AffectedHouse copyWithCompanion(AffectedHousesCompanion data) {
-    return AffectedHouse(
+  AffectedHouseDb copyWithCompanion(AffectedHousesCompanion data) {
+    return AffectedHouseDb(
       incidentId: data.incidentId.present
           ? data.incidentId.value
           : this.incidentId,
@@ -3281,7 +3282,7 @@ class AffectedHouse extends DataClass implements Insertable<AffectedHouse> {
 
   @override
   String toString() {
-    return (StringBuffer('AffectedHouse(')
+    return (StringBuffer('AffectedHouseDb(')
           ..write('incidentId: $incidentId, ')
           ..write('savedLocationId: $savedLocationId')
           ..write(')'))
@@ -3293,12 +3294,12 @@ class AffectedHouse extends DataClass implements Insertable<AffectedHouse> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is AffectedHouse &&
+      (other is AffectedHouseDb &&
           other.incidentId == this.incidentId &&
           other.savedLocationId == this.savedLocationId);
 }
 
-class AffectedHousesCompanion extends UpdateCompanion<AffectedHouse> {
+class AffectedHousesCompanion extends UpdateCompanion<AffectedHouseDb> {
   final Value<int> incidentId;
   final Value<int> savedLocationId;
   final Value<int> rowid;
@@ -3313,7 +3314,7 @@ class AffectedHousesCompanion extends UpdateCompanion<AffectedHouse> {
     this.rowid = const Value.absent(),
   }) : incidentId = Value(incidentId),
        savedLocationId = Value(savedLocationId);
-  static Insertable<AffectedHouse> custom({
+  static Insertable<AffectedHouseDb> custom({
     Expression<int>? incidentId,
     Expression<int>? savedLocationId,
     Expression<int>? rowid,
@@ -3363,8 +3364,474 @@ class AffectedHousesCompanion extends UpdateCompanion<AffectedHouse> {
   }
 }
 
+class $IncidentCommentsTable extends IncidentComments
+    with TableInfo<$IncidentCommentsTable, IncidentCommentDb> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IncidentCommentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _backendIdMeta = const VerificationMeta(
+    'backendId',
+  );
+  @override
+  late final GeneratedColumn<int> backendId = GeneratedColumn<int>(
+    'backend_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _incidentIdMeta = const VerificationMeta(
+    'incidentId',
+  );
+  @override
+  late final GeneratedColumn<int> incidentId = GeneratedColumn<int>(
+    'incident_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES incidents (backend_id)',
+    ),
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<int> userId = GeneratedColumn<int>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userNameMeta = const VerificationMeta(
+    'userName',
+  );
+  @override
+  late final GeneratedColumn<String> userName = GeneratedColumn<String>(
+    'user_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isSystemMessageMeta = const VerificationMeta(
+    'isSystemMessage',
+  );
+  @override
+  late final GeneratedColumn<bool> isSystemMessage = GeneratedColumn<bool>(
+    'is_system_message',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_system_message" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    backendId,
+    incidentId,
+    content,
+    userId,
+    userName,
+    isSystemMessage,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'incident_comments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<IncidentCommentDb> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('backend_id')) {
+      context.handle(
+        _backendIdMeta,
+        backendId.isAcceptableOrUnknown(data['backend_id']!, _backendIdMeta),
+      );
+    }
+    if (data.containsKey('incident_id')) {
+      context.handle(
+        _incidentIdMeta,
+        incidentId.isAcceptableOrUnknown(data['incident_id']!, _incidentIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_incidentIdMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('user_name')) {
+      context.handle(
+        _userNameMeta,
+        userName.isAcceptableOrUnknown(data['user_name']!, _userNameMeta),
+      );
+    }
+    if (data.containsKey('is_system_message')) {
+      context.handle(
+        _isSystemMessageMeta,
+        isSystemMessage.isAcceptableOrUnknown(
+          data['is_system_message']!,
+          _isSystemMessageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {backendId};
+  @override
+  IncidentCommentDb map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IncidentCommentDb(
+      backendId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}backend_id'],
+      )!,
+      incidentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}incident_id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}user_id'],
+      )!,
+      userName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_name'],
+      ),
+      isSystemMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_system_message'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $IncidentCommentsTable createAlias(String alias) {
+    return $IncidentCommentsTable(attachedDatabase, alias);
+  }
+}
+
+class IncidentCommentDb extends DataClass
+    implements Insertable<IncidentCommentDb> {
+  final int backendId;
+  final int incidentId;
+  final String content;
+  final int userId;
+  final String? userName;
+  final bool isSystemMessage;
+  final DateTime createdAt;
+  const IncidentCommentDb({
+    required this.backendId,
+    required this.incidentId,
+    required this.content,
+    required this.userId,
+    this.userName,
+    required this.isSystemMessage,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['backend_id'] = Variable<int>(backendId);
+    map['incident_id'] = Variable<int>(incidentId);
+    map['content'] = Variable<String>(content);
+    map['user_id'] = Variable<int>(userId);
+    if (!nullToAbsent || userName != null) {
+      map['user_name'] = Variable<String>(userName);
+    }
+    map['is_system_message'] = Variable<bool>(isSystemMessage);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  IncidentCommentsCompanion toCompanion(bool nullToAbsent) {
+    return IncidentCommentsCompanion(
+      backendId: Value(backendId),
+      incidentId: Value(incidentId),
+      content: Value(content),
+      userId: Value(userId),
+      userName: userName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userName),
+      isSystemMessage: Value(isSystemMessage),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory IncidentCommentDb.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IncidentCommentDb(
+      backendId: serializer.fromJson<int>(json['backendId']),
+      incidentId: serializer.fromJson<int>(json['incidentId']),
+      content: serializer.fromJson<String>(json['content']),
+      userId: serializer.fromJson<int>(json['userId']),
+      userName: serializer.fromJson<String?>(json['userName']),
+      isSystemMessage: serializer.fromJson<bool>(json['isSystemMessage']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'backendId': serializer.toJson<int>(backendId),
+      'incidentId': serializer.toJson<int>(incidentId),
+      'content': serializer.toJson<String>(content),
+      'userId': serializer.toJson<int>(userId),
+      'userName': serializer.toJson<String?>(userName),
+      'isSystemMessage': serializer.toJson<bool>(isSystemMessage),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  IncidentCommentDb copyWith({
+    int? backendId,
+    int? incidentId,
+    String? content,
+    int? userId,
+    Value<String?> userName = const Value.absent(),
+    bool? isSystemMessage,
+    DateTime? createdAt,
+  }) => IncidentCommentDb(
+    backendId: backendId ?? this.backendId,
+    incidentId: incidentId ?? this.incidentId,
+    content: content ?? this.content,
+    userId: userId ?? this.userId,
+    userName: userName.present ? userName.value : this.userName,
+    isSystemMessage: isSystemMessage ?? this.isSystemMessage,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  IncidentCommentDb copyWithCompanion(IncidentCommentsCompanion data) {
+    return IncidentCommentDb(
+      backendId: data.backendId.present ? data.backendId.value : this.backendId,
+      incidentId: data.incidentId.present
+          ? data.incidentId.value
+          : this.incidentId,
+      content: data.content.present ? data.content.value : this.content,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      userName: data.userName.present ? data.userName.value : this.userName,
+      isSystemMessage: data.isSystemMessage.present
+          ? data.isSystemMessage.value
+          : this.isSystemMessage,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IncidentCommentDb(')
+          ..write('backendId: $backendId, ')
+          ..write('incidentId: $incidentId, ')
+          ..write('content: $content, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('isSystemMessage: $isSystemMessage, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    backendId,
+    incidentId,
+    content,
+    userId,
+    userName,
+    isSystemMessage,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IncidentCommentDb &&
+          other.backendId == this.backendId &&
+          other.incidentId == this.incidentId &&
+          other.content == this.content &&
+          other.userId == this.userId &&
+          other.userName == this.userName &&
+          other.isSystemMessage == this.isSystemMessage &&
+          other.createdAt == this.createdAt);
+}
+
+class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
+  final Value<int> backendId;
+  final Value<int> incidentId;
+  final Value<String> content;
+  final Value<int> userId;
+  final Value<String?> userName;
+  final Value<bool> isSystemMessage;
+  final Value<DateTime> createdAt;
+  const IncidentCommentsCompanion({
+    this.backendId = const Value.absent(),
+    this.incidentId = const Value.absent(),
+    this.content = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.isSystemMessage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  IncidentCommentsCompanion.insert({
+    this.backendId = const Value.absent(),
+    required int incidentId,
+    required String content,
+    required int userId,
+    this.userName = const Value.absent(),
+    this.isSystemMessage = const Value.absent(),
+    required DateTime createdAt,
+  }) : incidentId = Value(incidentId),
+       content = Value(content),
+       userId = Value(userId),
+       createdAt = Value(createdAt);
+  static Insertable<IncidentCommentDb> custom({
+    Expression<int>? backendId,
+    Expression<int>? incidentId,
+    Expression<String>? content,
+    Expression<int>? userId,
+    Expression<String>? userName,
+    Expression<bool>? isSystemMessage,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (backendId != null) 'backend_id': backendId,
+      if (incidentId != null) 'incident_id': incidentId,
+      if (content != null) 'content': content,
+      if (userId != null) 'user_id': userId,
+      if (userName != null) 'user_name': userName,
+      if (isSystemMessage != null) 'is_system_message': isSystemMessage,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  IncidentCommentsCompanion copyWith({
+    Value<int>? backendId,
+    Value<int>? incidentId,
+    Value<String>? content,
+    Value<int>? userId,
+    Value<String?>? userName,
+    Value<bool>? isSystemMessage,
+    Value<DateTime>? createdAt,
+  }) {
+    return IncidentCommentsCompanion(
+      backendId: backendId ?? this.backendId,
+      incidentId: incidentId ?? this.incidentId,
+      content: content ?? this.content,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      isSystemMessage: isSystemMessage ?? this.isSystemMessage,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (backendId.present) {
+      map['backend_id'] = Variable<int>(backendId.value);
+    }
+    if (incidentId.present) {
+      map['incident_id'] = Variable<int>(incidentId.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<int>(userId.value);
+    }
+    if (userName.present) {
+      map['user_name'] = Variable<String>(userName.value);
+    }
+    if (isSystemMessage.present) {
+      map['is_system_message'] = Variable<bool>(isSystemMessage.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IncidentCommentsCompanion(')
+          ..write('backendId: $backendId, ')
+          ..write('incidentId: $incidentId, ')
+          ..write('content: $content, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('isSystemMessage: $isSystemMessage, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $IncidentPhotosTable extends IncidentPhotos
-    with TableInfo<$IncidentPhotosTable, IncidentPhoto> {
+    with TableInfo<$IncidentPhotosTable, IncidentPhotoDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -3440,7 +3907,7 @@ class $IncidentPhotosTable extends IncidentPhotos
   static const String $name = 'incident_photos';
   @override
   VerificationContext validateIntegrity(
-    Insertable<IncidentPhoto> instance, {
+    Insertable<IncidentPhotoDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -3488,9 +3955,9 @@ class $IncidentPhotosTable extends IncidentPhotos
   @override
   Set<GeneratedColumn> get $primaryKey => {backendId};
   @override
-  IncidentPhoto map(Map<String, dynamic> data, {String? tablePrefix}) {
+  IncidentPhotoDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return IncidentPhoto(
+    return IncidentPhotoDb(
       backendId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}backend_id'],
@@ -3520,13 +3987,13 @@ class $IncidentPhotosTable extends IncidentPhotos
   }
 }
 
-class IncidentPhoto extends DataClass implements Insertable<IncidentPhoto> {
+class IncidentPhotoDb extends DataClass implements Insertable<IncidentPhotoDb> {
   final int backendId;
   final int incidentId;
   final String url;
   final String? thumbnailUrl;
   final DateTime? createdAt;
-  const IncidentPhoto({
+  const IncidentPhotoDb({
     required this.backendId,
     required this.incidentId,
     required this.url,
@@ -3562,12 +4029,12 @@ class IncidentPhoto extends DataClass implements Insertable<IncidentPhoto> {
     );
   }
 
-  factory IncidentPhoto.fromJson(
+  factory IncidentPhotoDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return IncidentPhoto(
+    return IncidentPhotoDb(
       backendId: serializer.fromJson<int>(json['backendId']),
       incidentId: serializer.fromJson<int>(json['incidentId']),
       url: serializer.fromJson<String>(json['url']),
@@ -3587,21 +4054,21 @@ class IncidentPhoto extends DataClass implements Insertable<IncidentPhoto> {
     };
   }
 
-  IncidentPhoto copyWith({
+  IncidentPhotoDb copyWith({
     int? backendId,
     int? incidentId,
     String? url,
     Value<String?> thumbnailUrl = const Value.absent(),
     Value<DateTime?> createdAt = const Value.absent(),
-  }) => IncidentPhoto(
+  }) => IncidentPhotoDb(
     backendId: backendId ?? this.backendId,
     incidentId: incidentId ?? this.incidentId,
     url: url ?? this.url,
     thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
   );
-  IncidentPhoto copyWithCompanion(IncidentPhotosCompanion data) {
-    return IncidentPhoto(
+  IncidentPhotoDb copyWithCompanion(IncidentPhotosCompanion data) {
+    return IncidentPhotoDb(
       backendId: data.backendId.present ? data.backendId.value : this.backendId,
       incidentId: data.incidentId.present
           ? data.incidentId.value
@@ -3616,7 +4083,7 @@ class IncidentPhoto extends DataClass implements Insertable<IncidentPhoto> {
 
   @override
   String toString() {
-    return (StringBuffer('IncidentPhoto(')
+    return (StringBuffer('IncidentPhotoDb(')
           ..write('backendId: $backendId, ')
           ..write('incidentId: $incidentId, ')
           ..write('url: $url, ')
@@ -3632,7 +4099,7 @@ class IncidentPhoto extends DataClass implements Insertable<IncidentPhoto> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is IncidentPhoto &&
+      (other is IncidentPhotoDb &&
           other.backendId == this.backendId &&
           other.incidentId == this.incidentId &&
           other.url == this.url &&
@@ -3640,7 +4107,7 @@ class IncidentPhoto extends DataClass implements Insertable<IncidentPhoto> {
           other.createdAt == this.createdAt);
 }
 
-class IncidentPhotosCompanion extends UpdateCompanion<IncidentPhoto> {
+class IncidentPhotosCompanion extends UpdateCompanion<IncidentPhotoDb> {
   final Value<int> backendId;
   final Value<int> incidentId;
   final Value<String> url;
@@ -3661,7 +4128,7 @@ class IncidentPhotosCompanion extends UpdateCompanion<IncidentPhoto> {
     this.createdAt = const Value.absent(),
   }) : incidentId = Value(incidentId),
        url = Value(url);
-  static Insertable<IncidentPhoto> custom({
+  static Insertable<IncidentPhotoDb> custom({
     Expression<int>? backendId,
     Expression<int>? incidentId,
     Expression<String>? url,
@@ -3728,7 +4195,7 @@ class IncidentPhotosCompanion extends UpdateCompanion<IncidentPhoto> {
 }
 
 class $PendingChangesTable extends PendingChanges
-    with TableInfo<$PendingChangesTable, PendingChange> {
+    with TableInfo<$PendingChangesTable, PendingChangeDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -3857,7 +4324,7 @@ class $PendingChangesTable extends PendingChanges
   static const String $name = 'pending_changes';
   @override
   VerificationContext validateIntegrity(
-    Insertable<PendingChange> instance, {
+    Insertable<PendingChangeDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -3923,9 +4390,9 @@ class $PendingChangesTable extends PendingChanges
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  PendingChange map(Map<String, dynamic> data, {String? tablePrefix}) {
+  PendingChangeDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return PendingChange(
+    return PendingChangeDb(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -3971,7 +4438,7 @@ class $PendingChangesTable extends PendingChanges
   }
 }
 
-class PendingChange extends DataClass implements Insertable<PendingChange> {
+class PendingChangeDb extends DataClass implements Insertable<PendingChangeDb> {
   final int id;
   final String entityType;
   final int? entityId;
@@ -3981,7 +4448,7 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
   final int retryCount;
   final String syncStatus;
   final DateTime createdAt;
-  const PendingChange({
+  const PendingChangeDb({
     required this.id,
     required this.entityType,
     this.entityId,
@@ -4029,12 +4496,12 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
     );
   }
 
-  factory PendingChange.fromJson(
+  factory PendingChangeDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return PendingChange(
+    return PendingChangeDb(
       id: serializer.fromJson<int>(json['id']),
       entityType: serializer.fromJson<String>(json['entityType']),
       entityId: serializer.fromJson<int?>(json['entityId']),
@@ -4062,7 +4529,7 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
     };
   }
 
-  PendingChange copyWith({
+  PendingChangeDb copyWith({
     int? id,
     String? entityType,
     Value<int?> entityId = const Value.absent(),
@@ -4072,7 +4539,7 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
     int? retryCount,
     String? syncStatus,
     DateTime? createdAt,
-  }) => PendingChange(
+  }) => PendingChangeDb(
     id: id ?? this.id,
     entityType: entityType ?? this.entityType,
     entityId: entityId.present ? entityId.value : this.entityId,
@@ -4083,8 +4550,8 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
     syncStatus: syncStatus ?? this.syncStatus,
     createdAt: createdAt ?? this.createdAt,
   );
-  PendingChange copyWithCompanion(PendingChangesCompanion data) {
-    return PendingChange(
+  PendingChangeDb copyWithCompanion(PendingChangesCompanion data) {
+    return PendingChangeDb(
       id: data.id.present ? data.id.value : this.id,
       entityType: data.entityType.present
           ? data.entityType.value
@@ -4107,7 +4574,7 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
 
   @override
   String toString() {
-    return (StringBuffer('PendingChange(')
+    return (StringBuffer('PendingChangeDb(')
           ..write('id: $id, ')
           ..write('entityType: $entityType, ')
           ..write('entityId: $entityId, ')
@@ -4136,7 +4603,7 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is PendingChange &&
+      (other is PendingChangeDb &&
           other.id == this.id &&
           other.entityType == this.entityType &&
           other.entityId == this.entityId &&
@@ -4148,7 +4615,7 @@ class PendingChange extends DataClass implements Insertable<PendingChange> {
           other.createdAt == this.createdAt);
 }
 
-class PendingChangesCompanion extends UpdateCompanion<PendingChange> {
+class PendingChangesCompanion extends UpdateCompanion<PendingChangeDb> {
   final Value<int> id;
   final Value<String> entityType;
   final Value<int?> entityId;
@@ -4181,7 +4648,7 @@ class PendingChangesCompanion extends UpdateCompanion<PendingChange> {
     this.createdAt = const Value.absent(),
   }) : entityType = Value(entityType),
        actionType = Value(actionType);
-  static Insertable<PendingChange> custom({
+  static Insertable<PendingChangeDb> custom({
     Expression<int>? id,
     Expression<String>? entityType,
     Expression<int>? entityId,
@@ -4280,7 +4747,7 @@ class PendingChangesCompanion extends UpdateCompanion<PendingChange> {
 }
 
 class $ActionLogsTable extends ActionLogs
-    with TableInfo<$ActionLogsTable, ActionLog> {
+    with TableInfo<$ActionLogsTable, ActionLogDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -4417,7 +4884,7 @@ class $ActionLogsTable extends ActionLogs
   static const String $name = 'action_logs';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ActionLog> instance, {
+    Insertable<ActionLogDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -4508,9 +4975,9 @@ class $ActionLogsTable extends ActionLogs
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  ActionLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ActionLogDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ActionLog(
+    return ActionLogDb(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -4564,7 +5031,7 @@ class $ActionLogsTable extends ActionLogs
   }
 }
 
-class ActionLog extends DataClass implements Insertable<ActionLog> {
+class ActionLogDb extends DataClass implements Insertable<ActionLogDb> {
   final String id;
   final int? actionIdRaw;
   final String? boilerHouseID;
@@ -4576,7 +5043,7 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
   final String type;
   final String? userId;
   final String? userName;
-  const ActionLog({
+  const ActionLogDb({
     required this.id,
     this.actionIdRaw,
     this.boilerHouseID,
@@ -4650,12 +5117,12 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
     );
   }
 
-  factory ActionLog.fromJson(
+  factory ActionLogDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ActionLog(
+    return ActionLogDb(
       id: serializer.fromJson<String>(json['id']),
       actionIdRaw: serializer.fromJson<int?>(json['actionIdRaw']),
       boilerHouseID: serializer.fromJson<String?>(json['boilerHouseID']),
@@ -4687,7 +5154,7 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
     };
   }
 
-  ActionLog copyWith({
+  ActionLogDb copyWith({
     String? id,
     Value<int?> actionIdRaw = const Value.absent(),
     Value<String?> boilerHouseID = const Value.absent(),
@@ -4699,7 +5166,7 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
     String? type,
     Value<String?> userId = const Value.absent(),
     Value<String?> userName = const Value.absent(),
-  }) => ActionLog(
+  }) => ActionLogDb(
     id: id ?? this.id,
     actionIdRaw: actionIdRaw.present ? actionIdRaw.value : this.actionIdRaw,
     boilerHouseID: boilerHouseID.present
@@ -4714,8 +5181,8 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
     userId: userId.present ? userId.value : this.userId,
     userName: userName.present ? userName.value : this.userName,
   );
-  ActionLog copyWithCompanion(ActionLogsCompanion data) {
-    return ActionLog(
+  ActionLogDb copyWithCompanion(ActionLogsCompanion data) {
+    return ActionLogDb(
       id: data.id.present ? data.id.value : this.id,
       actionIdRaw: data.actionIdRaw.present
           ? data.actionIdRaw.value
@@ -4738,7 +5205,7 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
 
   @override
   String toString() {
-    return (StringBuffer('ActionLog(')
+    return (StringBuffer('ActionLogDb(')
           ..write('id: $id, ')
           ..write('actionIdRaw: $actionIdRaw, ')
           ..write('boilerHouseID: $boilerHouseID, ')
@@ -4771,7 +5238,7 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ActionLog &&
+      (other is ActionLogDb &&
           other.id == this.id &&
           other.actionIdRaw == this.actionIdRaw &&
           other.boilerHouseID == this.boilerHouseID &&
@@ -4785,7 +5252,7 @@ class ActionLog extends DataClass implements Insertable<ActionLog> {
           other.userName == this.userName);
 }
 
-class ActionLogsCompanion extends UpdateCompanion<ActionLog> {
+class ActionLogsCompanion extends UpdateCompanion<ActionLogDb> {
   final Value<String> id;
   final Value<int?> actionIdRaw;
   final Value<String?> boilerHouseID;
@@ -4829,7 +5296,7 @@ class ActionLogsCompanion extends UpdateCompanion<ActionLog> {
        message = Value(message),
        timestamp = Value(timestamp),
        type = Value(type);
-  static Insertable<ActionLog> custom({
+  static Insertable<ActionLogDb> custom({
     Expression<String>? id,
     Expression<int>? actionIdRaw,
     Expression<String>? boilerHouseID,
@@ -4952,7 +5419,7 @@ class ActionLogsCompanion extends UpdateCompanion<ActionLog> {
 }
 
 class $ManagementCompaniesTable extends ManagementCompanies
-    with TableInfo<$ManagementCompaniesTable, ManagementCompany> {
+    with TableInfo<$ManagementCompaniesTable, ManagementCompanyDb> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -5031,7 +5498,7 @@ class $ManagementCompaniesTable extends ManagementCompanies
   static const String $name = 'management_companies';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ManagementCompany> instance, {
+    Insertable<ManagementCompanyDb> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -5079,9 +5546,9 @@ class $ManagementCompaniesTable extends ManagementCompanies
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  ManagementCompany map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ManagementCompanyDb map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ManagementCompany(
+    return ManagementCompanyDb(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -5115,15 +5582,15 @@ class $ManagementCompaniesTable extends ManagementCompanies
   }
 }
 
-class ManagementCompany extends DataClass
-    implements Insertable<ManagementCompany> {
+class ManagementCompanyDb extends DataClass
+    implements Insertable<ManagementCompanyDb> {
   final String id;
   final String name;
   final String? address;
   final String? director;
   final String? email;
   final String? phone;
-  const ManagementCompany({
+  const ManagementCompanyDb({
     required this.id,
     required this.name,
     this.address,
@@ -5170,12 +5637,12 @@ class ManagementCompany extends DataClass
     );
   }
 
-  factory ManagementCompany.fromJson(
+  factory ManagementCompanyDb.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ManagementCompany(
+    return ManagementCompanyDb(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       address: serializer.fromJson<String?>(json['address']),
@@ -5197,14 +5664,14 @@ class ManagementCompany extends DataClass
     };
   }
 
-  ManagementCompany copyWith({
+  ManagementCompanyDb copyWith({
     String? id,
     String? name,
     Value<String?> address = const Value.absent(),
     Value<String?> director = const Value.absent(),
     Value<String?> email = const Value.absent(),
     Value<String?> phone = const Value.absent(),
-  }) => ManagementCompany(
+  }) => ManagementCompanyDb(
     id: id ?? this.id,
     name: name ?? this.name,
     address: address.present ? address.value : this.address,
@@ -5212,8 +5679,8 @@ class ManagementCompany extends DataClass
     email: email.present ? email.value : this.email,
     phone: phone.present ? phone.value : this.phone,
   );
-  ManagementCompany copyWithCompanion(ManagementCompaniesCompanion data) {
-    return ManagementCompany(
+  ManagementCompanyDb copyWithCompanion(ManagementCompaniesCompanion data) {
+    return ManagementCompanyDb(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       address: data.address.present ? data.address.value : this.address,
@@ -5225,7 +5692,7 @@ class ManagementCompany extends DataClass
 
   @override
   String toString() {
-    return (StringBuffer('ManagementCompany(')
+    return (StringBuffer('ManagementCompanyDb(')
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('address: $address, ')
@@ -5241,7 +5708,7 @@ class ManagementCompany extends DataClass
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ManagementCompany &&
+      (other is ManagementCompanyDb &&
           other.id == this.id &&
           other.name == this.name &&
           other.address == this.address &&
@@ -5250,7 +5717,8 @@ class ManagementCompany extends DataClass
           other.phone == this.phone);
 }
 
-class ManagementCompaniesCompanion extends UpdateCompanion<ManagementCompany> {
+class ManagementCompaniesCompanion
+    extends UpdateCompanion<ManagementCompanyDb> {
   final Value<String> id;
   final Value<String> name;
   final Value<String?> address;
@@ -5277,7 +5745,7 @@ class ManagementCompaniesCompanion extends UpdateCompanion<ManagementCompany> {
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
-  static Insertable<ManagementCompany> custom({
+  static Insertable<ManagementCompanyDb> custom({
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? address,
@@ -5367,6 +5835,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SavedLocationsTable savedLocations = $SavedLocationsTable(this);
   late final $IncidentsTable incidents = $IncidentsTable(this);
   late final $AffectedHousesTable affectedHouses = $AffectedHousesTable(this);
+  late final $IncidentCommentsTable incidentComments = $IncidentCommentsTable(
+    this,
+  );
   late final $IncidentPhotosTable incidentPhotos = $IncidentPhotosTable(this);
   late final $PendingChangesTable pendingChanges = $PendingChangesTable(this);
   late final $ActionLogsTable actionLogs = $ActionLogsTable(this);
@@ -5382,6 +5853,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     savedLocations,
     incidents,
     affectedHouses,
+    incidentComments,
     incidentPhotos,
     pendingChanges,
     actionLogs,
@@ -5553,14 +6025,14 @@ class $$AppUsersTableTableManager
         RootTableManager<
           _$AppDatabase,
           $AppUsersTable,
-          AppUser,
+          AppUserDb,
           $$AppUsersTableFilterComposer,
           $$AppUsersTableOrderingComposer,
           $$AppUsersTableAnnotationComposer,
           $$AppUsersTableCreateCompanionBuilder,
           $$AppUsersTableUpdateCompanionBuilder,
-          (AppUser, BaseReferences<_$AppDatabase, $AppUsersTable, AppUser>),
-          AppUser,
+          (AppUserDb, BaseReferences<_$AppDatabase, $AppUsersTable, AppUserDb>),
+          AppUserDb,
           PrefetchHooks Function()
         > {
   $$AppUsersTableTableManager(_$AppDatabase db, $AppUsersTable table)
@@ -5630,14 +6102,14 @@ typedef $$AppUsersTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $AppUsersTable,
-      AppUser,
+      AppUserDb,
       $$AppUsersTableFilterComposer,
       $$AppUsersTableOrderingComposer,
       $$AppUsersTableAnnotationComposer,
       $$AppUsersTableCreateCompanionBuilder,
       $$AppUsersTableUpdateCompanionBuilder,
-      (AppUser, BaseReferences<_$AppDatabase, $AppUsersTable, AppUser>),
-      AppUser,
+      (AppUserDb, BaseReferences<_$AppDatabase, $AppUsersTable, AppUserDb>),
+      AppUserDb,
       PrefetchHooks Function()
     >;
 typedef $$BoilerHousesTableCreateCompanionBuilder =
@@ -5664,10 +6136,10 @@ typedef $$BoilerHousesTableUpdateCompanionBuilder =
     });
 
 final class $$BoilerHousesTableReferences
-    extends BaseReferences<_$AppDatabase, $BoilerHousesTable, BoilerHouse> {
+    extends BaseReferences<_$AppDatabase, $BoilerHousesTable, BoilerHouseDb> {
   $$BoilerHousesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static MultiTypedResultKey<$SavedLocationsTable, List<SavedLocation>>
+  static MultiTypedResultKey<$SavedLocationsTable, List<SavedLocationDb>>
   _savedLocationsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.savedLocations,
     aliasName: $_aliasNameGenerator(
@@ -5690,7 +6162,7 @@ final class $$BoilerHousesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$IncidentsTable, List<Incident>>
+  static MultiTypedResultKey<$IncidentsTable, List<IncidentDb>>
   _incidentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.incidents,
     aliasName: $_aliasNameGenerator(
@@ -5957,14 +6429,14 @@ class $$BoilerHousesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $BoilerHousesTable,
-          BoilerHouse,
+          BoilerHouseDb,
           $$BoilerHousesTableFilterComposer,
           $$BoilerHousesTableOrderingComposer,
           $$BoilerHousesTableAnnotationComposer,
           $$BoilerHousesTableCreateCompanionBuilder,
           $$BoilerHousesTableUpdateCompanionBuilder,
-          (BoilerHouse, $$BoilerHousesTableReferences),
-          BoilerHouse,
+          (BoilerHouseDb, $$BoilerHousesTableReferences),
+          BoilerHouseDb,
           PrefetchHooks Function({bool savedLocationsRefs, bool incidentsRefs})
         > {
   $$BoilerHousesTableTableManager(_$AppDatabase db, $BoilerHousesTable table)
@@ -6039,9 +6511,9 @@ class $$BoilerHousesTableTableManager
                     return [
                       if (savedLocationsRefs)
                         await $_getPrefetchedData<
-                          BoilerHouse,
+                          BoilerHouseDb,
                           $BoilerHousesTable,
-                          SavedLocation
+                          SavedLocationDb
                         >(
                           currentTable: table,
                           referencedTable: $$BoilerHousesTableReferences
@@ -6060,9 +6532,9 @@ class $$BoilerHousesTableTableManager
                         ),
                       if (incidentsRefs)
                         await $_getPrefetchedData<
-                          BoilerHouse,
+                          BoilerHouseDb,
                           $BoilerHousesTable,
-                          Incident
+                          IncidentDb
                         >(
                           currentTable: table,
                           referencedTable: $$BoilerHousesTableReferences
@@ -6091,14 +6563,14 @@ typedef $$BoilerHousesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $BoilerHousesTable,
-      BoilerHouse,
+      BoilerHouseDb,
       $$BoilerHousesTableFilterComposer,
       $$BoilerHousesTableOrderingComposer,
       $$BoilerHousesTableAnnotationComposer,
       $$BoilerHousesTableCreateCompanionBuilder,
       $$BoilerHousesTableUpdateCompanionBuilder,
-      (BoilerHouse, $$BoilerHousesTableReferences),
-      BoilerHouse,
+      (BoilerHouseDb, $$BoilerHousesTableReferences),
+      BoilerHouseDb,
       PrefetchHooks Function({bool savedLocationsRefs, bool incidentsRefs})
     >;
 typedef $$SavedLocationsTableCreateCompanionBuilder =
@@ -6145,7 +6617,8 @@ typedef $$SavedLocationsTableUpdateCompanionBuilder =
     });
 
 final class $$SavedLocationsTableReferences
-    extends BaseReferences<_$AppDatabase, $SavedLocationsTable, SavedLocation> {
+    extends
+        BaseReferences<_$AppDatabase, $SavedLocationsTable, SavedLocationDb> {
   $$SavedLocationsTableReferences(
     super.$_db,
     super.$_table,
@@ -6174,7 +6647,7 @@ final class $$SavedLocationsTableReferences
     );
   }
 
-  static MultiTypedResultKey<$AffectedHousesTable, List<AffectedHouse>>
+  static MultiTypedResultKey<$AffectedHousesTable, List<AffectedHouseDb>>
   _affectedHousesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.affectedHouses,
     aliasName: $_aliasNameGenerator(
@@ -6587,14 +7060,14 @@ class $$SavedLocationsTableTableManager
         RootTableManager<
           _$AppDatabase,
           $SavedLocationsTable,
-          SavedLocation,
+          SavedLocationDb,
           $$SavedLocationsTableFilterComposer,
           $$SavedLocationsTableOrderingComposer,
           $$SavedLocationsTableAnnotationComposer,
           $$SavedLocationsTableCreateCompanionBuilder,
           $$SavedLocationsTableUpdateCompanionBuilder,
-          (SavedLocation, $$SavedLocationsTableReferences),
-          SavedLocation,
+          (SavedLocationDb, $$SavedLocationsTableReferences),
+          SavedLocationDb,
           PrefetchHooks Function({bool boilerHouseId, bool affectedHousesRefs})
         > {
   $$SavedLocationsTableTableManager(
@@ -6743,9 +7216,9 @@ class $$SavedLocationsTableTableManager
                     return [
                       if (affectedHousesRefs)
                         await $_getPrefetchedData<
-                          SavedLocation,
+                          SavedLocationDb,
                           $SavedLocationsTable,
-                          AffectedHouse
+                          AffectedHouseDb
                         >(
                           currentTable: table,
                           referencedTable: $$SavedLocationsTableReferences
@@ -6774,14 +7247,14 @@ typedef $$SavedLocationsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $SavedLocationsTable,
-      SavedLocation,
+      SavedLocationDb,
       $$SavedLocationsTableFilterComposer,
       $$SavedLocationsTableOrderingComposer,
       $$SavedLocationsTableAnnotationComposer,
       $$SavedLocationsTableCreateCompanionBuilder,
       $$SavedLocationsTableUpdateCompanionBuilder,
-      (SavedLocation, $$SavedLocationsTableReferences),
-      SavedLocation,
+      (SavedLocationDb, $$SavedLocationsTableReferences),
+      SavedLocationDb,
       PrefetchHooks Function({bool boilerHouseId, bool affectedHousesRefs})
     >;
 typedef $$IncidentsTableCreateCompanionBuilder =
@@ -6826,7 +7299,7 @@ typedef $$IncidentsTableUpdateCompanionBuilder =
     });
 
 final class $$IncidentsTableReferences
-    extends BaseReferences<_$AppDatabase, $IncidentsTable, Incident> {
+    extends BaseReferences<_$AppDatabase, $IncidentsTable, IncidentDb> {
   $$IncidentsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $BoilerHousesTable _boilerHouseIdTable(_$AppDatabase db) =>
@@ -6851,7 +7324,7 @@ final class $$IncidentsTableReferences
     );
   }
 
-  static MultiTypedResultKey<$AffectedHousesTable, List<AffectedHouse>>
+  static MultiTypedResultKey<$AffectedHousesTable, List<AffectedHouseDb>>
   _affectedHousesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.affectedHouses,
     aliasName: $_aliasNameGenerator(
@@ -6874,7 +7347,32 @@ final class $$IncidentsTableReferences
     );
   }
 
-  static MultiTypedResultKey<$IncidentPhotosTable, List<IncidentPhoto>>
+  static MultiTypedResultKey<$IncidentCommentsTable, List<IncidentCommentDb>>
+  _incidentCommentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.incidentComments,
+    aliasName: $_aliasNameGenerator(
+      db.incidents.backendId,
+      db.incidentComments.incidentId,
+    ),
+  );
+
+  $$IncidentCommentsTableProcessedTableManager get incidentCommentsRefs {
+    final manager =
+        $$IncidentCommentsTableTableManager($_db, $_db.incidentComments).filter(
+          (f) => f.incidentId.backendId.sqlEquals(
+            $_itemColumn<int>('backend_id')!,
+          ),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _incidentCommentsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$IncidentPhotosTable, List<IncidentPhotoDb>>
   _incidentPhotosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.incidentPhotos,
     aliasName: $_aliasNameGenerator(
@@ -7027,6 +7525,31 @@ class $$IncidentsTableFilterComposer
           }) => $$AffectedHousesTableFilterComposer(
             $db: $db,
             $table: $db.affectedHouses,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> incidentCommentsRefs(
+    Expression<bool> Function($$IncidentCommentsTableFilterComposer f) f,
+  ) {
+    final $$IncidentCommentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.backendId,
+      referencedTable: $db.incidentComments,
+      getReferencedColumn: (t) => t.incidentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IncidentCommentsTableFilterComposer(
+            $db: $db,
+            $table: $db.incidentComments,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7300,6 +7823,31 @@ class $$IncidentsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> incidentCommentsRefs<T extends Object>(
+    Expression<T> Function($$IncidentCommentsTableAnnotationComposer a) f,
+  ) {
+    final $$IncidentCommentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.backendId,
+      referencedTable: $db.incidentComments,
+      getReferencedColumn: (t) => t.incidentId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IncidentCommentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.incidentComments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> incidentPhotosRefs<T extends Object>(
     Expression<T> Function($$IncidentPhotosTableAnnotationComposer a) f,
   ) {
@@ -7331,17 +7879,18 @@ class $$IncidentsTableTableManager
         RootTableManager<
           _$AppDatabase,
           $IncidentsTable,
-          Incident,
+          IncidentDb,
           $$IncidentsTableFilterComposer,
           $$IncidentsTableOrderingComposer,
           $$IncidentsTableAnnotationComposer,
           $$IncidentsTableCreateCompanionBuilder,
           $$IncidentsTableUpdateCompanionBuilder,
-          (Incident, $$IncidentsTableReferences),
-          Incident,
+          (IncidentDb, $$IncidentsTableReferences),
+          IncidentDb,
           PrefetchHooks Function({
             bool boilerHouseId,
             bool affectedHousesRefs,
+            bool incidentCommentsRefs,
             bool incidentPhotosRefs,
           })
         > {
@@ -7444,12 +7993,14 @@ class $$IncidentsTableTableManager
               ({
                 boilerHouseId = false,
                 affectedHousesRefs = false,
+                incidentCommentsRefs = false,
                 incidentPhotosRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (affectedHousesRefs) db.affectedHouses,
+                    if (incidentCommentsRefs) db.incidentComments,
                     if (incidentPhotosRefs) db.incidentPhotos,
                   ],
                   addJoins:
@@ -7488,9 +8039,9 @@ class $$IncidentsTableTableManager
                     return [
                       if (affectedHousesRefs)
                         await $_getPrefetchedData<
-                          Incident,
+                          IncidentDb,
                           $IncidentsTable,
-                          AffectedHouse
+                          AffectedHouseDb
                         >(
                           currentTable: table,
                           referencedTable: $$IncidentsTableReferences
@@ -7507,11 +8058,32 @@ class $$IncidentsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (incidentCommentsRefs)
+                        await $_getPrefetchedData<
+                          IncidentDb,
+                          $IncidentsTable,
+                          IncidentCommentDb
+                        >(
+                          currentTable: table,
+                          referencedTable: $$IncidentsTableReferences
+                              ._incidentCommentsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$IncidentsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).incidentCommentsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.incidentId == item.backendId,
+                              ),
+                          typedResults: items,
+                        ),
                       if (incidentPhotosRefs)
                         await $_getPrefetchedData<
-                          Incident,
+                          IncidentDb,
                           $IncidentsTable,
-                          IncidentPhoto
+                          IncidentPhotoDb
                         >(
                           currentTable: table,
                           referencedTable: $$IncidentsTableReferences
@@ -7540,17 +8112,18 @@ typedef $$IncidentsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $IncidentsTable,
-      Incident,
+      IncidentDb,
       $$IncidentsTableFilterComposer,
       $$IncidentsTableOrderingComposer,
       $$IncidentsTableAnnotationComposer,
       $$IncidentsTableCreateCompanionBuilder,
       $$IncidentsTableUpdateCompanionBuilder,
-      (Incident, $$IncidentsTableReferences),
-      Incident,
+      (IncidentDb, $$IncidentsTableReferences),
+      IncidentDb,
       PrefetchHooks Function({
         bool boilerHouseId,
         bool affectedHousesRefs,
+        bool incidentCommentsRefs,
         bool incidentPhotosRefs,
       })
     >;
@@ -7568,7 +8141,8 @@ typedef $$AffectedHousesTableUpdateCompanionBuilder =
     });
 
 final class $$AffectedHousesTableReferences
-    extends BaseReferences<_$AppDatabase, $AffectedHousesTable, AffectedHouse> {
+    extends
+        BaseReferences<_$AppDatabase, $AffectedHousesTable, AffectedHouseDb> {
   $$AffectedHousesTableReferences(
     super.$_db,
     super.$_table,
@@ -7793,14 +8367,14 @@ class $$AffectedHousesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $AffectedHousesTable,
-          AffectedHouse,
+          AffectedHouseDb,
           $$AffectedHousesTableFilterComposer,
           $$AffectedHousesTableOrderingComposer,
           $$AffectedHousesTableAnnotationComposer,
           $$AffectedHousesTableCreateCompanionBuilder,
           $$AffectedHousesTableUpdateCompanionBuilder,
-          (AffectedHouse, $$AffectedHousesTableReferences),
-          AffectedHouse,
+          (AffectedHouseDb, $$AffectedHousesTableReferences),
+          AffectedHouseDb,
           PrefetchHooks Function({bool incidentId, bool savedLocationId})
         > {
   $$AffectedHousesTableTableManager(
@@ -7911,15 +8485,384 @@ typedef $$AffectedHousesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $AffectedHousesTable,
-      AffectedHouse,
+      AffectedHouseDb,
       $$AffectedHousesTableFilterComposer,
       $$AffectedHousesTableOrderingComposer,
       $$AffectedHousesTableAnnotationComposer,
       $$AffectedHousesTableCreateCompanionBuilder,
       $$AffectedHousesTableUpdateCompanionBuilder,
-      (AffectedHouse, $$AffectedHousesTableReferences),
-      AffectedHouse,
+      (AffectedHouseDb, $$AffectedHousesTableReferences),
+      AffectedHouseDb,
       PrefetchHooks Function({bool incidentId, bool savedLocationId})
+    >;
+typedef $$IncidentCommentsTableCreateCompanionBuilder =
+    IncidentCommentsCompanion Function({
+      Value<int> backendId,
+      required int incidentId,
+      required String content,
+      required int userId,
+      Value<String?> userName,
+      Value<bool> isSystemMessage,
+      required DateTime createdAt,
+    });
+typedef $$IncidentCommentsTableUpdateCompanionBuilder =
+    IncidentCommentsCompanion Function({
+      Value<int> backendId,
+      Value<int> incidentId,
+      Value<String> content,
+      Value<int> userId,
+      Value<String?> userName,
+      Value<bool> isSystemMessage,
+      Value<DateTime> createdAt,
+    });
+
+final class $$IncidentCommentsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $IncidentCommentsTable,
+          IncidentCommentDb
+        > {
+  $$IncidentCommentsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $IncidentsTable _incidentIdTable(_$AppDatabase db) =>
+      db.incidents.createAlias(
+        $_aliasNameGenerator(
+          db.incidentComments.incidentId,
+          db.incidents.backendId,
+        ),
+      );
+
+  $$IncidentsTableProcessedTableManager get incidentId {
+    final $_column = $_itemColumn<int>('incident_id')!;
+
+    final manager = $$IncidentsTableTableManager(
+      $_db,
+      $_db.incidents,
+    ).filter((f) => f.backendId.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_incidentIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$IncidentCommentsTableFilterComposer
+    extends Composer<_$AppDatabase, $IncidentCommentsTable> {
+  $$IncidentCommentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get backendId => $composableBuilder(
+    column: $table.backendId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSystemMessage => $composableBuilder(
+    column: $table.isSystemMessage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$IncidentsTableFilterComposer get incidentId {
+    final $$IncidentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.incidentId,
+      referencedTable: $db.incidents,
+      getReferencedColumn: (t) => t.backendId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IncidentsTableFilterComposer(
+            $db: $db,
+            $table: $db.incidents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IncidentCommentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $IncidentCommentsTable> {
+  $$IncidentCommentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get backendId => $composableBuilder(
+    column: $table.backendId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSystemMessage => $composableBuilder(
+    column: $table.isSystemMessage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$IncidentsTableOrderingComposer get incidentId {
+    final $$IncidentsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.incidentId,
+      referencedTable: $db.incidents,
+      getReferencedColumn: (t) => t.backendId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IncidentsTableOrderingComposer(
+            $db: $db,
+            $table: $db.incidents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IncidentCommentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $IncidentCommentsTable> {
+  $$IncidentCommentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get backendId =>
+      $composableBuilder(column: $table.backendId, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<int> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get userName =>
+      $composableBuilder(column: $table.userName, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSystemMessage => $composableBuilder(
+    column: $table.isSystemMessage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$IncidentsTableAnnotationComposer get incidentId {
+    final $$IncidentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.incidentId,
+      referencedTable: $db.incidents,
+      getReferencedColumn: (t) => t.backendId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$IncidentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.incidents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$IncidentCommentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $IncidentCommentsTable,
+          IncidentCommentDb,
+          $$IncidentCommentsTableFilterComposer,
+          $$IncidentCommentsTableOrderingComposer,
+          $$IncidentCommentsTableAnnotationComposer,
+          $$IncidentCommentsTableCreateCompanionBuilder,
+          $$IncidentCommentsTableUpdateCompanionBuilder,
+          (IncidentCommentDb, $$IncidentCommentsTableReferences),
+          IncidentCommentDb,
+          PrefetchHooks Function({bool incidentId})
+        > {
+  $$IncidentCommentsTableTableManager(
+    _$AppDatabase db,
+    $IncidentCommentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$IncidentCommentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$IncidentCommentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$IncidentCommentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> backendId = const Value.absent(),
+                Value<int> incidentId = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<int> userId = const Value.absent(),
+                Value<String?> userName = const Value.absent(),
+                Value<bool> isSystemMessage = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => IncidentCommentsCompanion(
+                backendId: backendId,
+                incidentId: incidentId,
+                content: content,
+                userId: userId,
+                userName: userName,
+                isSystemMessage: isSystemMessage,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> backendId = const Value.absent(),
+                required int incidentId,
+                required String content,
+                required int userId,
+                Value<String?> userName = const Value.absent(),
+                Value<bool> isSystemMessage = const Value.absent(),
+                required DateTime createdAt,
+              }) => IncidentCommentsCompanion.insert(
+                backendId: backendId,
+                incidentId: incidentId,
+                content: content,
+                userId: userId,
+                userName: userName,
+                isSystemMessage: isSystemMessage,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$IncidentCommentsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({incidentId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (incidentId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.incidentId,
+                                referencedTable:
+                                    $$IncidentCommentsTableReferences
+                                        ._incidentIdTable(db),
+                                referencedColumn:
+                                    $$IncidentCommentsTableReferences
+                                        ._incidentIdTable(db)
+                                        .backendId,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$IncidentCommentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $IncidentCommentsTable,
+      IncidentCommentDb,
+      $$IncidentCommentsTableFilterComposer,
+      $$IncidentCommentsTableOrderingComposer,
+      $$IncidentCommentsTableAnnotationComposer,
+      $$IncidentCommentsTableCreateCompanionBuilder,
+      $$IncidentCommentsTableUpdateCompanionBuilder,
+      (IncidentCommentDb, $$IncidentCommentsTableReferences),
+      IncidentCommentDb,
+      PrefetchHooks Function({bool incidentId})
     >;
 typedef $$IncidentPhotosTableCreateCompanionBuilder =
     IncidentPhotosCompanion Function({
@@ -7939,7 +8882,8 @@ typedef $$IncidentPhotosTableUpdateCompanionBuilder =
     });
 
 final class $$IncidentPhotosTableReferences
-    extends BaseReferences<_$AppDatabase, $IncidentPhotosTable, IncidentPhoto> {
+    extends
+        BaseReferences<_$AppDatabase, $IncidentPhotosTable, IncidentPhotoDb> {
   $$IncidentPhotosTableReferences(
     super.$_db,
     super.$_table,
@@ -8127,14 +9071,14 @@ class $$IncidentPhotosTableTableManager
         RootTableManager<
           _$AppDatabase,
           $IncidentPhotosTable,
-          IncidentPhoto,
+          IncidentPhotoDb,
           $$IncidentPhotosTableFilterComposer,
           $$IncidentPhotosTableOrderingComposer,
           $$IncidentPhotosTableAnnotationComposer,
           $$IncidentPhotosTableCreateCompanionBuilder,
           $$IncidentPhotosTableUpdateCompanionBuilder,
-          (IncidentPhoto, $$IncidentPhotosTableReferences),
-          IncidentPhoto,
+          (IncidentPhotoDb, $$IncidentPhotosTableReferences),
+          IncidentPhotoDb,
           PrefetchHooks Function({bool incidentId})
         > {
   $$IncidentPhotosTableTableManager(
@@ -8236,14 +9180,14 @@ typedef $$IncidentPhotosTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $IncidentPhotosTable,
-      IncidentPhoto,
+      IncidentPhotoDb,
       $$IncidentPhotosTableFilterComposer,
       $$IncidentPhotosTableOrderingComposer,
       $$IncidentPhotosTableAnnotationComposer,
       $$IncidentPhotosTableCreateCompanionBuilder,
       $$IncidentPhotosTableUpdateCompanionBuilder,
-      (IncidentPhoto, $$IncidentPhotosTableReferences),
-      IncidentPhoto,
+      (IncidentPhotoDb, $$IncidentPhotosTableReferences),
+      IncidentPhotoDb,
       PrefetchHooks Function({bool incidentId})
     >;
 typedef $$PendingChangesTableCreateCompanionBuilder =
@@ -8431,17 +9375,21 @@ class $$PendingChangesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $PendingChangesTable,
-          PendingChange,
+          PendingChangeDb,
           $$PendingChangesTableFilterComposer,
           $$PendingChangesTableOrderingComposer,
           $$PendingChangesTableAnnotationComposer,
           $$PendingChangesTableCreateCompanionBuilder,
           $$PendingChangesTableUpdateCompanionBuilder,
           (
-            PendingChange,
-            BaseReferences<_$AppDatabase, $PendingChangesTable, PendingChange>,
+            PendingChangeDb,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingChangesTable,
+              PendingChangeDb
+            >,
           ),
-          PendingChange,
+          PendingChangeDb,
           PrefetchHooks Function()
         > {
   $$PendingChangesTableTableManager(
@@ -8513,17 +9461,17 @@ typedef $$PendingChangesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $PendingChangesTable,
-      PendingChange,
+      PendingChangeDb,
       $$PendingChangesTableFilterComposer,
       $$PendingChangesTableOrderingComposer,
       $$PendingChangesTableAnnotationComposer,
       $$PendingChangesTableCreateCompanionBuilder,
       $$PendingChangesTableUpdateCompanionBuilder,
       (
-        PendingChange,
-        BaseReferences<_$AppDatabase, $PendingChangesTable, PendingChange>,
+        PendingChangeDb,
+        BaseReferences<_$AppDatabase, $PendingChangesTable, PendingChangeDb>,
       ),
-      PendingChange,
+      PendingChangeDb,
       PrefetchHooks Function()
     >;
 typedef $$ActionLogsTableCreateCompanionBuilder =
@@ -8741,17 +9689,17 @@ class $$ActionLogsTableTableManager
         RootTableManager<
           _$AppDatabase,
           $ActionLogsTable,
-          ActionLog,
+          ActionLogDb,
           $$ActionLogsTableFilterComposer,
           $$ActionLogsTableOrderingComposer,
           $$ActionLogsTableAnnotationComposer,
           $$ActionLogsTableCreateCompanionBuilder,
           $$ActionLogsTableUpdateCompanionBuilder,
           (
-            ActionLog,
-            BaseReferences<_$AppDatabase, $ActionLogsTable, ActionLog>,
+            ActionLogDb,
+            BaseReferences<_$AppDatabase, $ActionLogsTable, ActionLogDb>,
           ),
-          ActionLog,
+          ActionLogDb,
           PrefetchHooks Function()
         > {
   $$ActionLogsTableTableManager(_$AppDatabase db, $ActionLogsTable table)
@@ -8833,14 +9781,17 @@ typedef $$ActionLogsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $ActionLogsTable,
-      ActionLog,
+      ActionLogDb,
       $$ActionLogsTableFilterComposer,
       $$ActionLogsTableOrderingComposer,
       $$ActionLogsTableAnnotationComposer,
       $$ActionLogsTableCreateCompanionBuilder,
       $$ActionLogsTableUpdateCompanionBuilder,
-      (ActionLog, BaseReferences<_$AppDatabase, $ActionLogsTable, ActionLog>),
-      ActionLog,
+      (
+        ActionLogDb,
+        BaseReferences<_$AppDatabase, $ActionLogsTable, ActionLogDb>,
+      ),
+      ActionLogDb,
       PrefetchHooks Function()
     >;
 typedef $$ManagementCompaniesTableCreateCompanionBuilder =
@@ -8977,21 +9928,21 @@ class $$ManagementCompaniesTableTableManager
         RootTableManager<
           _$AppDatabase,
           $ManagementCompaniesTable,
-          ManagementCompany,
+          ManagementCompanyDb,
           $$ManagementCompaniesTableFilterComposer,
           $$ManagementCompaniesTableOrderingComposer,
           $$ManagementCompaniesTableAnnotationComposer,
           $$ManagementCompaniesTableCreateCompanionBuilder,
           $$ManagementCompaniesTableUpdateCompanionBuilder,
           (
-            ManagementCompany,
+            ManagementCompanyDb,
             BaseReferences<
               _$AppDatabase,
               $ManagementCompaniesTable,
-              ManagementCompany
+              ManagementCompanyDb
             >,
           ),
-          ManagementCompany,
+          ManagementCompanyDb,
           PrefetchHooks Function()
         > {
   $$ManagementCompaniesTableTableManager(
@@ -9061,21 +10012,21 @@ typedef $$ManagementCompaniesTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $ManagementCompaniesTable,
-      ManagementCompany,
+      ManagementCompanyDb,
       $$ManagementCompaniesTableFilterComposer,
       $$ManagementCompaniesTableOrderingComposer,
       $$ManagementCompaniesTableAnnotationComposer,
       $$ManagementCompaniesTableCreateCompanionBuilder,
       $$ManagementCompaniesTableUpdateCompanionBuilder,
       (
-        ManagementCompany,
+        ManagementCompanyDb,
         BaseReferences<
           _$AppDatabase,
           $ManagementCompaniesTable,
-          ManagementCompany
+          ManagementCompanyDb
         >,
       ),
-      ManagementCompany,
+      ManagementCompanyDb,
       PrefetchHooks Function()
     >;
 
@@ -9092,6 +10043,8 @@ class $AppDatabaseManager {
       $$IncidentsTableTableManager(_db, _db.incidents);
   $$AffectedHousesTableTableManager get affectedHouses =>
       $$AffectedHousesTableTableManager(_db, _db.affectedHouses);
+  $$IncidentCommentsTableTableManager get incidentComments =>
+      $$IncidentCommentsTableTableManager(_db, _db.incidentComments);
   $$IncidentPhotosTableTableManager get incidentPhotos =>
       $$IncidentPhotosTableTableManager(_db, _db.incidentPhotos);
   $$PendingChangesTableTableManager get pendingChanges =>

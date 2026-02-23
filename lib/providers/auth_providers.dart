@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/auth_service.dart';
 import '../services/secure_storage_service.dart';
@@ -59,10 +60,32 @@ class Auth extends _$Auth {
       await authService.login(username, password);
       state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
     } catch (e) {
+      print('🔥 [AuthProvider] Caught error: $e, type: ${e.runtimeType}');
+      String errorMessage = 'Произошла непредвиденная ошибка: $e';
+      
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout || 
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError) {
+          errorMessage = 'Ошибка сети. Проверьте подключение к интернету.';
+        } else if (e.response != null) {
+          final statusCode = e.response!.statusCode;
+          if (statusCode == 401) {
+            errorMessage = 'Неверный логин или пароль.';
+          } else if (statusCode == 400) {
+            errorMessage = e.response?.data['detail'] ?? 'Неверный запрос.';
+          } else if (statusCode != null && statusCode >= 500) {
+            errorMessage = 'Ошибка сервера. Пожалуйста, попробуйте позже.';
+          } else {
+             errorMessage = 'Ошибка: ${e.response?.statusMessage}';
+          }
+        }
+      }
+
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         isLoading: false,
-        errorMessage: 'Ошибка входа. Проверьте логин и пароль.',
+        errorMessage: errorMessage,
       );
     }
   }

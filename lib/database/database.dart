@@ -10,6 +10,7 @@ part 'database.g.dart';
 
 // Tables
 
+@DataClassName('AppUserDb')
 class AppUsers extends Table {
   TextColumn get userId => text()();
   TextColumn get username => text().nullable()();
@@ -24,6 +25,7 @@ class AppUsers extends Table {
   Set<Column> get primaryKey => {userId};
 }
 
+@DataClassName('BoilerHouseDb')
 class BoilerHouses extends Table {
   IntColumn get backendId => integer()();
   TextColumn get boilerHouseUUID => text().nullable()();
@@ -38,6 +40,7 @@ class BoilerHouses extends Table {
   Set<Column> get primaryKey => {backendId};
 }
 
+@DataClassName('SavedLocationDb')
 class SavedLocations extends Table {
   IntColumn get backendId => integer()();
   TextColumn get locationUUID => text().nullable()();
@@ -62,6 +65,7 @@ class SavedLocations extends Table {
   Set<Column> get primaryKey => {backendId};
 }
 
+@DataClassName('IncidentDb')
 class Incidents extends Table {
   IntColumn get backendId => integer()();
   TextColumn get incidentUUID => text().nullable()();
@@ -87,6 +91,7 @@ class Incidents extends Table {
   Set<Column> get primaryKey => {backendId};
 }
 
+@DataClassName('AffectedHouseDb')
 class AffectedHouses extends Table {
   IntColumn get incidentId => integer().references(Incidents, #backendId)();
   IntColumn get savedLocationId => integer().references(SavedLocations, #backendId)();
@@ -95,10 +100,11 @@ class AffectedHouses extends Table {
   Set<Column> get primaryKey => {incidentId, savedLocationId};
 }
 
+@DataClassName('IncidentCommentDb')
 class IncidentComments extends Table {
   IntColumn get backendId => integer()();
   IntColumn get incidentId => integer().references(Incidents, #backendId)();
-  TextColumn get text => text()();
+  TextColumn get content => text()();
   IntColumn get userId => integer()();
   TextColumn get userName => text().nullable()();
   BoolColumn get isSystemMessage => boolean().withDefault(const Constant(false))();
@@ -108,6 +114,7 @@ class IncidentComments extends Table {
   Set<Column> get primaryKey => {backendId};
 }
 
+@DataClassName('IncidentPhotoDb')
 class IncidentPhotos extends Table {
   IntColumn get backendId => integer()();
   IntColumn get incidentId => integer().references(Incidents, #backendId)();
@@ -119,6 +126,7 @@ class IncidentPhotos extends Table {
   Set<Column> get primaryKey => {backendId};
 }
 
+@DataClassName('PendingChangeDb')
 class PendingChanges extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get entityType => text()();
@@ -131,6 +139,7 @@ class PendingChanges extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+@DataClassName('ActionLogDb')
 class ActionLogs extends Table {
   TextColumn get id => text()(); // UUID
   IntColumn get actionIdRaw => integer().nullable()();
@@ -148,6 +157,7 @@ class ActionLogs extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('ManagementCompanyDb')
 class ManagementCompanies extends Table {
   TextColumn get id => text()(); // UUID
   TextColumn get name => text()();

@@ -60,7 +60,7 @@ class SyncWorker {
     }
   }
 
-  Future<void> _processChange(PendingChange change) async {
+  Future<void> _processChange(PendingChangeDb change) async {
     try {
       await _repository.updatePendingStatus(change.id, 'syncing');
 
@@ -89,7 +89,7 @@ class SyncWorker {
     }
   }
 
-  Future<void> _processIncidentChange(PendingChange change, Map<String, dynamic> payload) async {
+  Future<void> _processIncidentChange(PendingChangeDb change, Map<String, dynamic> payload) async {
     switch (change.actionType) {
       case 'create':
         final incidentCreate = IncidentCreate.fromJson(payload);

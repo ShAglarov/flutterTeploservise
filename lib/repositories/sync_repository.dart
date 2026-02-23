@@ -50,7 +50,7 @@ class SyncRepository {
             batch.insert(
               _db.incidentPhotos,
               IncidentPhotosCompanion.insert(
-                backendId: photo.id,
+                backendId: Value(photo.id),
                 incidentId: incident.id,
                 url: photo.url,
                 thumbnailUrl: Value(photo.thumbnailUrl),
@@ -64,11 +64,11 @@ class SyncRepository {
     });
   }
 
-  Stream<List<IncidentData>> watchAllIncidents() {
+  Stream<List<IncidentDb>> watchAllIncidents() {
     return _db.select(_db.incidents).watch();
   }
 
-  Stream<IncidentData?> watchIncidentById(int backendId) {
+  Stream<IncidentDb?> watchIncidentById(int backendId) {
     return (_db.select(_db.incidents)..where((t) => t.backendId.equals(backendId)))
         .watchSingleOrNull();
   }
@@ -81,7 +81,7 @@ class SyncRepository {
         batch.insert(
           _db.boilerHouses,
           BoilerHousesCompanion.insert(
-            backendId: bh.id,
+            backendId: Value(bh.id),
             boilerHouseUUID: Value(bh.boilerHouseUUID),
             name: Value(bh.address),
             latitude: Value(bh.latitude),
@@ -104,7 +104,7 @@ class SyncRepository {
         batch.insert(
           _db.savedLocations,
           SavedLocationsCompanion.insert(
-            backendId: loc.id,
+            backendId: Value(loc.id),
             locationUUID: Value(loc.locationUUID),
             name: Value(loc.name),
             latitude: Value(loc.latitude),
@@ -150,7 +150,7 @@ class SyncRepository {
         );
   }
 
-  Future<List<PendingChange>> getPendingChanges() {
+  Future<List<PendingChangeDb>> getPendingChanges() {
     return (_db.select(_db.pendingChanges)
           ..where((t) => t.syncStatus.equals('pending'))
           ..orderBy([
@@ -174,7 +174,7 @@ class SyncRepository {
 extension IncidentsCompanionExtension on $IncidentsTable {
   IncidentsCompanion insertCompanionFromResponse(IncidentResponse incident) {
     return IncidentsCompanion.insert(
-      backendId: incident.id,
+      backendId: Value(incident.id),
       incidentUUID: Value(incident.localUUID),
       boilerHouseId: Value(incident.boilerHouseId),
       title: Value(incident.title),

@@ -22,25 +22,39 @@ class AuthService {
     await _storage.deleteAccessToken();
     await _storage.deleteRefreshToken();
 
-    final response = await _dio.post(
-      AppConstants.login,
-      data: {
-        'username': username,
-        'password': password,
-      },
-      options: Options(
-        contentType: Headers.formUrlEncodedContentType,
-      ),
-    );
+    try {
+      print('🚀 [AuthService] Attempting login to: ${AppConstants.baseUrl}${AppConstants.login}');
+      final response = await _dio.post(
+        AppConstants.login,
+        data: {
+          'username': username,
+          'password': password,
+        },
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+        ),
+      );
 
-    final loginResponse = APILoginResponse.fromJson(response.data);
-    
-    await _storage.saveAccessToken(loginResponse.accessToken);
-    if (loginResponse.refreshToken != null) {
-      await _storage.saveRefreshToken(loginResponse.refreshToken!);
+      print('✅ [AuthService] Login successful for: $username');
+      final loginResponse = APILoginResponse.fromJson(response.data);
+      
+      await _storage.saveAccessToken(loginResponse.accessToken);
+      if (loginResponse.refreshToken != null) {
+        await _storage.saveRefreshToken(loginResponse.refreshToken!);
+      }
+      
+      return loginResponse;
+    } on DioException catch (e) {
+      print('❌ [AuthService] Login failed: ${e.message}');
+      if (e.response != null) {
+        print('    Status: ${e.response?.statusCode}');
+        print('    Data: ${e.response?.data}');
+      }
+      rethrow;
+    } catch (e) {
+      print('❌ [AuthService] Unexpected login error: $e');
+      rethrow;
     }
-    
-    return loginResponse;
   }
 
   Future<APIUserResponse> getCurrentUser() async {
