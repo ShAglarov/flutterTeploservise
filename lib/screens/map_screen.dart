@@ -266,9 +266,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       controller: _sheetController,
       initialChildSize: 0.5,
       minChildSize: 0.05,
-      maxChildSize: 0.95,
+      maxChildSize: 0.5,
       snap: true,
-      snapSizes: const [0.05, 0.5, 0.9],
+      snapSizes: const [0.05, 0.5],
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
