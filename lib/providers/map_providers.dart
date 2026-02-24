@@ -39,7 +39,7 @@ class MapDataState {
     Set<int>? boilerHouseIdsWithIncidents,
     Set<int>? locationIdsWithIncidents,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return MapDataState(
       boilerHouses: boilerHouses ?? this.boilerHouses,
@@ -48,7 +48,7 @@ class MapDataState {
       boilerHouseIdsWithIncidents: boilerHouseIdsWithIncidents ?? this.boilerHouseIdsWithIncidents,
       locationIdsWithIncidents: locationIdsWithIncidents ?? this.locationIdsWithIncidents,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error == _sentinel ? this.error : (error as String?),
     );
   }
 }
@@ -63,15 +63,17 @@ class MapFilterState {
   });
 
   MapFilterState copyWith({
-    String? selectedSection,
+    Object? selectedSection = _sentinel,
     bool? showOnlyIncidents,
   }) {
     return MapFilterState(
-      selectedSection: selectedSection ?? this.selectedSection,
+      selectedSection: selectedSection == _sentinel ? this.selectedSection : (selectedSection as String?),
       showOnlyIncidents: showOnlyIncidents ?? this.showOnlyIncidents,
     );
   }
 }
+
+const Object _sentinel = Object();
 
 @Riverpod(keepAlive: true)
 class MapData extends _$MapData {
