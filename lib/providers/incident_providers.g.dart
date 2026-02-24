@@ -20,7 +20,7 @@ final class IncidentFilterProvider
         argument: null,
         retry: null,
         name: r'incidentFilterProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -41,7 +41,7 @@ final class IncidentFilterProvider
   }
 }
 
-String _$incidentFilterHash() => r'78c718a731761b927be22812058d3569bbcaa983';
+String _$incidentFilterHash() => r'3851b294396331da8215a55ad0c5d2c430cb43bf';
 
 abstract class _$IncidentFilter extends $Notifier<IncidentFilterState> {
   IncidentFilterState build();
@@ -80,7 +80,7 @@ final class AllIncidentsProvider
         argument: null,
         retry: null,
         name: r'allIncidentsProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -100,7 +100,7 @@ final class AllIncidentsProvider
   }
 }
 
-String _$allIncidentsHash() => r'51eb04d030e9a844596d06ea9162735107871ed9';
+String _$allIncidentsHash() => r'ae8724dc4354b8124ddd5a0c6eb52a6ad6718390';
 
 @ProviderFor(filteredIncidents)
 final filteredIncidentsProvider = FilteredIncidentsProvider._();
@@ -119,7 +119,7 @@ final class FilteredIncidentsProvider
         argument: null,
         retry: null,
         name: r'filteredIncidentsProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -149,7 +149,7 @@ final class FilteredIncidentsProvider
   }
 }
 
-String _$filteredIncidentsHash() => r'5309de630dfba74e101920d61b09c74f56a799ed';
+String _$filteredIncidentsHash() => r'3b3e272a8ed3eb0e0ace6248431320681599c527';
 
 @ProviderFor(singleIncident)
 final singleIncidentProvider = SingleIncidentFamily._();
@@ -170,7 +170,7 @@ final class SingleIncidentProvider
   }) : super(
          retry: null,
          name: r'singleIncidentProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -208,7 +208,7 @@ final class SingleIncidentProvider
   }
 }
 
-String _$singleIncidentHash() => r'f4e7d3f9cb3759f951728906e3653a08be90cfa8';
+String _$singleIncidentHash() => r'9efe18df9ca6ab7f327730bad4e83b0dde3e51cf';
 
 final class SingleIncidentFamily extends $Family
     with $FunctionalFamilyOverride<Stream<IncidentResponse?>, int> {
@@ -218,7 +218,7 @@ final class SingleIncidentFamily extends $Family
         name: r'singleIncidentProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
 
   SingleIncidentProvider call(int id) =>

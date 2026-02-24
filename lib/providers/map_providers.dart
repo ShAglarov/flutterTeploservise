@@ -73,7 +73,7 @@ class MapFilterState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class MapData extends _$MapData {
   @override
   MapDataState build() {
@@ -208,6 +208,15 @@ MapDataState filteredMapData(Ref ref) {
     boilerHouses = boilerHouses.where((bh) => dataState.boilerHouseIdsWithIncidents.contains(bh.id)).toList();
     locations = locations.where((loc) => dataState.locationIdsWithIncidents.contains(loc.id)).toList();
   }
+
+  // 4. Sort by Incidents (Boiler houses with incidents first, then by address)
+  boilerHouses.sort((a, b) {
+    final aHas = dataState.boilerHouseIdsWithIncidents.contains(a.id);
+    final bHas = dataState.boilerHouseIdsWithIncidents.contains(b.id);
+    if (aHas && !bHas) return -1;
+    if (!aHas && bHas) return 1;
+    return a.address.compareTo(b.address);
+  });
 
   return dataState.copyWith(boilerHouses: boilerHouses, locations: locations);
 }

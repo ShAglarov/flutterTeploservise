@@ -140,6 +140,7 @@ class IncidentFormController extends _$IncidentFormController {
       return false;
     }
 
+    state = state.copyWith(isSaving: true);
     try {
       final syncRepo = ref.read(syncRepositoryProvider);
       if (state.id != null) {

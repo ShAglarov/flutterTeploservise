@@ -11,6 +11,7 @@ class IncidentCard extends StatelessWidget {
   final String? assigneeName;
   final String? stoppedServicesText;
   final int affectedPopulationCount;
+  final String? boilerHouseDetail;
   final bool isUnsynced;
   final VoidCallback? onTap;
 
@@ -24,6 +25,7 @@ class IncidentCard extends StatelessWidget {
     this.assigneeName,
     this.stoppedServicesText,
     required this.affectedPopulationCount,
+    this.boilerHouseDetail,
     this.isUnsynced = false,
     this.onTap,
   });
@@ -49,12 +51,22 @@ class IncidentCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      location,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white70,
-                          ),
-                    ),
+                    if (boilerHouseDetail != null)
+                      Text(
+                        boilerHouseDetail!,
+                        style: const TextStyle(
+                          color: Color(0xFFFFA726),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    else
+                      Text(
+                        location,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white70,
+                            ),
+                      ),
                   ],
                 ),
               ),

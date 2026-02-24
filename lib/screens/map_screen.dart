@@ -7,6 +7,7 @@ import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
+import '../models/incident_models.dart';
 import '../utils/app_theme.dart';
 import '../widgets/base_card.dart';
 
@@ -291,7 +292,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // --------------------------------------------------------------------------
   // Draggable Bottom Sheet
   // --------------------------------------------------------------------------
-  Widget _buildDraggableSheet(MapDataState data, List<String> sections) {
+  Widget _buildDraggableSheet(MapDataState mapData, List<String> sections) {
     return DraggableScrollableSheet(
       controller: _sheetController,
       initialChildSize: 0.5,
@@ -333,9 +334,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               
               // 4. List Content
               Expanded(
-                child: data.isLoading
+                child: mapData.isLoading
                     ? const Center(child: CircularProgressIndicator())
-                    : _buildList(data, scrollController),
+                    : _buildList(mapData, scrollController),
               ),
             ],
           ),
@@ -552,11 +553,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (isBoilerHouse) {
       final bh = _tappedItem as BoilerHouseResponse;
       title = bh.address;
+      
+      // Calculate local active incident count
+      final data = ref.read(filteredMapDataProvider);
+      final activeIncidents = data.incidents.where((inc) => 
+        inc.boilerHouseId == bh.id && 
+        inc.status != IncidentStatus.resolved && 
+        inc.status != IncidentStatus.closed
+      ).toList();
+      final incidentCount = activeIncidents.length;
+
       subtitle = 'Котельная • Уч. ${bh.siteNumber ?? '?'}';
-      if (bh.incidentCount != null && bh.incidentCount! > 0) {
-        subtitle += ' • ${bh.incidentCount} инцид.';
+      if (incidentCount > 0) {
+        subtitle += ' • $incidentCount инцид.';
       }
-      accentColor = (bh.incidentCount ?? 0) > 0 ? AppTheme.errorRed : AppTheme.primaryBlue;
+      accentColor = incidentCount > 0 ? AppTheme.errorRed : AppTheme.primaryBlue;
       icon = Icons.factory;
     } else {
       final loc = _tappedItem as SavedLocationResponse;
@@ -659,13 +670,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       padding: const EdgeInsets.fromLTRB(6, 0, 6, 40),
       itemCount: totalItems,
       itemBuilder: (context, index) {
-        return _buildBoilerHouseItem(context, data.boilerHouses[index]);
+        return _buildBoilerHouseItem(context, data, data.boilerHouses[index]);
       },
     );
   }
 
-  Widget _buildBoilerHouseItem(BuildContext context, BoilerHouseResponse bh) {
-    final hasIncident = bh.incidentCount != null && bh.incidentCount! > 0;
+  Widget _buildBoilerHouseItem(BuildContext context, MapDataState data, BoilerHouseResponse bh) {
+    // Calculate local active incident count
+    final activeIncidents = data.incidents.where((inc) => 
+      inc.boilerHouseId == bh.id && 
+      inc.status != IncidentStatus.resolved && 
+      inc.status != IncidentStatus.closed
+    ).toList();
+    
+    final incidentCount = activeIncidents.length;
+    final hasIncident = incidentCount > 0;
+    
+    // Find house count for this boiler house
+    final houseCount = data.locations.where((loc) => loc.boilerHouseId == bh.id).length;
     
     return BaseCard(
       onTap: () {
@@ -678,50 +700,41 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       },
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: (hasIncident ? AppTheme.errorRed : AppTheme.primaryBlue).withAlpha(30),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.factory, 
-              color: hasIncident ? AppTheme.errorRed : AppTheme.primaryBlue, 
-              size: 24
-            ),
-          ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 4), // Small padding to compensate for removed icon
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  bh.address, 
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  '${bh.address} Котельная', 
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text('Нач: ${bh.siteManager ?? '?'} | Участок: ${bh.siteNumber ?? '?'}', 
-                         style: Theme.of(context).textTheme.labelSmall),
-                    if (hasIncident) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorRed,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                const SizedBox(height: 6),
+                if (hasIncident) ...[
+                  Row(
+                    children: [
+                      Expanded(
                         child: Text(
-                          '${bh.incidentCount} ИНЦИД.',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                          '⚠️ Инциденты: $incidentCount | Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
+                          style: const TextStyle(
+                            color: Color(0xFFFFA726), // OrangeAccent-like color from screenshot
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
-                  ],
-                ),
+                  ),
+                ] else ...[
+                  Text(
+                    'Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ],
               ],
             ),
           ),
@@ -870,6 +883,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Widget _buildFilterHeader() {
     final bh = _selectedBoilerHouse!;
+    final data = ref.read(filteredMapDataProvider);
+    
+    // Calculate local active incident count
+    final activeIncidents = data.incidents.where((inc) => 
+      inc.boilerHouseId == bh.id && 
+      inc.status != IncidentStatus.resolved && 
+      inc.status != IncidentStatus.closed
+    ).toList();
+    final incidentCount = activeIncidents.length;
+    final houseCount = data.locations.where((loc) => loc.boilerHouseId == bh.id).length;
+    final hasIncident = incidentCount > 0;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -889,10 +914,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Text(
-                  'Дома котельной',
-                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                ),
+                if (hasIncident)
+                  Text(
+                    '⚠️ Инциденты: $incidentCount | Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
+                    style: const TextStyle(color: Color(0xFFFFA726), fontSize: 11, fontWeight: FontWeight.w500),
+                  )
+                else
+                  Text(
+                    'Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
+                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                  ),
               ],
             ),
           ),

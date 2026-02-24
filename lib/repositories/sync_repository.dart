@@ -175,6 +175,7 @@ class SyncRepository {
           severity: Value(int.tryParse(isCreate ? (create.severity ?? '1') : (update!.severity ?? '1')) ?? 1),
           resourceHotWaterStopped: Value((isCreate ? create.resourceHotWaterStopped : update!.resourceHotWaterStopped) == 1),
           resourceHeatingStopped: Value((isCreate ? create.resourceHeatingStopped : update!.resourceHeatingStopped) == 1),
+          startedAt: Value(DateTime.now()),
           lastLocalEditAt: Value(DateTime.now()),
           assignedTo: Value(isCreate ? create.assignedTo : update!.assignedTo),
           localPendingAck: const Value(true), // Mark as pending sync

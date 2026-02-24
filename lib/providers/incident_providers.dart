@@ -39,7 +39,7 @@ class IncidentFilterState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class IncidentFilter extends _$IncidentFilter {
   @override
   IncidentFilterState build() => IncidentFilterState();
@@ -51,13 +51,13 @@ class IncidentFilter extends _$IncidentFilter {
   void setStoppedHeating(bool? value) => state = state.copyWith(stoppedHeating: value);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<List<IncidentResponse>> allIncidents(Ref ref) {
   final syncRepo = ref.watch(syncRepositoryProvider);
   return syncRepo.watchAllIncidents();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 AsyncValue<List<IncidentResponse>> filteredIncidents(Ref ref) {
   final allIncidentsAsync = ref.watch(allIncidentsProvider);
   final filter = ref.watch(incidentFilterProvider);
@@ -98,7 +98,7 @@ AsyncValue<List<IncidentResponse>> filteredIncidents(Ref ref) {
   });
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<IncidentResponse?> singleIncident(Ref ref, int id) {
   final syncRepo = ref.watch(syncRepositoryProvider);
   return syncRepo.watchIncidentById(id);

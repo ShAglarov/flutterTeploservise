@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/incident_providers.dart';
+import '../providers/map_providers.dart';
 import '../widgets/incident_card.dart';
 import '../utils/app_theme.dart';
 import '../models/incident_models.dart';
+import '../models/boiler_house_models.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
 
@@ -26,6 +28,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   @override
   Widget build(BuildContext context) {
     final filteredIncidentsAsync = ref.watch(filteredIncidentsProvider);
+    final mapData = ref.watch(mapDataProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -162,6 +165,27 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       itemCount: incidents.length,
       itemBuilder: (context, index) {
         final inc = incidents[index];
+        final mapData = ref.read(mapDataProvider);
+        
+        String? boilerHouseDetail;
+        if (inc.boilerHouseId != null) {
+          final bhId = inc.boilerHouseId!;
+          // Find the boiler house in mapData to get manager and site info
+          final bh = mapData.boilerHouses.firstWhere((b) => b.id == bhId, orElse: () => BoilerHouseResponse(id: bhId, address: '?', latitude: 0, longitude: 0, createdAt: ''));
+          
+          // Calculate active incident count for this boiler house
+          final incidentCount = mapData.incidents.where((i) => 
+            i.boilerHouseId == bhId && 
+            i.status != IncidentStatus.resolved && 
+            i.status != IncidentStatus.closed
+          ).length;
+          
+          // Calculate house count
+          final houseCount = mapData.locations.where((l) => l.boilerHouseId == bhId).length;
+          
+          boilerHouseDetail = '⚠️ Инциденты: $incidentCount | Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount';
+        }
+
         return IncidentCard(
           title: inc.title ?? 'Инцидент #${inc.id}',
           location: inc.boilerHouse?.address ?? 'Неизвестная локация',
@@ -171,6 +195,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           affectedPopulationCount: 0, // Should be calculated if data is available
           stoppedServicesText: _getStoppedServices(inc),
           isUnsynced: inc.localPendingAck == true,
+          boilerHouseDetail: boilerHouseDetail,
           onTap: () {
             Navigator.push(
               context,
