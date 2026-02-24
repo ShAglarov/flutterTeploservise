@@ -248,19 +248,32 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
+        return Consumer(
+          builder: (context, modalRef, child) {
+            final modalState = modalRef.watch(incidentFormControllerProvider(widget.initialIncident));
             return DraggableScrollableSheet(
               expand: false,
               initialChildSize: 0.7,
               builder: (context, scrollController) {
                 return Column(
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'ВЫБОР ДОМОВ',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'ВЫБОР ДОМОВ',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              final allIds = relevantHouses.map((h) => h.id).toList();
+                              controller.toggleAllHouses(allIds);
+                            },
+                            child: const Text('Выбрать все', style: TextStyle(color: Colors.blue)),
+                          ),
+                        ],
                       ),
                     ),
                     Expanded(
@@ -269,13 +282,12 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         itemCount: relevantHouses.length,
                         itemBuilder: (context, index) {
                           final house = relevantHouses[index];
-                          final isSelected = state.affectedHouseIds.contains(house.id);
+                          final isSelected = modalState.affectedHouseIds.contains(house.id);
                           return CheckboxListTile(
                             title: Text(house.name, style: const TextStyle(color: Colors.white)),
                             value: isSelected,
                             onChanged: (v) {
                               controller.toggleHouse(house.id);
-                              setModalState(() {});
                             },
                           );
                         },

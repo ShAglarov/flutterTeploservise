@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/incident_providers.dart';
+import '../models/incident_models.dart';
+import '../services/incident_service.dart';
 import '../widgets/incident_detail/incident_header_card.dart';
 import '../widgets/incident_detail/boiler_house_info_card.dart';
 import '../widgets/incident_detail/affected_houses_card.dart';
@@ -38,8 +40,18 @@ class IncidentDetailScreen extends ConsumerWidget {
               children: [
                 IncidentHeaderCard(
                   incident: incident,
-                  onStatusToggle: () {
-                    // TODO: Implement status toggle logic
+                  onStatusToggle: () async {
+                    final service = ref.read(incidentServiceProvider);
+                    final isClosed = incident.status == IncidentStatus.resolved || incident.status == IncidentStatus.closed;
+                    final newStatus = isClosed ? IncidentStatus.open : IncidentStatus.resolved;
+
+                    try {
+                      await service.updateIncident(incidentId, IncidentUpdate(id: incidentId, status: newStatus));
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка обновления статуса: $e')));
+                      }
+                    }
                   },
                   onEdit: () {
                     Navigator.push(
@@ -47,7 +59,7 @@ class IncidentDetailScreen extends ConsumerWidget {
                       MaterialPageRoute(
                         builder: (context) => IncidentFormScreen(initialIncident: incident),
                       ),
-                    ).then((_) => ref.invalidate(singleIncidentProvider(incidentId)));
+                    );
                   },
                 ),
                 const SizedBox(height: 16),
