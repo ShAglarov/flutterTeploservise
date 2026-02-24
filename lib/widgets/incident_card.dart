@@ -12,6 +12,7 @@ class IncidentCard extends StatelessWidget {
   final String? stoppedServicesText;
   final int affectedPopulationCount;
   final String? boilerHouseDetail;
+  final String? broadcastText;
   final bool isUnsynced;
   final VoidCallback? onTap;
 
@@ -26,93 +27,127 @@ class IncidentCard extends StatelessWidget {
     this.stoppedServicesText,
     required this.affectedPopulationCount,
     this.boilerHouseDetail,
+    this.broadcastText,
     this.isUnsynced = false,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return BaseCard(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.white10, width: 1),
+      ),
+      color: AppTheme.secondaryDarkBackground,
+      child: InkWell(
+        onTap: onTap,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildSeverityIndicator(),
-              const SizedBox(width: 12),
+              Container(
+                width: 4,
+                color: isStatusActive ? AppTheme.errorRed : AppTheme.successGreen,
+              ),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: 2),
-                    if (boilerHouseDetail != null)
-                      Text(
-                        boilerHouseDetail!,
-                        style: const TextStyle(
-                          color: Color(0xFFFFA726),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      )
-                    else
-                      Text(
-                        location,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white70,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              _buildStatusBadge(),
+                              if (isUnsynced) ...[
+                                const SizedBox(width: 8),
+                                const Icon(Icons.cloud_upload_outlined, size: 16, color: AppTheme.warningOrange),
+                              ],
+                            ],
+                          ),
+                          Flexible(
+                            child: Text(
+                              timestamp,
+                              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                              textAlign: TextAlign.right,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                          ),
+                        ],
                       ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        boilerHouseDetail ?? location,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1, color: Colors.white10),
+                      _buildActionRow(
+                        icon: Icons.account_circle,
+                        text: assigneeName ?? 'Не назначен',
+                        rightText: 'Assigned',
+                      ),
+                      if (broadcastText != null) ...[
+                        const Divider(height: 1, color: Colors.white10),
+                        _buildActionRow(
+                          icon: Icons.campaign,
+                          text: broadcastText!,
+                        ),
+                      ],
+                      if (stoppedServicesText != null) ...[
+                        const Divider(height: 1, color: Colors.white10),
+                        _buildActionRow(
+                          icon: Icons.warning_rounded,
+                          iconColor: AppTheme.warningOrange,
+                          text: 'Остановлено: $stoppedServicesText',
+                        ),
+                      ],
+                      if (affectedPopulationCount > 0) ...[
+                        const Divider(height: 1, color: Colors.white10),
+                        _buildActionRow(
+                          icon: Icons.people,
+                          text: 'Без услуг: $affectedPopulationCount чел.',
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-              if (isUnsynced)
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  child: const Icon(Icons.cloud_upload_outlined, size: 16, color: AppTheme.warningOrange),
-                ),
-              _buildStatusBadge(),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildInfoRow(context),
-          const SizedBox(height: 12),
-          if (stoppedServicesText != null) _buildResourcesSection(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSeverityIndicator() {
-    return Container(
-      width: 4,
-      height: 40,
-      decoration: BoxDecoration(
-        color: isStatusActive ? AppTheme.errorRed : AppTheme.successGreen,
-        borderRadius: BorderRadius.circular(2),
+        ),
       ),
     );
   }
 
   Widget _buildStatusBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: (isStatusActive ? AppTheme.errorRed : AppTheme.successGreen).withAlpha(30),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: (isStatusActive ? AppTheme.errorRed : AppTheme.successGreen).withAlpha(100),
-          width: 1,
-        ),
+        color: isStatusActive ? AppTheme.errorRed : AppTheme.successGreen,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         statusText,
-        style: TextStyle(
-          color: isStatusActive ? AppTheme.errorRed : AppTheme.successGreen,
+        style: const TextStyle(
+          color: Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
@@ -120,57 +155,37 @@ class IncidentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(BuildContext context) {
-    return Row(
-      children: [
-        _buildInfoItem(Icons.access_time_filled, timestamp),
-        const SizedBox(width: 16),
-        _buildInfoItem(Icons.people_alt_rounded, '$affectedPopulationCount чел.'),
-        if (assigneeName != null) ...[
-          const SizedBox(width: 16),
-          Expanded(child: _buildInfoItem(Icons.person, assigneeName!, isExpand: true)),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildInfoItem(IconData icon, String text, {bool isExpand = false}) {
-    final content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: Colors.white38),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            text,
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-    return isExpand ? Expanded(child: content) : content;
-  }
-
-  Widget _buildResourcesSection() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
-        borderRadius: BorderRadius.circular(8),
-      ),
+  Widget _buildActionRow({
+    required IconData icon,
+    required String text,
+    String? rightText,
+    Color iconColor = Colors.white54,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
-          const Icon(Icons.block_flipped, size: 14, color: AppTheme.warningOrange),
-          const SizedBox(width: 8),
-          Text(
-            'Отключено: $stoppedServicesText',
-            style: const TextStyle(
-              color: AppTheme.warningOrange,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          Icon(icon, size: 20, color: iconColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
+          if (rightText != null)
+            Text(
+              rightText,
+              style: const TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
         ],
       ),
     );

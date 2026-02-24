@@ -6,6 +6,7 @@ import '../widgets/incident_card.dart';
 import '../utils/app_theme.dart';
 import '../models/incident_models.dart';
 import '../models/boiler_house_models.dart';
+import '../services/user_service.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
 
@@ -160,6 +161,9 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       );
     }
 
+    final usersAsync = ref.watch(usersProvider);
+    final users = usersAsync.value ?? [];
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: incidents.length,
@@ -185,14 +189,35 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           boilerHouseDetail = '⚠️ Инциденты: $incidentCount | Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount';
         }
 
+        // Calculate affected population
+        int totalResidents = 0;
+        if (inc.affectedHouseDetails != null) {
+          for (final hd in inc.affectedHouseDetails!) {
+            totalResidents += (hd.residentsCount ?? 0);
+          }
+        }
+
+        // Map assignedTo to actual user name
+        String? assigneeName;
+        if (inc.assignedTo != null) {
+          try {
+            final user = users.firstWhere((u) => u.id == inc.assignedTo);
+            assigneeName = user.fullName ?? user.username;
+          } catch (_) {
+            assigneeName = 'Неизвестный (${inc.assignedTo})';
+          }
+        }
+
         return IncidentCard(
           title: inc.title ?? 'Инцидент #${inc.id}',
           location: inc.boilerHouse?.address ?? 'Неизвестная локация',
-          timestamp: _formatTimestamp(inc.createdAt),
+          timestamp: _formatFullTimestamp(inc),
           statusText: inc.status == IncidentStatus.resolved ? 'ЗАВЕРШЁН' : 'АКТИВЕН',
           isStatusActive: inc.status != IncidentStatus.resolved,
-          affectedPopulationCount: 0, // Should be calculated if data is available
+          assigneeName: assigneeName,
+          affectedPopulationCount: totalResidents,
           stoppedServicesText: _getStoppedServices(inc),
+          broadcastText: _getBroadcastText(inc),
           isUnsynced: inc.localPendingAck == true,
           boilerHouseDetail: boilerHouseDetail,
           onTap: () {
@@ -208,12 +233,21 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     );
   }
 
-  String _formatTimestamp(String? createdAt) {
-    if (createdAt == null) return '';
-    // Placeholder for real formatting
-    final date = DateTime.tryParse(createdAt);
-    if (date == null) return createdAt;
-    return '${date.day}.${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  String _formatFullTimestamp(IncidentResponse inc) {
+    final start = _formatDateTime(inc.createdAt);
+    if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed) {
+      final end = _formatDateTime(inc.resolvedAt ?? inc.updatedAt);
+      return 'с $start до $end';
+    } else {
+      return 'с $start до по наст. время';
+    }
+  }
+
+  String _formatDateTime(String? dtString) {
+    if (dtString == null || dtString.isEmpty) return '';
+    final dt = DateTime.tryParse(dtString)?.toLocal();
+    if (dt == null) return dtString;
+    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   String? _getStoppedServices(IncidentResponse inc) {
@@ -222,6 +256,17 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     if (inc.resourceHeatingStopped == 1) stopped.add('Отопление');
     return stopped.isEmpty ? null : stopped.join(', ');
   }
+
+  String? _getBroadcastText(IncidentResponse inc) {
+    if (inc.notificationConfig != null) {
+      if (inc.notificationConfig!.type == AudienceType.broadcast) {
+        return 'Все (Broadcast)';
+      }
+      return 'Роли/Пользователи (${inc.notificationConfig!.type.name})';
+    }
+    return null;
+  }
+
 }
 
 class _FilterChip extends StatelessWidget {
