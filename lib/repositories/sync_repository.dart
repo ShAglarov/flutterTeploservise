@@ -76,21 +76,51 @@ class SyncRepository {
     
     return query.watch().asyncMap((rows) async {
       final List<IncidentResponse> responses = [];
+      if (rows.isEmpty) return responses;
+
+      final incidentIds = rows.map((r) => r.readTable(_db.incidents).backendId).toList();
+
+      // Fetch all photos and affected houses in bulk for all incidents in the list
+      final allPhotos = await (_db.select(_db.incidentPhotos)
+            ..where((t) => t.incidentId.isIn(incidentIds)))
+          .get();
+      
+      final allAffectedRels = await (_db.select(_db.affectedHouses)
+            ..where((t) => t.incidentId.isIn(incidentIds)))
+          .get();
+
+      // Fetch SavedLocation details for those relations
+      final locIds = allAffectedRels.map((e) => e.savedLocationId).toSet().toList();
+      final allLocations = locIds.isEmpty 
+          ? <SavedLocationDb>[] 
+          : await (_db.select(_db.savedLocations)..where((t) => t.backendId.isIn(locIds))).get();
+
+      final photosByIncident = <int, List<IncidentPhotoDb>>{};
+      for (final p in allPhotos) {
+        if (p.incidentId != null) {
+          photosByIncident.putIfAbsent(p.incidentId!, () => []).add(p);
+        }
+      }
+
+      final locsByIncident = <int, List<SavedLocationDb>>{};
+      final locationMap = {for (var l in allLocations) l.backendId: l};
+      for (final rel in allAffectedRels) {
+        final loc = locationMap[rel.savedLocationId];
+        if (loc != null) {
+          locsByIncident.putIfAbsent(rel.incidentId, () => []).add(loc);
+        }
+      }
+      
       for (final row in rows) {
         final inc = row.readTable(_db.incidents);
         final bh = row.readTableOrNull(_db.boilerHouses);
         
-        // photos + affected houses
-        final photos = await (_db.select(_db.incidentPhotos)..where((t) => t.incidentId.equals(inc.backendId))).get();
-        final affectedHouseRels = await (_db.select(_db.affectedHouses)..where((t) => t.incidentId.equals(inc.backendId))).get();
-        
-        List<SavedLocationDb> ahs = [];
-        if (affectedHouseRels.isNotEmpty) {
-          final ids = affectedHouseRels.map((e) => e.savedLocationId).toList();
-          ahs = await (_db.select(_db.savedLocations)..where((t) => t.backendId.isIn(ids))).get();
-        }
-        
-        responses.add(_mapIncidentToResponse(inc, boilerHouse: bh, affectedHouses: ahs, photos: photos));
+        responses.add(_mapIncidentToResponse(
+          inc, 
+          boilerHouse: bh, 
+          affectedHouses: locsByIncident[inc.backendId], 
+          photos: photosByIncident[inc.backendId]
+        ));
       }
       return responses;
     });

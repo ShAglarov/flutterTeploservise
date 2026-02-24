@@ -8,6 +8,7 @@ import 'device_id_service.dart';
 import 'dart:developer' as dev;
 
 final realtimeServiceProvider = Provider<RealtimeService>((ref) {
+  ref.keepAlive();
   final storage = ref.watch(secureStorageServiceProvider);
   final deviceService = ref.watch(deviceIdServiceProvider);
   return RealtimeService(storage, deviceService);
@@ -37,6 +38,7 @@ class RealtimeService {
   bool _isConnecting = false;
   int _retryCount = 0;
   Timer? _reconnectTimer;
+  Timer? _heartbeatTimer;
 
   RealtimeService(this._storage, this._deviceService);
 
@@ -75,6 +77,9 @@ class RealtimeService {
 
       _isConnecting = false;
       
+      // Start heartbeat
+      _startHeartbeat();
+
       // Emit reconnect event if this is a RE-connection (not first connect)
       final wasConnectedBefore = _retryCount > 0;
       _retryCount = 0;
@@ -96,6 +101,12 @@ class RealtimeService {
     try {
       final decoded = jsonDecode(data as String);
       if (decoded is Map<String, dynamic>) {
+        // Respond to server pings immediately with JSON pong
+        if (decoded['type'] == 'ping') {
+          dev.log('RealtimeService: Server ping received, sending pong', name: 'WS');
+          _channel?.sink.add(jsonEncode({'type': 'pong'}));
+          return;
+        }
         _messageController.add(decoded);
       }
     } catch (e) {
@@ -104,6 +115,7 @@ class RealtimeService {
   }
 
   void _handleDisconnect() {
+    _heartbeatTimer?.cancel();
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
@@ -123,6 +135,7 @@ class RealtimeService {
   }
 
   void disconnect() {
+    _heartbeatTimer?.cancel();
     _reconnectTimer?.cancel();
     _subscription?.cancel();
     _channel?.sink.close();
@@ -131,6 +144,19 @@ class RealtimeService {
     _isConnected = false;
     _connectionStateController.add(false);
     dev.log('RealtimeService: Manually disconnected', name: 'WS');
+  }
+
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+      if (_isConnected && _channel != null) {
+        // Send plain text "ping" — matches backend's legacy keepalive handler
+        _channel!.sink.add('ping');
+        dev.log('RealtimeService: Sent heartbeat ping', name: 'WS');
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   void dispose() {
