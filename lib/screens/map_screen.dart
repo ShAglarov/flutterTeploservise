@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'incident_list_screen.dart';
+import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
@@ -103,6 +105,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget build(BuildContext context) {
     final mapData = ref.watch(filteredMapDataProvider);
     final sections = ref.watch(mapSectionsProvider);
+    final isOffline = ref.watch(isOfflineProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -132,6 +135,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
+          // Offline Banner
+          if (isOffline)
+            Positioned(
+              top: MediaQuery.of(context).padding.top,
+              left: 0,
+              right: 0,
+              child: Container(
+                color: Colors.red.withOpacity(0.9),
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: const Text(
+                  'Нет подключения к сети',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+
           // 2. Info Popup (shows on pin tap)
           if (_tappedItem != null && _tappedPosition != null)
             _buildInfoPopup(),
@@ -147,14 +167,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     label: 'Журнал',
                     icon: Icons.assignment_outlined,
                     color: AppTheme.successGreen,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const IncidentListScreen()),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   _buildTopButton(
                     label: 'Инциденты',
                     icon: Icons.warning_amber_rounded,
                     color: AppTheme.errorRed,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const IncidentListScreen()),
+                      );
+                    },
                   ),
                 ],
               ),

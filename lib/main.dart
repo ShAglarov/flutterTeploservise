@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'utils/app_theme.dart';
-import 'screens/main_tabs_screen.dart';
+import 'screens/map_screen.dart';
 import 'screens/login_screen.dart';
 import 'providers/auth_providers.dart';
 
@@ -95,7 +95,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     }
 
     if (authState.status == AuthStatus.authenticated) {
-      return const MainTabsScreen();
+      return MapScreen();
     }
 
     return const LoginScreen();
