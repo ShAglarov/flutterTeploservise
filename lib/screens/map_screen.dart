@@ -16,6 +16,7 @@ import '../widgets/base_card.dart';
 import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/boiler_house_form_dialog.dart';
 import '../widgets/house_form_dialog.dart';
+import '../widgets/house_incident_form_dialog.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -1030,7 +1031,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: Column(
                     children: [
                       // Header with back button and title
-                      _buildBottomSheetHeader(loc.name),
+                      _buildBottomSheetHeader(loc),
                       
                       Expanded(
                         child: ListView(
@@ -1071,7 +1072,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildBottomSheetHeader(String title) {
+  Widget _buildBottomSheetHeader(SavedLocationResponse loc) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       child: Stack(
@@ -1092,7 +1093,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
-                    onPressed: () {},
+                    onPressed: () async {
+                      final result = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => HouseIncidentFormDialog(house: loc),
+                      );
+                      if (result == true && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Инцидент создан')),
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
@@ -1101,7 +1112,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 100),
             child: Text(
-              title,
+              loc.name,
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

@@ -66,15 +66,18 @@ class IncidentFormController extends _$IncidentFormController {
   void updateNotificationConfig(NotificationConfig? config) => state = state.copyWith(notificationConfig: config);
   
   void updateNotificationRoles(List<String> roleIds) {
-    state = state.copyWith(
-      notificationConfig: NotificationConfig(
-        type: AudienceType.roleBased,
-        roleIds: roleIds,
-        userIds: state.notificationConfig?.userIds,
-      ),
-    );
+    final current = state.notificationConfig ?? NotificationConfig(type: AudienceType.roleBased);
+    state = state.copyWith(notificationConfig: NotificationConfig(
+      type: current.type,
+      userIds: current.userIds,
+      roleIds: roleIds,
+    ));
   }
   
+  void setError(String message) {
+    state = state.copyWith(errorMessage: message);
+  }
+
   void toggleHouse(int houseId) {
     final newSet = Set<int>.from(state.affectedHouseIds);
     if (newSet.contains(houseId)) {
