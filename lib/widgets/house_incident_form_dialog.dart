@@ -127,10 +127,11 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                         child: Column(
                           children: [
                             _buildRow(
-                              'Тип', 
-                              'Инцидент', 
+                              'Тип',
+                              state.title.isEmpty ? 'Инцидент' : state.title,
                               icon: Icons.list,
                               trailing: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                              onTap: () => _showTypeSelector(context, state, controller),
                             ),
                             _buildDivider(),
                             _buildDropdownRow<IncidentStatus>(
@@ -418,6 +419,57 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
           ),
         ],
       ),
+    );
+  }
+
+  void _showTypeSelector(BuildContext context, IncidentFormState state, IncidentFormController controller) {
+    final List<String> incidentTypes = [
+      'Авария котла',
+      'Ремонт труб',
+      'Плановые работы',
+      'Отключение электричества',
+      'Отключение газоснабжения',
+      'Иное',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardBackground,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('Тип', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: incidentTypes.length,
+                  itemBuilder: (context, index) {
+                    final type = incidentTypes[index];
+                    final isSelected = state.title == type || (state.title.isEmpty && type == 'Иное');
+                    return ListTile(
+                      title: Text(
+                        type,
+                        style: TextStyle(color: isSelected ? AppTheme.primaryBlue : Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                      onTap: () {
+                        controller.updateTitle(type);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

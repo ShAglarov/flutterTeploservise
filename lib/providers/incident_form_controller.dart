@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:dio/dio.dart';
 import '../models/incident_models.dart';
 import '../services/incident_service.dart';
 import 'incident_form_state.dart';
@@ -131,6 +132,7 @@ class IncidentFormController extends _$IncidentFormController {
           resourceHotWaterStopped: state.stopHotWater ? 1 : 0,
           resourceHeatingStopped: state.stopHeating ? 1 : 0,
           affectedHouseIds: state.affectedHouseIds.toList(),
+          affectedHouseDetails: state.affectedHouseIds.map((id) => AffectedHouseCreate(savedLocationId: id)).toList(),
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
           createdAt: state.createdAt.toIso8601String(),
@@ -147,6 +149,7 @@ class IncidentFormController extends _$IncidentFormController {
           resourceHotWaterStopped: state.stopHotWater ? 1 : 0,
           resourceHeatingStopped: state.stopHeating ? 1 : 0,
           affectedHouseIds: state.affectedHouseIds.toList(),
+          affectedHouseDetails: state.affectedHouseIds.map((id) => AffectedHouseCreate(savedLocationId: id)).toList(),
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
           createdAt: state.createdAt.toIso8601String(),
@@ -155,6 +158,10 @@ class IncidentFormController extends _$IncidentFormController {
       }
       state = state.copyWith(isSaving: false);
       return true;
+    } on DioException catch (e) {
+      final detail = e.response?.data;
+      state = state.copyWith(isSaving: false, errorMessage: 'Ошибка 422: $detail');
+      return false;
     } catch (e) {
       state = state.copyWith(isSaving: false, errorMessage: 'Ошибка сохранения: $e');
       return false;

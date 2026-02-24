@@ -38,6 +38,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   final DraggableScrollableController _sheetController = DraggableScrollableController();
   bool _isSheetHidden = false;
+  bool _showSuccessAnimation = false;
+  bool _isMenuOpen = false;
 
   @override
   void dispose() {
@@ -86,6 +88,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _tappedItem = null;
       _tappedPosition = null;
     });
+  }
+
+  void _onMapTap() {
+    setState(() {
+      _isMenuOpen = false;
+    });
+
+    if (_tappedItem != null) {
+      _dismissPopup();
+    } else {
+      _toggleSheet();
+    }
   }
 
   Future<void> _onMapLongPress(TapPosition tapPosition, LatLng point) async {
@@ -158,13 +172,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // 1. FlutterMap Layer
           Positioned.fill(
             child: GestureDetector(
-              onTap: _toggleSheet,
+              onTap: _onMapTap,
               child: FlutterMap(
                 mapController: _mapController,
                 options: MapOptions(
                   initialCenter: const LatLng(42.9849, 47.5047),
                   initialZoom: 13,
-                  onTap: (_, __) => _toggleSheet(),
+                  onTap: (_, __) => _onMapTap(),
                   onLongPress: _onMapLongPress,
                 ),
                 children: [
@@ -290,9 +304,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         // The main trigger button (blue circular)
         GestureDetector(
           onTap: () {
-            // Toggle menu expansion state if needed, or show a simple overlay/dialog
+            setState(() {
+              _isMenuOpen = !_isMenuOpen;
+            });
           },
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             width: 48,
             height: 48,
             decoration: BoxDecoration(
@@ -300,35 +317,93 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               shape: BoxShape.circle,
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8)],
             ),
-            child: const Icon(Icons.tune, color: Colors.white, size: 24),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: _isMenuOpen ? 1.0 : 0.0),
+              duration: const Duration(milliseconds: 200),
+              builder: (context, value, child) {
+                return Transform.rotate(
+                  angle: value * 3.14159 / 4, // rotate 45 degrees
+                  child: Icon(
+                    _isMenuOpen ? Icons.close : Icons.tune,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                );
+              },
+            ),
           ),
         ),
-        const SizedBox(height: 8),
+        
         // Menu Items (shown stacked like in high-end apps)
-        _buildMenuItem(Icons.business, 'Упр. компания'),
-        const SizedBox(height: 6),
-        _buildMenuItem(Icons.search, 'Найти'),
-        const SizedBox(height: 6),
-        _buildMenuItem(Icons.settings, 'Настройки'),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          height: _isMenuOpen ? 140 : 0, // Match the height roughly to fit the 3 buttons
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 150),
+              opacity: _isMenuOpen ? 1.0 : 0.0,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const SizedBox(height: 12),
+                  _buildMenuItem(Icons.business, 'Упр. компания', () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Раздел Управляющие компании скоро появится')),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                  _buildMenuItem(Icons.search, 'Найти', () {
+                    if (_isSheetHidden) {
+                      _toggleSheet(); // Just expand the sheet so search is visible
+                    }
+                  }),
+                  const SizedBox(height: 8),
+                  _buildMenuItem(Icons.settings, 'Настройки', () {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Настройки скоро появятся')),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.cardBackground.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-          const SizedBox(width: 8),
-          Icon(icon, color: Colors.white60, size: 16),
-        ],
+  Widget _buildMenuItem(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _isMenuOpen = false;
+        });
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBackground.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+            const SizedBox(width: 10),
+            Icon(icon, color: Colors.white70, size: 18),
+          ],
+        ),
       ),
     );
   }
