@@ -341,6 +341,48 @@ class SyncRepository {
   }
 
   // ----------------------------------------------------------------------
+  // Sync Cursor (SyncMetadata)
+  // ----------------------------------------------------------------------
+
+  /// Get the last known sync cursor for a given key (e.g. 'global_sync_cursor').
+  Future<int?> getSyncCursor(String key) async {
+    final row = await (_db.select(_db.syncMetadata)
+          ..where((t) => t.syncKey.equals(key)))
+        .getSingleOrNull();
+    return row?.lastActionId;
+  }
+
+  /// Update the sync cursor for a given key.
+  Future<void> updateSyncCursor(String key, int actionId) async {
+    await _db.into(_db.syncMetadata).insertOnConflictUpdate(
+      SyncMetadataCompanion.insert(
+        syncKey: key,
+        lastActionId: Value(actionId),
+        lastQueriedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  // ----------------------------------------------------------------------
+  // Delete Entities (for action_type: delete from sync)
+  // ----------------------------------------------------------------------
+
+  Future<void> deleteIncident(int backendId) async {
+    // Delete related affected houses and photos first
+    await (_db.delete(_db.affectedHouses)..where((t) => t.incidentId.equals(backendId))).go();
+    await (_db.delete(_db.incidentPhotos)..where((t) => t.incidentId.equals(backendId))).go();
+    await (_db.delete(_db.incidents)..where((t) => t.backendId.equals(backendId))).go();
+  }
+
+  Future<void> deleteBoilerHouse(int backendId) async {
+    await (_db.delete(_db.boilerHouses)..where((t) => t.backendId.equals(backendId))).go();
+  }
+
+  Future<void> deleteSavedLocation(int backendId) async {
+    await (_db.delete(_db.savedLocations)..where((t) => t.backendId.equals(backendId))).go();
+  }
+
+  // ----------------------------------------------------------------------
   // Mapping Helpers
   // ----------------------------------------------------------------------
 

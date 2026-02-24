@@ -22,6 +22,17 @@ class RealtimeService {
   
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
   Stream<Map<String, dynamic>> get messages => _messageController.stream;
+
+  /// Stream that emits true on reconnect. DataSyncService/SyncService
+  /// listens to this to trigger gap detection.
+  final _reconnectController = StreamController<void>.broadcast();
+  Stream<void> get onReconnect => _reconnectController.stream;
+
+  /// Connection state (true = connected)
+  final _connectionStateController = StreamController<bool>.broadcast();
+  Stream<bool> get connectionState => _connectionStateController.stream;
+  bool _isConnected = false;
+  bool get isConnected => _isConnected;
   
   bool _isConnecting = false;
   int _retryCount = 0;
@@ -63,7 +74,17 @@ class RealtimeService {
       );
 
       _isConnecting = false;
+      
+      // Emit reconnect event if this is a RE-connection (not first connect)
+      final wasConnectedBefore = _retryCount > 0;
       _retryCount = 0;
+      _isConnected = true;
+      _connectionStateController.add(true);
+
+      if (wasConnectedBefore) {
+        dev.log('RealtimeService: Reconnected — firing onReconnect', name: 'WS');
+        _reconnectController.add(null);
+      }
     } catch (e) {
       dev.log('RealtimeService: Failed to connect: $e', name: 'WS');
       _isConnecting = false;
@@ -86,6 +107,8 @@ class RealtimeService {
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
+    _isConnected = false;
+    _connectionStateController.add(false);
 
     if (_retryCount < 10) {
       final delay = Duration(seconds: (1 << _retryCount).clamp(1, 30));
@@ -105,11 +128,15 @@ class RealtimeService {
     _channel?.sink.close();
     _channel = null;
     _subscription = null;
+    _isConnected = false;
+    _connectionStateController.add(false);
     dev.log('RealtimeService: Manually disconnected', name: 'WS');
   }
 
   void dispose() {
     disconnect();
     _messageController.close();
+    _reconnectController.close();
+    _connectionStateController.close();
   }
 }
