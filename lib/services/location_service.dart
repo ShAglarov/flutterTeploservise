@@ -36,6 +36,26 @@ class LocationService {
     return locations;
   }
 
+  Future<List<SavedLocationResponse>> searchHouses({
+    int skip = 0,
+    int limit = 20,
+    String? q,
+    bool unassignedOnly = false,
+  }) async {
+    final response = await _dio.get('/locations/', queryParameters: {
+      'skip': skip,
+      'limit': limit,
+      if (q != null && q.isNotEmpty) 'q': q,
+      'unassigned_only': unassignedOnly,
+    });
+    
+    final locations = (response.data as List)
+        .map((e) => SavedLocationResponse.fromJson(e))
+        .toList();
+        
+    return locations;
+  }
+
   Future<SavedLocationResponse> getSavedLocation(int id) async {
     final response = await _dio.get('/locations/$id');
     final location = SavedLocationResponse.fromJson(response.data);

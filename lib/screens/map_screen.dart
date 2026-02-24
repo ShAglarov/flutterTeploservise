@@ -14,6 +14,8 @@ import '../utils/app_theme.dart';
 import '../utils/constants.dart';
 import '../widgets/base_card.dart';
 import '../widgets/fullscreen_image_viewer.dart';
+import '../widgets/boiler_house_form_dialog.dart';
+import '../widgets/house_form_dialog.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -85,6 +87,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
   }
 
+  Future<void> _onMapLongPress(TapPosition tapPosition, LatLng point) async {
+    if (_selectedBoilerHouse == null) {
+      // Create Boiler House
+      final result = await showDialog<BoilerHouseResponse>(
+        context: context,
+        builder: (context) => BoilerHouseFormDialog(position: point),
+      );
+      
+      if (result != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Котельная успешно добавлена')),
+          );
+        }
+      }
+    } else {
+      // Create House linked to selected Boiler House
+      final result = await showDialog<SavedLocationResponse>(
+        context: context,
+        builder: (context) => HouseFormDialog(
+          position: point,
+          boilerHouseId: _selectedBoilerHouse!.id,
+        ),
+      );
+      
+      if (result != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Дом успешно добавлен')),
+          );
+          _showHouseDetailSheet(result);
+        }
+      }
+    }
+  }
+
   void _toggleSheet() {
     if (_sheetController.size > 0.1) {
       _sheetController.animateTo(0.05, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
@@ -126,6 +164,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   initialCenter: const LatLng(42.9849, 47.5047),
                   initialZoom: 13,
                   onTap: (_, __) => _toggleSheet(),
+                  onLongPress: _onMapLongPress,
                 ),
                 children: [
                   TileLayer(
@@ -650,8 +689,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           .toList();
 
       if (filteredLocations.isEmpty) {
-        return const Center(
-          child: Text('Нет привязанных домов', style: TextStyle(color: Colors.white54)),
+        return ListView(
+          controller: scrollController,
+          children: const [
+            SizedBox(height: 40),
+            Center(child: Text('Нет привязанных домов', style: TextStyle(color: Colors.white54))),
+          ],
         );
       }
 
@@ -666,7 +709,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final totalItems = data.boilerHouses.length;
     
     if (totalItems == 0) {
-      return const Center(child: Text('Нет результатов', style: TextStyle(color: Colors.white54)));
+      return ListView(
+        controller: scrollController,
+        children: const [
+          SizedBox(height: 40),
+          Center(child: Text('Нет результатов', style: TextStyle(color: Colors.white54))),
+        ],
+      );
     }
 
     return ListView.builder(
@@ -1594,48 +1643,4 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildDetailCard(String title, List<Widget> rows) {
-    // Filter out null-valued rows
-    final validRows = rows.whereType<Widget>().toList();
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withAlpha(15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Text(
-              title,
-              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ),
-          ...validRows,
-        ],
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String? value) {
-    if (value == null || value.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
-          Flexible(
-            child: Text(
-              value,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              textAlign: TextAlign.end,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
