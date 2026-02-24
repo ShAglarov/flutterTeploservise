@@ -10,7 +10,7 @@ SavedLocationResponse _$SavedLocationResponseFromJson(
   Map<String, dynamic> json,
 ) => SavedLocationResponse(
   id: (json['id'] as num).toInt(),
-  userId: (json['userId'] as num?)?.toInt(),
+  userId: (json['user_id'] as num?)?.toInt(),
   name: json['name'] as String,
   latitude: (json['latitude'] as num).toDouble(),
   longitude: (json['longitude'] as num).toDouble(),
@@ -22,11 +22,11 @@ SavedLocationResponse _$SavedLocationResponseFromJson(
   totalArea: (json['total_area'] as num?)?.toDouble(),
   yearBuilt: (json['year_built'] as num?)?.toInt(),
   fiasHouseGuid: json['fias_house_guid'] as String?,
-  fiasAOGuid: json['fias_ao_guid'] as String?,
-  locationUUID: json['location_uuid'] as String?,
+  fiasAOGuid: json['fias_a_o_guid'] as String?,
+  locationUUID: json['location_u_u_i_d'] as String?,
   providesHeating: json['provides_heating'] as bool?,
   providesHotWater: json['provides_hot_water'] as bool?,
-  managementCompanyName: json['managementCompanyName'] as String?,
+  managementCompanyName: json['management_company_name'] as String?,
   createdAt: json['created_at'] as String,
   updatedAt: json['updated_at'] as String?,
   photos: (json['photos'] as List<dynamic>?)
@@ -41,7 +41,7 @@ Map<String, dynamic> _$SavedLocationResponseToJson(
   SavedLocationResponse instance,
 ) => <String, dynamic>{
   'id': instance.id,
-  'userId': instance.userId,
+  'user_id': instance.userId,
   'name': instance.name,
   'latitude': instance.latitude,
   'longitude': instance.longitude,
@@ -53,11 +53,11 @@ Map<String, dynamic> _$SavedLocationResponseToJson(
   'total_area': instance.totalArea,
   'year_built': instance.yearBuilt,
   'fias_house_guid': instance.fiasHouseGuid,
-  'fias_ao_guid': instance.fiasAOGuid,
-  'location_uuid': instance.locationUUID,
+  'fias_a_o_guid': instance.fiasAOGuid,
+  'location_u_u_i_d': instance.locationUUID,
   'provides_heating': instance.providesHeating,
   'provides_hot_water': instance.providesHotWater,
-  'managementCompanyName': instance.managementCompanyName,
+  'management_company_name': instance.managementCompanyName,
   'created_at': instance.createdAt,
   'updated_at': instance.updatedAt,
   'photos': instance.photos,
@@ -77,8 +77,8 @@ SavedLocationCreate _$SavedLocationCreateFromJson(Map<String, dynamic> json) =>
       totalArea: (json['total_area'] as num?)?.toDouble(),
       yearBuilt: (json['year_built'] as num?)?.toInt(),
       fiasHouseGuid: json['fias_house_guid'] as String?,
-      fiasAOGuid: json['fias_ao_guid'] as String?,
-      locationUUID: json['location_uuid'] as String?,
+      fiasAOGuid: json['fias_a_o_guid'] as String?,
+      locationUUID: json['location_u_u_i_d'] as String?,
       providesHeating: json['provides_heating'] as bool?,
       providesHotWater: json['provides_hot_water'] as bool?,
     );
@@ -97,8 +97,8 @@ Map<String, dynamic> _$SavedLocationCreateToJson(
   'total_area': instance.totalArea,
   'year_built': instance.yearBuilt,
   'fias_house_guid': instance.fiasHouseGuid,
-  'fias_ao_guid': instance.fiasAOGuid,
-  'location_uuid': instance.locationUUID,
+  'fias_a_o_guid': instance.fiasAOGuid,
+  'location_u_u_i_d': instance.locationUUID,
   'provides_heating': instance.providesHeating,
   'provides_hot_water': instance.providesHotWater,
 };
@@ -116,8 +116,8 @@ SavedLocationUpdate _$SavedLocationUpdateFromJson(Map<String, dynamic> json) =>
       totalArea: (json['total_area'] as num?)?.toDouble(),
       yearBuilt: (json['year_built'] as num?)?.toInt(),
       fiasHouseGuid: json['fias_house_guid'] as String?,
-      fiasAOGuid: json['fias_ao_guid'] as String?,
-      locationUUID: json['location_uuid'] as String?,
+      fiasAOGuid: json['fias_a_o_guid'] as String?,
+      locationUUID: json['location_u_u_i_d'] as String?,
       providesHeating: json['provides_heating'] as bool?,
       providesHotWater: json['provides_hot_water'] as bool?,
     );
@@ -136,8 +136,8 @@ Map<String, dynamic> _$SavedLocationUpdateToJson(
   'total_area': instance.totalArea,
   'year_built': instance.yearBuilt,
   'fias_house_guid': instance.fiasHouseGuid,
-  'fias_ao_guid': instance.fiasAOGuid,
-  'location_uuid': instance.locationUUID,
+  'fias_a_o_guid': instance.fiasAOGuid,
+  'location_u_u_i_d': instance.locationUUID,
   'provides_heating': instance.providesHeating,
   'provides_hot_water': instance.providesHotWater,
 };
@@ -159,7 +159,7 @@ AccountResponse _$AccountResponseFromJson(Map<String, dynamic> json) =>
       closeDate: json['close_date'] as String?,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String?,
-      locationUUID: json['location_uuid'] as String?,
+      locationUUID: json['location_u_u_i_d'] as String?,
     );
 
 Map<String, dynamic> _$AccountResponseToJson(AccountResponse instance) =>
@@ -179,7 +179,7 @@ Map<String, dynamic> _$AccountResponseToJson(AccountResponse instance) =>
       'close_date': instance.closeDate,
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,
-      'location_uuid': instance.locationUUID,
+      'location_u_u_i_d': instance.locationUUID,
     };
 
 AccountCreate _$AccountCreateFromJson(Map<String, dynamic> json) =>

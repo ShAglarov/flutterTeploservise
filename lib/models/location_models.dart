@@ -3,39 +3,27 @@ import 'incident_models.dart';
 
 part 'location_models.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class SavedLocationResponse {
   final int id;
   final int? userId;
   final String name;
   final double latitude;
   final double longitude;
-  @JsonKey(name: 'management_company_id')
   final String? managementCompanyId;
-  @JsonKey(name: 'boiler_house_id')
   final int? boilerHouseId;
   final int? floors;
-  @JsonKey(name: 'residents_count')
   final int? residentsCount;
   final int? rooms;
-  @JsonKey(name: 'total_area')
   final double? totalArea;
-  @JsonKey(name: 'year_built')
   final int? yearBuilt;
-  @JsonKey(name: 'fias_house_guid')
   final String? fiasHouseGuid;
-  @JsonKey(name: 'fias_ao_guid')
   final String? fiasAOGuid;
-  @JsonKey(name: 'location_uuid')
   final String? locationUUID;
-  @JsonKey(name: 'provides_heating')
   final bool? providesHeating;
-  @JsonKey(name: 'provides_hot_water')
   final bool? providesHotWater;
   final String? managementCompanyName;
-  @JsonKey(name: 'created_at')
   final String createdAt;
-  @JsonKey(name: 'updated_at')
   final String? updatedAt;
   final List<PhotoInfo>? photos;
   final List<AccountResponse>? accounts;
@@ -69,32 +57,22 @@ class SavedLocationResponse {
   Map<String, dynamic> toJson() => _$SavedLocationResponseToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class SavedLocationCreate {
   final String name;
   final double latitude;
   final double longitude;
-  @JsonKey(name: 'management_company_id')
   final String? managementCompanyId;
-  @JsonKey(name: 'boiler_house_id')
   final int? boilerHouseId;
   final int? floors;
-  @JsonKey(name: 'residents_count')
   final int? residentsCount;
   final int? rooms;
-  @JsonKey(name: 'total_area')
   final double? totalArea;
-  @JsonKey(name: 'year_built')
   final int? yearBuilt;
-  @JsonKey(name: 'fias_house_guid')
   final String? fiasHouseGuid;
-  @JsonKey(name: 'fias_ao_guid')
   final String? fiasAOGuid;
-  @JsonKey(name: 'location_uuid')
   final String? locationUUID;
-  @JsonKey(name: 'provides_heating')
   final bool? providesHeating;
-  @JsonKey(name: 'provides_hot_water')
   final bool? providesHotWater;
 
   SavedLocationCreate({
@@ -119,32 +97,22 @@ class SavedLocationCreate {
   Map<String, dynamic> toJson() => _$SavedLocationCreateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class SavedLocationUpdate {
   final String? name;
   final double? latitude;
   final double? longitude;
-  @JsonKey(name: 'management_company_id')
   final String? managementCompanyId;
-  @JsonKey(name: 'boiler_house_id')
   final int? boilerHouseId;
   final int? floors;
-  @JsonKey(name: 'residents_count')
   final int? residentsCount;
   final int? rooms;
-  @JsonKey(name: 'total_area')
   final double? totalArea;
-  @JsonKey(name: 'year_built')
   final int? yearBuilt;
-  @JsonKey(name: 'fias_house_guid')
   final String? fiasHouseGuid;
-  @JsonKey(name: 'fias_ao_guid')
   final String? fiasAOGuid;
-  @JsonKey(name: 'location_uuid')
   final String? locationUUID;
-  @JsonKey(name: 'provides_heating')
   final bool? providesHeating;
-  @JsonKey(name: 'provides_hot_water')
   final bool? providesHotWater;
 
   SavedLocationUpdate({
@@ -169,32 +137,23 @@ class SavedLocationUpdate {
   Map<String, dynamic> toJson() => _$SavedLocationUpdateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class AccountResponse {
   final int id;
-  @JsonKey(name: 'location_id')
   final int? locationId;
-  @JsonKey(name: 'account_number')
   final String accountNumber;
   final String? address;
   final String? fio;
   final String? phone;
   final String? email;
   final double? area;
-  @JsonKey(name: 'service_type')
   final String? serviceType;
   final String? status;
-  @JsonKey(name: 'jku_identifier')
   final String? jkuIdentifier;
-  @JsonKey(name: 'open_date')
   final String? openDate;
-  @JsonKey(name: 'close_date')
   final String? closeDate;
-  @JsonKey(name: 'created_at')
   final String createdAt;
-  @JsonKey(name: 'updated_at')
   final String? updatedAt;
-  @JsonKey(name: 'location_uuid')
   final String? locationUUID;
 
   AccountResponse({
@@ -220,25 +179,19 @@ class AccountResponse {
   Map<String, dynamic> toJson() => _$AccountResponseToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class AccountCreate {
-  @JsonKey(name: 'location_id')
   final int locationId;
-  @JsonKey(name: 'account_number')
   final String accountNumber;
   final String? address;
   final String? fio;
   final String? phone;
   final String? email;
   final double? area;
-  @JsonKey(name: 'service_type')
   final String? serviceType;
   final String? status;
-  @JsonKey(name: 'jku_identifier')
   final String? jkuIdentifier;
-  @JsonKey(name: 'open_date')
   final String? openDate;
-  @JsonKey(name: 'close_date')
   final String? closeDate;
 
   AccountCreate({
@@ -260,25 +213,19 @@ class AccountCreate {
   Map<String, dynamic> toJson() => _$AccountCreateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class AccountUpdate {
-  @JsonKey(name: 'location_id')
   final int? locationId;
-  @JsonKey(name: 'account_number')
   final String? accountNumber;
   final String? address;
   final String? fio;
   final String? phone;
   final String? email;
   final double? area;
-  @JsonKey(name: 'service_type')
   final String? serviceType;
   final String? status;
-  @JsonKey(name: 'jku_identifier')
   final String? jkuIdentifier;
-  @JsonKey(name: 'open_date')
   final String? openDate;
-  @JsonKey(name: 'close_date')
   final String? closeDate;
 
   AccountUpdate({

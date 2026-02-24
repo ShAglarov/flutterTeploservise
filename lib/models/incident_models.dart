@@ -38,7 +38,7 @@ enum AudienceType {
   userBased,
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class NotificationConfig {
   final AudienceType type;
   final List<String>? roleIds;
@@ -54,7 +54,7 @@ class NotificationConfig {
   Map<String, dynamic> toJson() => _$NotificationConfigToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class SavedLocationInfo {
   @JsonKey(fromJson: _idFromJson)
   final int id;
@@ -89,7 +89,7 @@ class SavedLocationInfo {
   }
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class AffectedHouseDetail {
   final int savedLocationId;
   final double? area;
@@ -111,7 +111,7 @@ class AffectedHouseDetail {
   Map<String, dynamic> toJson() => _$AffectedHouseDetailToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class BoilerHouseSummary {
   final int id;
   final String address;
@@ -139,7 +139,7 @@ class BoilerHouseSummary {
   Map<String, dynamic> toJson() => _$BoilerHouseSummaryToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class IncidentResponse {
   final int id;
   final int? boilerHouseId;
@@ -196,7 +196,7 @@ class IncidentResponse {
   Map<String, dynamic> toJson() => _$IncidentResponseToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class PhotoInfo {
   final int id;
   final String url;
@@ -216,7 +216,7 @@ class PhotoInfo {
   Map<String, dynamic> toJson() => _$PhotoInfoToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class AffectedHouseCreate {
   final int savedLocationId;
   final double? area;
@@ -236,7 +236,7 @@ class AffectedHouseCreate {
   Map<String, dynamic> toJson() => _$AffectedHouseCreateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class IncidentCreate {
   final int boilerHouseId;
   final String title;
@@ -269,7 +269,7 @@ class IncidentCreate {
   Map<String, dynamic> toJson() => _$IncidentCreateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class IncidentUpdate {
   final int? id;
   final int? boilerHouseId;
@@ -304,7 +304,7 @@ class IncidentUpdate {
   Map<String, dynamic> toJson() => _$IncidentUpdateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class IncidentCommentAuthor {
   final int id;
   @JsonKey(name: 'full_name')
@@ -319,7 +319,7 @@ class IncidentCommentAuthor {
   Map<String, dynamic> toJson() => _$IncidentCommentAuthorToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class IncidentComment {
   final int id;
   @JsonKey(name: 'incident_id')

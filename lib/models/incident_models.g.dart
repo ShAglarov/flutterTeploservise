@@ -9,10 +9,10 @@ part of 'incident_models.dart';
 NotificationConfig _$NotificationConfigFromJson(Map<String, dynamic> json) =>
     NotificationConfig(
       type: $enumDecode(_$AudienceTypeEnumMap, json['type']),
-      roleIds: (json['roleIds'] as List<dynamic>?)
+      roleIds: (json['role_ids'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      userIds: (json['userIds'] as List<dynamic>?)
+      userIds: (json['user_ids'] as List<dynamic>?)
           ?.map((e) => (e as num).toInt())
           .toList(),
     );
@@ -20,8 +20,8 @@ NotificationConfig _$NotificationConfigFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$NotificationConfigToJson(NotificationConfig instance) =>
     <String, dynamic>{
       'type': _$AudienceTypeEnumMap[instance.type]!,
-      'roleIds': instance.roleIds,
-      'userIds': instance.userIds,
+      'role_ids': instance.roleIds,
+      'user_ids': instance.userIds,
     };
 
 const _$AudienceTypeEnumMap = {
@@ -38,9 +38,9 @@ SavedLocationInfo _$SavedLocationInfoFromJson(Map<String, dynamic> json) =>
       longitude: (json['longitude'] as num).toDouble(),
       floors: (json['floors'] as num?)?.toInt(),
       rooms: (json['rooms'] as num?)?.toInt(),
-      totalArea: (json['totalArea'] as num?)?.toDouble(),
-      residentsCount: (json['residentsCount'] as num?)?.toInt(),
-      yearBuilt: (json['yearBuilt'] as num?)?.toInt(),
+      totalArea: (json['total_area'] as num?)?.toDouble(),
+      residentsCount: (json['residents_count'] as num?)?.toInt(),
+      yearBuilt: (json['year_built'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$SavedLocationInfoToJson(SavedLocationInfo instance) =>
@@ -51,34 +51,34 @@ Map<String, dynamic> _$SavedLocationInfoToJson(SavedLocationInfo instance) =>
       'longitude': instance.longitude,
       'floors': instance.floors,
       'rooms': instance.rooms,
-      'totalArea': instance.totalArea,
-      'residentsCount': instance.residentsCount,
-      'yearBuilt': instance.yearBuilt,
+      'total_area': instance.totalArea,
+      'residents_count': instance.residentsCount,
+      'year_built': instance.yearBuilt,
     };
 
 AffectedHouseDetail _$AffectedHouseDetailFromJson(Map<String, dynamic> json) =>
     AffectedHouseDetail(
-      savedLocationId: (json['savedLocationId'] as num).toInt(),
+      savedLocationId: (json['saved_location_id'] as num).toInt(),
       area: (json['area'] as num?)?.toDouble(),
       status: json['status'] as String?,
-      residentsCount: (json['residentsCount'] as num?)?.toInt(),
+      residentsCount: (json['residents_count'] as num?)?.toInt(),
       notes: json['notes'] as String?,
-      savedLocation: json['savedLocation'] == null
+      savedLocation: json['saved_location'] == null
           ? null
           : SavedLocationInfo.fromJson(
-              json['savedLocation'] as Map<String, dynamic>,
+              json['saved_location'] as Map<String, dynamic>,
             ),
     );
 
 Map<String, dynamic> _$AffectedHouseDetailToJson(
   AffectedHouseDetail instance,
 ) => <String, dynamic>{
-  'savedLocationId': instance.savedLocationId,
+  'saved_location_id': instance.savedLocationId,
   'area': instance.area,
   'status': instance.status,
-  'residentsCount': instance.residentsCount,
+  'residents_count': instance.residentsCount,
   'notes': instance.notes,
-  'savedLocation': instance.savedLocation,
+  'saved_location': instance.savedLocation,
 };
 
 BoilerHouseSummary _$BoilerHouseSummaryFromJson(Map<String, dynamic> json) =>
@@ -87,10 +87,10 @@ BoilerHouseSummary _$BoilerHouseSummaryFromJson(Map<String, dynamic> json) =>
       address: json['address'] as String,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
-      activeIncidentsCount: (json['activeIncidentsCount'] as num).toInt(),
-      hasActiveIncidents: (json['hasActiveIncidents'] as num).toInt(),
-      siteNumber: json['siteNumber'] as String?,
-      siteManager: json['siteManager'] as String?,
+      activeIncidentsCount: (json['active_incidents_count'] as num).toInt(),
+      hasActiveIncidents: (json['has_active_incidents'] as num).toInt(),
+      siteNumber: json['site_number'] as String?,
+      siteManager: json['site_manager'] as String?,
     );
 
 Map<String, dynamic> _$BoilerHouseSummaryToJson(BoilerHouseSummary instance) =>
@@ -99,73 +99,74 @@ Map<String, dynamic> _$BoilerHouseSummaryToJson(BoilerHouseSummary instance) =>
       'address': instance.address,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
-      'activeIncidentsCount': instance.activeIncidentsCount,
-      'hasActiveIncidents': instance.hasActiveIncidents,
-      'siteNumber': instance.siteNumber,
-      'siteManager': instance.siteManager,
+      'active_incidents_count': instance.activeIncidentsCount,
+      'has_active_incidents': instance.hasActiveIncidents,
+      'site_number': instance.siteNumber,
+      'site_manager': instance.siteManager,
     };
 
 IncidentResponse _$IncidentResponseFromJson(Map<String, dynamic> json) =>
     IncidentResponse(
       id: (json['id'] as num).toInt(),
-      boilerHouseId: (json['boilerHouseId'] as num?)?.toInt(),
+      boilerHouseId: (json['boiler_house_id'] as num?)?.toInt(),
       title: json['title'] as String?,
       description: json['description'] as String?,
       status: IncidentStatus.fromAny(json['status']),
       severity: json['severity'] as String?,
-      resourceHotWaterStopped: (json['resourceHotWaterStopped'] as num?)
+      resourceHotWaterStopped: (json['resource_hot_water_stopped'] as num?)
           ?.toInt(),
-      resourceHeatingStopped: (json['resourceHeatingStopped'] as num?)?.toInt(),
-      reportedBy: (json['reportedBy'] as num?)?.toInt(),
-      assignedTo: (json['assignedTo'] as num?)?.toInt(),
-      createdAt: json['createdAt'] as String?,
-      updatedAt: json['updatedAt'] as String?,
-      resolvedAt: json['resolvedAt'] as String?,
+      resourceHeatingStopped: (json['resource_heating_stopped'] as num?)
+          ?.toInt(),
+      reportedBy: (json['reported_by'] as num?)?.toInt(),
+      assignedTo: (json['assigned_to'] as num?)?.toInt(),
+      createdAt: json['created_at'] as String?,
+      updatedAt: json['updated_at'] as String?,
+      resolvedAt: json['resolved_at'] as String?,
       localUUID: json['local_uuid'] as String?,
-      localPendingAck: json['localPendingAck'] as bool?,
-      affectedHouseIds: (json['affectedHouseIds'] as List<dynamic>?)
+      localPendingAck: json['local_pending_ack'] as bool?,
+      affectedHouseIds: (json['affected_house_ids'] as List<dynamic>?)
           ?.map((e) => (e as num).toInt())
           .toList(),
-      affectedHouseDetails: (json['affectedHouseDetails'] as List<dynamic>?)
+      affectedHouseDetails: (json['affected_house_details'] as List<dynamic>?)
           ?.map((e) => AffectedHouseDetail.fromJson(e as Map<String, dynamic>))
           .toList(),
-      boilerHouse: json['boilerHouse'] == null
+      boilerHouse: json['boiler_house'] == null
           ? null
           : BoilerHouseSummary.fromJson(
-              json['boilerHouse'] as Map<String, dynamic>,
+              json['boiler_house'] as Map<String, dynamic>,
             ),
       photos: (json['photos'] as List<dynamic>?)
           ?.map((e) => PhotoInfo.fromJson(e as Map<String, dynamic>))
           .toList(),
-      notificationConfig: json['notificationConfig'] == null
+      notificationConfig: json['notification_config'] == null
           ? null
           : NotificationConfig.fromJson(
-              json['notificationConfig'] as Map<String, dynamic>,
+              json['notification_config'] as Map<String, dynamic>,
             ),
     );
 
 Map<String, dynamic> _$IncidentResponseToJson(IncidentResponse instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'boilerHouseId': instance.boilerHouseId,
+      'boiler_house_id': instance.boilerHouseId,
       'title': instance.title,
       'description': instance.description,
       'status': _$IncidentStatusEnumMap[instance.status],
       'severity': instance.severity,
-      'resourceHotWaterStopped': instance.resourceHotWaterStopped,
-      'resourceHeatingStopped': instance.resourceHeatingStopped,
-      'reportedBy': instance.reportedBy,
-      'assignedTo': instance.assignedTo,
-      'createdAt': instance.createdAt,
-      'updatedAt': instance.updatedAt,
-      'resolvedAt': instance.resolvedAt,
+      'resource_hot_water_stopped': instance.resourceHotWaterStopped,
+      'resource_heating_stopped': instance.resourceHeatingStopped,
+      'reported_by': instance.reportedBy,
+      'assigned_to': instance.assignedTo,
+      'created_at': instance.createdAt,
+      'updated_at': instance.updatedAt,
+      'resolved_at': instance.resolvedAt,
       'local_uuid': instance.localUUID,
-      'localPendingAck': instance.localPendingAck,
-      'affectedHouseIds': instance.affectedHouseIds,
-      'affectedHouseDetails': instance.affectedHouseDetails,
-      'boilerHouse': instance.boilerHouse,
+      'local_pending_ack': instance.localPendingAck,
+      'affected_house_ids': instance.affectedHouseIds,
+      'affected_house_details': instance.affectedHouseDetails,
+      'boiler_house': instance.boilerHouse,
       'photos': instance.photos,
-      'notificationConfig': instance.notificationConfig,
+      'notification_config': instance.notificationConfig,
     };
 
 const _$IncidentStatusEnumMap = {
@@ -191,38 +192,39 @@ Map<String, dynamic> _$PhotoInfoToJson(PhotoInfo instance) => <String, dynamic>{
 
 AffectedHouseCreate _$AffectedHouseCreateFromJson(Map<String, dynamic> json) =>
     AffectedHouseCreate(
-      savedLocationId: (json['savedLocationId'] as num).toInt(),
+      savedLocationId: (json['saved_location_id'] as num).toInt(),
       area: (json['area'] as num?)?.toDouble(),
       status: json['status'] as String?,
-      residentsCount: (json['residentsCount'] as num?)?.toInt(),
+      residentsCount: (json['residents_count'] as num?)?.toInt(),
       notes: json['notes'] as String?,
     );
 
 Map<String, dynamic> _$AffectedHouseCreateToJson(
   AffectedHouseCreate instance,
 ) => <String, dynamic>{
-  'savedLocationId': instance.savedLocationId,
+  'saved_location_id': instance.savedLocationId,
   'area': instance.area,
   'status': instance.status,
-  'residentsCount': instance.residentsCount,
+  'residents_count': instance.residentsCount,
   'notes': instance.notes,
 };
 
 IncidentCreate _$IncidentCreateFromJson(Map<String, dynamic> json) =>
     IncidentCreate(
-      boilerHouseId: (json['boilerHouseId'] as num).toInt(),
+      boilerHouseId: (json['boiler_house_id'] as num).toInt(),
       title: json['title'] as String,
       description: json['description'] as String?,
       status: $enumDecodeNullable(_$IncidentStatusEnumMap, json['status']),
       severity: json['severity'] as String?,
-      resourceHotWaterStopped: (json['resourceHotWaterStopped'] as num?)
+      resourceHotWaterStopped: (json['resource_hot_water_stopped'] as num?)
           ?.toInt(),
-      resourceHeatingStopped: (json['resourceHeatingStopped'] as num?)?.toInt(),
-      assignedTo: (json['assignedTo'] as num?)?.toInt(),
-      affectedHouseIds: (json['affectedHouseIds'] as List<dynamic>?)
+      resourceHeatingStopped: (json['resource_heating_stopped'] as num?)
+          ?.toInt(),
+      assignedTo: (json['assigned_to'] as num?)?.toInt(),
+      affectedHouseIds: (json['affected_house_ids'] as List<dynamic>?)
           ?.map((e) => (e as num).toInt())
           .toList(),
-      affectedHouseDetails: (json['affectedHouseDetails'] as List<dynamic>?)
+      affectedHouseDetails: (json['affected_house_details'] as List<dynamic>?)
           ?.map((e) => AffectedHouseCreate.fromJson(e as Map<String, dynamic>))
           .toList(),
       notificationConfig: json['notification_config'] == null
@@ -234,35 +236,36 @@ IncidentCreate _$IncidentCreateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$IncidentCreateToJson(IncidentCreate instance) =>
     <String, dynamic>{
-      'boilerHouseId': instance.boilerHouseId,
+      'boiler_house_id': instance.boilerHouseId,
       'title': instance.title,
       'description': instance.description,
       'status': _$IncidentStatusEnumMap[instance.status],
       'severity': instance.severity,
-      'resourceHotWaterStopped': instance.resourceHotWaterStopped,
-      'resourceHeatingStopped': instance.resourceHeatingStopped,
-      'assignedTo': instance.assignedTo,
-      'affectedHouseIds': instance.affectedHouseIds,
-      'affectedHouseDetails': instance.affectedHouseDetails,
+      'resource_hot_water_stopped': instance.resourceHotWaterStopped,
+      'resource_heating_stopped': instance.resourceHeatingStopped,
+      'assigned_to': instance.assignedTo,
+      'affected_house_ids': instance.affectedHouseIds,
+      'affected_house_details': instance.affectedHouseDetails,
       'notification_config': instance.notificationConfig,
     };
 
 IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
     IncidentUpdate(
       id: (json['id'] as num?)?.toInt(),
-      boilerHouseId: (json['boilerHouseId'] as num?)?.toInt(),
+      boilerHouseId: (json['boiler_house_id'] as num?)?.toInt(),
       title: json['title'] as String?,
       description: json['description'] as String?,
       status: $enumDecodeNullable(_$IncidentStatusEnumMap, json['status']),
       severity: json['severity'] as String?,
-      resourceHotWaterStopped: (json['resourceHotWaterStopped'] as num?)
+      resourceHotWaterStopped: (json['resource_hot_water_stopped'] as num?)
           ?.toInt(),
-      resourceHeatingStopped: (json['resourceHeatingStopped'] as num?)?.toInt(),
-      assignedTo: (json['assignedTo'] as num?)?.toInt(),
-      affectedHouseIds: (json['affectedHouseIds'] as List<dynamic>?)
+      resourceHeatingStopped: (json['resource_heating_stopped'] as num?)
+          ?.toInt(),
+      assignedTo: (json['assigned_to'] as num?)?.toInt(),
+      affectedHouseIds: (json['affected_house_ids'] as List<dynamic>?)
           ?.map((e) => (e as num).toInt())
           .toList(),
-      affectedHouseDetails: (json['affectedHouseDetails'] as List<dynamic>?)
+      affectedHouseDetails: (json['affected_house_details'] as List<dynamic>?)
           ?.map((e) => AffectedHouseCreate.fromJson(e as Map<String, dynamic>))
           .toList(),
       notificationConfig: json['notification_config'] == null
@@ -275,16 +278,16 @@ IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$IncidentUpdateToJson(IncidentUpdate instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'boilerHouseId': instance.boilerHouseId,
+      'boiler_house_id': instance.boilerHouseId,
       'title': instance.title,
       'description': instance.description,
       'status': _$IncidentStatusEnumMap[instance.status],
       'severity': instance.severity,
-      'resourceHotWaterStopped': instance.resourceHotWaterStopped,
-      'resourceHeatingStopped': instance.resourceHeatingStopped,
-      'assignedTo': instance.assignedTo,
-      'affectedHouseIds': instance.affectedHouseIds,
-      'affectedHouseDetails': instance.affectedHouseDetails,
+      'resource_hot_water_stopped': instance.resourceHotWaterStopped,
+      'resource_heating_stopped': instance.resourceHeatingStopped,
+      'assigned_to': instance.assignedTo,
+      'affected_house_ids': instance.affectedHouseIds,
+      'affected_house_details': instance.affectedHouseDetails,
       'notification_config': instance.notificationConfig,
     };
 

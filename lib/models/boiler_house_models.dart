@@ -3,28 +3,21 @@ import 'incident_models.dart';
 
 part 'boiler_house_models.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class BoilerHouseResponse {
   final int id;
   final String address;
   final double latitude;
   final double longitude;
-  @JsonKey(name: 'management_company_id')
   final String? managementCompanyId;
   final Map<String, dynamic>? additionalData;
   final int? createdBy;
   final int? updatedBy;
-  @JsonKey(name: 'created_at')
   final String createdAt;
-  @JsonKey(name: 'updated_at')
   final String? updatedAt;
-  @JsonKey(name: 'site_number')
   final String? siteNumber;
-  @JsonKey(name: 'site_manager')
   final String? siteManager;
-  @JsonKey(name: 'boiler_house_uuid')
   final String? boilerHouseUUID;
-  @JsonKey(name: 'incident_count')
   final int? incidentCount;
   final List<PhotoInfo>? photos;
 
@@ -50,19 +43,15 @@ class BoilerHouseResponse {
   Map<String, dynamic> toJson() => _$BoilerHouseResponseToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class BoilerHouseCreate {
   final String address;
   final double latitude;
   final double longitude;
-  @JsonKey(name: 'management_company_id')
   final String? managementCompanyId;
   final Map<String, dynamic>? additionalData;
-  @JsonKey(name: 'site_number')
   final String? siteNumber;
-  @JsonKey(name: 'site_manager')
   final String? siteManager;
-  @JsonKey(name: 'boiler_house_uuid')
   final String? boilerHouseUUID;
 
   BoilerHouseCreate({
@@ -80,17 +69,14 @@ class BoilerHouseCreate {
   Map<String, dynamic> toJson() => _$BoilerHouseCreateToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class BoilerHouseUpdate {
   final String? address;
   final double? latitude;
   final double? longitude;
-  @JsonKey(name: 'management_company_id')
   final String? managementCompanyId;
   final Map<String, dynamic>? additionalData;
-  @JsonKey(name: 'site_number')
   final String? siteNumber;
-  @JsonKey(name: 'site_manager')
   final String? siteManager;
 
   BoilerHouseUpdate({
