@@ -1,11 +1,13 @@
 name: Build Windows Release
 
 on:
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+  workflow_dispatch:
   push:
-    branches:
-      - main
-      - master
+    tags:
+      - 'v*' # Triggers workflow when a tag starting with 'v' is pushed
+
+permissions:
+  contents: write # Required to create GitHub Releases
 
 jobs:
   build:
@@ -30,8 +32,14 @@ jobs:
       - name: Build Windows
         run: flutter build windows --release
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: Compile Windows Installer
+        run: iscc installer.iss
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          name: windows-release-app
-          path: build/windows/x64/runner/Release/
+          files: installer/*_Setup.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
