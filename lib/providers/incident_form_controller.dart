@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/incident_models.dart';
-import '../services/incident_service.dart';
+import '../repositories/sync_repository.dart';
 
 part 'incident_form_controller.g.dart';
 
@@ -140,10 +140,8 @@ class IncidentFormController extends _$IncidentFormController {
       return false;
     }
 
-    state = state.copyWith(isSaving: true, errorMessage: null);
-
     try {
-      final service = ref.read(incidentServiceProvider);
+      final syncRepo = ref.read(syncRepositoryProvider);
       if (state.id != null) {
         final update = IncidentUpdate(
           id: state.id,
@@ -157,7 +155,7 @@ class IncidentFormController extends _$IncidentFormController {
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
         );
-        await service.updateIncident(state.id!, update);
+        await syncRepo.saveIncidentOffline(update: update);
       } else {
         final create = IncidentCreate(
           boilerHouseId: state.boilerHouseId!,
@@ -171,7 +169,7 @@ class IncidentFormController extends _$IncidentFormController {
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
         );
-        await service.createIncident(create);
+        await syncRepo.saveIncidentOffline(create: create);
       }
       state = state.copyWith(isSaving: false);
       return true;

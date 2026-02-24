@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:custom_marker_builder/custom_marker_builder.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../providers/map_providers.dart';
 import '../utils/app_theme.dart';
 import '../widgets/base_card.dart';
-import '../widgets/map_markers.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -16,98 +15,44 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   final TextEditingController _searchController = TextEditingController();
-  Set<Marker> _markers = {};
-  bool _isGeneratingMarkers = false;
+  final MapController _mapController = MapController();
 
   @override
   void dispose() {
     _searchController.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   void _onItemTap(double lat, double lng) {
-    ref.read(mapControllerProvider.notifier).move(LatLng(lat, lng));
-  }
-
-  Future<void> _generateMarkers(MapDataState data) async {
-    if (_isGeneratingMarkers) return;
-    setState(() => _isGeneratingMarkers = true);
-
-    try {
-      final List<Widget> markerWidgets = [
-        ...data.boilerHouses.map((bh) => BoilerHouseMarkerWidget(
-              hasIncident: bh.incidentCount != null && bh.incidentCount! > 0,
-            )),
-        ...data.locations.map((loc) => const LocationMarkerWidget()),
-      ];
-
-      final List<Marker> baseMarkers = [
-        ...data.boilerHouses.map((bh) => Marker(
-              markerId: MarkerId('bh_${bh.id}'),
-              position: LatLng(bh.latitude, bh.longitude),
-              onTap: () => _onItemTap(bh.latitude, bh.longitude),
-            )),
-        ...data.locations.map((loc) => Marker(
-              markerId: MarkerId('loc_${loc.id}'),
-              position: LatLng(loc.latitude, loc.longitude),
-              onTap: () => _onItemTap(loc.latitude, loc.longitude),
-            )),
-      ];
-
-      // Use the utility to generate bitmaps
-      final bitmaps = await BatchMarkerBuilder.fromWidgetBatch(
-        context: context,
-        markers: markerWidgets,
-      );
-
-      if (mounted) {
-        setState(() {
-          _markers = {};
-          for (int i = 0; i < baseMarkers.length; i++) {
-            _markers.add(baseMarkers[i].copyWith(
-              iconParam: bitmaps[i],
-            ));
-          }
-          _isGeneratingMarkers = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isGeneratingMarkers = false);
-    }
+    _mapController.move(LatLng(lat, lng), 15);
   }
 
   @override
   Widget build(BuildContext context) {
     final mapData = ref.watch(filteredMapDataProvider);
-    
-    // Trigger marker generation when data changes
-    ref.listen(filteredMapDataProvider, (previous, next) {
-      _generateMarkers(next);
-    });
-
-    // Initial generation if list is not empty and markers are empty
-    if (_markers.isEmpty && (mapData.boilerHouses.isNotEmpty || mapData.locations.isNotEmpty) && !_isGeneratingMarkers) {
-      Future.microtask(() => _generateMarkers(mapData));
-    }
+    final sections = ref.watch(mapSectionsProvider);
 
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Google Map Layer
-          GoogleMap(
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(59.9343, 30.3351), // St. Petersburg
-              zoom: 11,
+          // 1. FlutterMap Layer (OpenStreetMap)
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: const LatLng(59.9343, 30.3351), // St. Petersburg
+              initialZoom: 11,
             ),
-            markers: _markers,
-            onMapCreated: (controller) {
-              ref.read(mapControllerProvider.notifier).set(controller);
-            },
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-            style: _mapStyle,
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.teploservice',
+                tileBuilder: _darkModeTileBuilder,
+              ),
+              MarkerLayer(
+                markers: _buildMarkers(mapData),
+              ),
+            ],
           ),
 
           // 2. Search Top Bar
@@ -116,7 +61,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Column(
                 children: [
-                  _buildSearchBar(),
+                  _buildSearchBar(sections),
                 ],
               ),
             ),
@@ -132,17 +77,82 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: _buildMapActions(),
           ),
 
-          if (_isGeneratingMarkers && _markers.isEmpty)
+          if (mapData.isLoading)
             const Center(child: CircularProgressIndicator()),
         ],
       ),
     );
   }
 
-  Widget _buildSearchBar() {
+  // Dark mode tile overlay
+  Widget _darkModeTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix(<double>[
+        -0.2126, -0.7152, -0.0722, 0, 255,
+        -0.2126, -0.7152, -0.0722, 0, 255,
+        -0.2126, -0.7152, -0.0722, 0, 255,
+         0,       0,       0,      1,   0,
+      ]),
+      child: tileWidget,
+    );
+  }
+
+  List<Marker> _buildMarkers(MapDataState data) {
+    final markers = <Marker>[];
+
+    for (final bh in data.boilerHouses) {
+      if (bh.latitude == 0 && bh.longitude == 0) continue;
+      final hasIncident = bh.incidentCount != null && bh.incidentCount! > 0;
+      markers.add(Marker(
+        point: LatLng(bh.latitude, bh.longitude),
+        width: 36,
+        height: 36,
+        child: GestureDetector(
+          onTap: () => _onItemTap(bh.latitude, bh.longitude),
+          child: Container(
+            decoration: BoxDecoration(
+              color: hasIncident ? AppTheme.errorRed : AppTheme.primaryBlue,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+              ],
+            ),
+            child: const Icon(Icons.factory, color: Colors.white, size: 18),
+          ),
+        ),
+      ));
+    }
+
+    for (final loc in data.locations) {
+      if (loc.latitude == 0 && loc.longitude == 0) continue;
+      markers.add(Marker(
+        point: LatLng(loc.latitude, loc.longitude),
+        width: 28,
+        height: 28,
+        child: GestureDetector(
+          onTap: () => _onItemTap(loc.latitude, loc.longitude),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.successGreen,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1.5),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+              ],
+            ),
+            child: const Icon(Icons.home, color: Colors.white, size: 14),
+          ),
+        ),
+      ));
+    }
+
+    return markers;
+  }
+
+  Widget _buildSearchBar(List<String> sections) {
     final searchQuery = ref.watch(mapSearchQueryProvider);
     final filter = ref.watch(mapFilterProvider);
-    final sections = ref.watch(mapSectionsProvider);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -336,7 +346,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final totalItems = data.boilerHouses.length + data.locations.length;
     
     if (totalItems == 0) {
-      return const Center(child: Text('No results found', style: TextStyle(color: Colors.white54)));
+      return const Center(child: Text('Нет результатов', style: TextStyle(color: Colors.white54)));
     }
 
     return ListView.builder(
@@ -388,7 +398,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text('Site #${bh.siteNumber ?? '?'}', style: Theme.of(context).textTheme.labelSmall),
+                    Text('Уч. ${bh.siteNumber ?? '?'}', style: Theme.of(context).textTheme.labelSmall),
                     if (hasIncident) ...[
                       const SizedBox(width: 8),
                       Container(
@@ -398,7 +408,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${bh.incidentCount} INCIDENTS',
+                          '${bh.incidentCount} ИНЦИД.',
                           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
@@ -433,14 +443,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  loc.name ?? 'No Name', 
+                  loc.name ?? 'Без названия', 
                   style: Theme.of(context).textTheme.headlineMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  loc.managementCompanyId ?? 'No Management Company', 
+                  loc.managementCompanyId ?? '', 
                   style: Theme.of(context).textTheme.labelSmall,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -453,41 +463,4 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       ),
     );
   }
-
-  // Dark Map Style JSON
-  static const String _mapStyle = '''
-[
-  {
-    "elementType": "geometry",
-    "stylers": [{"color": "#212121"}]
-  },
-  {
-    "elementType": "labels.icon",
-    "stylers": [{"visibility": "off"}]
-  },
-  {
-    "elementType": "labels.text.fill",
-    "stylers": [{"color": "#757575"}]
-  },
-  {
-    "elementType": "labels.text.stroke",
-    "stylers": [{"color": "#212121"}]
-  },
-  {
-    "featureType": "administrative",
-    "elementType": "geometry",
-    "stylers": [{"color": "#757575"}]
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry.fill",
-    "stylers": [{"color": "#2c2c2c"}]
-  },
-  {
-    "featureType": "water",
-    "elementType": "geometry",
-    "stylers": [{"color": "#000000"}]
-  }
-]
-''';
 }

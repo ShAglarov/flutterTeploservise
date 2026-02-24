@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/incident_models.dart';
-import '../services/incident_service.dart';
+import '../repositories/sync_repository.dart';
 
 part 'incident_providers.g.dart';
 
@@ -52,9 +52,9 @@ class IncidentFilter extends _$IncidentFilter {
 }
 
 @riverpod
-Future<List<IncidentResponse>> allIncidents(Ref ref) async {
-  final service = ref.watch(incidentServiceProvider);
-  return await service.getAllIncidents();
+Stream<List<IncidentResponse>> allIncidents(Ref ref) {
+  final syncRepo = ref.watch(syncRepositoryProvider);
+  return syncRepo.watchAllIncidents();
 }
 
 @riverpod
@@ -99,7 +99,7 @@ AsyncValue<List<IncidentResponse>> filteredIncidents(Ref ref) {
 }
 
 @riverpod
-Future<IncidentResponse> singleIncident(Ref ref, int id) async {
-  final service = ref.watch(incidentServiceProvider);
-  return await service.getIncident(id);
+Stream<IncidentResponse?> singleIncident(Ref ref, int id) {
+  final syncRepo = ref.watch(syncRepositoryProvider);
+  return syncRepo.watchIncidentById(id);
 }

@@ -26,11 +26,13 @@ class IncidentDetailScreen extends ConsumerWidget {
       ),
       body: incidentAsync.when(
         data: (incident) => RefreshIndicator(
-          onRefresh: () => ref.refresh(singleIncidentProvider(incidentId).future),
+          onRefresh: () async {
+            // ref.refresh(singleIncidentProvider(incidentId).future) is not applicable to Stream anymore
+          },
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
+            child: incident == null ? const Center(child: Text('Инцидент не найден', style: TextStyle(color: Colors.white))) : Column(
               children: [
                 IncidentHeaderCard(
                   incident: incident,
@@ -47,17 +49,23 @@ class IncidentDetailScreen extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 16),
-                BoilerHouseInfoCard(boilerHouse: incident.boilerHouse),
-                const SizedBox(height: 16),
-                AffectedHousesCard(
-                  houseIds: incident.affectedHouseIds,
-                  onShowAll: () {
-                    // TODO: Show list of affected houses
-                  },
-                ),
-                const SizedBox(height: 16),
-                IncidentDescriptionCard(description: incident.description),
-                const SizedBox(height: 16),
+                if (incident.boilerHouse != null) ...[
+                  BoilerHouseInfoCard(boilerHouse: incident.boilerHouse!),
+                  const SizedBox(height: 16),
+                ],
+                if (incident.affectedHouseIds != null) ...[
+                  AffectedHousesCard(
+                    houseIds: incident.affectedHouseIds!,
+                    onShowAll: () {
+                      // TODO: Show list of affected houses
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (incident.description != null) ...[
+                  IncidentDescriptionCard(description: incident.description!),
+                  const SizedBox(height: 16),
+                ],
                 IncidentChatCard(incidentId: incidentId),
                 const SizedBox(height: 32), // Bottom padding
               ],

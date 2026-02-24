@@ -11,6 +11,7 @@ class IncidentCard extends StatelessWidget {
   final String? assigneeName;
   final String? stoppedServicesText;
   final int affectedPopulationCount;
+  final bool isUnsynced;
   final VoidCallback? onTap;
 
   const IncidentCard({
@@ -23,6 +24,7 @@ class IncidentCard extends StatelessWidget {
     this.assigneeName,
     this.stoppedServicesText,
     required this.affectedPopulationCount,
+    this.isUnsynced = false,
     this.onTap,
   });
 
@@ -56,6 +58,11 @@ class IncidentCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (isUnsynced)
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: const Icon(Icons.cloud_upload_outlined, size: 16, color: AppTheme.warningOrange),
+                ),
               _buildStatusBadge(),
             ],
           ),

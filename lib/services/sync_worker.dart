@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/database.dart';
 import '../repositories/sync_repository.dart';
+import '../main.dart';
 import 'incident_service.dart';
 import 'location_service.dart';
 import '../models/incident_models.dart';
@@ -65,7 +67,7 @@ class SyncWorker {
       await _repository.updatePendingStatus(change.id, 'syncing');
 
       final payload = change.payload != null 
-          ? jsonDecode(change.payload!) as Map<String, dynamic>
+          ? jsonDecode(utf8.decode(change.payload!)) as Map<String, dynamic>
           : <String, dynamic>{};
 
       switch (change.entityType) {
@@ -83,9 +85,24 @@ class SyncWorker {
       print('✅ [SyncWorker] Successfully synced ${change.entityType} ${change.actionType} (ID: ${change.id})');
     } catch (e) {
       print('⚠️ [SyncWorker] Failed to sync ${change.entityType} ${change.actionType} (ID: ${change.id}): $e');
-      final newRetryCount = change.retryCount + 1;
+      final newRetryCount = (change.retryCount ?? 0) + 1;
       final newStatus = newRetryCount >= 5 ? 'failed' : 'pending';
+      if (newStatus == 'failed') {
+        _showToast('Ошибка синхронизации: ${change.entityType} (${change.actionType})');
+      }
       await _repository.updatePendingStatus(change.id, newStatus, retryCount: newRetryCount);
+    }
+  }
+
+  void _showToast(String message) {
+    if (scaffoldMessengerKey.currentState != null) {
+      scaffoldMessengerKey.currentState!.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red.withOpacity(0.9),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -94,9 +111,10 @@ class SyncWorker {
       case 'create':
         final incidentCreate = IncidentCreate.fromJson(payload);
         final result = await _incidentService.createIncident(incidentCreate);
-        // After successful create, we should ideally update the local DB with the new backend ID
-        // and delete any "stub" or local version of this incident.
-        // For simplicity, we just mark the change as synced for now.
+        if (change.entityId != null && change.entityId! < 0 && result.id > 0) {
+          await _repository.resolveTemporaryId('incident', change.entityId!, result.id);
+          print('🔗 [SyncWorker] Resolved temporary ID ${change.entityId} to real ID ${result.id}');
+        }
         break;
       case 'update':
         if (change.entityId != null) {

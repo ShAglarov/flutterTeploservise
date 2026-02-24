@@ -40,7 +40,7 @@ final class MapDataProvider extends $NotifierProvider<MapData, MapDataState> {
   }
 }
 
-String _$mapDataHash() => r'638d59a7252b623b07cee5ae3c14019031572129';
+String _$mapDataHash() => r'7ca7366975f1775757096c11257a525ff2d45e14';
 
 abstract class _$MapData extends $Notifier<MapDataState> {
   MapDataState build();
@@ -245,55 +245,3 @@ final class MapSectionsProvider
 }
 
 String _$mapSectionsHash() => r'9026c7fafe752c8f692f6606d7c5f3f4875385a8';
-
-@ProviderFor(MapController)
-final mapControllerProvider = MapControllerProvider._();
-
-final class MapControllerProvider
-    extends $NotifierProvider<MapController, GoogleMapController?> {
-  MapControllerProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'mapControllerProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$mapControllerHash();
-
-  @$internal
-  @override
-  MapController create() => MapController();
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(GoogleMapController? value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<GoogleMapController?>(value),
-    );
-  }
-}
-
-String _$mapControllerHash() => r'a8aeeab509817dcf6a2fa86bf5ea0cf5d6125a00';
-
-abstract class _$MapController extends $Notifier<GoogleMapController?> {
-  GoogleMapController? build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final ref = this.ref as $Ref<GoogleMapController?, GoogleMapController?>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<GoogleMapController?, GoogleMapController?>,
-              GoogleMapController?,
-              Object?,
-              Object?
-            >;
-    element.handleCreate(ref, build);
-  }
-}

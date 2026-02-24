@@ -7,6 +7,8 @@ import 'providers/auth_providers.dart';
 
 import 'services/sync_worker.dart';
 
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 void main() {
   runApp(
     const ProviderScope(
@@ -38,6 +40,7 @@ class _MyAppState extends ConsumerState<MyApp> {
       title: 'Teplo Service',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       home: _getHome(authState),
     );
   }

@@ -1,9 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
+import '../repositories/sync_repository.dart';
 import '../services/boiler_house_service.dart';
 import '../services/location_service.dart';
+import '../services/incident_service.dart';
 
 part 'map_providers.g.dart';
 
@@ -59,26 +62,46 @@ class MapFilterState {
 class MapData extends _$MapData {
   @override
   MapDataState build() {
-    // Initial load
-    Future.microtask(() => loadData());
+    final syncRepo = ref.watch(syncRepositoryProvider);
+    
+    // 1. Subscribe to local DB streams for reactive updates
+    final bhSub = syncRepo.watchAllBoilerHouses().listen((bhs) {
+      state = state.copyWith(boilerHouses: bhs, isLoading: false);
+    }, onError: (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+    });
+    
+    final locSub = syncRepo.watchAllLocations().listen((locs) {
+      state = state.copyWith(locations: locs, isLoading: false);
+    }, onError: (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+    });
+    
+    ref.onDispose(() {
+      bhSub.cancel();
+      locSub.cancel();
+    });
+
+    // 2. Kick off initial fetch from the backend API to populate the local DB
+    _fetchInitialData();
+
     return MapDataState(isLoading: true);
   }
 
-  Future<void> loadData() async {
-    final bhService = ref.read(boilerHouseServiceProvider);
-    final locService = ref.read(locationServiceProvider);
-
-    state = state.copyWith(isLoading: true);
+  Future<void> _fetchInitialData() async {
     try {
-      final bhs = await bhService.getAllBoilerHouses();
-      final locs = await locService.getAllSavedLocations();
-      state = state.copyWith(
-        boilerHouses: bhs,
-        locations: locs,
-        isLoading: false,
-      );
+      final bhService = ref.read(boilerHouseServiceProvider);
+      final locService = ref.read(locationServiceProvider);
+      final incService = ref.read(incidentServiceProvider);
+
+      await Future.wait([
+        bhService.getAllBoilerHouses(),
+        locService.getAllSavedLocations(),
+        incService.getAllIncidents(),
+      ]);
+      print('✅ [MapData] Initial data fetch complete');
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      print('⚠️ [MapData] Initial data fetch failed: $e');
     }
   }
 }
@@ -126,14 +149,12 @@ MapDataState filteredMapData(Ref ref) {
   // 2. Filter by Section
   if (filter.selectedSection != null) {
     boilerHouses = boilerHouses.where((bh) => bh.siteNumber == filter.selectedSection).toList();
-    // Locations don't have a direct section link in models, but we could find them by BH association.
-    // For now, only filter BH by section.
   }
 
   // 3. Filter by Incidents
   if (filter.showOnlyIncidents) {
     boilerHouses = boilerHouses.where((bh) => (bh.incidentCount ?? 0) > 0).toList();
-    locations = []; // Assuming locations don't track incidents directly in this view
+    locations = [];
   }
 
   return dataState.copyWith(boilerHouses: boilerHouses, locations: locations);
@@ -151,14 +172,4 @@ List<String> mapSections(Ref ref) {
   return sections;
 }
 
-@riverpod
-class MapController extends _$MapController {
-  @override
-  GoogleMapController? build() => null;
-
-  void set(GoogleMapController controller) => state = controller;
-
-  void move(LatLng target, {double zoom = 15}) {
-    state?.animateCamera(CameraUpdate.newLatLngZoom(target, zoom));
-  }
-}
+// flutter_map MapController is managed outside Riverpod since it has its own lifecycle

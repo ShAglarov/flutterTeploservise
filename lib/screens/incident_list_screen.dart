@@ -170,6 +170,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           isStatusActive: inc.status != IncidentStatus.resolved,
           affectedPopulationCount: 0, // Should be calculated if data is available
           stoppedServicesText: _getStoppedServices(inc),
+          isUnsynced: inc.localPendingAck == true,
           onTap: () {
             Navigator.push(
               context,

@@ -122,6 +122,7 @@ IncidentResponse _$IncidentResponseFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updatedAt'] as String?,
       resolvedAt: json['resolvedAt'] as String?,
       localUUID: json['local_uuid'] as String?,
+      localPendingAck: json['localPendingAck'] as bool?,
       affectedHouseIds: (json['affectedHouseIds'] as List<dynamic>?)
           ?.map((e) => (e as num).toInt())
           .toList(),
@@ -159,6 +160,7 @@ Map<String, dynamic> _$IncidentResponseToJson(IncidentResponse instance) =>
       'updatedAt': instance.updatedAt,
       'resolvedAt': instance.resolvedAt,
       'local_uuid': instance.localUUID,
+      'localPendingAck': instance.localPendingAck,
       'affectedHouseIds': instance.affectedHouseIds,
       'affectedHouseDetails': instance.affectedHouseDetails,
       'boilerHouse': instance.boilerHouse,

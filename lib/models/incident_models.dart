@@ -161,6 +161,8 @@ class IncidentResponse {
   @JsonKey(name: 'local_uuid')
   final String? localUUID;
   
+  final bool? localPendingAck;
+  
   final List<int>? affectedHouseIds;
   final List<AffectedHouseDetail>? affectedHouseDetails;
   final BoilerHouseSummary? boilerHouse;
@@ -182,6 +184,7 @@ class IncidentResponse {
     this.updatedAt,
     this.resolvedAt,
     this.localUUID,
+    this.localPendingAck,
     this.affectedHouseIds,
     this.affectedHouseDetails,
     this.boilerHouse,

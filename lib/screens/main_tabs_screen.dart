@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/connectivity_provider.dart';
 import 'map_screen.dart';
 import 'incident_list_screen.dart';
 import '../utils/app_theme.dart';
 
-class MainTabsScreen extends StatefulWidget {
+class MainTabsScreen extends ConsumerStatefulWidget {
   const MainTabsScreen({super.key});
 
   @override
-  State<MainTabsScreen> createState() => _MainTabsScreenState();
+  ConsumerState<MainTabsScreen> createState() => _MainTabsScreenState();
 }
 
-class _MainTabsScreenState extends State<MainTabsScreen> {
+class _MainTabsScreenState extends ConsumerState<MainTabsScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
@@ -21,10 +23,32 @@ class _MainTabsScreenState extends State<MainTabsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isOffline = ref.watch(isOfflineProvider);
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: Column(
+        children: [
+          if (isOffline)
+            Container(
+              color: Colors.red.withOpacity(0.9),
+              width: double.infinity,
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 4,
+                bottom: 4,
+              ),
+              child: const Text(
+                'Нет подключения к сети',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _screens,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

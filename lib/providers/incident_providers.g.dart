@@ -69,11 +69,11 @@ final class AllIncidentsProvider
         $FunctionalProvider<
           AsyncValue<List<IncidentResponse>>,
           List<IncidentResponse>,
-          FutureOr<List<IncidentResponse>>
+          Stream<List<IncidentResponse>>
         >
     with
         $FutureModifier<List<IncidentResponse>>,
-        $FutureProvider<List<IncidentResponse>> {
+        $StreamProvider<List<IncidentResponse>> {
   AllIncidentsProvider._()
     : super(
         from: null,
@@ -90,17 +90,17 @@ final class AllIncidentsProvider
 
   @$internal
   @override
-  $FutureProviderElement<List<IncidentResponse>> $createElement(
+  $StreamProviderElement<List<IncidentResponse>> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<List<IncidentResponse>> create(Ref ref) {
+  Stream<List<IncidentResponse>> create(Ref ref) {
     return allIncidents(ref);
   }
 }
 
-String _$allIncidentsHash() => r'5b6af3d529625936a49ae6d2bd9187e8403de9a8';
+String _$allIncidentsHash() => r'51eb04d030e9a844596d06ea9162735107871ed9';
 
 @ProviderFor(filteredIncidents)
 final filteredIncidentsProvider = FilteredIncidentsProvider._();
@@ -157,11 +157,13 @@ final singleIncidentProvider = SingleIncidentFamily._();
 final class SingleIncidentProvider
     extends
         $FunctionalProvider<
-          AsyncValue<IncidentResponse>,
-          IncidentResponse,
-          FutureOr<IncidentResponse>
+          AsyncValue<IncidentResponse?>,
+          IncidentResponse?,
+          Stream<IncidentResponse?>
         >
-    with $FutureModifier<IncidentResponse>, $FutureProvider<IncidentResponse> {
+    with
+        $FutureModifier<IncidentResponse?>,
+        $StreamProvider<IncidentResponse?> {
   SingleIncidentProvider._({
     required SingleIncidentFamily super.from,
     required int super.argument,
@@ -185,12 +187,12 @@ final class SingleIncidentProvider
 
   @$internal
   @override
-  $FutureProviderElement<IncidentResponse> $createElement(
+  $StreamProviderElement<IncidentResponse?> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<IncidentResponse> create(Ref ref) {
+  Stream<IncidentResponse?> create(Ref ref) {
     final argument = this.argument as int;
     return singleIncident(ref, argument);
   }
@@ -206,10 +208,10 @@ final class SingleIncidentProvider
   }
 }
 
-String _$singleIncidentHash() => r'97381d938b57c89a879a51e466fd8899e02beba0';
+String _$singleIncidentHash() => r'f4e7d3f9cb3759f951728906e3653a08be90cfa8';
 
 final class SingleIncidentFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<IncidentResponse>, int> {
+    with $FunctionalFamilyOverride<Stream<IncidentResponse?>, int> {
   SingleIncidentFamily._()
     : super(
         retry: null,
