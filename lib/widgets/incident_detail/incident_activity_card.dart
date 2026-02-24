@@ -79,7 +79,7 @@ class IncidentActivityCard extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        activity.author.fullName,
+                        activity.userName ?? 'Неизвестный пользователь',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
@@ -89,7 +89,7 @@ class IncidentActivityCard extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      _formatTime(activity.createdAt),
+                      _formatTime(activity.timestamp),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.5),
                         fontSize: 12,
@@ -99,9 +99,9 @@ class IncidentActivityCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 _buildActionText(activity),
-                if (activity.changes != null && activity.changes!.isNotEmpty) ...[
+                if (activity.parsedChanges.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  ...activity.changes!.map((change) => _buildChangeRow(change)),
+                  ...activity.parsedChanges.map((change) => _buildChangeRow(change)),
                 ],
               ],
             ),
@@ -147,7 +147,7 @@ class IncidentActivityCard extends ConsumerWidget {
         const SizedBox(width: 4),
         Expanded(
           child: Text(
-            '${activity.author.fullName.split(' ').first} $actionText',
+            '${(activity.userName ?? "Неизвестный").split(' ').first} $actionText',
             style: const TextStyle(color: Colors.white, fontSize: 13),
           ),
         ),

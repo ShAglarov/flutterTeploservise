@@ -3,21 +3,6 @@ import 'package:json_annotation/json_annotation.dart';
 part 'activity_models.g.dart';
 
 @JsonSerializable(fieldRename: FieldRename.snake)
-class ActivityAuthor {
-  final int id;
-  @JsonKey(name: 'full_name')
-  final String fullName;
-
-  ActivityAuthor({
-    required this.id,
-    required this.fullName,
-  });
-
-  factory ActivityAuthor.fromJson(Map<String, dynamic> json) => _$ActivityAuthorFromJson(json);
-  Map<String, dynamic> toJson() => _$ActivityAuthorToJson(this);
-}
-
-@JsonSerializable(fieldRename: FieldRename.snake)
 class ActivityChange {
   final String field;
   @JsonKey(name: 'old_value')
@@ -38,35 +23,62 @@ class ActivityChange {
 @JsonSerializable(fieldRename: FieldRename.snake)
 class IncidentActivity {
   final int id;
-  @JsonKey(name: 'incident_id')
-  final int incidentId;
+  @JsonKey(name: 'entity_id')
+  final dynamic entityId;
   @JsonKey(name: 'action_type')
-  final String actionType; // 'create', 'update', 'delete', 'comment'
+  final String actionType;
   @JsonKey(name: 'entity_type')
-  final String entityType; // 'incident', 'incident_comment'
+  final String entityType;
   
   @JsonKey(name: 'user_id')
   final int userId;
-  final ActivityAuthor author;
+  @JsonKey(name: 'user_name')
+  final String? userName;
   
-  // Can be a string message or a map of changes
   final String? message;
-  final List<ActivityChange>? changes;
   
-  @JsonKey(name: 'created_at')
-  final String createdAt;
+  @JsonKey(name: 'changes')
+  final Map<String, dynamic>? changesData;
+  
+  @JsonKey(name: 'timestamp')
+  final String timestamp;
 
   IncidentActivity({
     required this.id,
-    required this.incidentId,
+    this.entityId,
     required this.actionType,
     required this.entityType,
     required this.userId,
-    required this.author,
+    this.userName,
     this.message,
-    this.changes,
-    required this.createdAt,
+    this.changesData,
+    required this.timestamp,
   });
+
+  // Getter to convert raw changes dict to structured ActionChanges
+  List<ActivityChange> get parsedChanges {
+    final list = <ActivityChange>[];
+    if (changesData == null) return list;
+    
+    changesData!.forEach((key, value) {
+      if (key == 'scope' || key == 'type' || key == 'screen') return;
+      
+      var oldVal;
+      var newVal;
+      if (value is Map) {
+        oldVal = value['old'];
+        newVal = value['new'];
+        if (oldVal == null && newVal == null) {
+          oldVal = value['old_value'];
+          newVal = value['new_value'];
+        }
+      } else {
+        newVal = value;
+      }
+      list.add(ActivityChange(field: key, oldValue: oldVal, newValue: newVal));
+    });
+    return list;
+  }
 
   factory IncidentActivity.fromJson(Map<String, dynamic> json) => _$IncidentActivityFromJson(json);
   Map<String, dynamic> toJson() => _$IncidentActivityToJson(this);

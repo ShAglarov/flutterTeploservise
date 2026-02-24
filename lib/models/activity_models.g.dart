@@ -6,15 +6,6 @@ part of 'activity_models.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-ActivityAuthor _$ActivityAuthorFromJson(Map<String, dynamic> json) =>
-    ActivityAuthor(
-      id: (json['id'] as num).toInt(),
-      fullName: json['full_name'] as String,
-    );
-
-Map<String, dynamic> _$ActivityAuthorToJson(ActivityAuthor instance) =>
-    <String, dynamic>{'id': instance.id, 'full_name': instance.fullName};
-
 ActivityChange _$ActivityChangeFromJson(Map<String, dynamic> json) =>
     ActivityChange(
       field: json['field'] as String,
@@ -32,27 +23,25 @@ Map<String, dynamic> _$ActivityChangeToJson(ActivityChange instance) =>
 IncidentActivity _$IncidentActivityFromJson(Map<String, dynamic> json) =>
     IncidentActivity(
       id: (json['id'] as num).toInt(),
-      incidentId: (json['incident_id'] as num).toInt(),
+      entityId: json['entity_id'],
       actionType: json['action_type'] as String,
       entityType: json['entity_type'] as String,
       userId: (json['user_id'] as num).toInt(),
-      author: ActivityAuthor.fromJson(json['author'] as Map<String, dynamic>),
+      userName: json['user_name'] as String?,
       message: json['message'] as String?,
-      changes: (json['changes'] as List<dynamic>?)
-          ?.map((e) => ActivityChange.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      createdAt: json['created_at'] as String,
+      changesData: json['changes'] as Map<String, dynamic>?,
+      timestamp: json['timestamp'] as String,
     );
 
 Map<String, dynamic> _$IncidentActivityToJson(IncidentActivity instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'incident_id': instance.incidentId,
+      'entity_id': instance.entityId,
       'action_type': instance.actionType,
       'entity_type': instance.entityType,
       'user_id': instance.userId,
-      'author': instance.author,
+      'user_name': instance.userName,
       'message': instance.message,
-      'changes': instance.changes,
-      'created_at': instance.createdAt,
+      'changes': instance.changesData,
+      'timestamp': instance.timestamp,
     };

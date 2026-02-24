@@ -26,10 +26,10 @@ class IncidentActivityFeed extends _$IncidentActivityFeed {
       subscription.cancel();
     });
 
-    // Sort by createdAt descending (newest first)
+    // Sort by timestamp descending (newest first)
     initialActivities.sort((a, b) {
-      final aDate = DateTime.tryParse(a.createdAt) ?? DateTime.now();
-      final bDate = DateTime.tryParse(b.createdAt) ?? DateTime.now();
+      final aDate = DateTime.tryParse(a.timestamp) ?? DateTime.now();
+      final bDate = DateTime.tryParse(b.timestamp) ?? DateTime.now();
       return bDate.compareTo(aDate);
     });
 
@@ -45,19 +45,23 @@ class IncidentActivityFeed extends _$IncidentActivityFeed {
     final entityType = data['entity_type'];
     final actionType = data['action_type'];
     
-    // We want to capture changes to the incident itself and its comments/status
-    if (entityType == 'action_log' || entityType == 'incident' || entityType == 'status') {
-      final entityData = data['entity_data'];
-      if (entityData != null) {
-        try {
-          final activity = IncidentActivity.fromJson(entityData);
-          if (activity.incidentId == incidentId) {
-            _addActivity(activity);
-          }
-        } catch (e) {
-          // If parsing fails as IncidentActivity, we might need a custom mapping
-          dev.log('ActivityProvider: Failed to parse activity from WS: $e', name: 'WS');
+    // Check if this action log belongs to our incident
+    bool isRelevantLog = false;
+    if (entityType == 'incident') {
+      isRelevantLog = true;
+    } else if (data['entity_id'] == incidentId || data['entity_id'] == incidentId.toString()) {
+      isRelevantLog = true;
+    }
+
+    if (isRelevantLog) {
+      try {
+        final activity = IncidentActivity.fromJson(data);
+        if (activity.entityId == incidentId || activity.entityId == incidentId.toString() || activity.entityType == 'incident') {
+           _addActivity(activity);
         }
+      } catch (e) {
+        // If it's partial data or not matching ActionLogResponse perfectly
+        dev.log('ActivityProvider: Failed to parse activity from WS: $e', name: 'WS');
       }
     }
   }
@@ -69,8 +73,8 @@ class IncidentActivityFeed extends _$IncidentActivityFeed {
       
       final updatedList = [activity, ...activities];
       updatedList.sort((a, b) {
-        final aDate = DateTime.tryParse(a.createdAt) ?? DateTime.now();
-        final bDate = DateTime.tryParse(b.createdAt) ?? DateTime.now();
+        final aDate = DateTime.tryParse(a.timestamp) ?? DateTime.now();
+        final bDate = DateTime.tryParse(b.timestamp) ?? DateTime.now();
         return bDate.compareTo(aDate);
       });
       state = AsyncData(updatedList);
