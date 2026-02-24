@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -77,19 +78,22 @@ const Object _sentinel = Object();
 
 @Riverpod(keepAlive: true)
 class MapData extends _$MapData {
+  Timer? _updateTimer;
+  MapDataState? _pendingState;
+
   @override
   MapDataState build() {
     final syncRepo = ref.watch(syncRepositoryProvider);
     
     // 1. Subscribe to local DB streams for reactive updates
     final bhSub = syncRepo.watchAllBoilerHouses().listen((bhs) {
-      state = state.copyWith(boilerHouses: bhs, isLoading: false);
+      _applyBatchUpdate((s) => s.copyWith(boilerHouses: bhs, isLoading: false));
     }, onError: (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
     });
     
     final locSub = syncRepo.watchAllLocations().listen((locs) {
-      state = state.copyWith(locations: locs, isLoading: false);
+      _applyBatchUpdate((s) => s.copyWith(locations: locs, isLoading: false));
     }, onError: (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
     });
@@ -117,17 +121,18 @@ class MapData extends _$MapData {
         }
       }
 
-      state = state.copyWith(
+      _applyBatchUpdate((s) => s.copyWith(
         incidents: incidents,
         boilerHouseIdsWithIncidents: bhIds,
         locationIdsWithIncidents: locIds,
         isLoading: false,
-      );
+      ));
     }, onError: (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
     });
     
     ref.onDispose(() {
+      _updateTimer?.cancel();
       bhSub.cancel();
       locSub.cancel();
       incSub.cancel();
@@ -137,6 +142,21 @@ class MapData extends _$MapData {
     _fetchInitialData();
 
     return MapDataState(isLoading: true);
+  }
+
+  /// Batches multiple rapid stream emissions into a single state update.
+  /// This prevents the "one-by-one" loading effect and reduces UI jank.
+  void _applyBatchUpdate(MapDataState Function(MapDataState) updater) {
+    _pendingState = updater(_pendingState ?? state);
+    
+    if (_updateTimer?.isActive ?? false) return;
+    
+    _updateTimer = Timer(const Duration(milliseconds: 150), () {
+      if (_pendingState != null) {
+        state = _pendingState!;
+        _pendingState = null;
+      }
+    });
   }
 
   Future<void> _fetchInitialData() async {

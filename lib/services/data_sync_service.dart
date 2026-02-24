@@ -43,7 +43,10 @@ class DataSyncService {
     if (_messageSubscription != null) return; // Already started
 
     _myDeviceId = await _deviceService.getDeviceId();
-    dev.log('[DataSync] Starting listener, deviceId=$_myDeviceId', name: 'SYNC');
+    
+    // Load last sync cursor from DB
+    lastWSActionLogId = await _syncRepo.getSyncCursor('ws_sync_cursor');
+    dev.log('[DataSync] Starting listener, deviceId=$_myDeviceId, lastCursor=$lastWSActionLogId', name: 'SYNC');
 
     _messageSubscription = _realtimeService.messages.listen(
       _handleMessage,
@@ -79,7 +82,7 @@ class DataSyncService {
     if (deviceId != null && deviceId == _myDeviceId && entityData == null) {
       dev.log('[DataSync] Echo suppressed: action from own device (no data)', name: 'SYNC');
       // Still track the actionId for cursor
-      _trackActionId(actionId);
+      await _trackActionId(actionId);
       return true;
     }
 
@@ -111,7 +114,7 @@ class DataSyncService {
           dev.log('[DataSync] Unknown entity type: $entityType', name: 'SYNC');
       }
 
-      _trackActionId(actionId);
+      await _trackActionId(actionId);
       dev.log('✅ [DataSync] Processed $actionType $entityType id=$entityIdRaw', name: 'SYNC');
       return true;
     } catch (e) {
@@ -222,11 +225,13 @@ class DataSyncService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  void _trackActionId(dynamic actionId) {
+  Future<void> _trackActionId(dynamic actionId) async {
     final id = _parseInt(actionId);
     if (id != null) {
       if (lastWSActionLogId == null || id > lastWSActionLogId!) {
         lastWSActionLogId = id;
+        // Persist to DB
+        await _syncRepo.updateSyncCursor('ws_sync_cursor', id);
       }
     }
   }
