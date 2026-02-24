@@ -32,12 +32,17 @@ class IncidentChat extends _$IncidentChat {
   }
 
   void _handleRealtimeMessage(Map<String, dynamic> message) {
+    var data = message;
+    if (message['type'] == 'action_sync' && message['data'] is Map<String, dynamic>) {
+      data = message['data'] as Map<String, dynamic>;
+    }
+
     // Check if message is for this incident and is a comment
-    final entityType = message['entity_type'];
-    final actionType = message['action_type'];
+    final entityType = data['entity_type'];
+    final actionType = data['action_type'];
     
     if (entityType == 'incident_comment' || entityType == 'comment') {
-      final entityData = message['entity_data'];
+      final entityData = data['entity_data'];
       if (entityData != null) {
         try {
           final comment = IncidentComment.fromJson(entityData);
