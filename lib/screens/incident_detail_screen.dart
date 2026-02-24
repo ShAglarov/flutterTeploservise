@@ -6,6 +6,8 @@ import '../widgets/incident_detail/boiler_house_info_card.dart';
 import '../widgets/incident_detail/affected_houses_card.dart';
 import '../widgets/incident_detail/incident_description_card.dart';
 import '../widgets/incident_detail/incident_chat_card.dart';
+import '../widgets/incident_detail/incident_activity_card.dart';
+import '../widgets/incident_detail/incident_photos_card.dart';
 import 'incident_form_screen.dart';
 
 class IncidentDetailScreen extends ConsumerWidget {
@@ -56,6 +58,7 @@ class IncidentDetailScreen extends ConsumerWidget {
                 if (incident.affectedHouseIds != null) ...[
                   AffectedHousesCard(
                     houseIds: incident.affectedHouseIds!,
+                    houseDetails: incident.affectedHouseDetails,
                     onShowAll: () {
                       // TODO: Show list of affected houses
                     },
@@ -66,6 +69,10 @@ class IncidentDetailScreen extends ConsumerWidget {
                   IncidentDescriptionCard(description: incident.description!),
                   const SizedBox(height: 16),
                 ],
+                const IncidentPhotosCard(),
+                const SizedBox(height: 16),
+                IncidentActivityCard(incidentId: incidentId),
+                const SizedBox(height: 16),
                 IncidentChatCard(incidentId: incidentId),
                 const SizedBox(height: 32), // Bottom padding
               ],

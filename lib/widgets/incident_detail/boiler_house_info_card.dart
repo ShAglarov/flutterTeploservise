@@ -10,33 +10,46 @@ class BoilerHouseInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BaseCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 20,
+          // Left accent line
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 3,
+            child: Container(
+              decoration: const BoxDecoration(
                 color: Colors.orange,
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'ИНФОРМАЦИЯ О КОТЕЛЬНОЙ',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(8),
+                  bottomLeft: Radius.circular(8),
                 ),
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: 16),
-          _buildInfoRow('Котельная', boilerHouse?.address ?? '—'),
-          const Divider(color: Colors.white10),
-          _buildInfoRow('Номер участка', boilerHouse?.siteNumber ?? '—'),
-          const Divider(color: Colors.white10),
-          _buildInfoRow('Начальник участка', boilerHouse?.siteManager ?? '—'),
+          Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Информация о котельной',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildInfoRow('Котельная', boilerHouse?.address ?? '—'),
+                Divider(color: Colors.white.withOpacity(0.1)),
+                _buildInfoRow('Номер участка', boilerHouse?.siteNumber ?? '—'),
+                Divider(color: Colors.white.withOpacity(0.1)),
+                _buildInfoRow('Начальник участка', boilerHouse?.siteManager ?? '—'),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -61,6 +74,7 @@ class BoilerHouseInfoCard extends StatelessWidget {
               textAlign: TextAlign.end,
               style: const TextStyle(
                 fontSize: 14,
+                fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
