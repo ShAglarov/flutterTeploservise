@@ -6,9 +6,11 @@ import '../widgets/incident_card.dart';
 import '../utils/app_theme.dart';
 import '../models/incident_models.dart';
 import '../models/boiler_house_models.dart';
+import '../services/incident_service.dart';
 import '../services/user_service.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class IncidentListScreen extends ConsumerStatefulWidget {
   const IncidentListScreen({super.key});
@@ -208,26 +210,61 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           }
         }
 
-        return IncidentCard(
-          title: inc.title ?? 'Инцидент #${inc.id}',
-          location: inc.boilerHouse?.address ?? 'Неизвестная локация',
-          timestamp: _formatFullTimestamp(inc),
-          statusText: inc.status == IncidentStatus.resolved ? 'ЗАВЕРШЁН' : 'АКТИВЕН',
-          isStatusActive: inc.status != IncidentStatus.resolved,
-          assigneeName: assigneeName,
-          affectedPopulationCount: totalResidents,
-          stoppedServicesText: _getStoppedServices(inc),
-          broadcastText: _getBroadcastText(inc),
-          isUnsynced: inc.localPendingAck == true,
-          boilerHouseDetail: boilerHouseDetail,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => IncidentDetailScreen(incidentId: inc.id),
+        return Slidable(
+          key: ValueKey(inc.id),
+          endActionPane: ActionPane(
+            motion: const ScrollMotion(),
+            extentRatio: 0.65, // Adjust based on 3 buttons width
+            children: [
+              if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed)
+                _buildCustomSlidableAction(
+                  label: 'Возобновить',
+                  icon: Icons.refresh,
+                  color: Colors.orange,
+                  onPressed: (_) => _resumeIncident(inc.id),
+                )
+              else
+                _buildCustomSlidableAction(
+                  label: 'Завершить',
+                  icon: Icons.check_circle_outline,
+                  color: Colors.green,
+                  onPressed: (_) => _completeIncident(inc.id),
+                ),
+              _buildCustomSlidableAction(
+                label: 'Удалить',
+                icon: Icons.delete_outline,
+                color: Colors.redAccent,
+                onPressed: (_) => _deleteIncident(inc.id, inc.title),
               ),
-            );
-          },
+              _buildCustomSlidableAction(
+                label: 'Редакт.',
+                icon: Icons.edit,
+                color: Colors.orange,
+                onPressed: (_) => _editIncident(inc.id),
+              ),
+            ],
+          ),
+          child: IncidentCard(
+            title: inc.title ?? 'Инцидент #${inc.id}',
+            location: inc.boilerHouse?.address ?? 'Неизвестная локация',
+            timestamp: _formatFullTimestamp(inc),
+            statusText: inc.status == IncidentStatus.resolved ? 'ЗАВЕРШЁН' : 'АКТИВЕН',
+            isStatusActive: inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed,
+            assigneeName: assigneeName,
+            affectedPopulationCount: totalResidents,
+            stoppedServicesText: _getStoppedServices(inc),
+            broadcastText: _getBroadcastText(inc),
+            isUnsynced: inc.localPendingAck == true,
+            boilerHouseDetail: boilerHouseDetail,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => IncidentDetailScreen(incidentId: inc.id),
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -265,6 +302,127 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       return 'Роли/Пользователи (${inc.notificationConfig!.type.name})';
     }
     return null;
+  }
+
+  Widget _buildCustomSlidableAction({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required Function(BuildContext) onPressed,
+  }) {
+    return CustomSlidableAction(
+      onPressed: onPressed,
+      backgroundColor: Colors.transparent,
+      padding: EdgeInsets.zero,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _completeIncident(int id) async {
+    try {
+      final service = ref.read(incidentServiceProvider);
+      await service.updateIncident(id, IncidentUpdate(status: IncidentStatus.resolved));
+      ref.invalidate(allIncidentsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Инцидент завершен')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка завершения: $e')));
+      }
+    }
+  }
+
+  Future<void> _resumeIncident(int id) async {
+    try {
+      final service = ref.read(incidentServiceProvider);
+      await service.updateIncident(id, IncidentUpdate(status: IncidentStatus.open));
+      ref.invalidate(allIncidentsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Инцидент возобновлен')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка возобновления: $e')));
+      }
+    }
+  }
+
+  Future<void> _deleteIncident(int id, String? title) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.secondaryDarkBackground,
+          title: const Text('Удаление инцидента', style: TextStyle(color: Colors.white)),
+          content: Text(
+            'Вы уверены, что хотите удалить ${title ?? "#$id"}?',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Отмена', style: TextStyle(color: Colors.white70)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Удалить', style: TextStyle(color: Colors.redAccent)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      try {
+        final service = ref.read(incidentServiceProvider);
+        await service.deleteIncident(id);
+        ref.invalidate(allIncidentsProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Инцидент удален')));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+        }
+      }
+    }
+  }
+
+  void _editIncident(int id) async {
+    try {
+      final service = ref.read(incidentServiceProvider);
+      final incident = await service.getIncident(id);
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => IncidentFormScreen(initialIncident: incident),
+          ),
+        ).then((_) => ref.invalidate(allIncidentsProvider));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка загрузки инцидента: $e')));
+      }
+    }
   }
 
 }

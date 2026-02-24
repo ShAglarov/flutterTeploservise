@@ -43,7 +43,9 @@ class IncidentService {
       '/incidents/',
       data: incident.toJson(),
     );
-    return IncidentResponse.fromJson(response.data);
+    final res = IncidentResponse.fromJson(response.data);
+    await _syncRepository.upsertIncidents([res]);
+    return res;
   }
 
   Future<IncidentResponse> updateIncident(int id, IncidentUpdate update) async {
@@ -51,11 +53,14 @@ class IncidentService {
       '/incidents/$id',
       data: update.toJson(),
     );
-    return IncidentResponse.fromJson(response.data);
+    final incident = IncidentResponse.fromJson(response.data);
+    await _syncRepository.upsertIncidents([incident]);
+    return incident;
   }
 
   Future<void> deleteIncident(int id) async {
     await _dio.delete('/incidents/$id');
+    await _syncRepository.deleteIncident(id);
   }
 
   Future<List<IncidentResponse>> batchUpdateIncidents(List<IncidentUpdate> updates) async {
@@ -63,9 +68,11 @@ class IncidentService {
       '/incidents/batch-update',
       data: updates.map((e) => e.toJson()).toList(),
     );
-    return (response.data as List)
+    final incidents = (response.data as List)
         .map((e) => IncidentResponse.fromJson(e))
         .toList();
+    await _syncRepository.upsertIncidents(incidents);
+    return incidents;
   }
 
   Future<List<IncidentResponse>> batchCreateIncidents(List<IncidentCreate> incidents) async {
@@ -73,8 +80,10 @@ class IncidentService {
       '/incidents/batch-create',
       data: incidents.map((e) => e.toJson()).toList(),
     );
-    return (response.data as List)
+    final resultList = (response.data as List)
         .map((e) => IncidentResponse.fromJson(e))
         .toList();
+    await _syncRepository.upsertIncidents(resultList);
+    return resultList;
   }
 }

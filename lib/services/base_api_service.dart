@@ -42,6 +42,12 @@ class AuthInterceptor extends Interceptor {
 
     final deviceId = await _deviceIdService.getDeviceId();
     options.headers['X-Device-Id'] = deviceId;
+    
+    // Many backend endpoints require device_id as a query parameter
+    // We add it globally to avoid missing it in specific service methods
+    final queryParams = Map<String, dynamic>.from(options.queryParameters);
+    queryParams['device_id'] = deviceId;
+    options.queryParameters = queryParams;
 
     return handler.next(options);
   }
