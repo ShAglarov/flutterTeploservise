@@ -476,7 +476,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (_selectedBoilerHouse != null && bh.id != _selectedBoilerHouse!.id) continue;
       
       if (bh.latitude == 0 && bh.longitude == 0) continue;
-      final hasIncident = bh.incidentCount != null && bh.incidentCount! > 0;
+      final hasIncident = data.boilerHouseIdsWithIncidents.contains(bh.id);
       final isSelected = _tappedItem is BoilerHouseResponse && (_tappedItem as BoilerHouseResponse).id == bh.id;
       markers.add(Marker(
         point: LatLng(bh.latitude, bh.longitude),
@@ -518,7 +518,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           onTap: () => _onLocationMarkerTap(loc),
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.successGreen,
+              color: data.locationIdsWithIncidents.contains(loc.id)
+                  ? AppTheme.errorRed
+                  : AppTheme.successGreen,
               shape: BoxShape.circle,
               border: Border.all(
                 color: isSelected ? Colors.yellow : Colors.white,

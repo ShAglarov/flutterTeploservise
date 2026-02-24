@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
+import '../models/incident_models.dart';
 import '../repositories/sync_repository.dart';
 import '../services/boiler_house_service.dart';
 import '../services/location_service.dart';
@@ -13,12 +14,20 @@ part 'map_providers.g.dart';
 class MapDataState {
   final List<BoilerHouseResponse> boilerHouses;
   final List<SavedLocationResponse> locations;
+  final List<IncidentResponse> incidents;
+  /// Boiler house IDs that have at least one active (non-resolved/closed) incident.
+  final Set<int> boilerHouseIdsWithIncidents;
+  /// Location IDs that are affected by at least one active incident.
+  final Set<int> locationIdsWithIncidents;
   final bool isLoading;
   final String? error;
 
   MapDataState({
     this.boilerHouses = const [],
     this.locations = const [],
+    this.incidents = const [],
+    this.boilerHouseIdsWithIncidents = const {},
+    this.locationIdsWithIncidents = const {},
     this.isLoading = false,
     this.error,
   });
@@ -26,12 +35,18 @@ class MapDataState {
   MapDataState copyWith({
     List<BoilerHouseResponse>? boilerHouses,
     List<SavedLocationResponse>? locations,
+    List<IncidentResponse>? incidents,
+    Set<int>? boilerHouseIdsWithIncidents,
+    Set<int>? locationIdsWithIncidents,
     bool? isLoading,
     String? error,
   }) {
     return MapDataState(
       boilerHouses: boilerHouses ?? this.boilerHouses,
       locations: locations ?? this.locations,
+      incidents: incidents ?? this.incidents,
+      boilerHouseIdsWithIncidents: boilerHouseIdsWithIncidents ?? this.boilerHouseIdsWithIncidents,
+      locationIdsWithIncidents: locationIdsWithIncidents ?? this.locationIdsWithIncidents,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
     );
@@ -76,13 +91,47 @@ class MapData extends _$MapData {
     }, onError: (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
     });
+
+    // 2. Subscribe to incidents stream for reactive pin coloring
+    final incSub = syncRepo.watchAllIncidents().listen((incidents) {
+      final activeIncidents = incidents.where((inc) =>
+        inc.status != IncidentStatus.resolved &&
+        inc.status != IncidentStatus.closed
+      ).toList();
+
+      // Compute which boiler houses have active incidents
+      final bhIds = <int>{};
+      for (final inc in activeIncidents) {
+        if (inc.boilerHouseId != null) {
+          bhIds.add(inc.boilerHouseId!);
+        }
+      }
+
+      // Compute which locations are affected by active incidents
+      final locIds = <int>{};
+      for (final inc in activeIncidents) {
+        if (inc.affectedHouseIds != null) {
+          locIds.addAll(inc.affectedHouseIds!);
+        }
+      }
+
+      state = state.copyWith(
+        incidents: incidents,
+        boilerHouseIdsWithIncidents: bhIds,
+        locationIdsWithIncidents: locIds,
+        isLoading: false,
+      );
+    }, onError: (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+    });
     
     ref.onDispose(() {
       bhSub.cancel();
       locSub.cancel();
+      incSub.cancel();
     });
 
-    // 2. Kick off initial fetch from the backend API to populate the local DB
+    // 3. Kick off initial fetch from the backend API to populate the local DB
     _fetchInitialData();
 
     return MapDataState(isLoading: true);
@@ -90,8 +139,6 @@ class MapData extends _$MapData {
 
   Future<void> _fetchInitialData() async {
     try {
-      // КРИТИЧНО: Очищаем дубликаты SavedLocations, накопившиеся из-за бага
-      // где upsert создавал новые строки вместо замены существующих
       final syncRepo = ref.read(syncRepositoryProvider);
       await syncRepo.deduplicateSavedLocations();
 
@@ -158,8 +205,8 @@ MapDataState filteredMapData(Ref ref) {
 
   // 3. Filter by Incidents
   if (filter.showOnlyIncidents) {
-    boilerHouses = boilerHouses.where((bh) => (bh.incidentCount ?? 0) > 0).toList();
-    locations = [];
+    boilerHouses = boilerHouses.where((bh) => dataState.boilerHouseIdsWithIncidents.contains(bh.id)).toList();
+    locations = locations.where((loc) => dataState.locationIdsWithIncidents.contains(loc.id)).toList();
   }
 
   return dataState.copyWith(boilerHouses: boilerHouses, locations: locations);
