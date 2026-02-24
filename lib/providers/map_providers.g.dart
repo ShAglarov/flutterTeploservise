@@ -71,7 +71,7 @@ final class MapSearchQueryProvider
         argument: null,
         retry: null,
         name: r'mapSearchQueryProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -92,7 +92,7 @@ final class MapSearchQueryProvider
   }
 }
 
-String _$mapSearchQueryHash() => r'4fb885435253a097b940d8dd1511ccfa214ce314';
+String _$mapSearchQueryHash() => r'4c973355cb49f1b47c4dd823ff4fd3a27e26284c';
 
 abstract class _$MapSearchQuery extends $Notifier<String> {
   String build();
@@ -123,7 +123,7 @@ final class MapFilterProvider
         argument: null,
         retry: null,
         name: r'mapFilterProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -144,7 +144,7 @@ final class MapFilterProvider
   }
 }
 
-String _$mapFilterHash() => r'546fed269d2d974177e0f629d004e9a324d828ad';
+String _$mapFilterHash() => r'1223cd3a818566654be21488d244643e76cef88d';
 
 abstract class _$MapFilter extends $Notifier<MapFilterState> {
   MapFilterState build();
@@ -176,7 +176,7 @@ final class FilteredMapDataProvider
         argument: null,
         retry: null,
         name: r'filteredMapDataProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -203,7 +203,7 @@ final class FilteredMapDataProvider
   }
 }
 
-String _$filteredMapDataHash() => r'86d36566a5f22327ab35c8fe275fab31ecf5e1eb';
+String _$filteredMapDataHash() => r'7d5ca17fba1de658906b028a618be1b98b1fc5c5';
 
 @ProviderFor(mapSections)
 final mapSectionsProvider = MapSectionsProvider._();
@@ -217,7 +217,7 @@ final class MapSectionsProvider
         argument: null,
         retry: null,
         name: r'mapSectionsProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -244,4 +244,4 @@ final class MapSectionsProvider
   }
 }
 
-String _$mapSectionsHash() => r'9026c7fafe752c8f692f6606d7c5f3f4875385a8';
+String _$mapSectionsHash() => r'305d6bd16a63d5e3427546f7bfc342c752fb960c';

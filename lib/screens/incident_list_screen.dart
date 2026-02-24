@@ -49,7 +49,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           return ref.read(allIncidentsProvider.future);
         },
         child: filteredIncidentsAsync.when(
-          data: (incidents) => _buildList(incidents),
+          data: (incidents) => _buildList(incidents, mapData),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
             child: Column(
@@ -142,7 +142,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     );
   }
 
-  Widget _buildList(List<IncidentResponse> incidents) {
+  Widget _buildList(List<IncidentResponse> incidents, MapDataState mapData) {
     if (incidents.isEmpty) {
       return ListView(
         children: const [
@@ -165,7 +165,6 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       itemCount: incidents.length,
       itemBuilder: (context, index) {
         final inc = incidents[index];
-        final mapData = ref.read(mapDataProvider);
         
         String? boilerHouseDetail;
         if (inc.boilerHouseId != null) {

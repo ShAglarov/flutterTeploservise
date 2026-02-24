@@ -158,7 +158,7 @@ class MapData extends _$MapData {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class MapSearchQuery extends _$MapSearchQuery {
   @override
   String build() => '';
@@ -166,7 +166,7 @@ class MapSearchQuery extends _$MapSearchQuery {
   void update(String query) => state = query;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class MapFilter extends _$MapFilter {
   @override
   MapFilterState build() => MapFilterState();
@@ -175,7 +175,7 @@ class MapFilter extends _$MapFilter {
   void toggleOnlyIncidents() => state = state.copyWith(showOnlyIncidents: !state.showOnlyIncidents);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 MapDataState filteredMapData(Ref ref) {
   final dataState = ref.watch(mapDataProvider);
   final query = ref.watch(mapSearchQueryProvider).toLowerCase();
@@ -221,7 +221,7 @@ MapDataState filteredMapData(Ref ref) {
   return dataState.copyWith(boilerHouses: boilerHouses, locations: locations);
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 List<String> mapSections(Ref ref) {
   final dataState = ref.watch(mapDataProvider);
   final sections = dataState.boilerHouses
