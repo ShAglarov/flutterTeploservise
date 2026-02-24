@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/incident_models.dart';
 import '../repositories/sync_repository.dart';
@@ -85,5 +86,36 @@ class IncidentService {
         .toList();
     await _syncRepository.upsertIncidents(resultList);
     return resultList;
+  }
+
+  Future<void> uploadIncidentPhoto(int incidentId, String filePath) async {
+    debugPrint('[Service] Uploading photo for incident $incidentId from $filePath');
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath),
+      });
+      
+      final response = await _dio.post(
+        '/incidents/$incidentId/photos/',
+        data: formData,
+      );
+      debugPrint('[Service] Upload response: ${response.statusCode} - ${response.data}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final photoInfo = PhotoInfo.fromJson(response.data);
+        await _syncRepository.upsertIncidentPhotos(incidentId, [photoInfo]);
+        debugPrint('[Service] Local DB updated with new photo');
+      }
+    } catch (e, stack) {
+      debugPrint('[Service] Upload error: $e\n$stack');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteIncidentPhoto(int incidentId, int photoId) async {
+    await _dio.delete(
+      '/incidents/$incidentId/photos/$photoId',
+    );
+    await _syncRepository.deleteIncidentPhoto(photoId);
   }
 }

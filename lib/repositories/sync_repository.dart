@@ -6,6 +6,7 @@ import '../database/database.dart';
 import '../models/incident_models.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
+import '../utils/constants.dart';
 
 final syncRepositoryProvider = Provider<SyncRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -69,9 +70,30 @@ class SyncRepository {
     });
   }
 
+  Future<void> upsertIncidentPhotos(int incidentId, List<PhotoInfo> photos) async {
+    await _db.batch((batch) {
+      for (final photo in photos) {
+        batch.insert(
+          _db.incidentPhotos,
+          IncidentPhotosCompanion.insert(
+            id: const Uuid().v4(),
+            backendId: Value(photo.id),
+            incidentId: Value(incidentId),
+            url: Value(photo.url),
+            fileName: 'photo_${photo.id}.jpg',
+            thumbnailUrl: Value(photo.thumbnailUrl),
+            createdAt: Value(photo.createdAt != null ? DateTime.parse(photo.createdAt!) : null),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+  }
+
   Stream<List<IncidentResponse>> watchAllIncidents() {
     final query = _db.select(_db.incidents).join([
       leftOuterJoin(_db.boilerHouses, _db.boilerHouses.backendId.equalsExp(_db.incidents.boilerHouseId)),
+      leftOuterJoin(_db.incidentPhotos, _db.incidentPhotos.incidentId.equalsExp(_db.incidents.backendId)),
     ])..orderBy([OrderingTerm(expression: _db.incidents.startedAt, mode: OrderingMode.desc)]);
     
     return query.watch().asyncMap((rows) async {
@@ -127,12 +149,16 @@ class SyncRepository {
   }
 
   Stream<IncidentResponse?> watchIncidentById(int backendId) {
+    // Include incidentPhotos in the join just to trigger stream updates when photos change,
+    // even though we fetch them separately in asyncMap to avoid complex grouping/deduplication.
     final query = _db.select(_db.incidents).join([
       leftOuterJoin(_db.boilerHouses, _db.boilerHouses.backendId.equalsExp(_db.incidents.boilerHouseId)),
+      leftOuterJoin(_db.incidentPhotos, _db.incidentPhotos.incidentId.equalsExp(_db.incidents.backendId)),
     ])..where(_db.incidents.backendId.equals(backendId));
     
-    return query.watchSingleOrNull().asyncMap((row) async {
-      if (row == null) return null;
+    return query.watch().asyncMap((rows) async {
+      if (rows.isEmpty) return null;
+      final row = rows.first; // Since we might have multiple rows due to photos join, take first
       final inc = row.readTable(_db.incidents);
       final bh = row.readTableOrNull(_db.boilerHouses);
       
@@ -450,6 +476,27 @@ class SyncRepository {
     await (_db.delete(_db.savedLocations)..where((t) => t.backendId.equals(backendId))).go();
   }
 
+  Future<void> deleteIncidentPhoto(int backendId) async {
+    // Find the incident ID for this photo first to trigger update
+    final photo = await (_db.select(_db.incidentPhotos)
+          ..where((t) => t.backendId.equals(backendId)))
+        .getSingleOrNull();
+    final incidentId = photo?.incidentId;
+
+    await (_db.delete(_db.incidentPhotos)
+          ..where((t) => t.backendId.equals(backendId)))
+        .go();
+
+    if (incidentId != null) {
+      // Trigger update on the incident record to force streams to refresh
+      await (_db.update(_db.incidents)..where((t) => t.backendId.equals(incidentId)))
+          .write(
+        IncidentsCompanion(lastLocalEditAt: Value(DateTime.now())),
+      );
+      print('🔥 [SyncRepo] Forced incident update after photo deletion, id=$incidentId');
+    }
+  }
+
   // ----------------------------------------------------------------------
   // Mapping Helpers
   // ----------------------------------------------------------------------
@@ -491,12 +538,26 @@ class SyncRepository {
         siteManager: boilerHouse.siteManager,
         siteNumber: boilerHouse.siteNumber,
       ) : null,
-      photos: photos?.map((p) => PhotoInfo(
-        id: p.backendId,
-        url: p.url ?? '',
-        thumbnailUrl: p.thumbnailUrl,
-        createdAt: p.createdAt?.toIso8601String(),
-      )).toList(),
+      photos: photos?.map((p) {
+        // Derive base domain from AppConstants.baseUrl
+        final apiUri = Uri.parse(AppConstants.baseUrl);
+        final baseUrlPrefix = AppConstants.baseUrl.split('/api/v1')[0];
+        
+        final url = p.url ?? '';
+        final thumb = p.thumbnailUrl;
+        
+        // Try to match if it should be under /api/v1 or root
+        // If the URL from backend starts with /uploads, it might need the prefix
+        final fullUrl = url.startsWith('http') ? url : '$baseUrlPrefix$url';
+        final fullThumb = (thumb != null && !thumb.startsWith('http')) ? '$baseUrlPrefix$thumb' : thumb;
+        
+        return PhotoInfo(
+          id: p.backendId,
+          url: fullUrl,
+          thumbnailUrl: fullThumb,
+          createdAt: p.createdAt?.toIso8601String(),
+        );
+      }).toList(),
       notificationConfig: (incident.notificationConfigType != null) 
         ? NotificationConfig(
             type: AudienceType.values.firstWhere(

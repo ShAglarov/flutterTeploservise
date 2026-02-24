@@ -72,9 +72,12 @@ class DataSyncService {
       return false;
     }
 
-    // Echo suppression: skip actions originating from this device
-    if (deviceId != null && deviceId == _myDeviceId) {
-      dev.log('[DataSync] Echo suppressed: action from own device', name: 'SYNC');
+    // Echo suppression: skip actions originating from this device UNLESS it contains full entity data.
+    // We want to apply the server's committed state even if it was our action,
+    // as it might contain server-side generated fields (like photo IDs, URLs, etc) 
+    // that we haven't integrated locally yet.
+    if (deviceId != null && deviceId == _myDeviceId && entityData == null) {
+      dev.log('[DataSync] Echo suppressed: action from own device (no data)', name: 'SYNC');
       // Still track the actionId for cursor
       _trackActionId(actionId);
       return true;
@@ -204,9 +207,15 @@ class DataSyncService {
   }
 
   Future<void> _handlePhoto(String actionType, String entityType, dynamic entityId, Map<String, dynamic>? entityData) async {
-    // For now, photos are handled when parent entities refresh.
-    // A more complete implementation would upsert/delete individual photos.
-    dev.log('[DataSync] Photo action: $actionType $entityType id=$entityId', name: 'SYNC');
+    if (actionType == 'delete') {
+      final id = _parseInt(entityId);
+      if (id != null) {
+        if (entityType == 'incident_photo') {
+          await _syncRepo.deleteIncidentPhoto(id);
+        }
+        // TODO: handle other photo types if needed
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

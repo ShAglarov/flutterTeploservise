@@ -83,7 +83,10 @@ class IncidentDetailScreen extends ConsumerWidget {
                 ],
                 IncidentChatCard(incidentId: incidentId),
                 const SizedBox(height: 16),
-                const IncidentPhotosCard(),
+                IncidentPhotosCard(
+                  incidentId: incidentId,
+                  photos: incident.photos ?? [],
+                ),
                 const SizedBox(height: 16),
                 IncidentActivityCard(incidentId: incidentId),
                 const SizedBox(height: 32), // Bottom padding
