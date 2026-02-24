@@ -42,7 +42,15 @@ class IncidentHeaderCard extends ConsumerWidget {
     String getNotificationTarget() {
       final config = incident.notificationConfig;
       if (config == null || config.type == AudienceType.broadcast) return "Всем пользователям";
-      if (config.type == AudienceType.roleBased) return "По ролям";
+      if (config.type == AudienceType.roleBased) {
+        final roleIds = config.roleIds ?? [];
+        if (roleIds.isEmpty) return "Никому (роли не выбраны)";
+        if (roleIds.length == 1) {
+          final role = UserRole.fromAnyString(roleIds.first);
+          return "Роль: ${role.title}";
+        }
+        return "Выбрано ролей: ${roleIds.length}";
+      }
       if (config.type == AudienceType.userBased) {
         final ids = config.userIds ?? [];
         if (ids.isEmpty) return "Никому (список пуст)";

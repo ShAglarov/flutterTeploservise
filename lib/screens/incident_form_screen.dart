@@ -7,6 +7,7 @@ import '../utils/app_theme.dart';
 import '../widgets/base_card.dart';
 import '../services/user_service.dart';
 import '../models/api_models.dart';
+import '../models/user_role.dart';
 import 'package:intl/intl.dart';
 
 class IncidentFormScreen extends ConsumerStatefulWidget {
@@ -281,7 +282,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         ),
                         DropdownMenuItem(
                           value: AudienceType.roleBased,
-                          child: Text('По ролям (в разработке)', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          child: Text('По ролям', style: TextStyle(color: Colors.white, fontSize: 14)),
                         ),
                         DropdownMenuItem(
                           value: AudienceType.userBased,
@@ -308,6 +309,20 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         ),
                         trailing: const Icon(Icons.chevron_right, color: Colors.white54),
                         onTap: () => _showUserSelector(context, ref, state, controller),
+                      ),
+                    ],
+                    if (state.notificationConfig?.type == AudienceType.roleBased) ...[
+                      const SizedBox(height: 16),
+                      ListTile(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        tileColor: Colors.white.withOpacity(0.05),
+                        title: const Text('Выбрать роли', style: TextStyle(color: Colors.white)),
+                        subtitle: Text(
+                          'Выбрано: ${state.notificationConfig?.roleIds?.length ?? 0}',
+                          style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                        onTap: () => _showRoleSelector(context, ref, state, controller),
                       ),
                     ],
                   ],
@@ -522,6 +537,86 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                               controller.updateNotificationConfig(
                                 NotificationConfig(type: AudienceType.userBased, userIds: selectedUserIds.toList()),
                               );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+  void _showRoleSelector(
+    BuildContext context,
+    WidgetRef ref,
+    IncidentFormState state,
+    IncidentFormController controller,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.secondaryDarkBackground,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, modalRef, child) {
+            final modalState = modalRef.watch(incidentFormControllerProvider(widget.initialIncident));
+            final selectedRoles = Set<String>.from(modalState.notificationConfig?.roleIds ?? []);
+
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.7,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'ВЫБОР РОЛЕЙ',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              final allRoles = UserRole.values.map((r) => r.name).toList();
+                              final allIncluded = allRoles.every((r) => selectedRoles.contains(r));
+                              if (allIncluded) {
+                                controller.updateNotificationRoles([]);
+                              } else {
+                                controller.updateNotificationRoles(allRoles);
+                              }
+                            },
+                            child: const Text('Выбрать все', style: TextStyle(color: Colors.blue)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: UserRole.values.length,
+                        itemBuilder: (context, index) {
+                          final role = UserRole.values[index];
+                          final isSelected = selectedRoles.contains(role.name);
+                          return CheckboxListTile(
+                            title: Text(role.title, style: const TextStyle(color: Colors.white)),
+                            value: isSelected,
+                            onChanged: (v) {
+                              if (v == true) {
+                                selectedRoles.add(role.name);
+                              } else {
+                                selectedRoles.remove(role.name);
+                              }
+                              controller.updateNotificationRoles(selectedRoles.toList());
                             },
                           );
                         },
