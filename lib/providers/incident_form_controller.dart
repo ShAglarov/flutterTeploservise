@@ -51,7 +51,18 @@ class IncidentFormController extends _$IncidentFormController {
   void updateBoilerHouse(int? id) => state = state.copyWith(boilerHouseId: id);
   void updateCreatedAt(DateTime time) => state = state.copyWith(createdAt: time);
   void updateResolvedAt(DateTime? time) => state = state.copyWith(resolvedAt: time);
-  void updateAssignedTo(int? userId) => state = state.copyWith(assignedTo: userId);
+  void updateAssignedTo(int? userId) {
+    state = state.copyWith(assignedTo: userId);
+    // If a user is assigned, automatically switch notification to "User Based" for that user
+    if (userId != null) {
+      state = state.copyWith(
+        notificationConfig: NotificationConfig(
+          type: AudienceType.userBased,
+          userIds: [userId],
+        ),
+      );
+    }
+  }
   void updateNotificationConfig(NotificationConfig? config) => state = state.copyWith(notificationConfig: config);
   
   void toggleHouse(int houseId) {

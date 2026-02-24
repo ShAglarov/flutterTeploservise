@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../services/user_service.dart';
+import '../../models/api_models.dart';
 import '../../models/incident_models.dart';
+import '../../models/user_role.dart';
 import '../base_card.dart';
 
-class IncidentHeaderCard extends StatelessWidget {
+class IncidentHeaderCard extends ConsumerWidget {
   final IncidentResponse incident;
   final VoidCallback? onStatusToggle;
   final VoidCallback? onEdit;
@@ -16,7 +20,38 @@ class IncidentHeaderCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final usersAsync = ref.watch(usersProvider);
+    final users = usersAsync.value ?? [];
+    
+    String getUsername(int? id) {
+      if (id == null) return "Не назначен";
+      final user = users.firstWhere(
+        (u) => u.id == id, 
+        orElse: () => APIUserResponse(
+          id: id, 
+          username: 'ID $id', 
+          email: '',
+          createdAt: DateTime.now().toIso8601String(),
+          role: UserRole.viewer,
+        ),
+      );
+      return user.fullName ?? user.username;
+    }
+
+    String getNotificationTarget() {
+      final config = incident.notificationConfig;
+      if (config == null || config.type == AudienceType.broadcast) return "Всем пользователям";
+      if (config.type == AudienceType.roleBased) return "По ролям";
+      if (config.type == AudienceType.userBased) {
+        final ids = config.userIds ?? [];
+        if (ids.isEmpty) return "Никому (список пуст)";
+        if (ids.length == 1) return getUsername(ids.first);
+        return "Выбрано: ${ids.length}";
+      }
+      return "Всем";
+    }
+
     bool isActive = incident.status != IncidentStatus.resolved && incident.status != IncidentStatus.closed;
     
     // Format date
@@ -119,12 +154,12 @@ class IncidentHeaderCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'ID Отв: ${incident.assignedTo ?? "Не назначен"}', // Mock assigned name since we only have ID
+                        getUsername(incident.assignedTo),
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ),
                     Text(
-                      'Assigned',
+                      'Ответственный',
                       style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
                     ),
                   ],
@@ -138,7 +173,7 @@ class IncidentHeaderCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'ID Отв: ${incident.assignedTo ?? "Не назначен"}', // Mock megaphone text
+                        getNotificationTarget(),
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ),
