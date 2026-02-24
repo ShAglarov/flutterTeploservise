@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../providers/map_providers.dart';
+import '../models/boiler_house_models.dart';
+import '../models/location_models.dart';
 import '../utils/app_theme.dart';
 import '../widgets/base_card.dart';
 
@@ -17,6 +19,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   final TextEditingController _searchController = TextEditingController();
   final MapController _mapController = MapController();
 
+  /// Currently selected boiler house for filtering the bottom list
+  BoilerHouseResponse? _selectedBoilerHouse;
+
+  /// Currently tapped item for the info popup
+  dynamic _tappedItem; // BoilerHouseResponse or SavedLocationResponse
+  LatLng? _tappedPosition;
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -24,8 +33,52 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.dispose();
   }
 
-  void _onItemTap(double lat, double lng) {
-    _mapController.move(LatLng(lat, lng), 15);
+  void _onBoilerHouseMarkerTap(BoilerHouseResponse bh) {
+    setState(() {
+      _tappedItem = bh;
+      _tappedPosition = LatLng(bh.latitude, bh.longitude);
+    });
+    _mapController.move(LatLng(bh.latitude, bh.longitude), _mapController.camera.zoom);
+  }
+
+  void _onLocationMarkerTap(SavedLocationResponse loc) {
+    setState(() {
+      _tappedItem = loc;
+      _tappedPosition = LatLng(loc.latitude, loc.longitude);
+    });
+    _mapController.move(LatLng(loc.latitude, loc.longitude), _mapController.camera.zoom);
+  }
+
+  void _onPopupTap() {
+    if (_tappedItem is BoilerHouseResponse) {
+      // Filter the bottom list to show only houses of this boiler house
+      setState(() {
+        _selectedBoilerHouse = _tappedItem as BoilerHouseResponse;
+        _tappedItem = null;
+        _tappedPosition = null;
+      });
+    } else if (_tappedItem is SavedLocationResponse) {
+      // Show house detail card
+      final loc = _tappedItem as SavedLocationResponse;
+      setState(() {
+        _tappedItem = null;
+        _tappedPosition = null;
+      });
+      _showHouseDetailSheet(loc);
+    }
+  }
+
+  void _dismissPopup() {
+    setState(() {
+      _tappedItem = null;
+      _tappedPosition = null;
+    });
+  }
+
+  void _clearBoilerHouseFilter() {
+    setState(() {
+      _selectedBoilerHouse = null;
+    });
   }
 
   @override
@@ -36,23 +89,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. FlutterMap Layer (OpenStreetMap)
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: const LatLng(59.9343, 30.3351), // St. Petersburg
-              initialZoom: 11,
+          // 1. FlutterMap Layer
+          GestureDetector(
+            onTap: _dismissPopup,
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: const LatLng(42.9849, 47.5047), // Makhachkala
+                initialZoom: 13,
+                onTap: (_, __) => _dismissPopup(),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.teploservice',
+                  tileBuilder: _darkModeTileBuilder,
+                ),
+                // Green polylines from boiler houses to their houses
+                PolylineLayer(
+                  polylines: _buildPolylines(mapData),
+                ),
+                MarkerLayer(
+                  markers: _buildMarkers(mapData),
+                ),
+              ],
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.teploservice',
-                tileBuilder: _darkModeTileBuilder,
-              ),
-              MarkerLayer(
-                markers: _buildMarkers(mapData),
-              ),
-            ],
           ),
 
           // 2. Search Top Bar
@@ -67,10 +128,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // 3. Draggable Bottom Sheet
+          // 3. Info Popup (shows on pin tap)
+          if (_tappedItem != null && _tappedPosition != null)
+            _buildInfoPopup(),
+
+          // 4. Draggable Bottom Sheet
           _buildDraggableSheet(mapData),
           
-          // 4. Map Action Buttons
+          // 5. Map Action Buttons
           Positioned(
             right: 16,
             bottom: 160,
@@ -84,7 +149,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  // --------------------------------------------------------------------------
   // Dark mode tile overlay
+  // --------------------------------------------------------------------------
   Widget _darkModeTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
     return ColorFiltered(
       colorFilter: const ColorFilter.matrix(<double>[
@@ -97,23 +164,59 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  // --------------------------------------------------------------------------
+  // Green polylines: boiler house → linked houses
+  // --------------------------------------------------------------------------
+  List<Polyline> _buildPolylines(MapDataState data) {
+    final polylines = <Polyline>[];
+
+    for (final bh in data.boilerHouses) {
+      if (_selectedBoilerHouse != null && bh.id != _selectedBoilerHouse!.id) continue;
+
+      if (bh.latitude == 0 && bh.longitude == 0) continue;
+      final bhPoint = LatLng(bh.latitude, bh.longitude);
+
+      // Find all locations linked to this boiler house
+      for (final loc in data.locations) {
+        if (loc.boilerHouseId == bh.id && loc.latitude != 0 && loc.longitude != 0) {
+          polylines.add(Polyline(
+            points: [bhPoint, LatLng(loc.latitude, loc.longitude)],
+            color: Colors.green.withOpacity(0.6),
+            strokeWidth: 2.0,
+          ));
+        }
+      }
+    }
+
+    return polylines;
+  }
+
+  // --------------------------------------------------------------------------
+  // Markers
+  // --------------------------------------------------------------------------
   List<Marker> _buildMarkers(MapDataState data) {
     final markers = <Marker>[];
 
     for (final bh in data.boilerHouses) {
+      if (_selectedBoilerHouse != null && bh.id != _selectedBoilerHouse!.id) continue;
+      
       if (bh.latitude == 0 && bh.longitude == 0) continue;
       final hasIncident = bh.incidentCount != null && bh.incidentCount! > 0;
+      final isSelected = _tappedItem is BoilerHouseResponse && (_tappedItem as BoilerHouseResponse).id == bh.id;
       markers.add(Marker(
         point: LatLng(bh.latitude, bh.longitude),
-        width: 36,
-        height: 36,
+        width: isSelected ? 44 : 36,
+        height: isSelected ? 44 : 36,
         child: GestureDetector(
-          onTap: () => _onItemTap(bh.latitude, bh.longitude),
+          onTap: () => _onBoilerHouseMarkerTap(bh),
           child: Container(
             decoration: BoxDecoration(
               color: hasIncident ? AppTheme.errorRed : AppTheme.primaryBlue,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
+              border: Border.all(
+                color: isSelected ? Colors.yellow : Colors.white,
+                width: isSelected ? 3 : 2,
+              ),
               boxShadow: [
                 BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
               ],
@@ -125,18 +228,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     for (final loc in data.locations) {
+      if (_selectedBoilerHouse != null && loc.boilerHouseId != _selectedBoilerHouse!.id) continue;
+
       if (loc.latitude == 0 && loc.longitude == 0) continue;
+      final isSelected = _tappedItem is SavedLocationResponse && (_tappedItem as SavedLocationResponse).id == loc.id;
       markers.add(Marker(
         point: LatLng(loc.latitude, loc.longitude),
-        width: 28,
-        height: 28,
+        width: isSelected ? 34 : 28,
+        height: isSelected ? 34 : 28,
         child: GestureDetector(
-          onTap: () => _onItemTap(loc.latitude, loc.longitude),
+          onTap: () => _onLocationMarkerTap(loc),
           child: Container(
             decoration: BoxDecoration(
               color: AppTheme.successGreen,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 1.5),
+              border: Border.all(
+                color: isSelected ? Colors.yellow : Colors.white,
+                width: isSelected ? 2.5 : 1.5,
+              ),
               boxShadow: [
                 BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
               ],
@@ -150,6 +259,99 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return markers;
   }
 
+  // --------------------------------------------------------------------------
+  // Info Popup (floating callout on pin tap)
+  // --------------------------------------------------------------------------
+  Widget _buildInfoPopup() {
+    final isBoilerHouse = _tappedItem is BoilerHouseResponse;
+    String title;
+    String subtitle;
+    Color accentColor;
+    IconData icon;
+
+    if (isBoilerHouse) {
+      final bh = _tappedItem as BoilerHouseResponse;
+      title = bh.address;
+      subtitle = 'Котельная • Уч. ${bh.siteNumber ?? '?'}';
+      if (bh.incidentCount != null && bh.incidentCount! > 0) {
+        subtitle += ' • ${bh.incidentCount} инцид.';
+      }
+      accentColor = (bh.incidentCount ?? 0) > 0 ? AppTheme.errorRed : AppTheme.primaryBlue;
+      icon = Icons.factory;
+    } else {
+      final loc = _tappedItem as SavedLocationResponse;
+      title = loc.name;
+      subtitle = 'Дом';
+      if (loc.floors != null) subtitle += ' • ${loc.floors} эт.';
+      if (loc.residentsCount != null) subtitle += ' • ${loc.residentsCount} жил.';
+      accentColor = AppTheme.successGreen;
+      icon = Icons.home;
+    }
+
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 100,
+      left: 20,
+      right: 20,
+      child: GestureDetector(
+        onTap: _onPopupTap,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.cardBackground,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: accentColor.withOpacity(0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: accentColor, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.4)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Search Bar
+  // --------------------------------------------------------------------------
   Widget _buildSearchBar(List<String> sections) {
     final searchQuery = ref.watch(mapSearchQueryProvider);
     final filter = ref.watch(mapFilterProvider);
@@ -178,8 +380,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onChanged: (value) => ref.read(mapSearchQueryProvider.notifier).update(value),
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Поиск...',
-                    hintStyle: TextStyle(color: Colors.white.withAlpha(128)),
+                    hintText: 'Название, начальник, участок, УК/ВО...',
+                    hintStyle: TextStyle(color: Colors.white.withAlpha(128), fontSize: 13),
                     prefixIcon: const Icon(Icons.search, color: AppTheme.primaryBlue),
                     border: InputBorder.none,
                     suffixIcon: searchQuery.isNotEmpty
@@ -255,6 +457,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  // --------------------------------------------------------------------------
+  // Map Action Buttons
+  // --------------------------------------------------------------------------
   Widget _buildMapActions() {
     return Column(
       children: [
@@ -297,6 +502,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  // --------------------------------------------------------------------------
+  // Draggable Bottom Sheet
+  // --------------------------------------------------------------------------
   Widget _buildDraggableSheet(MapDataState data) {
     return DraggableScrollableSheet(
       initialChildSize: 0.35,
@@ -328,6 +536,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
+
+              // Header with back button when filtering by boiler house
+              if (_selectedBoilerHouse != null)
+                _buildFilterHeader(),
               
               // List Content
               Expanded(
@@ -342,8 +554,62 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  Widget _buildFilterHeader() {
+    final bh = _selectedBoilerHouse!;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: AppTheme.primaryBlue, size: 20),
+            onPressed: _clearBoilerHouseFilter,
+            tooltip: 'Показать все',
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  bh.address,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  'Дома котельной',
+                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildList(MapDataState data, ScrollController scrollController) {
-    final totalItems = data.boilerHouses.length + data.locations.length;
+    // If a boiler house is selected, show only its linked houses
+    if (_selectedBoilerHouse != null) {
+      final filteredLocations = data.locations
+          .where((loc) => loc.boilerHouseId == _selectedBoilerHouse!.id)
+          .toList();
+
+      if (filteredLocations.isEmpty) {
+        return const Center(
+          child: Text('Нет привязанных домов', style: TextStyle(color: Colors.white54)),
+        );
+      }
+
+      return ListView.builder(
+        controller: scrollController,
+        padding: const EdgeInsets.fromLTRB(6, 0, 6, 40),
+        itemCount: filteredLocations.length,
+        itemBuilder: (context, index) => _buildLocationItem(filteredLocations[index]),
+      );
+    }
+
+    // Default: show ONLY boiler houses in the list (no locations)
+    final totalItems = data.boilerHouses.length;
     
     if (totalItems == 0) {
       return const Center(child: Text('Нет результатов', style: TextStyle(color: Colors.white54)));
@@ -354,22 +620,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       padding: const EdgeInsets.fromLTRB(6, 0, 6, 40),
       itemCount: totalItems,
       itemBuilder: (context, index) {
-        if (index < data.boilerHouses.length) {
-          final bh = data.boilerHouses[index];
-          return _buildBoilerHouseItem(bh);
-        } else {
-          final loc = data.locations[index - data.boilerHouses.length];
-          return _buildLocationItem(loc);
-        }
+        return _buildBoilerHouseItem(data.boilerHouses[index]);
       },
     );
   }
 
-  Widget _buildBoilerHouseItem(dynamic bh) {
+  // --------------------------------------------------------------------------
+  // List Items
+  // --------------------------------------------------------------------------
+  Widget _buildBoilerHouseItem(BoilerHouseResponse bh) {
     final hasIncident = bh.incidentCount != null && bh.incidentCount! > 0;
     
     return BaseCard(
-      onTap: () => _onItemTap(bh.latitude, bh.longitude),
+      onTap: () {
+        setState(() {
+          _selectedBoilerHouse = bh;
+          _tappedItem = null;
+          _tappedPosition = null;
+        });
+        _mapController.move(LatLng(bh.latitude, bh.longitude), 14);
+      },
       child: Row(
         children: [
           Container(
@@ -390,7 +660,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  bh.address ?? 'No Address', 
+                  bh.address, 
                   style: Theme.of(context).textTheme.headlineMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -398,7 +668,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text('Уч. ${bh.siteNumber ?? '?'}', style: Theme.of(context).textTheme.labelSmall),
+                    Text('Нач: ${bh.siteManager ?? '?'} | Участок: ${bh.siteNumber ?? '?'}', 
+                         style: Theme.of(context).textTheme.labelSmall),
                     if (hasIncident) ...[
                       const SizedBox(width: 8),
                       Container(
@@ -424,9 +695,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildLocationItem(dynamic loc) {
+  Widget _buildLocationItem(SavedLocationResponse loc) {
     return BaseCard(
-      onTap: () => _onItemTap(loc.latitude, loc.longitude),
+      onTap: () {
+        if (loc.latitude != 0 && loc.longitude != 0) {
+          _mapController.move(LatLng(loc.latitude, loc.longitude), 16);
+        }
+        _showHouseDetailSheet(loc);
+      },
       child: Row(
         children: [
           Container(
@@ -443,14 +719,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  loc.name ?? 'Без названия', 
+                  loc.name, 
                   style: Theme.of(context).textTheme.headlineMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  loc.managementCompanyId ?? '', 
+                  _buildLocationSubtitle(loc), 
                   style: Theme.of(context).textTheme.labelSmall,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -458,7 +734,168 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ],
             ),
           ),
+          // Show number of accounts if available
+          if (loc.accounts != null && loc.accounts!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${loc.accounts!.length}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ),
+          const SizedBox(width: 8),
           const Icon(Icons.chevron_right, color: Colors.white24),
+        ],
+      ),
+    );
+  }
+
+  String _buildLocationSubtitle(SavedLocationResponse loc) {
+    final parts = <String>[];
+    if (loc.floors != null && loc.floors! > 0) parts.add('${loc.floors} эт.');
+    if (loc.residentsCount != null && loc.residentsCount! > 0) parts.add('${loc.residentsCount} жил.');
+    if (loc.managementCompanyName != null) parts.add(loc.managementCompanyName!);
+    return parts.isEmpty ? '' : parts.join(' • ');
+  }
+
+  // --------------------------------------------------------------------------
+  // House Detail Bottom Sheet
+  // --------------------------------------------------------------------------
+  void _showHouseDetailSheet(SavedLocationResponse loc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          builder: (ctx, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: AppTheme.darkBackground,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: Colors.white.withAlpha(20)),
+              ),
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(50),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+
+                  // Title
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.successGreen.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.home, color: AppTheme.successGreen, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          loc.name,
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Info Card
+                  _buildDetailCard('Информация о доме', [
+                    _detailRow('Этажи', loc.floors?.toString()),
+                    _detailRow('Кол-во жителей', loc.residentsCount?.toString()),
+                    _detailRow('Комнаты', loc.rooms?.toString()),
+                    _detailRow('Площадь', loc.totalArea != null ? '${loc.totalArea} м²' : null),
+                    _detailRow('Год постройки', loc.yearBuilt?.toString()),
+                    _detailRow('Отопление', loc.providesHeating == true ? 'Да' : (loc.providesHeating == false ? 'Нет' : null)),
+                    _detailRow('ГВС', loc.providesHotWater == true ? 'Да' : (loc.providesHotWater == false ? 'Нет' : null)),
+                    _detailRow('УК', loc.managementCompanyName),
+                  ]),
+
+                  if (loc.latitude != 0 && loc.longitude != 0) ...[
+                    const SizedBox(height: 12),
+                    _buildDetailCard('Координаты', [
+                      _detailRow('Широта', loc.latitude.toStringAsFixed(6)),
+                      _detailRow('Долгота', loc.longitude.toStringAsFixed(6)),
+                    ]),
+                  ],
+
+                  if (loc.accounts != null && loc.accounts!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _buildDetailCard('Лицевые счета (${loc.accounts!.length})', [
+                      for (final acc in loc.accounts!)
+                        _detailRow(acc.accountNumber, acc.fio ?? acc.address ?? ''),
+                    ]),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailCard(String title, List<Widget> rows) {
+    // Filter out null-valued rows
+    final validRows = rows.whereType<Widget>().toList();
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withAlpha(15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            child: Text(
+              title,
+              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+          ...validRows,
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String? value) {
+    if (value == null || value.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
+          Flexible(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              textAlign: TextAlign.end,
+            ),
+          ),
         ],
       ),
     );

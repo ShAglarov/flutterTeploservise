@@ -257,38 +257,75 @@ class SyncRepository {
   // ----------------------------------------------------------------------
 
   Future<void> upsertSavedLocations(List<SavedLocationResponse> locations) async {
-    await _db.batch((batch) {
-      for (final loc in locations) {
-        batch.insert(
-          _db.savedLocations,
-          SavedLocationsCompanion.insert(
-            backendId: Value(loc.id),
-            locationUUID: Value(loc.locationUUID),
-            name: Value(loc.name),
-            latitude: Value(loc.latitude),
-            longitude: Value(loc.longitude),
-            // managementCompanyId is used as string in api? Yes
-            // but we don't have it directly matching our schema unless we store it.
-            // SavedLocationsDb has no managementCompanyId? Wait, we made SavedLocations.managementCompanyId integer?
-            // Actually in database.dart I did: TextColumn get managementCompany => text().nullable()();
-            // We use managementCompany for managementCompanyId? Yes or name?
-            managementCompany: Value(loc.managementCompanyId),
-            boilerHouseId: Value(loc.boilerHouseId),
-            floors: Value(loc.floors),
-            residentsCount: Value(loc.residentsCount),
-            rooms: Value(loc.rooms),
-            totalArea: Value(loc.totalArea),
-            yearBuilt: Value(loc.yearBuilt),
-            fiasHouseGuid: Value(loc.fiasHouseGuid),
-            fiasAOGuid: Value(loc.fiasAOGuid),
-            providesHeating: Value(loc.providesHeating ?? false),
-            providesHotWater: Value(loc.providesHotWater ?? false),
-            updatedAt: Value(loc.updatedAt != null ? DateTime.parse(loc.updatedAt!) : null),
-          ),
-          mode: InsertMode.insertOrReplace,
-        );
+    if (locations.isEmpty) return;
+
+    // КРИТИЧНО: SavedLocations использует autoIncrement id как PK, а не backendId.
+    // Поэтому InsertMode.insertOrReplace НЕ заменяет существующие записи — каждый insert
+    // создаёт новую строку, что приводит к массовому дублированию.
+    // Решение: удаляем существующие записи по backendId, затем вставляем новые.
+    final backendIds = locations.where((l) => l.id > 0).map((l) => l.id).toList();
+    
+    await _db.transaction(() async {
+      // 1. Удаляем старые записи с этими backendId
+      if (backendIds.isNotEmpty) {
+        await (_db.delete(_db.savedLocations)
+          ..where((t) => t.backendId.isIn(backendIds)))
+          .go();
       }
+
+      // 2. Вставляем новые записи
+      await _db.batch((batch) {
+        for (final loc in locations) {
+          batch.insert(
+            _db.savedLocations,
+            SavedLocationsCompanion.insert(
+              backendId: Value(loc.id),
+              locationUUID: Value(loc.locationUUID),
+              name: Value(loc.name),
+              latitude: Value(loc.latitude),
+              longitude: Value(loc.longitude),
+              managementCompany: Value(loc.managementCompanyId),
+              boilerHouseId: Value(loc.boilerHouseId),
+              floors: Value(loc.floors),
+              residentsCount: Value(loc.residentsCount),
+              rooms: Value(loc.rooms),
+              totalArea: Value(loc.totalArea),
+              yearBuilt: Value(loc.yearBuilt),
+              fiasHouseGuid: Value(loc.fiasHouseGuid),
+              fiasAOGuid: Value(loc.fiasAOGuid),
+              providesHeating: Value(loc.providesHeating ?? false),
+              providesHotWater: Value(loc.providesHotWater ?? false),
+              updatedAt: Value(loc.updatedAt != null ? DateTime.parse(loc.updatedAt!) : null),
+            ),
+          );
+        }
+      });
     });
+  }
+
+  /// Удаление дубликатов SavedLocations, оставляя только одну запись на backendId.
+  /// Вызывать при запуске приложения для очистки накопившихся дубликатов.
+  Future<void> deduplicateSavedLocations() async {
+    final allLocs = await _db.select(_db.savedLocations).get();
+    final seen = <int>{};
+    final toDelete = <int>[];
+
+    for (final loc in allLocs) {
+      final bid = loc.backendId;
+      if (bid == null || bid == 0) continue;
+      if (seen.contains(bid)) {
+        toDelete.add(loc.id);
+      } else {
+        seen.add(bid);
+      }
+    }
+
+    if (toDelete.isNotEmpty) {
+      print('🧹 [SyncRepo] Removing ${toDelete.length} duplicate saved locations');
+      await (_db.delete(_db.savedLocations)
+        ..where((t) => t.id.isIn(toDelete)))
+        .go();
+    }
   }
 
   Stream<List<SavedLocationResponse>> watchAllLocations() {

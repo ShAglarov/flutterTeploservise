@@ -90,6 +90,11 @@ class MapData extends _$MapData {
 
   Future<void> _fetchInitialData() async {
     try {
+      // КРИТИЧНО: Очищаем дубликаты SavedLocations, накопившиеся из-за бага
+      // где upsert создавал новые строки вместо замены существующих
+      final syncRepo = ref.read(syncRepositoryProvider);
+      await syncRepo.deduplicateSavedLocations();
+
       final bhService = ref.read(boilerHouseServiceProvider);
       final locService = ref.read(locationServiceProvider);
       final incService = ref.read(incidentServiceProvider);

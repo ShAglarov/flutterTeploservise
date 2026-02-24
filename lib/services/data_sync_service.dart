@@ -114,13 +114,22 @@ class DataSyncService {
   // ---------------------------------------------------------------------------
 
   void _handleMessage(Map<String, dynamic> message) {
-    // The server sends action_sync messages (or the message IS the action)
+    // The server sends: {"type": "action_sync", "data": {...action fields...}, "timestamp": "..."}
     final type = message['type'] as String?;
 
-    if (type == 'action_sync' || message.containsKey('action_type')) {
+    if (type == 'action_sync') {
+      // Extract the nested action data
+      final data = message['data'];
+      if (data is Map<String, dynamic>) {
+        processAction(data);
+      } else {
+        dev.log('[DataSync] action_sync message has no valid data field', name: 'SYNC');
+      }
+    } else if (message.containsKey('action_type')) {
+      // Direct action format (no wrapper)
       processAction(message);
-    } else if (type == 'ping') {
-      // Heartbeat - ignore
+    } else if (type == 'ping' || type == 'connection_established') {
+      // Heartbeat / connection confirmation - ignore
     } else {
       dev.log('[DataSync] Unhandled WS message type: $type', name: 'SYNC');
     }
