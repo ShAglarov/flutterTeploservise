@@ -473,6 +473,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     for (final loc in data.locations) {
+      // ONLY SHOW HOUSES LINKED TO BOILER HOUSES
+      if (loc.boilerHouseId == null || loc.boilerHouseId == 0) continue;
+
       if (_selectedBoilerHouse != null && loc.boilerHouseId != _selectedBoilerHouse!.id) continue;
 
       if (loc.latitude == 0 && loc.longitude == 0) continue;
