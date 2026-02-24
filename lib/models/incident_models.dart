@@ -250,6 +250,7 @@ class IncidentCreate {
   final List<AffectedHouseCreate>? affectedHouseDetails;
   @JsonKey(name: 'notification_config')
   final NotificationConfig? notificationConfig;
+  final String? createdAt;
 
   IncidentCreate({
     required this.boilerHouseId,
@@ -263,6 +264,7 @@ class IncidentCreate {
     this.affectedHouseIds,
     this.affectedHouseDetails,
     this.notificationConfig,
+    this.createdAt,
   });
 
   factory IncidentCreate.fromJson(Map<String, dynamic> json) => _$IncidentCreateFromJson(json);
@@ -284,6 +286,8 @@ class IncidentUpdate {
   final List<AffectedHouseCreate>? affectedHouseDetails;
   @JsonKey(name: 'notification_config')
   final NotificationConfig? notificationConfig;
+  final String? createdAt;
+  final String? resolvedAt;
 
   IncidentUpdate({
     this.id,
@@ -298,6 +302,8 @@ class IncidentUpdate {
     this.affectedHouseIds,
     this.affectedHouseDetails,
     this.notificationConfig,
+    this.createdAt,
+    this.resolvedAt,
   });
 
   factory IncidentUpdate.fromJson(Map<String, dynamic> json) => _$IncidentUpdateFromJson(json);

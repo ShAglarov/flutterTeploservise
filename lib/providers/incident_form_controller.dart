@@ -2,80 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/incident_models.dart';
 import '../services/incident_service.dart';
+import 'incident_form_state.dart';
+export 'incident_form_state.dart';
 
 part 'incident_form_controller.g.dart';
 
-class IncidentFormState {
-  final int? id;
-  final int? boilerHouseId;
-  final String title;
-  final String description;
-  final IncidentStatus status;
-  final String severity;
-  final bool stopHotWater;
-  final bool stopHeating;
-  final Set<int> affectedHouseIds;
-  final DateTime createdAt;
-  final DateTime? resolvedAt;
-  final int? assignedTo;
-  final NotificationConfig? notificationConfig;
-  final bool isSaving;
-  final String? errorMessage;
 
-  IncidentFormState({
-    this.id,
-    this.boilerHouseId,
-    this.title = '',
-    this.description = '',
-    this.status = IncidentStatus.open,
-    this.severity = '1',
-    this.stopHotWater = false,
-    this.stopHeating = false,
-    this.affectedHouseIds = const {},
-    DateTime? createdAt,
-    this.resolvedAt,
-    this.assignedTo,
-    this.notificationConfig,
-    this.isSaving = false,
-    this.errorMessage,
-  }) : createdAt = createdAt ?? DateTime.now();
-
-  IncidentFormState copyWith({
-    int? id,
-    int? boilerHouseId,
-    String? title,
-    String? description,
-    IncidentStatus? status,
-    String? severity,
-    bool? stopHotWater,
-    bool? stopHeating,
-    Set<int>? affectedHouseIds,
-    DateTime? createdAt,
-    DateTime? resolvedAt,
-    int? assignedTo,
-    NotificationConfig? notificationConfig,
-    bool? isSaving,
-    String? errorMessage,
-  }) {
-    return IncidentFormState(
-      id: id ?? this.id,
-      boilerHouseId: boilerHouseId ?? this.boilerHouseId,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      status: status ?? this.status,
-      severity: severity ?? this.severity,
-      stopHotWater: stopHotWater ?? this.stopHotWater,
-      stopHeating: stopHeating ?? this.stopHeating,
-      affectedHouseIds: affectedHouseIds ?? this.affectedHouseIds,
-      createdAt: createdAt ?? this.createdAt,
-      resolvedAt: resolvedAt ?? this.resolvedAt,
-      assignedTo: assignedTo ?? this.assignedTo,
-      notificationConfig: notificationConfig ?? this.notificationConfig,
-      isSaving: isSaving ?? this.isSaving,
-      errorMessage: errorMessage,
-    );
-  }
-}
 
 @riverpod
 class IncidentFormController extends _$IncidentFormController {
@@ -98,7 +30,11 @@ class IncidentFormController extends _$IncidentFormController {
         notificationConfig: initialIncident.notificationConfig,
       );
     }
-    return IncidentFormState();
+    return IncidentFormState(
+      id: null,
+      boilerHouseId: null,
+      createdAt: DateTime.now(),
+    );
   }
 
   void updateTitle(String value) => state = state.copyWith(title: value);
@@ -113,6 +49,10 @@ class IncidentFormController extends _$IncidentFormController {
   void updateStopHotWater(bool value) => state = state.copyWith(stopHotWater: value);
   void updateStopHeating(bool value) => state = state.copyWith(stopHeating: value);
   void updateBoilerHouse(int? id) => state = state.copyWith(boilerHouseId: id);
+  void updateCreatedAt(DateTime time) => state = state.copyWith(createdAt: time);
+  void updateResolvedAt(DateTime? time) => state = state.copyWith(resolvedAt: time);
+  void updateAssignedTo(int? userId) => state = state.copyWith(assignedTo: userId);
+  void updateNotificationConfig(NotificationConfig? config) => state = state.copyWith(notificationConfig: config);
   
   void toggleHouse(int houseId) {
     final newSet = Set<int>.from(state.affectedHouseIds);
@@ -169,6 +109,8 @@ class IncidentFormController extends _$IncidentFormController {
           affectedHouseIds: state.affectedHouseIds.toList(),
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
+          createdAt: state.createdAt.toIso8601String(),
+          resolvedAt: state.resolvedAt?.toIso8601String(),
         );
         await service.updateIncident(state.id!, update);
       } else {
@@ -183,6 +125,7 @@ class IncidentFormController extends _$IncidentFormController {
           affectedHouseIds: state.affectedHouseIds.toList(),
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
+          createdAt: state.createdAt.toIso8601String(),
         );
         await service.createIncident(create);
       }

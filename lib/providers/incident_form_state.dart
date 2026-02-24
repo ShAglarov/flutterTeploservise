@@ -4,7 +4,7 @@ import '../models/incident_models.dart';
 part 'incident_form_state.freezed.dart';
 
 @freezed
-class IncidentFormState with _$IncidentFormState {
+abstract class IncidentFormState with _$IncidentFormState {
   const factory IncidentFormState({
     required int? id,
     required int? boilerHouseId,

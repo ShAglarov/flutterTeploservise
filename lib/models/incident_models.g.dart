@@ -232,6 +232,7 @@ IncidentCreate _$IncidentCreateFromJson(Map<String, dynamic> json) =>
           : NotificationConfig.fromJson(
               json['notification_config'] as Map<String, dynamic>,
             ),
+      createdAt: json['created_at'] as String?,
     );
 
 Map<String, dynamic> _$IncidentCreateToJson(IncidentCreate instance) =>
@@ -247,6 +248,7 @@ Map<String, dynamic> _$IncidentCreateToJson(IncidentCreate instance) =>
       'affected_house_ids': instance.affectedHouseIds,
       'affected_house_details': instance.affectedHouseDetails,
       'notification_config': instance.notificationConfig,
+      'created_at': instance.createdAt,
     };
 
 IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
@@ -273,6 +275,8 @@ IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
           : NotificationConfig.fromJson(
               json['notification_config'] as Map<String, dynamic>,
             ),
+      createdAt: json['created_at'] as String?,
+      resolvedAt: json['resolved_at'] as String?,
     );
 
 Map<String, dynamic> _$IncidentUpdateToJson(IncidentUpdate instance) =>
@@ -289,6 +293,8 @@ Map<String, dynamic> _$IncidentUpdateToJson(IncidentUpdate instance) =>
       'affected_house_ids': instance.affectedHouseIds,
       'affected_house_details': instance.affectedHouseDetails,
       'notification_config': instance.notificationConfig,
+      'created_at': instance.createdAt,
+      'resolved_at': instance.resolvedAt,
     };
 
 IncidentCommentAuthor _$IncidentCommentAuthorFromJson(

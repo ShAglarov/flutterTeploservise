@@ -60,7 +60,7 @@ final class IncidentFormControllerProvider
 }
 
 String _$incidentFormControllerHash() =>
-    r'3344faed880e455aafacaa82b34409b0f0f33a89';
+    r'a0cb9a2c476700a5d7936e0a2ec4c7b4590d98f4';
 
 final class IncidentFormControllerFamily extends $Family
     with
