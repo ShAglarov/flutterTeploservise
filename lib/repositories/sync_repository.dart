@@ -72,7 +72,7 @@ class SyncRepository {
   Stream<List<IncidentResponse>> watchAllIncidents() {
     final query = _db.select(_db.incidents).join([
       leftOuterJoin(_db.boilerHouses, _db.boilerHouses.backendId.equalsExp(_db.incidents.boilerHouseId)),
-    ]);
+    ])..orderBy([OrderingTerm(expression: _db.incidents.startedAt, mode: OrderingMode.desc)]);
     
     return query.watch().asyncMap((rows) async {
       final List<IncidentResponse> responses = [];
