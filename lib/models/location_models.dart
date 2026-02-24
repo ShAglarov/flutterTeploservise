@@ -23,6 +23,7 @@ class SavedLocationResponse {
   final bool? providesHeating;
   final bool? providesHotWater;
   final String? managementCompanyName;
+  final int? accountsCount;
   final String createdAt;
   final String? updatedAt;
   final List<PhotoInfo>? photos;
@@ -47,6 +48,7 @@ class SavedLocationResponse {
     this.providesHeating,
     this.providesHotWater,
     this.managementCompanyName,
+    this.accountsCount,
     required this.createdAt,
     this.updatedAt,
     this.photos,

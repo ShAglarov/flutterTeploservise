@@ -5191,6 +5191,17 @@ class $SavedLocationsTable extends SavedLocations
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _managementCompanyNameMeta =
+      const VerificationMeta('managementCompanyName');
+  @override
+  late final GeneratedColumn<String> managementCompanyName =
+      GeneratedColumn<String>(
+        'management_company_name',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _boilerHouseIdMeta = const VerificationMeta(
     'boilerHouseId',
   );
@@ -5252,6 +5263,7 @@ class $SavedLocationsTable extends SavedLocations
     totalArea,
     updatedAt,
     yearBuilt,
+    managementCompanyName,
     boilerHouseId,
     managementCompanyRefId,
     id,
@@ -5397,6 +5409,15 @@ class $SavedLocationsTable extends SavedLocations
         yearBuilt.isAcceptableOrUnknown(data['year_built']!, _yearBuiltMeta),
       );
     }
+    if (data.containsKey('management_company_name')) {
+      context.handle(
+        _managementCompanyNameMeta,
+        managementCompanyName.isAcceptableOrUnknown(
+          data['management_company_name']!,
+          _managementCompanyNameMeta,
+        ),
+      );
+    }
     if (data.containsKey('boiler_house_id')) {
       context.handle(
         _boilerHouseIdMeta,
@@ -5499,6 +5520,10 @@ class $SavedLocationsTable extends SavedLocations
         DriftSqlType.int,
         data['${effectivePrefix}year_built'],
       ),
+      managementCompanyName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}management_company_name'],
+      ),
       boilerHouseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}boiler_house_id'],
@@ -5539,6 +5564,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
   final double? totalArea;
   final DateTime? updatedAt;
   final int? yearBuilt;
+  final String? managementCompanyName;
   final int? boilerHouseId;
   final String? managementCompanyRefId;
   final int id;
@@ -5561,6 +5587,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     this.totalArea,
     this.updatedAt,
     this.yearBuilt,
+    this.managementCompanyName,
     this.boilerHouseId,
     this.managementCompanyRefId,
     required this.id,
@@ -5619,6 +5646,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     }
     if (!nullToAbsent || yearBuilt != null) {
       map['year_built'] = Variable<int>(yearBuilt);
+    }
+    if (!nullToAbsent || managementCompanyName != null) {
+      map['management_company_name'] = Variable<String>(managementCompanyName);
     }
     if (!nullToAbsent || boilerHouseId != null) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId);
@@ -5684,6 +5714,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       yearBuilt: yearBuilt == null && nullToAbsent
           ? const Value.absent()
           : Value(yearBuilt),
+      managementCompanyName: managementCompanyName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(managementCompanyName),
       boilerHouseId: boilerHouseId == null && nullToAbsent
           ? const Value.absent()
           : Value(boilerHouseId),
@@ -5720,6 +5753,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       totalArea: serializer.fromJson<double?>(json['totalArea']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       yearBuilt: serializer.fromJson<int?>(json['yearBuilt']),
+      managementCompanyName: serializer.fromJson<String?>(
+        json['managementCompanyName'],
+      ),
       boilerHouseId: serializer.fromJson<int?>(json['boilerHouseId']),
       managementCompanyRefId: serializer.fromJson<String?>(
         json['managementCompanyRefId'],
@@ -5749,6 +5785,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       'totalArea': serializer.toJson<double?>(totalArea),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'yearBuilt': serializer.toJson<int?>(yearBuilt),
+      'managementCompanyName': serializer.toJson<String?>(
+        managementCompanyName,
+      ),
       'boilerHouseId': serializer.toJson<int?>(boilerHouseId),
       'managementCompanyRefId': serializer.toJson<String?>(
         managementCompanyRefId,
@@ -5776,6 +5815,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     Value<double?> totalArea = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
     Value<int?> yearBuilt = const Value.absent(),
+    Value<String?> managementCompanyName = const Value.absent(),
     Value<int?> boilerHouseId = const Value.absent(),
     Value<String?> managementCompanyRefId = const Value.absent(),
     int? id,
@@ -5808,6 +5848,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     totalArea: totalArea.present ? totalArea.value : this.totalArea,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     yearBuilt: yearBuilt.present ? yearBuilt.value : this.yearBuilt,
+    managementCompanyName: managementCompanyName.present
+        ? managementCompanyName.value
+        : this.managementCompanyName,
     boilerHouseId: boilerHouseId.present
         ? boilerHouseId.value
         : this.boilerHouseId,
@@ -5850,6 +5893,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       totalArea: data.totalArea.present ? data.totalArea.value : this.totalArea,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       yearBuilt: data.yearBuilt.present ? data.yearBuilt.value : this.yearBuilt,
+      managementCompanyName: data.managementCompanyName.present
+          ? data.managementCompanyName.value
+          : this.managementCompanyName,
       boilerHouseId: data.boilerHouseId.present
           ? data.boilerHouseId.value
           : this.boilerHouseId,
@@ -5881,6 +5927,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           ..write('totalArea: $totalArea, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('yearBuilt: $yearBuilt, ')
+          ..write('managementCompanyName: $managementCompanyName, ')
           ..write('boilerHouseId: $boilerHouseId, ')
           ..write('managementCompanyRefId: $managementCompanyRefId, ')
           ..write('id: $id')
@@ -5908,6 +5955,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     totalArea,
     updatedAt,
     yearBuilt,
+    managementCompanyName,
     boilerHouseId,
     managementCompanyRefId,
     id,
@@ -5934,6 +5982,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           other.totalArea == this.totalArea &&
           other.updatedAt == this.updatedAt &&
           other.yearBuilt == this.yearBuilt &&
+          other.managementCompanyName == this.managementCompanyName &&
           other.boilerHouseId == this.boilerHouseId &&
           other.managementCompanyRefId == this.managementCompanyRefId &&
           other.id == this.id);
@@ -5958,6 +6007,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
   final Value<double?> totalArea;
   final Value<DateTime?> updatedAt;
   final Value<int?> yearBuilt;
+  final Value<String?> managementCompanyName;
   final Value<int?> boilerHouseId;
   final Value<String?> managementCompanyRefId;
   final Value<int> id;
@@ -5980,6 +6030,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.totalArea = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.yearBuilt = const Value.absent(),
+    this.managementCompanyName = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
     this.managementCompanyRefId = const Value.absent(),
     this.id = const Value.absent(),
@@ -6003,6 +6054,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.totalArea = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.yearBuilt = const Value.absent(),
+    this.managementCompanyName = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
     this.managementCompanyRefId = const Value.absent(),
     this.id = const Value.absent(),
@@ -6026,6 +6078,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Expression<double>? totalArea,
     Expression<DateTime>? updatedAt,
     Expression<int>? yearBuilt,
+    Expression<String>? managementCompanyName,
     Expression<int>? boilerHouseId,
     Expression<String>? managementCompanyRefId,
     Expression<int>? id,
@@ -6049,6 +6102,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       if (totalArea != null) 'total_area': totalArea,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (yearBuilt != null) 'year_built': yearBuilt,
+      if (managementCompanyName != null)
+        'management_company_name': managementCompanyName,
       if (boilerHouseId != null) 'boiler_house_id': boilerHouseId,
       if (managementCompanyRefId != null)
         'management_company_ref_id': managementCompanyRefId,
@@ -6075,6 +6130,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Value<double?>? totalArea,
     Value<DateTime?>? updatedAt,
     Value<int?>? yearBuilt,
+    Value<String?>? managementCompanyName,
     Value<int?>? boilerHouseId,
     Value<String?>? managementCompanyRefId,
     Value<int>? id,
@@ -6098,6 +6154,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       totalArea: totalArea ?? this.totalArea,
       updatedAt: updatedAt ?? this.updatedAt,
       yearBuilt: yearBuilt ?? this.yearBuilt,
+      managementCompanyName:
+          managementCompanyName ?? this.managementCompanyName,
       boilerHouseId: boilerHouseId ?? this.boilerHouseId,
       managementCompanyRefId:
           managementCompanyRefId ?? this.managementCompanyRefId,
@@ -6162,6 +6220,11 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     if (yearBuilt.present) {
       map['year_built'] = Variable<int>(yearBuilt.value);
     }
+    if (managementCompanyName.present) {
+      map['management_company_name'] = Variable<String>(
+        managementCompanyName.value,
+      );
+    }
     if (boilerHouseId.present) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId.value);
     }
@@ -6197,6 +6260,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
           ..write('totalArea: $totalArea, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('yearBuilt: $yearBuilt, ')
+          ..write('managementCompanyName: $managementCompanyName, ')
           ..write('boilerHouseId: $boilerHouseId, ')
           ..write('managementCompanyRefId: $managementCompanyRefId, ')
           ..write('id: $id')
@@ -13828,6 +13892,7 @@ typedef $$SavedLocationsTableCreateCompanionBuilder =
       Value<double?> totalArea,
       Value<DateTime?> updatedAt,
       Value<int?> yearBuilt,
+      Value<String?> managementCompanyName,
       Value<int?> boilerHouseId,
       Value<String?> managementCompanyRefId,
       Value<int> id,
@@ -13852,6 +13917,7 @@ typedef $$SavedLocationsTableUpdateCompanionBuilder =
       Value<double?> totalArea,
       Value<DateTime?> updatedAt,
       Value<int?> yearBuilt,
+      Value<String?> managementCompanyName,
       Value<int?> boilerHouseId,
       Value<String?> managementCompanyRefId,
       Value<int> id,
@@ -14057,6 +14123,11 @@ class $$SavedLocationsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get managementCompanyName => $composableBuilder(
+    column: $table.managementCompanyName,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -14258,6 +14329,11 @@ class $$SavedLocationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get managementCompanyName => $composableBuilder(
+    column: $table.managementCompanyName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -14387,6 +14463,11 @@ class $$SavedLocationsTableAnnotationComposer
 
   GeneratedColumn<int> get yearBuilt =>
       $composableBuilder(column: $table.yearBuilt, builder: (column) => column);
+
+  GeneratedColumn<String> get managementCompanyName => $composableBuilder(
+    column: $table.managementCompanyName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
@@ -14542,6 +14623,7 @@ class $$SavedLocationsTableTableManager
                 Value<double?> totalArea = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int?> yearBuilt = const Value.absent(),
+                Value<String?> managementCompanyName = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
                 Value<String?> managementCompanyRefId = const Value.absent(),
                 Value<int> id = const Value.absent(),
@@ -14564,6 +14646,7 @@ class $$SavedLocationsTableTableManager
                 totalArea: totalArea,
                 updatedAt: updatedAt,
                 yearBuilt: yearBuilt,
+                managementCompanyName: managementCompanyName,
                 boilerHouseId: boilerHouseId,
                 managementCompanyRefId: managementCompanyRefId,
                 id: id,
@@ -14588,6 +14671,7 @@ class $$SavedLocationsTableTableManager
                 Value<double?> totalArea = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int?> yearBuilt = const Value.absent(),
+                Value<String?> managementCompanyName = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
                 Value<String?> managementCompanyRefId = const Value.absent(),
                 Value<int> id = const Value.absent(),
@@ -14610,6 +14694,7 @@ class $$SavedLocationsTableTableManager
                 totalArea: totalArea,
                 updatedAt: updatedAt,
                 yearBuilt: yearBuilt,
+                managementCompanyName: managementCompanyName,
                 boilerHouseId: boilerHouseId,
                 managementCompanyRefId: managementCompanyRefId,
                 id: id,

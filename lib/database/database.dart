@@ -283,6 +283,7 @@ class SavedLocations extends Table {
   RealColumn get totalArea => real().nullable().withDefault(const Constant(0.0))();
   DateTimeColumn get updatedAt => dateTime().nullable()();
   IntColumn get yearBuilt => integer().nullable().withDefault(const Constant(0))();
+  TextColumn get managementCompanyName => text().nullable()();
 
   // Relationships
   IntColumn get boilerHouseId => integer().nullable().references(BoilerHouses, #backendId)();
@@ -329,7 +330,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

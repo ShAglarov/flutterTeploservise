@@ -116,12 +116,13 @@ class _IncidentPhotosCardState extends ConsumerState<IncidentPhotosCard> {
     }
   }
 
-  void _openFullscreen(BuildContext context, PhotoInfo photo) {
+  void _openFullscreen(BuildContext context, int index) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => FullscreenImageViewer(
-          imageUrl: photo.url,
+          photos: widget.photos,
+          initialIndex: index,
           title: 'Фото инцидента',
         ),
       ),
@@ -210,7 +211,7 @@ class _IncidentPhotosCardState extends ConsumerState<IncidentPhotosCard> {
                     child: Stack(
                       children: [
                         InkWell(
-                          onTap: () => _openFullscreen(context, photo),
+                          onTap: () => _openFullscreen(context, index),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
                             child: Image.network(

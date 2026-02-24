@@ -342,6 +342,7 @@ class SyncRepository {
               latitude: Value(loc.latitude),
               longitude: Value(loc.longitude),
               managementCompany: Value(loc.managementCompanyId),
+              managementCompanyName: Value(loc.managementCompanyName),
               boilerHouseId: Value(loc.boilerHouseId),
               floors: Value(loc.floors),
               residentsCount: Value(loc.residentsCount),
@@ -350,11 +351,56 @@ class SyncRepository {
               yearBuilt: Value(loc.yearBuilt),
               fiasHouseGuid: Value(loc.fiasHouseGuid),
               fiasAOGuid: Value(loc.fiasAOGuid),
+              accounts: Value(loc.accountsCount),
               providesHeating: Value(loc.providesHeating ?? false),
               providesHotWater: Value(loc.providesHotWater ?? false),
               updatedAt: Value(loc.updatedAt != null ? DateTime.parse(loc.updatedAt!) : null),
             ),
           );
+
+          // Upsert accounts if present
+          if (loc.accounts != null) {
+            for (final acc in loc.accounts!) {
+              batch.insert(
+                _db.myAccounts,
+                MyAccountsCompanion.insert(
+                  accountNumber: Value(acc.accountNumber),
+                  address: Value(acc.address),
+                  area: Value(acc.area),
+                  closeDate: Value(acc.closeDate != null ? DateTime.parse(acc.closeDate!) : null),
+                  email: Value(acc.email),
+                  fio: Value(acc.fio),
+                  jkuIdentifier: Value(acc.jkuIdentifier),
+                  locationUUID: acc.locationUUID ?? loc.locationUUID ?? '',
+                  openDate: Value(acc.openDate != null ? DateTime.parse(acc.openDate!) : null),
+                  phone: Value(acc.phone),
+                  serviceType: Value(acc.serviceType),
+                  status: Value(acc.status),
+                ),
+                mode: InsertMode.insertOrReplace,
+              );
+            }
+          }
+
+          // Upsert photos if present
+          if (loc.photos != null) {
+            for (final photo in loc.photos!) {
+              batch.insert(
+                _db.housePhotos,
+                HousePhotosCompanion.insert(
+                  backendId: Value(photo.id),
+                  url: Value(photo.url),
+                  thumbnailUrl: Value(photo.thumbnailUrl),
+                  createdAt: DateTime.parse(photo.createdAt ?? DateTime.now().toIso8601String()),
+                  fileName: photo.url?.split('/').last ?? 'photo.jpg',
+                  id: photo.id.toString(),
+                  sha256: '', // Not provided by backend
+                  houseId: Value(loc.id),
+                ),
+                mode: InsertMode.insertOrReplace,
+              );
+            }
+          }
         }
       });
     });
@@ -386,8 +432,27 @@ class SyncRepository {
   }
 
   Stream<List<SavedLocationResponse>> watchAllLocations() {
-    return _db.select(_db.savedLocations).watch().map((rows) {
-      return rows.map((loc) => _mapLocationToResponse(loc)).toList();
+    final query = _db.select(_db.savedLocations).join([
+      leftOuterJoin(_db.housePhotos, _db.housePhotos.houseId.equalsExp(_db.savedLocations.backendId)),
+    ]);
+
+    return query.watch().map((rows) {
+      final Map<int, SavedLocationDb> locsMap = {};
+      final Map<int, List<HousePhotoDb>> photosMap = {};
+
+      for (final row in rows) {
+        final loc = row.readTable(_db.savedLocations);
+        final photo = row.readTableOrNull(_db.housePhotos);
+
+        locsMap[loc.backendId ?? 0] = loc;
+        if (photo != null) {
+          photosMap.putIfAbsent(loc.backendId ?? 0, () => []).add(photo);
+        }
+      }
+
+      return locsMap.values.map((loc) {
+        return _mapLocationToResponse(loc, photos: photosMap[loc.backendId]);
+      }).toList();
     });
   }
 
@@ -497,6 +562,12 @@ class SyncRepository {
     }
   }
 
+  Future<void> deleteLocationPhoto(int backendId) async {
+    await (_db.delete(_db.housePhotos)
+          ..where((t) => t.backendId.equals(backendId)))
+        .go();
+  }
+
   // ----------------------------------------------------------------------
   // Mapping Helpers
   // ----------------------------------------------------------------------
@@ -599,13 +670,17 @@ class SyncRepository {
     );
   }
 
-  SavedLocationResponse _mapLocationToResponse(SavedLocationDb loc) {
+  SavedLocationResponse _mapLocationToResponse(SavedLocationDb loc, {List<HousePhotoDb>? photos}) {
+    // Derive base domain from AppConstants.baseUrl
+    final baseUrlPrefix = AppConstants.baseUrl.split('/api/v1')[0];
+
     return SavedLocationResponse(
       id: loc.backendId ?? 0,
       name: loc.name ?? '',
       latitude: loc.latitude ?? 0.0,
       longitude: loc.longitude ?? 0.0,
       managementCompanyId: loc.managementCompany, // Used managementCompany field holding the ID
+      managementCompanyName: loc.managementCompanyName,
       boilerHouseId: loc.boilerHouseId,
       floors: loc.floors,
       residentsCount: loc.residentsCount,
@@ -615,10 +690,25 @@ class SyncRepository {
       fiasHouseGuid: loc.fiasHouseGuid,
       fiasAOGuid: loc.fiasAOGuid,
       locationUUID: loc.locationUUID,
+      accountsCount: loc.accounts,
       providesHeating: loc.providesHeating,
       providesHotWater: loc.providesHotWater,
       createdAt: loc.updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
       updatedAt: loc.updatedAt?.toIso8601String(),
+      photos: photos?.map((p) {
+        final url = p.url ?? '';
+        final thumb = p.thumbnailUrl;
+        
+        final fullUrl = url.startsWith('http') ? url : '$baseUrlPrefix$url';
+        final fullThumb = (thumb != null && !thumb.startsWith('http')) ? '$baseUrlPrefix$thumb' : thumb;
+        
+        return PhotoInfo(
+          id: p.backendId,
+          url: fullUrl,
+          thumbnailUrl: fullThumb,
+          createdAt: p.createdAt.toIso8601String(),
+        );
+      }).toList(),
     );
   }
 }

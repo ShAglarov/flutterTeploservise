@@ -27,6 +27,7 @@ SavedLocationResponse _$SavedLocationResponseFromJson(
   providesHeating: json['provides_heating'] as bool?,
   providesHotWater: json['provides_hot_water'] as bool?,
   managementCompanyName: json['management_company_name'] as String?,
+  accountsCount: (json['accounts_count'] as num?)?.toInt(),
   createdAt: json['created_at'] as String,
   updatedAt: json['updated_at'] as String?,
   photos: (json['photos'] as List<dynamic>?)
@@ -58,6 +59,7 @@ Map<String, dynamic> _$SavedLocationResponseToJson(
   'provides_heating': instance.providesHeating,
   'provides_hot_water': instance.providesHotWater,
   'management_company_name': instance.managementCompanyName,
+  'accounts_count': instance.accountsCount,
   'created_at': instance.createdAt,
   'updated_at': instance.updatedAt,
   'photos': instance.photos,

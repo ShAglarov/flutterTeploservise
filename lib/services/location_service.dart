@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/location_models.dart';
+import '../models/incident_models.dart';
 import '../repositories/sync_repository.dart';
 import 'base_api_service.dart';
 
@@ -62,6 +63,32 @@ class LocationService {
 
   Future<void> deleteSavedLocation(int id) async {
     await _dio.delete('/locations/$id');
+  }
+
+  Future<PhotoInfo> uploadLocationPhoto(int locationId, String filePath) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath),
+    });
+
+    final response = await _dio.post(
+      '/locations/$locationId/photos/',
+      data: formData,
+    );
+    final photo = PhotoInfo.fromJson(response.data);
+    
+    // Refresh the location in local DB to include new photo
+    await getSavedLocation(locationId);
+    
+    return photo;
+  }
+
+  Future<void> deleteLocationPhoto(int locationId, int photoId) async {
+    await _dio.delete(
+      '/locations/$locationId/photos/$photoId',
+    );
+    
+    // Update local DB
+    await _syncRepository.deleteLocationPhoto(photoId);
   }
 
   // MARK: - Account Methods

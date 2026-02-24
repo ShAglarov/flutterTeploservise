@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:image_picker/image_picker.dart';
 import 'incident_list_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
 import '../models/incident_models.dart';
+import '../services/location_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/constants.dart';
 import '../widgets/base_card.dart';
+import '../widgets/fullscreen_image_viewer.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -945,94 +949,648 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   // --------------------------------------------------------------------------
   // House Detail Bottom Sheet
   // --------------------------------------------------------------------------
-  void _showHouseDetailSheet(SavedLocationResponse loc) {
+  void _showHouseDetailSheet(SavedLocationResponse initialLoc) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.3,
-          maxChildSize: 0.9,
-          builder: (ctx, controller) {
-            return Container(
-              decoration: BoxDecoration(
-                color: AppTheme.darkBackground,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border.all(color: Colors.white.withAlpha(20)),
-              ),
-              child: ListView(
-                controller: controller,
-                padding: const EdgeInsets.all(20),
-                children: [
-                  // Handle
-                  Center(
-                    child: Container(
-                      width: 40, height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(50),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
+        return Consumer(
+          builder: (context, ref, _) {
+            // Watch for updates to this specific location (e.g. photos)
+            final data = ref.watch(filteredMapDataProvider);
+            final loc = data.locations.firstWhere(
+              (l) => l.id == initialLoc.id,
+              orElse: () => initialLoc,
+            );
+            
+            final linkedBH = loc.boilerHouseId != null 
+                ? data.boilerHouses.firstWhere((bh) => bh.id == loc.boilerHouseId, orElse: () => BoilerHouseResponse(id: 0, address: 'Неизвестная котельная', latitude: 0, longitude: 0, createdAt: ''))
+                : null;
 
-                  // Title
-                  Row(
+            return DraggableScrollableSheet(
+              initialChildSize: 0.85,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              builder: (ctx, controller) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkBackground,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                  ),
+                  child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.successGreen.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.home, color: AppTheme.successGreen, size: 28),
-                      ),
-                      const SizedBox(width: 16),
+                      // Header with back button and title
+                      _buildBottomSheetHeader(loc.name),
+                      
                       Expanded(
-                        child: Text(
-                          loc.name,
-                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                        child: ListView(
+                          controller: controller,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          children: [
+                            // 1. House Info Section
+                            _buildHouseInfoSection(loc),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // 2. Boiler House Info Section
+                            if (linkedBH != null && linkedBH.id != 0)
+                              _buildBoilerHouseSection(linkedBH, data),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // 3. Accounts Section
+                            _buildAccountsSection(loc.accountsCount ?? loc.accounts?.length ?? 0),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // 4. Photos Section
+                            _buildHousePhotosSection(loc),
+                            
+                            const SizedBox(height: 40),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // Info Card
-                  _buildDetailCard('Информация о доме', [
-                    _detailRow('Этажи', loc.floors?.toString()),
-                    _detailRow('Кол-во жителей', loc.residentsCount?.toString()),
-                    _detailRow('Комнаты', loc.rooms?.toString()),
-                    _detailRow('Площадь', loc.totalArea != null ? '${loc.totalArea} м²' : null),
-                    _detailRow('Год постройки', loc.yearBuilt?.toString()),
-                    _detailRow('Отопление', loc.providesHeating == true ? 'Да' : (loc.providesHeating == false ? 'Нет' : null)),
-                    _detailRow('ГВС', loc.providesHotWater == true ? 'Да' : (loc.providesHotWater == false ? 'Нет' : null)),
-                    _detailRow('УК', loc.managementCompanyName),
-                  ]),
-
-                  if (loc.latitude != 0 && loc.longitude != 0) ...[
-                    const SizedBox(height: 12),
-                    _buildDetailCard('Координаты', [
-                      _detailRow('Широта', loc.latitude.toStringAsFixed(6)),
-                      _detailRow('Долгота', loc.longitude.toStringAsFixed(6)),
-                    ]),
-                  ],
-
-                  if (loc.accounts != null && loc.accounts!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _buildDetailCard('Лицевые счета (${loc.accounts!.length})', [
-                      for (final acc in loc.accounts!)
-                        _detailRow(acc.accountNumber, acc.fio ?? acc.address ?? ''),
-                    ]),
-                  ],
-                ],
-              ),
+                );
+              },
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildBottomSheetHeader(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                onPressed: () => Navigator.pop(context),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz, color: Colors.white, size: 24),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 100),
+            child: Text(
+              title,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHouseInfoSection(SavedLocationResponse loc) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryDarkBackground,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.apartment, color: AppTheme.primaryBlue, size: 24),
+              const SizedBox(width: 8),
+              const Text(
+                'Информация о доме',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          _buildInfoLabel('Название'),
+          Text(loc.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+          
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 16),
+          
+          // Grid of characteristics
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth - 16) / 2; // 2 columns with 16px gap
+              return Wrap(
+                spacing: 16,
+                runSpacing: 20,
+                children: [
+                  _buildGridItem(
+                    itemWidth: itemWidth,
+                    icon: Icons.grid_view_rounded,
+                    label: 'Услуги',
+                    content: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        if (loc.providesHotWater == true) ...[
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.water_drop, color: Colors.blue, size: 16),
+                              const SizedBox(width: 4),
+                              const Text('ГВС', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                        if (loc.providesHeating == true) ...[
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.local_fire_department, color: Colors.orange, size: 16),
+                              const SizedBox(width: 4),
+                              const Text('Отопление', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  _buildGridItem(
+                    itemWidth: itemWidth,
+                    icon: Icons.people_outline,
+                    label: 'Жильцов',
+                    value: loc.residentsCount?.toString() ?? '—',
+                  ),
+                  _buildGridItem(
+                    itemWidth: itemWidth,
+                    icon: Icons.square_foot,
+                    label: 'Площадь',
+                    value: loc.totalArea != null ? '${loc.totalArea} м²' : '—',
+                  ),
+                  _buildGridItem(
+                    itemWidth: itemWidth,
+                    icon: Icons.stairs,
+                    label: 'Этажей',
+                    value: loc.floors?.toString() ?? '—',
+                  ),
+                  _buildGridItem(
+                    itemWidth: itemWidth,
+                    icon: Icons.door_front_door_outlined,
+                    label: 'Помещений',
+                    value: loc.rooms?.toString() ?? '—',
+                  ),
+                  _buildGridItem(
+                    itemWidth: itemWidth,
+                    icon: Icons.calendar_month,
+                    label: 'Год постройки',
+                    value: loc.yearBuilt?.toString() ?? '—',
+                  ),
+                ],
+              );
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 16),
+          
+          _buildInfoLabel('УК/УО'),
+          Row(
+            children: [
+              const Icon(Icons.work, color: AppTheme.successGreen, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                loc.managementCompanyName ?? 'Не указана',
+                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 16),
+          
+          // Technical info block (FIAS, Coords)
+          _buildTechnicalInfo(loc),
+          
+          const SizedBox(height: 20),
+          
+          // Edit Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2C2C2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Редактировать дом', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTechnicalInfo(SavedLocationResponse loc) {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.navigation_rounded, color: Colors.red, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Ш: ${loc.latitude.toStringAsFixed(7)} Д: ${loc.longitude.toStringAsFixed(7)}',
+                style: const TextStyle(color: Colors.white70, fontSize: 14, fontFamily: 'monospace'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.file_copy, color: Colors.purple, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'ФИАС Дом: ${loc.fiasHouseGuid ?? "—"}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.file_copy, color: Colors.blue, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'ФИАС АО: ${loc.fiasAOGuid ?? "—"}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBoilerHouseSection(BoilerHouseResponse bh, MapDataState data) {
+    // Check for active incidents
+    final activeIncidents = data.incidents.where((inc) => 
+      inc.boilerHouseId == bh.id && 
+      inc.status != IncidentStatus.resolved && 
+      inc.status != IncidentStatus.closed
+    ).toList();
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryDarkBackground,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.local_fire_department, color: Colors.orange, size: 24),
+              SizedBox(width: 8),
+              Text(
+                'Информация о котельной',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          _buildInfoLabel('Котельная'),
+          Text(bh.address, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildIconLabel(Icons.tag, 'Номер участка'),
+                    Text(bh.siteNumber ?? '—', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildIconLabel(Icons.account_circle_outlined, 'Начальник участка'),
+                    Text(bh.siteManager ?? '—', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 16),
+          
+          _buildInfoLabel('Ресурсы сейчас'),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _buildResourceChip('ГВС', Icons.water_drop, Colors.blue)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildResourceChip('Отопление', Icons.thermostat, Colors.blue)),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10),
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Icon(
+                activeIncidents.isEmpty ? Icons.check_circle : Icons.warning_amber_rounded, 
+                color: activeIncidents.isEmpty ? AppTheme.successGreen : AppTheme.errorRed, 
+                size: 20
+              ),
+              const SizedBox(width: 8),
+              Text(
+                activeIncidents.isEmpty ? 'Нет активных инцидентов' : 'Активных инцидентов: ${activeIncidents.length}',
+                style: TextStyle(
+                  color: activeIncidents.isEmpty ? Colors.white70 : AppTheme.errorRed,
+                  fontSize: 14,
+                  fontWeight: activeIncidents.isEmpty ? FontWeight.normal : FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountsSection(int count) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14223A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: Center(
+        child: Text(
+          'Лицевые счета: $count',
+          style: const TextStyle(color: AppTheme.primaryBlue, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHousePhotosSection(SavedLocationResponse loc) {
+    final photos = loc.photos ?? [];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.image_outlined, color: AppTheme.primaryBlue, size: 24),
+                const SizedBox(width: 8),
+                const Text(
+                  'Фотографии дома',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: () => _uploadPhotoForLocation(loc.id),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFF14223A),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text('Добавить', style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        if (photos.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              child: Column(
+                children: [
+                  const Text('Нет фотографий', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _uploadPhotoForLocation(loc.id),
+                    child: const Text(
+                      'Добавить первую фотографию',
+                      style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 15),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 150,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: photos.length,
+              itemBuilder: (context, index) {
+                final photo = photos[index];
+                return _buildPhotoThumbnail(loc.id, photos, index);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPhotoThumbnail(int locationId, List<PhotoInfo> allPhotos, int index) {
+    final photo = allPhotos[index];
+    return Container(
+      margin: const EdgeInsets.only(right: 12),
+      width: 120,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        image: DecorationImage(
+          image: NetworkImage(photo.thumbnailUrl ?? photo.url ?? ''),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 4, right: 4,
+            child: GestureDetector(
+              onTap: () => _deletePhotoForLocation(locationId, photo.id),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
+              ),
+            ),
+          ),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openFullscreenPhoto(allPhotos, index),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper Widgets
+  Widget _buildInfoLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        label,
+        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildIconLabel(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white.withOpacity(0.3), size: 16),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGridItem({required IconData icon, required String label, String? value, Widget? content, double? itemWidth}) {
+    final body = content ?? Text(
+      value ?? '—', 
+      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+    
+    return SizedBox(
+      width: itemWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildIconLabel(icon, label),
+          const SizedBox(height: 4),
+          body,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResourceChip(String label, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14223A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500))),
+          const Icon(Icons.check_circle, color: Color(0xFF30D158), size: 16),
+        ],
+      ),
+    );
+  }
+
+  // Action methods for photo management
+  Future<void> _uploadPhotoForLocation(int locationId) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    
+    if (image != null) {
+      try {
+        await ref.read(locationServiceProvider).uploadLocationPhoto(locationId, image.path);
+        // UI should auto-refresh because we use Consumer/ref.watch
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка загрузки: $e')));
+        }
+      }
+    }
+  }
+
+  Future<void> _deletePhotoForLocation(int locationId, int photoId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить фото?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Удалить')),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      try {
+        await ref.read(locationServiceProvider).deleteLocationPhoto(locationId, photoId);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+        }
+      }
+    }
+  }
+
+  void _openFullscreenPhoto(List<PhotoInfo> photos, int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenImageViewer(
+          photos: photos,
+          initialIndex: index,
+        ),
+      ),
     );
   }
 
