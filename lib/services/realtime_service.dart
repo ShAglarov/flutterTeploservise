@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math; // ADDED: for jitter
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../utils/constants.dart';
@@ -38,7 +39,16 @@ class RealtimeService {
   bool _isConnecting = false;
   int _retryCount = 0;
   Timer? _reconnectTimer;
-  Timer? _heartbeatTimer;
+
+  // ADDED: Deferred backoff reset — only resets _retryCount after 5s of stable connection.
+  // Prevents Thundering Herd when server flaps (accept → drop → accept → drop).
+  Timer? _stableConnectionTimer;
+
+  // ADDED: Server-ping watchdog replaces the old client heartbeat.
+  // The server sends {"type": "ping"} every 30s. We passively monitor
+  // _lastPongReceived and tear down the connection if no ping arrives for 90s.
+  Timer? _watchdogTimer;
+  DateTime? _lastPongReceived;
 
   RealtimeService(this._storage, this._deviceService);
 
@@ -76,15 +86,29 @@ class RealtimeService {
       );
 
       _isConnecting = false;
-      
-      // Start heartbeat
-      _startHeartbeat();
+
+      // MODIFIED: Start server-ping watchdog instead of client heartbeat.
+      // No more client-originated pings — server drives keep-alive.
+      _startWatchdog();
 
       // Emit reconnect event if this is a RE-connection (not first connect)
       final wasConnectedBefore = _retryCount > 0;
-      _retryCount = 0;
+
+      // MODIFIED: Do NOT reset _retryCount = 0 instantly.
+      // Schedule a deferred reset after 5 seconds of stable connection.
       _isConnected = true;
       _connectionStateController.add(true);
+
+      // ADDED: ANTI-DDOS — deferred backoff reset.
+      // Only reset retry counter after 5s of proven stability.
+      // If the server flaps, _retryCount stays elevated → 2s → 4s → 8s instead of 1s → 1s → DDoS.
+      _stableConnectionTimer?.cancel();
+      _stableConnectionTimer = Timer(const Duration(seconds: 5), () {
+        if (_isConnected) {
+          dev.log('RealtimeService: ✅ ANTI-DDOS: Connection stable for 5s, resetting retry count (was $_retryCount)', name: 'WS');
+          _retryCount = 0;
+        }
+      });
 
       if (wasConnectedBefore) {
         dev.log('RealtimeService: Reconnected — firing onReconnect', name: 'WS');
@@ -105,6 +129,13 @@ class RealtimeService {
         if (decoded['type'] == 'ping') {
           dev.log('RealtimeService: Server ping received, sending pong', name: 'WS');
           _channel?.sink.add(jsonEncode({'type': 'pong'}));
+          // ADDED: Update watchdog timestamp — server is alive
+          _lastPongReceived = DateTime.now();
+          return;
+        }
+        // ADDED: Handle server JSON pong (response to native pings, if any)
+        if (decoded['type'] == 'pong') {
+          _lastPongReceived = DateTime.now();
           return;
         }
         _messageController.add(decoded);
@@ -115,27 +146,49 @@ class RealtimeService {
   }
 
   void _handleDisconnect() {
-    _heartbeatTimer?.cancel();
+    // ADDED: Cancel the deferred backoff reset — connection failed before proving stability
+    _stableConnectionTimer?.cancel();
+    _stableConnectionTimer = null;
+
+    // MODIFIED: Cancel watchdog instead of old heartbeat
+    _watchdogTimer?.cancel();
+    _watchdogTimer = null;
+
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
     _isConnected = false;
     _connectionStateController.add(false);
 
-    if (_retryCount < 10) {
-      final delay = Duration(seconds: (1 << _retryCount).clamp(1, 30));
-      dev.log('RealtimeService: Reconnecting in ${delay.inSeconds}s (retry $_retryCount)', name: 'WS');
-      
-      _reconnectTimer?.cancel();
-      _reconnectTimer = Timer(delay, () {
-        _retryCount++;
-        connect();
-      });
-    }
+    // MODIFIED: Removed `if (_retryCount < 10)` — client now retries indefinitely.
+    // MODIFIED: Max delay raised from 30s to 60s.
+    // ADDED: Positive jitter (0.0–1.0s) to prevent synchronized thundering herds.
+    final int baseDelay = (1 << _retryCount).clamp(1, 60);
+    final double jitter = math.Random().nextDouble(); // 0.0 to 1.0 seconds
+    final delay = Duration(milliseconds: (baseDelay * 1000) + (jitter * 1000).toInt());
+    
+    dev.log(
+      'RealtimeService: Reconnecting in ${delay.inMilliseconds}ms '
+      '(base: ${baseDelay}s + jitter: ${jitter.toStringAsFixed(2)}s, retry $_retryCount)',
+      name: 'WS',
+    );
+
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(delay, () {
+      _retryCount++;
+      connect();
+    });
   }
 
   void disconnect() {
-    _heartbeatTimer?.cancel();
+    // ADDED: Cancel deferred backoff reset on explicit disconnect
+    _stableConnectionTimer?.cancel();
+    _stableConnectionTimer = null;
+
+    // MODIFIED: Cancel watchdog instead of old heartbeat
+    _watchdogTimer?.cancel();
+    _watchdogTimer = null;
+
     _reconnectTimer?.cancel();
     _subscription?.cancel();
     _channel?.sink.close();
@@ -146,17 +199,34 @@ class RealtimeService {
     dev.log('RealtimeService: Manually disconnected', name: 'WS');
   }
 
-  void _startHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-      if (_isConnected && _channel != null) {
-        // Send plain text "ping" — matches backend's legacy keepalive handler
-        _channel!.sink.add('ping');
-        dev.log('RealtimeService: Sent heartbeat ping', name: 'WS');
-      } else {
+  // ADDED: Server-ping watchdog. Checks every 45s whether the server
+  // has sent a {"type": "ping"} within the last 90 seconds.
+  // If not, assumes the connection is silently dead and forces reconnect.
+  // This replaces the old _startHeartbeat() which spammed the server with text "ping".
+  void _startWatchdog() {
+    _watchdogTimer?.cancel();
+    _lastPongReceived = DateTime.now(); // Initialize baseline
+
+    _watchdogTimer = Timer.periodic(const Duration(seconds: 45), (timer) {
+      if (!_isConnected || _channel == null) {
         timer.cancel();
+        return;
+      }
+
+      final lastPong = _lastPongReceived;
+      if (lastPong != null) {
+        final elapsed = DateTime.now().difference(lastPong).inSeconds;
+        // 90 seconds = 3 missed server pings (every 30s)
+        if (elapsed > 90) {
+          dev.log(
+            'RealtimeService: ⚠️ Server-ping watchdog: no server ping for ${elapsed}s (timeout: 90s), reconnecting',
+            name: 'WS',
+          );
+          _handleDisconnect();
+        }
       }
     });
+    dev.log('RealtimeService: Server-ping watchdog started (check: 45s, timeout: 90s)', name: 'WS');
   }
 
   void dispose() {
