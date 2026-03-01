@@ -11,6 +11,7 @@ import '../services/user_service.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import '../widgets/incident_filter_sheet.dart';
 
 class IncidentListScreen extends ConsumerStatefulWidget {
   const IncidentListScreen({super.key});
@@ -30,12 +31,30 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredIncidentsAsync = ref.watch(filteredIncidentsProvider);
-    final mapData = ref.watch(mapDataProvider);
+    // 1. Listen for global refresh events from WebSocket (safely now that we're on AsyncValue)
+    ref.listen(globalRefreshEventProvider, (_, __) {
+      ref.invalidate(allIncidentsProvider);
+    });
+
+    // 2. Watch the ViewModels stream with native Riverpod caching and lifecycle handling
+    final viewModelsAsync = ref.watch(incidentViewModelsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Журнал инцидентов'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const IncidentFilterSheet(),
+              );
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(110),
           child: Column(
@@ -49,10 +68,11 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(allIncidentsProvider);
-          return ref.read(allIncidentsProvider.future);
         },
-        child: filteredIncidentsAsync.when(
-          data: (incidents) => _buildList(incidents, mapData),
+        child: viewModelsAsync.when(
+          // Key improvement: skipLoadingOnReload ensures UI does not blank out or show a spinner when the stream emits a new value
+          skipLoadingOnReload: true,
+          data: (viewModels) => _buildList(viewModels),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Center(
             child: Column(
@@ -145,8 +165,8 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     );
   }
 
-  Widget _buildList(List<IncidentResponse> incidents, MapDataState mapData) {
-    if (incidents.isEmpty) {
+  Widget _buildList(List<IncidentViewModel> viewModels) {
+    if (viewModels.isEmpty) {
       return ListView(
         children: const [
           SizedBox(height: 100),
@@ -163,52 +183,12 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       );
     }
 
-    final usersAsync = ref.watch(usersProvider);
-    final users = usersAsync.value ?? [];
-
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: incidents.length,
+      itemCount: viewModels.length,
       itemBuilder: (context, index) {
-        final inc = incidents[index];
-        
-        String? boilerHouseDetail;
-        if (inc.boilerHouseId != null) {
-          final bhId = inc.boilerHouseId!;
-          // Find the boiler house in mapData to get manager and site info
-          final bh = mapData.boilerHouses.firstWhere((b) => b.id == bhId, orElse: () => BoilerHouseResponse(id: bhId, address: '?', latitude: 0, longitude: 0, createdAt: ''));
-          
-          // Calculate active incident count for this boiler house
-          final incidentCount = mapData.incidents.where((i) => 
-            i.boilerHouseId == bhId && 
-            i.status != IncidentStatus.resolved && 
-            i.status != IncidentStatus.closed
-          ).length;
-          
-          // Calculate house count
-          final houseCount = mapData.locations.where((l) => l.boilerHouseId == bhId).length;
-          
-          boilerHouseDetail = '⚠️ Инциденты: $incidentCount | Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount';
-        }
-
-        // Calculate affected population
-        int totalResidents = 0;
-        if (inc.affectedHouseDetails != null) {
-          for (final hd in inc.affectedHouseDetails!) {
-            totalResidents += (hd.residentsCount ?? 0);
-          }
-        }
-
-        // Map assignedTo to actual user name
-        String? assigneeName;
-        if (inc.assignedTo != null) {
-          try {
-            final user = users.firstWhere((u) => u.id == inc.assignedTo);
-            assigneeName = user.fullName ?? user.username;
-          } catch (_) {
-            assigneeName = 'Неизвестный (${inc.assignedTo})';
-          }
-        }
+        final vm = viewModels[index];
+        final inc = vm.raw;
 
         return Slidable(
           key: ValueKey(inc.id),
@@ -247,15 +227,15 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           child: IncidentCard(
             title: inc.title ?? 'Инцидент #${inc.id}',
             location: inc.boilerHouse?.address ?? 'Неизвестная локация',
-            timestamp: _formatFullTimestamp(inc),
+            timestamp: vm.formattedTimestamp,
             statusText: inc.status == IncidentStatus.resolved ? 'ЗАВЕРШЁН' : 'АКТИВЕН',
             isStatusActive: inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed,
-            assigneeName: assigneeName,
-            affectedPopulationCount: totalResidents,
-            stoppedServicesText: _getStoppedServices(inc),
-            broadcastText: _getBroadcastText(inc),
+            assigneeName: vm.assigneeName,
+            affectedPopulationCount: vm.totalResidents,
+            stoppedServicesText: vm.stoppedServicesText,
+            broadcastText: vm.broadcastText,
             isUnsynced: inc.localPendingAck == true,
-            boilerHouseDetail: boilerHouseDetail,
+            boilerHouseDetail: vm.boilerHouseDetail,
             onTap: () {
               Navigator.push(
                 context,
@@ -268,40 +248,6 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
         );
       },
     );
-  }
-
-  String _formatFullTimestamp(IncidentResponse inc) {
-    final start = _formatDateTime(inc.createdAt);
-    if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed) {
-      final end = _formatDateTime(inc.resolvedAt ?? inc.updatedAt);
-      return 'с $start до $end';
-    } else {
-      return 'с $start до по наст. время';
-    }
-  }
-
-  String _formatDateTime(String? dtString) {
-    if (dtString == null || dtString.isEmpty) return '';
-    final dt = DateTime.tryParse(dtString)?.toLocal();
-    if (dt == null) return dtString;
-    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
-
-  String? _getStoppedServices(IncidentResponse inc) {
-    List<String> stopped = [];
-    if (inc.resourceHotWaterStopped == 1) stopped.add('ГВС');
-    if (inc.resourceHeatingStopped == 1) stopped.add('Отопление');
-    return stopped.isEmpty ? null : stopped.join(', ');
-  }
-
-  String? _getBroadcastText(IncidentResponse inc) {
-    if (inc.notificationConfig != null) {
-      if (inc.notificationConfig!.type == AudienceType.broadcast) {
-        return 'Все (Broadcast)';
-      }
-      return 'Роли/Пользователи (${inc.notificationConfig!.type.name})';
-    }
-    return null;
   }
 
   Widget _buildCustomSlidableAction({

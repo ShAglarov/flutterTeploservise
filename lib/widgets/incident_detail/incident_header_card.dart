@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/user_service.dart';
-import '../../models/api_models.dart';
 import '../../models/incident_models.dart';
 import '../../models/user_role.dart';
 import '../base_card.dart';
+import '../user_profile_sheet.dart';
 
 class IncidentHeaderCard extends ConsumerWidget {
   final IncidentResponse incident;
@@ -21,22 +21,29 @@ class IncidentHeaderCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final usersAsync = ref.watch(usersProvider);
-    final users = usersAsync.value ?? [];
+    final usersMapAsync = ref.watch(usersMapProvider);
+    final usersMap = usersMapAsync.value ?? {};
     
     String getUsername(int? id) {
       if (id == null) return "Не назначен";
-      final user = users.firstWhere(
-        (u) => u.id == id, 
-        orElse: () => APIUserResponse(
-          id: id, 
-          username: 'ID $id', 
-          email: '',
-          createdAt: DateTime.now().toIso8601String(),
-          role: UserRole.viewer,
-        ),
-      );
-      return user.fullName ?? user.username;
+      final user = usersMap[id];
+      if (user != null) {
+        return user.formattedDisplayName;
+      }
+      return 'ID $id';
+    }
+
+    void showUserProfile(int? id) {
+      if (id == null) return;
+      final user = usersMap[id];
+      if (user != null) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => UserProfileSheet(user: user),
+        );
+      }
     }
 
     String getNotificationTarget() {
@@ -152,25 +159,32 @@ class IncidentHeaderCard extends ConsumerWidget {
                 const SizedBox(height: 16),
                 Divider(color: Colors.white.withOpacity(0.1), height: 1),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Colors.grey[800],
-                      child: const Icon(Icons.person, size: 16, color: Colors.white),
+                InkWell(
+                  onTap: incident.assignedTo != null ? () => showUserProfile(incident.assignedTo) : null,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: Colors.grey[800],
+                          child: const Icon(Icons.person, size: 16, color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            getUsername(incident.assignedTo),
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                          ),
+                        ),
+                        Text(
+                          'Ответственный',
+                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        getUsername(incident.assignedTo),
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                      ),
-                    ),
-                    Text(
-                      'Ответственный',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                    ),
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Divider(color: Colors.white.withOpacity(0.1), height: 1),

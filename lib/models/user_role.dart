@@ -12,6 +12,14 @@ enum UserRole {
   @JsonValue('viewer')
   viewer;
 
+  // Added custom fromJson hook to handle enum parsing safely
+  static UserRole fromJson(String? value) {
+    if (value == null) return UserRole.viewer;
+    return UserRole.fromAnyString(value);
+  }
+
+  String toJson() => name;
+
   String get title {
     return switch (this) {
       UserRole.admin => 'Администратор',

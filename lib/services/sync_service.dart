@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,13 +6,19 @@ import '../repositories/sync_repository.dart';
 import 'base_api_service.dart';
 import 'data_sync_service.dart';
 import 'device_id_service.dart';
+import 'realtime_service.dart';
 
 final syncServiceProvider = Provider<SyncService>((ref) {
   final dio = ref.watch(dioProvider);
   final syncRepo = ref.watch(syncRepositoryProvider);
   final dataSyncService = ref.watch(dataSyncServiceProvider);
   final deviceService = ref.watch(deviceIdServiceProvider);
-  return SyncService(dio, syncRepo, dataSyncService, deviceService);
+  final realtimeService = ref.watch(realtimeServiceProvider);
+  final service = SyncService(dio, syncRepo, dataSyncService, deviceService, realtimeService);
+  
+  service.start();
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
 /// HTTP-based incremental sync using the `GET /sync/incremental` endpoint.
@@ -22,11 +29,35 @@ class SyncService {
   final SyncRepository _syncRepo;
   final DataSyncService _dataSyncService;
   final DeviceIdService _deviceService;
+  final RealtimeService _realtimeService;
 
   bool _isSyncing = false;
   static const String _cursorKey = 'global_sync_cursor';
+  
+  StreamSubscription<bool>? _connectionSub;
+  DateTime? _lastSyncTriggeredAt;
+  static const _syncCooldown = Duration(seconds: 5);
 
-  SyncService(this._dio, this._syncRepo, this._dataSyncService, this._deviceService);
+  SyncService(this._dio, this._syncRepo, this._dataSyncService, this._deviceService, this._realtimeService);
+
+  void start() {
+    _connectionSub = _realtimeService.connectionState.listen((isConnected) {
+      if (isConnected) {
+        final now = DateTime.now();
+        if (_lastSyncTriggeredAt != null && now.difference(_lastSyncTriggeredAt!) < _syncCooldown) {
+          dev.log('[SyncService] Skipping sync — cooldown active (${now.difference(_lastSyncTriggeredAt!).inSeconds}s since last)', name: 'SYNC');
+          return;
+        }
+        _lastSyncTriggeredAt = now;
+        dev.log('🔄 [SyncService] WebSocket reconnected. Triaging background sync recovery.', name: 'SYNC');
+        incrementalSync();
+      }
+    });
+  }
+
+  void dispose() {
+    _connectionSub?.cancel();
+  }
 
   /// Run a full incremental sync from the server.
   /// Handles pagination via `has_more`.

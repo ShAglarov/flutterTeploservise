@@ -8,7 +8,7 @@ part of 'incident_models.dart';
 
 NotificationConfig _$NotificationConfigFromJson(Map<String, dynamic> json) =>
     NotificationConfig(
-      type: $enumDecode(_$AudienceTypeEnumMap, json['type']),
+      type: AudienceType.fromAny(json['type']),
       roleIds: (json['role_ids'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
@@ -301,12 +301,21 @@ IncidentCommentAuthor _$IncidentCommentAuthorFromJson(
   Map<String, dynamic> json,
 ) => IncidentCommentAuthor(
   id: (json['id'] as num).toInt(),
-  fullName: json['full_name'] as String,
+  fullName: json['full_name'] as String?,
+  firstName: json['first_name'] as String?,
+  lastName: json['last_name'] as String?,
+  middleName: json['middle_name'] as String?,
 );
 
 Map<String, dynamic> _$IncidentCommentAuthorToJson(
   IncidentCommentAuthor instance,
-) => <String, dynamic>{'id': instance.id, 'full_name': instance.fullName};
+) => <String, dynamic>{
+  'id': instance.id,
+  'full_name': instance.fullName,
+  'first_name': instance.firstName,
+  'last_name': instance.lastName,
+  'middle_name': instance.middleName,
+};
 
 IncidentComment _$IncidentCommentFromJson(Map<String, dynamic> json) =>
     IncidentComment(

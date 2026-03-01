@@ -24,6 +24,11 @@ class UserService {
 
 // Provider to hold and cache the list of users
 final usersProvider = FutureProvider<List<APIUserResponse>>((ref) async {
-  final userService = ref.read(userServiceProvider);
+  final userService = ref.watch(userServiceProvider);
   return await userService.getAllUsers();
+});
+
+final usersMapProvider = FutureProvider<Map<int, APIUserResponse>>((ref) async {
+  final usersList = await ref.watch(usersProvider.future);
+  return {for (var user in usersList) user.id: user};
 });

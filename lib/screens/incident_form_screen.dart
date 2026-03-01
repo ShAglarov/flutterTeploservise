@@ -160,7 +160,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                             ...users.map((u) {
                               return DropdownMenuItem<int>(
                                 value: u.id,
-                                child: Text(u.fullName ?? u.username, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                child: Text(u.formattedDisplayName, style: const TextStyle(color: Colors.white, fontSize: 14)),
                               );
                             }),
                           ],
@@ -525,8 +525,8 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           final user = users[index];
                           final isSelected = selectedUserIds.contains(user.id);
                           return CheckboxListTile(
-                            title: Text(user.fullName ?? user.username, style: const TextStyle(color: Colors.white)),
-                            subtitle: Text(user.role.name, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                            title: Text(user.formattedDisplayName, style: const TextStyle(color: Colors.white)),
+                            subtitle: null,
                             value: isSelected,
                             onChanged: (v) {
                               if (v == true) {

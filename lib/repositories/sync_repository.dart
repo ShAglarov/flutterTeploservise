@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as dev;
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -23,51 +25,82 @@ class SyncRepository {
   // ----------------------------------------------------------------------
 
   Future<void> upsertIncidents(List<IncidentResponse> incidents) async {
-    await _db.batch((batch) {
+    if (incidents.isEmpty) return;
+    
+    final incidentIds = incidents.map((i) => i.id).toList();
+
+    await _db.transaction(() async {
+      // 1. Clear old relations for these incidents to ensure consistency
+      await (_db.delete(_db.affectedHouses)
+            ..where((t) => t.incidentId.isIn(incidentIds)))
+          .go();
+
+      // 1.5. Clean up temporary offline duplicate rows that have the same incidentUUID
       for (final incident in incidents) {
-        // Implement 'Server Wins' logic by resetting local changes flags when update received
-        final companion = _db.incidents.insertCompanionFromResponse(incident).copyWith(
-          localPendingAck: const Value(false),
-          lastLocalEditAt: const Value(null),
-        );
-        batch.insert(
-          _db.incidents,
-          companion,
-          mode: InsertMode.insertOrReplace,
-        );
-
-        if (incident.affectedHouseIds != null) {
-          for (final houseId in incident.affectedHouseIds!) {
-            batch.insert(
-              _db.affectedHouses,
-              AffectedHousesCompanion.insert(
-                incidentId: incident.id,
-                savedLocationId: houseId,
-              ),
-              mode: InsertMode.insertOrIgnore,
-            );
-          }
-        }
-
-        if (incident.photos != null) {
-          for (final photo in incident.photos!) {
-            batch.insert(
-              _db.incidentPhotos,
-              IncidentPhotosCompanion.insert(
-                id: const Uuid().v4(), // Generate a UUID since backend doesn't provide one for the PK id column
-                backendId: Value(photo.id),
-                incidentId: Value(incident.id),
-                url: Value(photo.url),
-                fileName: 'photo_${photo.id}.jpg', // removed Value() wrapper
-                thumbnailUrl: Value(photo.thumbnailUrl),
-                createdAt: Value(photo.createdAt != null ? DateTime.parse(photo.createdAt!) : null),
-              ),
-              mode: InsertMode.insertOrReplace,
-            );
+        if (incident.localUUID != null && incident.localUUID!.isNotEmpty) {
+          // Find any existing offline record with this UUID that isn't the real backend ID
+          final existingLocals = await (_db.select(_db.incidents)
+                ..where((t) => t.incidentUUID.equals(incident.localUUID!) & t.backendId.equals(incident.id).not()))
+              .get();
+              
+          for (final local in existingLocals) {
+            // Delete the offline relations and the offline incident itself
+            await (_db.delete(_db.affectedHouses)..where((t) => t.incidentId.equals(local.backendId))).go();
+            await (_db.delete(_db.incidentPhotos)..where((t) => t.incidentId.equals(local.backendId))).go();
+            await (_db.delete(_db.incidents)..where((t) => t.backendId.equals(local.backendId))).go();
+            dev.log('🗑️ [SyncRepo] Deleted ghost offline incident ${local.backendId} matching UUID ${incident.localUUID}', name: 'SYNC');
           }
         }
       }
+
+      // 2. Batch insert/replace the incidents and their relations
+      await _db.batch((batch) {
+        for (final incident in incidents) {
+          final companion = _db.incidents.insertCompanionFromResponse(incident).copyWith(
+            localPendingAck: const Value(false),
+            lastLocalEditAt: const Value(null),
+          );
+          batch.insert(
+            _db.incidents,
+            companion,
+            mode: InsertMode.insertOrReplace,
+          );
+
+          if (incident.affectedHouseIds != null) {
+            for (final houseId in incident.affectedHouseIds!) {
+              batch.insert(
+                _db.affectedHouses,
+                AffectedHousesCompanion.insert(
+                  incidentId: incident.id,
+                  savedLocationId: houseId,
+                ),
+                mode: InsertMode.insertOrIgnore,
+              );
+            }
+          }
+
+          if (incident.photos != null) {
+            for (final photo in incident.photos!) {
+              batch.insert(
+                _db.incidentPhotos,
+                IncidentPhotosCompanion.insert(
+                  id: const Uuid().v4(),
+                  backendId: Value(photo.id),
+                  incidentId: Value(incident.id),
+                  url: Value(photo.url),
+                  fileName: 'photo_${photo.id}.jpg',
+                  thumbnailUrl: Value(photo.thumbnailUrl),
+                  createdAt: Value(photo.createdAt != null ? DateTime.parse(photo.createdAt!) : null),
+                ),
+                mode: InsertMode.insertOrReplace,
+              );
+            }
+          }
+        }
+      });
     });
+    
+    dev.log('✅ [SyncRepo] Upserted ${incidents.length} incidents', name: 'SYNC');
   }
 
   Future<void> upsertIncidentPhotos(int incidentId, List<PhotoInfo> photos) async {
@@ -93,84 +126,95 @@ class SyncRepository {
   Stream<List<IncidentResponse>> watchAllIncidents() {
     final query = _db.select(_db.incidents).join([
       leftOuterJoin(_db.boilerHouses, _db.boilerHouses.backendId.equalsExp(_db.incidents.boilerHouseId)),
-      leftOuterJoin(_db.incidentPhotos, _db.incidentPhotos.incidentId.equalsExp(_db.incidents.backendId)),
     ])..orderBy([OrderingTerm(expression: _db.incidents.startedAt, mode: OrderingMode.desc)]);
-    
-    return query.watch().asyncMap((rows) async {
-      final List<IncidentResponse> responses = [];
-      if (rows.isEmpty) return responses;
 
-      final incidentIds = rows.map((r) => r.readTable(_db.incidents).backendId).toList();
-
-      // Fetch all photos and affected houses in bulk for all incidents in the list
-      final allPhotos = await (_db.select(_db.incidentPhotos)
-            ..where((t) => t.incidentId.isIn(incidentIds)))
-          .get();
-      
-      final allAffectedRels = await (_db.select(_db.affectedHouses)
-            ..where((t) => t.incidentId.isIn(incidentIds)))
-          .get();
-
-      // Fetch SavedLocation details for those relations
-      final locIds = allAffectedRels.map((e) => e.savedLocationId).toSet().toList();
-      final allLocations = locIds.isEmpty 
-          ? <SavedLocationDb>[] 
-          : await (_db.select(_db.savedLocations)..where((t) => t.backendId.isIn(locIds))).get();
-
-      final photosByIncident = <int, List<IncidentPhotoDb>>{};
-      for (final p in allPhotos) {
-        if (p.incidentId != null) {
-          photosByIncident.putIfAbsent(p.incidentId!, () => []).add(p);
-        }
-      }
-
-      final locsByIncident = <int, List<SavedLocationDb>>{};
-      final locationMap = {for (var l in allLocations) l.backendId: l};
-      for (final rel in allAffectedRels) {
-        final loc = locationMap[rel.savedLocationId];
-        if (loc != null) {
-          locsByIncident.putIfAbsent(rel.incidentId, () => []).add(loc);
-        }
-      }
-      
-      for (final row in rows) {
-        final inc = row.readTable(_db.incidents);
-        final bh = row.readTableOrNull(_db.boilerHouses);
+    return _db.customSelect(
+      'SELECT 1',
+      readsFrom: {
+        _db.incidents,
+        _db.boilerHouses,
+        _db.incidentPhotos,
+        _db.affectedHouses,
+        _db.savedLocations,
+      },
+    ).watch()
+      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 100)))
+      .asyncMap((_) async {
+        final rows = await query.get();
+        final stopwatch = Stopwatch()..start();
+        dev.log('⚡️ [watchAllIncidents] SQLite emit. Rows: ${rows.length}', name: 'SYNC_PERF');
         
-        responses.add(_mapIncidentToResponse(
-          inc, 
-          boilerHouse: bh, 
-          affectedHouses: locsByIncident[inc.backendId], 
-          photos: photosByIncident[inc.backendId]
-        ));
-      }
-      return responses;
-    });
+        if (rows.isEmpty) return <IncidentResponse>[];
+
+        final incidentIds = rows.map((r) => r.readTable(_db.incidents).backendId).toList();
+
+        // 1. Batch fetch all relations for these incidents in parallel
+        final results = await Future.wait([
+          // Photos
+          (_db.select(_db.incidentPhotos)..where((t) => t.incidentId.isIn(incidentIds))).get(),
+          // Affected houses mapping (join to get SavedLocation details)
+          (_db.select(_db.affectedHouses).join([
+            innerJoin(_db.savedLocations, _db.savedLocations.backendId.equalsExp(_db.affectedHouses.savedLocationId)),
+          ])..where(_db.affectedHouses.incidentId.isIn(incidentIds))).get(),
+        ]);
+
+        final fetchMs = stopwatch.elapsedMilliseconds;
+        
+        final allPhotos = results[0] as List<IncidentPhotoDb>;
+        final allAffectedHouses = results[1] as List<TypedResult>;
+
+        // Organize relations by incident ID for O(1) access
+        final photosByIncident = <int, List<IncidentPhotoDb>>{};
+        for (final p in allPhotos) {
+          final id = p.incidentId ?? 0;
+          photosByIncident.putIfAbsent(id, () => []).add(p);
+        }
+
+        final housesByIncident = <int, List<TypedResult>>{};
+        for (final row in allAffectedHouses) {
+          final id = row.readTable(_db.affectedHouses).incidentId;
+          housesByIncident.putIfAbsent(id, () => []).add(row);
+        }
+
+        final responses = <IncidentResponse>[];
+        for (final row in rows) {
+          final inc = row.readTable(_db.incidents);
+          final bh = row.readTableOrNull(_db.boilerHouses);
+          final incidentId = inc.backendId;
+
+          final res = _mapIncidentToResponse(
+            inc,
+            boilerHouse: bh,
+            affectedHousesRows: housesByIncident[incidentId] ?? [],
+            photos: photosByIncident[incidentId] ?? [],
+          );
+
+          responses.add(res);
+        }
+        
+        stopwatch.stop();
+        dev.log('🏁 [watchAllIncidents] Done. RelFetch=$fetchMs ms, TotalMap=${stopwatch.elapsedMilliseconds} ms', name: 'SYNC_PERF');
+        return responses;
+      });
   }
 
   Stream<IncidentResponse?> watchIncidentById(int backendId) {
-    // Include incidentPhotos in the join just to trigger stream updates when photos change,
-    // even though we fetch them separately in asyncMap to avoid complex grouping/deduplication.
     final query = _db.select(_db.incidents).join([
       leftOuterJoin(_db.boilerHouses, _db.boilerHouses.backendId.equalsExp(_db.incidents.boilerHouseId)),
-      leftOuterJoin(_db.incidentPhotos, _db.incidentPhotos.incidentId.equalsExp(_db.incidents.backendId)),
     ])..where(_db.incidents.backendId.equals(backendId));
     
     return query.watch().asyncMap((rows) async {
       if (rows.isEmpty) return null;
-      final row = rows.first; // Since we might have multiple rows due to photos join, take first
+      final row = rows.first;
       final inc = row.readTable(_db.incidents);
       final bh = row.readTableOrNull(_db.boilerHouses);
       
       final photos = await (_db.select(_db.incidentPhotos)..where((t) => t.incidentId.equals(inc.backendId))).get();
-      final affectedHouseRels = await (_db.select(_db.affectedHouses)..where((t) => t.incidentId.equals(inc.backendId))).get();
+      final affectedHousesRows = await (_db.select(_db.affectedHouses).join([
+        innerJoin(_db.savedLocations, _db.savedLocations.backendId.equalsExp(_db.affectedHouses.savedLocationId)),
+      ])..where(_db.affectedHouses.incidentId.equals(inc.backendId))).get();
       
-      List<SavedLocationDb> ahs = [];
-      if (affectedHouseRels.isNotEmpty) {
-        final ids = affectedHouseRels.map((e) => e.savedLocationId).toList();
-        ahs = await (_db.select(_db.savedLocations)..where((t) => t.backendId.isIn(ids))).get();
-      }
-      return _mapIncidentToResponse(inc, boilerHouse: bh, affectedHouses: ahs, photos: photos);
+      return _mapIncidentToResponse(inc, boilerHouse: bh, affectedHousesRows: affectedHousesRows, photos: photos);
     });
   }
 
@@ -178,16 +222,11 @@ class SyncRepository {
     final isCreate = create != null;
     final payload = (isCreate ? create.toJson() : update!.toJson());
     
-    // 1. Assign local UUID
-    final localUUID = isCreate ? const Uuid().v4() : update!.id.toString(); // For update, we use the real ID in payload but iOS queue uses ID.
-    if (isCreate) {
-      payload['localUUID'] = localUUID;
-    }
+    final localUUID = isCreate ? const Uuid().v4() : update!.id.toString();
+    if (isCreate) payload['local_uuid'] = localUUID;
 
-    // 2. Generate a temporary backendId for newly created incidents (e.g. negative timestamp)
     final tempId = isCreate ? -(DateTime.now().millisecondsSinceEpoch ~/ 1000) : update!.id!;
 
-    // 3. Write purely to local DB immediately
     await _db.batch((batch) {
       batch.insert(
         _db.incidents,
@@ -204,15 +243,13 @@ class SyncRepository {
           startedAt: Value(DateTime.now()),
           lastLocalEditAt: Value(DateTime.now()),
           assignedTo: Value(isCreate ? create.assignedTo : update!.assignedTo),
-          localPendingAck: const Value(true), // Mark as pending sync
+          localPendingAck: const Value(true),
         ),
         mode: InsertMode.insertOrReplace,
       );
 
-      // Affected houses
       final affectedHouseIds = isCreate ? create.affectedHouseIds : update!.affectedHouseIds;
       if (affectedHouseIds != null) {
-        // Delete old relations for updates (simplification)
         if (!isCreate) {
            (_db.delete(_db.affectedHouses)..where((t) => t.incidentId.equals(tempId))).go();
         }
@@ -229,7 +266,6 @@ class SyncRepository {
       }
     });
 
-    // 4. Enqueue for background sync
     await enqueueChange(
       entityType: 'incident',
       entityId: isCreate ? tempId : update!.id!,
@@ -239,36 +275,31 @@ class SyncRepository {
   }
 
   Future<void> resolveTemporaryId(String entityType, int tempId, int realId) async {
-    if (tempId > 0) return; // Not a temporary ID
+    if (tempId > 0) return;
 
     await _db.transaction(() async {
       if (entityType == 'incident') {
-        // 1. Update the incident's backendId and clear pending flag
         await (_db.update(_db.incidents)..where((t) => t.backendId.equals(tempId)))
             .write(IncidentsCompanion(
               backendId: Value(realId),
               localPendingAck: const Value(false),
             ));
             
-        // 2. Update foreign keys in affected houses
         await (_db.update(_db.affectedHouses)..where((t) => t.incidentId.equals(tempId)))
             .write(AffectedHousesCompanion(
               incidentId: Value(realId),
             ));
             
-        // 3. Update foreign keys in incident photos
         await (_db.update(_db.incidentPhotos)..where((t) => t.incidentId.equals(tempId)))
             .write(IncidentPhotosCompanion(
               incidentId: Value(realId),
             ));
             
-        // 4. Update foreign keys in incident comments
         await (_db.update(_db.incidentComments)..where((t) => t.incidentId.equals(tempId)))
             .write(IncidentCommentsCompanion(
               incidentId: Value(realId),
             ));
             
-        // 5. Update pending changes queue
         await (_db.update(_db.pendingChanges)
             ..where((t) => t.entityType.equals(entityType) & t.entityId.equals(tempId)))
             .write(PendingChangesCompanion(
@@ -277,10 +308,6 @@ class SyncRepository {
       }
     });
   }
-
-  // ----------------------------------------------------------------------
-  // Boiler Houses
-  // ----------------------------------------------------------------------
 
   Future<void> upsertBoilerHouses(List<BoilerHouseResponse> boilerHouses) async {
     await _db.batch((batch) {
@@ -309,28 +336,17 @@ class SyncRepository {
     });
   }
 
-  // ----------------------------------------------------------------------
-  // Saved Locations
-  // ----------------------------------------------------------------------
-
   Future<void> upsertSavedLocations(List<SavedLocationResponse> locations) async {
     if (locations.isEmpty) return;
-
-    // КРИТИЧНО: SavedLocations использует autoIncrement id как PK, а не backendId.
-    // Поэтому InsertMode.insertOrReplace НЕ заменяет существующие записи — каждый insert
-    // создаёт новую строку, что приводит к массовому дублированию.
-    // Решение: удаляем существующие записи по backendId, затем вставляем новые.
     final backendIds = locations.where((l) => l.id > 0).map((l) => l.id).toList();
     
     await _db.transaction(() async {
-      // 1. Удаляем старые записи с этими backendId
       if (backendIds.isNotEmpty) {
         await (_db.delete(_db.savedLocations)
           ..where((t) => t.backendId.isIn(backendIds)))
           .go();
       }
 
-      // 2. Вставляем новые записи
       await _db.batch((batch) {
         for (final loc in locations) {
           batch.insert(
@@ -358,7 +374,6 @@ class SyncRepository {
             ),
           );
 
-          // Upsert accounts if present
           if (loc.accounts != null) {
             for (final acc in loc.accounts!) {
               batch.insert(
@@ -382,7 +397,6 @@ class SyncRepository {
             }
           }
 
-          // Upsert photos if present
           if (loc.photos != null) {
             for (final photo in loc.photos!) {
               batch.insert(
@@ -394,7 +408,7 @@ class SyncRepository {
                   createdAt: DateTime.parse(photo.createdAt ?? DateTime.now().toIso8601String()),
                   fileName: photo.url?.split('/').last ?? 'photo.jpg',
                   id: photo.id.toString(),
-                  sha256: '', // Not provided by backend
+                  sha256: '',
                   houseId: Value(loc.id),
                 ),
                 mode: InsertMode.insertOrReplace,
@@ -406,8 +420,6 @@ class SyncRepository {
     });
   }
 
-  /// Удаление дубликатов SavedLocations, оставляя только одну запись на backendId.
-  /// Вызывать при запуске приложения для очистки накопившихся дубликатов.
   Future<void> deduplicateSavedLocations() async {
     final allLocs = await _db.select(_db.savedLocations).get();
     final seen = <int>{};
@@ -424,10 +436,7 @@ class SyncRepository {
     }
 
     if (toDelete.isNotEmpty) {
-      print('🧹 [SyncRepo] Removing ${toDelete.length} duplicate saved locations');
-      await (_db.delete(_db.savedLocations)
-        ..where((t) => t.id.isIn(toDelete)))
-        .go();
+      await (_db.delete(_db.savedLocations)..where((t) => t.id.isIn(toDelete))).go();
     }
   }
 
@@ -444,9 +453,10 @@ class SyncRepository {
         final loc = row.readTable(_db.savedLocations);
         final photo = row.readTableOrNull(_db.housePhotos);
 
-        locsMap[loc.backendId ?? 0] = loc;
+        final bid = loc.backendId ?? 0;
+        locsMap[bid] = loc;
         if (photo != null) {
-          photosMap.putIfAbsent(loc.backendId ?? 0, () => []).add(photo);
+          photosMap.putIfAbsent(bid, () => []).add(photo);
         }
       }
 
@@ -455,10 +465,6 @@ class SyncRepository {
       }).toList();
     });
   }
-
-  // ----------------------------------------------------------------------
-  // Pending Changes (Queue)
-  // ----------------------------------------------------------------------
 
   Future<void> enqueueChange({
     required String entityType,
@@ -499,11 +505,6 @@ class SyncRepository {
     );
   }
 
-  // ----------------------------------------------------------------------
-  // Sync Cursor (SyncMetadata)
-  // ----------------------------------------------------------------------
-
-  /// Get the last known sync cursor for a given key (e.g. 'global_sync_cursor').
   Future<int?> getSyncCursor(String key) async {
     final row = await (_db.select(_db.syncMetadata)
           ..where((t) => t.syncKey.equals(key)))
@@ -511,7 +512,6 @@ class SyncRepository {
     return row?.lastActionId;
   }
 
-  /// Update the sync cursor for a given key.
   Future<void> updateSyncCursor(String key, int actionId) async {
     await _db.into(_db.syncMetadata).insertOnConflictUpdate(
       SyncMetadataCompanion.insert(
@@ -522,12 +522,7 @@ class SyncRepository {
     );
   }
 
-  // ----------------------------------------------------------------------
-  // Delete Entities (for action_type: delete from sync)
-  // ----------------------------------------------------------------------
-
   Future<void> deleteIncident(int backendId) async {
-    // Delete related affected houses and photos first
     await (_db.delete(_db.affectedHouses)..where((t) => t.incidentId.equals(backendId))).go();
     await (_db.delete(_db.incidentPhotos)..where((t) => t.incidentId.equals(backendId))).go();
     await (_db.delete(_db.incidents)..where((t) => t.backendId.equals(backendId))).go();
@@ -542,7 +537,6 @@ class SyncRepository {
   }
 
   Future<void> deleteIncidentPhoto(int backendId) async {
-    // Find the incident ID for this photo first to trigger update
     final photo = await (_db.select(_db.incidentPhotos)
           ..where((t) => t.backendId.equals(backendId)))
         .getSingleOrNull();
@@ -553,19 +547,13 @@ class SyncRepository {
         .go();
 
     if (incidentId != null) {
-      // Trigger update on the incident record to force streams to refresh
       await (_db.update(_db.incidents)..where((t) => t.backendId.equals(incidentId)))
-          .write(
-        IncidentsCompanion(lastLocalEditAt: Value(DateTime.now())),
-      );
-      print('🔥 [SyncRepo] Forced incident update after photo deletion, id=$incidentId');
+          .write(IncidentsCompanion(lastLocalEditAt: Value(DateTime.now())));
     }
   }
 
   Future<void> deleteLocationPhoto(int backendId) async {
-    await (_db.delete(_db.housePhotos)
-          ..where((t) => t.backendId.equals(backendId)))
-        .go();
+    await (_db.delete(_db.housePhotos)..where((t) => t.backendId.equals(backendId))).go();
   }
 
   // ----------------------------------------------------------------------
@@ -575,50 +563,36 @@ class SyncRepository {
   IncidentResponse _mapIncidentToResponse(
     IncidentDb incident, {
     BoilerHouseDb? boilerHouse,
-    List<SavedLocationDb>? affectedHouses,
-    List<IncidentPhotoDb>? photos,
+    required List<TypedResult> affectedHousesRows,
+    required List<IncidentPhotoDb> photos,
   }) {
+    final baseUrlPrefix = AppConstants.baseUrl.split('/api/v1')[0];
+
     return IncidentResponse(
       id: incident.backendId,
       boilerHouseId: incident.boilerHouseId,
-      title: incident.type, // type maps to title
-      description: incident.details, // details maps to description
-      status: IncidentStatus.fromAny(incident.status ?? 'open'),
+      title: incident.type,
+      description: incident.details,
+      status: IncidentStatus.fromAny(incident.status),
       severity: incident.severity?.toString() ?? '1',
-      resourceHotWaterStopped: (incident.resourceHotWaterStopped ?? false) ? 1 : 0,
-      resourceHeatingStopped: (incident.resourceHeatingStopped ?? false) ? 1 : 0,
-      createdAt: incident.startedAt?.toIso8601String() ?? incident.lastServerUpdateAt?.toIso8601String(),
-      updatedAt: incident.lastServerUpdateAt?.toIso8601String() ?? incident.lastLocalEditAt?.toIso8601String(),
+      resourceHotWaterStopped: (incident.resourceHotWaterStopped == true) ? 1 : 0,
+      resourceHeatingStopped: (incident.resourceHeatingStopped == true) ? 1 : 0,
+      createdAt: incident.startedAt?.toIso8601String(),
+      updatedAt: incident.lastServerUpdateAt?.toIso8601String(),
       resolvedAt: incident.finishedAt?.toIso8601String(),
       localUUID: incident.incidentUUID,
       localPendingAck: incident.localPendingAck,
-      reportedBy: incident.assignedTo, // guessing mapping from API
       assignedTo: incident.assignedTo,
-      affectedHouseIds: affectedHouses?.map((h) => h.backendId ?? 0).toList(),
-      affectedHouseDetails: affectedHouses?.map((h) => AffectedHouseDetail(
-        savedLocationId: h.backendId ?? 0,
-        savedLocation: _mapSavedLocationToInfo(h),
+      affectedHouseIds: affectedHousesRows.map((r) => r.readTable(_db.affectedHouses).savedLocationId).toList(),
+      affectedHouseDetails: affectedHousesRows.map((r) => AffectedHouseDetail(
+        savedLocationId: r.readTable(_db.affectedHouses).savedLocationId,
+        residentsCount: r.readTable(_db.savedLocations).residentsCount,
+        savedLocation: _mapSavedLocationToInfo(r.readTable(_db.savedLocations)),
       )).toList(),
-      boilerHouse: boilerHouse != null ? BoilerHouseSummary(
-        id: boilerHouse.backendId,
-        address: boilerHouse.name ?? '', // name maps to address
-        latitude: boilerHouse.latitude ?? 0.0,
-        longitude: boilerHouse.longitude ?? 0.0,
-        activeIncidentsCount: 0,
-        hasActiveIncidents: 0,
-        siteManager: boilerHouse.siteManager,
-        siteNumber: boilerHouse.siteNumber,
-      ) : null,
-      photos: photos?.map((p) {
-        // Derive base domain from AppConstants.baseUrl
-        final apiUri = Uri.parse(AppConstants.baseUrl);
-        final baseUrlPrefix = AppConstants.baseUrl.split('/api/v1')[0];
-        
+      boilerHouse: boilerHouse != null ? _mapBoilerHouseToSummary(boilerHouse) : null,
+      photos: photos.map((p) {
         final url = p.url ?? '';
         final thumb = p.thumbnailUrl;
-        
-        // Try to match if it should be under /api/v1 or root
-        // If the URL from backend starts with /uploads, it might need the prefix
         final fullUrl = url.startsWith('http') ? url : '$baseUrlPrefix$url';
         final fullThumb = (thumb != null && !thumb.startsWith('http')) ? '$baseUrlPrefix$thumb' : thumb;
         
@@ -631,10 +605,7 @@ class SyncRepository {
       }).toList(),
       notificationConfig: (incident.notificationConfigType != null) 
         ? NotificationConfig(
-            type: AudienceType.values.firstWhere(
-              (e) => e.name == incident.notificationConfigType, 
-              orElse: () => AudienceType.broadcast
-            ),
+            type: AudienceType.fromAny(incident.notificationConfigType),
             roleIds: incident.notificationConfigRoleIds?.split(',').where((s) => s.isNotEmpty).toList(),
             userIds: incident.notificationConfigUserIds?.split(',').where((s) => s.isNotEmpty).map(int.parse).toList(),
           )
@@ -656,6 +627,19 @@ class SyncRepository {
     );
   }
 
+  BoilerHouseSummary _mapBoilerHouseToSummary(BoilerHouseDb bh) {
+    return BoilerHouseSummary(
+      id: bh.backendId,
+      address: bh.name ?? '',
+      latitude: bh.latitude ?? 0.0,
+      longitude: bh.longitude ?? 0.0,
+      activeIncidentsCount: 0,
+      hasActiveIncidents: 0,
+      siteNumber: bh.siteNumber,
+      siteManager: bh.siteManager,
+    );
+  }
+
   BoilerHouseResponse _mapBoilerHouseToResponse(BoilerHouseDb bh) {
     return BoilerHouseResponse(
       id: bh.backendId,
@@ -671,15 +655,13 @@ class SyncRepository {
   }
 
   SavedLocationResponse _mapLocationToResponse(SavedLocationDb loc, {List<HousePhotoDb>? photos}) {
-    // Derive base domain from AppConstants.baseUrl
     final baseUrlPrefix = AppConstants.baseUrl.split('/api/v1')[0];
-
     return SavedLocationResponse(
       id: loc.backendId ?? 0,
       name: loc.name ?? '',
       latitude: loc.latitude ?? 0.0,
       longitude: loc.longitude ?? 0.0,
-      managementCompanyId: loc.managementCompany, // Used managementCompany field holding the ID
+      managementCompanyId: loc.managementCompany,
       managementCompanyName: loc.managementCompanyName,
       boilerHouseId: loc.boilerHouseId,
       floors: loc.floors,
@@ -697,15 +679,11 @@ class SyncRepository {
       updatedAt: loc.updatedAt?.toIso8601String(),
       photos: photos?.map((p) {
         final url = p.url ?? '';
-        final thumb = p.thumbnailUrl;
-        
         final fullUrl = url.startsWith('http') ? url : '$baseUrlPrefix$url';
-        final fullThumb = (thumb != null && !thumb.startsWith('http')) ? '$baseUrlPrefix$thumb' : thumb;
-        
         return PhotoInfo(
           id: p.backendId,
           url: fullUrl,
-          thumbnailUrl: fullThumb,
+          thumbnailUrl: p.thumbnailUrl != null ? (p.thumbnailUrl!.startsWith('http') ? p.thumbnailUrl : '$baseUrlPrefix${p.thumbnailUrl}') : null,
           createdAt: p.createdAt.toIso8601String(),
         );
       }).toList(),
@@ -719,8 +697,8 @@ extension IncidentsCompanionExtension on $IncidentsTable {
       backendId: Value(incident.id),
       incidentUUID: Value(incident.localUUID),
       boilerHouseId: Value(incident.boilerHouseId),
-      type: Value(incident.title), // maps to title
-      details: Value(incident.description), // maps to description
+      type: Value(incident.title),
+      details: Value(incident.description),
       status: Value(incident.status?.name),
       severity: Value(int.tryParse(incident.severity ?? '1') ?? 1),
       resourceHotWaterStopped: Value(incident.resourceHotWaterStopped == 1),
@@ -733,5 +711,49 @@ extension IncidentsCompanionExtension on $IncidentsTable {
       notificationConfigRoleIds: Value(incident.notificationConfig?.roleIds?.join(',')),
       notificationConfigUserIds: Value(incident.notificationConfig?.userIds?.join(',')),
     );
+  }
+}
+
+class _DebounceStreamTransformer<T> extends StreamTransformerBase<T, T> {
+  final Duration duration;
+  final bool leading;
+  
+  _DebounceStreamTransformer(this.duration, {this.leading = false});
+
+  @override
+  Stream<T> bind(Stream<T> stream) {
+    Timer? timer;
+    StreamController<T>? controller;
+    StreamSubscription<T>? subscription;
+    bool isFirstEvent = true;
+
+    controller = StreamController<T>(
+      onListen: () {
+        subscription = stream.listen((event) {
+          if (leading && isFirstEvent) {
+            isFirstEvent = false;
+            if (controller != null && !controller!.isClosed) {
+              controller!.add(event);
+            }
+            return;
+          }
+          isFirstEvent = false;
+          timer?.cancel();
+          timer = Timer(duration, () {
+            if (controller != null && !controller!.isClosed) {
+              controller!.add(event);
+            }
+          });
+        });
+      },
+      onPause: () => subscription?.pause(),
+      onResume: () => subscription?.resume(),
+      onCancel: () {
+        subscription?.cancel();
+        timer?.cancel();
+      },
+    );
+
+    return controller.stream;
   }
 }

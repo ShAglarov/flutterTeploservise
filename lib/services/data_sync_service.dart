@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/sync_repository.dart';
@@ -8,12 +9,14 @@ import '../models/location_models.dart';
 import 'realtime_service.dart';
 import 'device_id_service.dart';
 
+import '../providers/incident_providers.dart';
+
 final dataSyncServiceProvider = Provider<DataSyncService>((ref) {
   ref.keepAlive();
   final syncRepo = ref.watch(syncRepositoryProvider);
   final realtimeService = ref.watch(realtimeServiceProvider);
   final deviceService = ref.watch(deviceIdServiceProvider);
-  final service = DataSyncService(syncRepo, realtimeService, deviceService);
+  final service = DataSyncService(ref, syncRepo, realtimeService, deviceService);
   
   // Auto-start listening
   service.start();
@@ -22,10 +25,17 @@ final dataSyncServiceProvider = Provider<DataSyncService>((ref) {
   return service;
 });
 
+class _EntityCacheEntry {
+  final String dataHash;
+  final DateTime timestamp;
+  _EntityCacheEntry(this.dataHash, this.timestamp);
+}
+
 /// Processes incoming WebSocket `action_sync` messages and applies them to the
 /// local Drift database. This is the "incoming mail" handler described in the
 /// documentation (DataSyncService / SyncCoordinator).
 class DataSyncService {
+  final Ref _ref;
   final SyncRepository _syncRepo;
   final RealtimeService _realtimeService;
   final DeviceIdService _deviceService;
@@ -35,9 +45,22 @@ class DataSyncService {
 
   /// Tracks the highest action_log ID received via WebSocket.
   /// Used for gap detection on reconnect.
-  int? lastWSActionLogId;
+  final Set<String> _processedActionHashes = {};
+  int _lastWSActionLogId = 0;
+  int get lastWSActionLogId => _lastWSActionLogId;
 
-  DataSyncService(this._syncRepo, this._realtimeService, this._deviceService);
+  /// Tracks recently processed msg_id to prevent redelivery storms
+  final Set<String> _processedMsgIds = {};
+
+  // ADDED: Deduplication cache for identical updates
+  final Map<String, _EntityCacheEntry> _recentUpdatesData = {};
+
+  // SERIAL QUEUE for processing incoming events
+  // This ensures that if we get 5 fast WebSocket events, they are processed 
+  // strictly in order, preventing database race conditions.
+  Future<void> _processingQueue = Future.value();
+
+  DataSyncService(this._ref, this._syncRepo, this._realtimeService, this._deviceService);
 
   Future<void> start() async {
     if (_messageSubscription != null) return; // Already started
@@ -45,11 +68,11 @@ class DataSyncService {
     _myDeviceId = await _deviceService.getDeviceId();
     
     // Load last sync cursor from DB
-    lastWSActionLogId = await _syncRepo.getSyncCursor('ws_sync_cursor');
-    dev.log('[DataSync] Starting listener, deviceId=$_myDeviceId, lastCursor=$lastWSActionLogId', name: 'SYNC');
+    _lastWSActionLogId = await _syncRepo.getSyncCursor('ws_sync_cursor') ?? 0;
+    dev.log('[DataSync] Starting listener, deviceId=$_myDeviceId, lastCursor=$_lastWSActionLogId', name: 'SYNC');
 
     _messageSubscription = _realtimeService.messages.listen(
-      _handleMessage,
+      (message) => _handleMessage(message),
       onError: (e) => dev.log('[DataSync] Stream error: $e', name: 'SYNC'),
       onDone: () => dev.log('[DataSync] Stream closed', name: 'SYNC'),
     );
@@ -62,13 +85,27 @@ class DataSyncService {
 
   /// Process a single action (from WS or from incremental sync).
   /// Returns true if the action was applied successfully.
-  Future<bool> processAction(Map<String, dynamic> action) async {
-    final actionType = (action['action_type'] as String?)?.toLowerCase();
-    final entityType = (action['entity_type'] as String?)?.toLowerCase();
-    final entityIdRaw = action['entity_id'];
-    final actionId = action['id'];
-    final deviceId = action['device_id'] as String?;
-    final entityData = action['entity_data'] as Map<String, dynamic>?;
+  Future<bool> processAction(Map<String, dynamic> actionData) async {
+    // Generate a quick hash of the action data to prevent duplicate processing 
+    // when WebSocket and REST fetch the same action concurrently
+    final hashStr = actionData.toString();
+    if (_processedActionHashes.contains(hashStr)) {
+      final actionId = actionData['id'] as int? ?? 0;
+      dev.log('📥 [DataSync] IGNORING DUPLICATE ACTION (already processed): id=$actionId, type=${actionData['entity_type']}', name: 'SYNC');
+      return true; // Already processed
+    }
+    
+    if (_processedActionHashes.length >= 1000) {
+      _processedActionHashes.remove(_processedActionHashes.first);
+    }
+    _processedActionHashes.add(hashStr);
+
+    final actionType = (actionData['action_type'] as String?)?.toLowerCase();
+    final entityType = (actionData['entity_type'] as String?)?.toLowerCase();
+    final entityIdRaw = actionData['entity_id'];
+    final actionId = actionData['id'];
+    final deviceId = actionData['device_id'] as String?;
+    final entityData = actionData['entity_data'] as Map<String, dynamic>?;
 
     if (actionType == null || entityType == null) {
       dev.log('[DataSync] Skipping malformed action: missing type fields', name: 'SYNC');
@@ -86,7 +123,29 @@ class DataSyncService {
       return true;
     }
 
+    // ADDED: Hard deduplication for identical updates within 5s
+    if (actionType == 'update' && entityData != null) {
+      final cacheKey = '${entityType}_${entityIdRaw}';
+      final dataHash = jsonEncode(entityData);
+      final now = DateTime.now();
+      
+      final existing = _recentUpdatesData[cacheKey];
+      if (existing != null && existing.dataHash == dataHash && now.difference(existing.timestamp).inSeconds < 5) {
+        dev.log('📥 [DataSync] HARD DEDUPLICATION: Identical update for $cacheKey within 5s, skipping DB write.', name: 'SYNC');
+        await _trackActionId(actionId); // still track cursor!
+        return true;
+      }
+      
+      _recentUpdatesData[cacheKey] = _EntityCacheEntry(dataHash, now);
+      
+      // Cleanup old entries (keep memory small)
+      if (_recentUpdatesData.length > 100) {
+        _recentUpdatesData.removeWhere((key, value) => now.difference(value.timestamp).inSeconds > 60);
+      }
+    }
+
     try {
+      print('💾 [DataSyncService] Начинаю запись в БД для: $actionType $entityType (id: $entityIdRaw)');
       switch (entityType) {
         case 'incident':
           await _handleIncident(actionType, entityIdRaw, entityData);
@@ -127,30 +186,52 @@ class DataSyncService {
   // WS message handler
   // ---------------------------------------------------------------------------
 
-  Future<void> _handleMessage(Map<String, dynamic> message) async {
-    try {
-      // The server sends: {"type": "action_sync", "data": {...action fields...}, "timestamp": "..."}
-      final type = message['type'] as String?;
-
-      if (type == 'action_sync') {
-        // Extract the nested action data
-        final data = message['data'];
-        if (data is Map<String, dynamic>) {
-          await processAction(data);
-        } else {
-          dev.log('[DataSync] action_sync message has no valid data field', name: 'SYNC');
-        }
-      } else if (message.containsKey('action_type')) {
-        // Direct action format (no wrapper)
-        await processAction(message);
-      } else if (type == 'ping' || type == 'pong' || type == 'connection_established' || type == 'presence') {
-        // Heartbeat / connection confirmation / presence - ignore in DataSync
-      } else {
-        dev.log('[DataSync] Unhandled WS message type: $type', name: 'SYNC');
+  void _handleMessage(Map<String, dynamic> message) {
+    final msgId = message['msg_id'] as String?;
+    
+    // HARD DROP BEFORE QUEUEING
+    if (msgId != null) {
+      if (_processedMsgIds.contains(msgId)) {
+        dev.log('📥 [DataSync] HARD DROP: Duplicate or redelivery msg_id=$msgId', name: 'SYNC');
+        return; // Return immediately, DO NOT ENTER QUEUE
       }
-    } catch (e) {
-      dev.log('❌ [DataSync] Error in _handleMessage: $e', name: 'SYNC');
+      // Prevent memory leak
+      if (_processedMsgIds.length >= 500) {
+        _processedMsgIds.remove(_processedMsgIds.first);
+      }
+      _processedMsgIds.add(msgId);
     }
+
+    // MODIFIED: Push every WebSocket message into a serial queue.
+    _processingQueue = _processingQueue.then((_) async {
+      try {
+        final type = message['type'];
+        final timestamp = DateTime.now().toIso8601String();
+
+
+        if (type == 'action_sync') {
+          // The server sends: {"type": "action_sync", "data": {...action fields...}, "timestamp": "..."}
+          final actionData = message['data'] as Map<String, dynamic>?;
+          if (actionData != null) {
+            final actionId = actionData['id'] as int? ?? 0;
+            dev.log('📥 [DataSync] QUEUED PROCESSING: Action $actionId ($timestamp)', name: 'SYNC');
+            await processAction(actionData);
+          } else {
+            dev.log('[DataSync] action_sync message has no valid data field', name: 'SYNC');
+          }
+        } else if (message.containsKey('action_type')) {
+          // Direct action format (no wrapper)
+          dev.log('📥 [DataSync] QUEUED PROCESSING: Direct Action ($timestamp)', name: 'SYNC');
+          await processAction(message);
+        } else if (type == 'ping' || type == 'pong' || type == 'connection_established' || type == 'presence') {
+          // Heartbeat / connection confirmation / presence - ignore in DataSync
+        } else {
+          dev.log('[DataSync] Unhandled WS message type: $type', name: 'SYNC');
+        }
+      } catch (e, stack) {
+        dev.log('❌ [DataSync] Error in serial queue processing: $e', name: 'SYNC', error: e, stackTrace: stack);
+      }
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -160,14 +241,24 @@ class DataSyncService {
   Future<void> _handleIncident(String actionType, dynamic entityId, Map<String, dynamic>? entityData) async {
     if (actionType == 'delete') {
       final id = _parseInt(entityId);
-      if (id != null) await _syncRepo.deleteIncident(id);
+      if (id != null) {
+        await _syncRepo.deleteIncident(id);
+      }
       return;
     }
 
-    // create / update — upsert if we have entity_data
     if (entityData != null) {
       try {
-        final incident = IncidentResponse.fromJson(entityData);
+        // CRITICAL FIX: To prevent UI overload and DB cascade storms, if this is an 'update'
+        // action specifically for an incident, ONLY save the incident itself, but 
+        // DO NOT save the nested boilerplate boiler_house or saved_locations.
+        // We do this by stripping them out from the raw JSON before parsing.
+        
+        final cleanData = Map<String, dynamic>.from(entityData);
+        cleanData.remove('boiler_house');
+        cleanData.remove('affected_house_details');
+        
+        final incident = IncidentResponse.fromJson(cleanData);
         await _syncRepo.upsertIncidents([incident]);
       } catch (e) {
         dev.log('[DataSync] Failed to parse incident entity_data: $e', name: 'SYNC');
@@ -213,9 +304,7 @@ class DataSyncService {
     if (actionType == 'delete') {
       final id = _parseInt(entityId);
       if (id != null) {
-        if (entityType == 'incident_photo') {
           await _syncRepo.deleteIncidentPhoto(id);
-        }
         // TODO: handle other photo types if needed
       }
     }
@@ -228,8 +317,8 @@ class DataSyncService {
   Future<void> _trackActionId(dynamic actionId) async {
     final id = _parseInt(actionId);
     if (id != null) {
-      if (lastWSActionLogId == null || id > lastWSActionLogId!) {
-        lastWSActionLogId = id;
+      if (id > _lastWSActionLogId) {
+        _lastWSActionLogId = id;
         // Persist to DB
         await _syncRepo.updateSyncCursor('ws_sync_cursor', id);
       }

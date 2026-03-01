@@ -445,10 +445,13 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                       ),
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                       onChanged: (v) => setState(() => _selectedSiteManager = v),
-                      items: managers.map((u) => DropdownMenuItem(
-                        value: u.fullName ?? u.username,
-                        child: Text(u.fullName ?? u.username),
-                      )).toList(),
+                      items: managers.map((u) {
+                        final label = u.formattedDisplayName.split(' • ').first;
+                        return DropdownMenuItem(
+                          value: label,
+                          child: Text(label),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],

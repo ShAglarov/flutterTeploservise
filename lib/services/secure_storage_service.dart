@@ -16,34 +16,28 @@ class SecureStorageService {
     mOptions: MacOsOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
-  // Fallback for macOS local development when Keychain signing isn't available
-  final Map<String, String> _memoryFallback = {};
-
   Future<void> _safeWrite(String key, String value) async {
     try {
       await _storage.write(key: key, value: value);
     } on PlatformException catch (e) {
-      print('⚠️ [SecureStorageService] Write failed ($key): ${e.message}. Using fallback.');
-      _memoryFallback[key] = value;
+      print('⚠️ [SecureStorageService] Write failed ($key): ${e.message}.');
     }
   }
 
   Future<String?> _safeRead(String key) async {
     try {
-      if (_memoryFallback.containsKey(key)) return _memoryFallback[key];
       return await _storage.read(key: key);
     } on PlatformException catch (e) {
-      print('⚠️ [SecureStorageService] Read failed ($key): ${e.message}. Using fallback.');
-      return _memoryFallback[key];
+      print('⚠️ [SecureStorageService] Read failed ($key): ${e.message}.');
+      return null;
     }
   }
 
   Future<void> _safeDelete(String key) async {
     try {
-      _memoryFallback.remove(key);
       await _storage.delete(key: key);
     } on PlatformException catch (e) {
-      print('⚠️ [SecureStorageService] Delete failed ($key): ${e.message}. Using fallback.');
+      print('⚠️ [SecureStorageService] Delete failed ($key): ${e.message}.');
     }
   }
 
@@ -65,7 +59,6 @@ class SecureStorageService {
 
   Future<void> clearAll() async {
     try {
-      _memoryFallback.clear();
       await _storage.deleteAll();
     } on PlatformException catch (_) {
       // Ignored

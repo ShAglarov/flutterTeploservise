@@ -12,7 +12,12 @@ APIUserResponse _$APIUserResponseFromJson(Map<String, dynamic> json) =>
       username: json['username'] as String,
       email: json['email'] as String,
       fullName: json['full_name'] as String?,
-      role: $enumDecode(_$UserRoleEnumMap, json['role']),
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
+      middleName: json['middle_name'] as String?,
+      position: json['position'] as String?,
+      phoneNumber: json['phone_number'] as String?,
+      role: UserRole.fromJson(json['role'] as String?),
       isActive: json['is_active'] as bool? ?? true,
       isBlocked: json['is_blocked'] as bool?,
       isDeleted: json['is_deleted'] as bool?,
@@ -28,7 +33,12 @@ Map<String, dynamic> _$APIUserResponseToJson(APIUserResponse instance) =>
       'username': instance.username,
       'email': instance.email,
       'full_name': instance.fullName,
-      'role': _$UserRoleEnumMap[instance.role]!,
+      'first_name': instance.firstName,
+      'last_name': instance.lastName,
+      'middle_name': instance.middleName,
+      'position': instance.position,
+      'phone_number': instance.phoneNumber,
+      'role': APIUserResponse._roleToJson(instance.role),
       'is_active': instance.isActive,
       'is_blocked': instance.isBlocked,
       'is_deleted': instance.isDeleted,
@@ -37,14 +47,6 @@ Map<String, dynamic> _$APIUserResponseToJson(APIUserResponse instance) =>
       'last_login_at': instance.lastLoginAt,
       'is_online': instance.isOnline,
     };
-
-const _$UserRoleEnumMap = {
-  UserRole.admin: 'admin',
-  UserRole.manager: 'manager',
-  UserRole.operatorUser: 'operator',
-  UserRole.guest: 'guest',
-  UserRole.viewer: 'viewer',
-};
 
 APILoginResponse _$APILoginResponseFromJson(Map<String, dynamic> json) =>
     APILoginResponse(

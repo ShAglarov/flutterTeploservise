@@ -229,7 +229,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           children: [
                             usersAsync.when(
                               data: (users) {
-                                final assignedUserName = users.where((u) => u.id == state.assignedTo).map((u) => u.fullName ?? u.username).firstOrNull ?? 'Не назначен';
+                                final assignedUserName = users.where((u) => u.id == state.assignedTo).map((u) => u.formattedDisplayName.split(' • ').first).firstOrNull ?? 'Не назначен';
                                 return _buildDropdownRow<int?>(
                                   'Исполнитель',
                                   state.assignedTo,
@@ -239,9 +239,10 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                                       child: Text('Не назначен', style: TextStyle(color: Colors.white70)),
                                     ),
                                     ...users.map((u) {
+                                      final label = u.formattedDisplayName.split(' • ').first;
                                       return DropdownMenuItem<int?>(
                                         value: u.id,
-                                        child: Text(u.fullName ?? u.username, style: const TextStyle(color: Colors.white)),
+                                        child: Text(label, style: const TextStyle(color: Colors.white)),
                                       );
                                     }),
                                   ],
@@ -533,7 +534,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           final user = users[index];
                           final isSelected = selectedUserIds.contains(user.id);
                           return CheckboxListTile(
-                            title: Text(user.fullName ?? user.username, style: const TextStyle(color: Colors.white)),
+                            title: Text(user.formattedDisplayName.split(' • ').first, style: const TextStyle(color: Colors.white)),
                             subtitle: Text(user.role.name, style: const TextStyle(color: Colors.white54, fontSize: 12)),
                             value: isSelected,
                             onChanged: (v) {

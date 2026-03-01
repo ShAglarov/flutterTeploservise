@@ -177,6 +177,10 @@ class AffectedHouses extends Table {
 
   @override
   Set<Column> get primaryKey => {incidentId, savedLocationId};
+
+  // ADDED: Index for faster joins and deletion per incident
+  @override
+  List<Index> get indexes => [Index('affected_houses_incident_id', 'CREATE INDEX affected_houses_incident_id ON affected_houses (incident_id)')];
 }
 
 @DataClassName('IncidentCommentDb')
@@ -213,6 +217,10 @@ class IncidentPhotos extends Table {
 
   @override
   Set<Column> get primaryKey => {backendId};
+
+  // ADDED: Index for faster joins and deletion per incident
+  @override
+  List<Index> get indexes => [Index('incident_photos_incident_id', 'CREATE INDEX incident_photos_incident_id ON incident_photos (incident_id)')];
 }
 
 @DataClassName('ManagementCompanyDb')
@@ -330,7 +338,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -357,6 +365,9 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'db.sqlite'));
-    return NativeDatabase(file);
+    return NativeDatabase.createInBackground(file, setup: (db) {
+      // Enable Write-Ahead Logging to prevent SQLite lockups during concurrent read/writes
+      db.execute('PRAGMA journal_mode=WAL;');
+    });
   });
 }

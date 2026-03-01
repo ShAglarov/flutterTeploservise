@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/incident_models.dart';
 import '../repositories/sync_repository.dart';
+import '../providers/auth_provider.dart';
+
+import '../services/user_service.dart';
 
 part 'incident_providers.g.dart';
 
@@ -51,18 +56,183 @@ class IncidentFilter extends _$IncidentFilter {
   void setStoppedHeating(bool? value) => state = state.copyWith(stoppedHeating: value);
 }
 
-@Riverpod(keepAlive: true)
-Stream<List<IncidentResponse>> allIncidents(Ref ref) {
+final allIncidentsProvider = StreamProvider<List<IncidentResponse>>((ref) {
+  // CRITICAL: Prevent instant destruction, but also throttle fast updates
+  // to prevent UI cascades as requested (2 seconds rate limit).
+  ref.keepAlive(); 
   final syncRepo = ref.watch(syncRepositoryProvider);
-  return syncRepo.watchAllIncidents();
+  return syncRepo.watchAllIncidents().transform(_ThrottleWithTrailingStreamTransformer(const Duration(seconds: 2)));
+});
+
+class _ThrottleWithTrailingStreamTransformer<T> extends StreamTransformerBase<T, T> {
+  final Duration duration;
+  _ThrottleWithTrailingStreamTransformer(this.duration);
+
+  @override
+  Stream<T> bind(Stream<T> stream) {
+    Timer? timer;
+    StreamController<T>? controller;
+    StreamSubscription<T>? subscription;
+    T? pendingEvent;
+    bool hasPending = false;
+
+    void emitPending() {
+      if (hasPending && controller != null && !controller.isClosed) {
+        controller.add(pendingEvent as T);
+        hasPending = false;
+        pendingEvent = null;
+        timer = Timer(duration, emitPending);
+      } else {
+        timer = null;
+      }
+    }
+
+    controller = StreamController<T>(
+      onListen: () {
+        subscription = stream.listen((event) {
+          if (timer == null || !timer!.isActive) {
+            controller?.add(event);
+            timer = Timer(duration, emitPending);
+          } else {
+            hasPending = true;
+            pendingEvent = event;
+          }
+        },
+        onError: controller?.addError,
+        onDone: () {
+          if (hasPending && controller != null && !controller.isClosed) {
+            controller.add(pendingEvent as T);
+          }
+          controller?.close();
+        });
+      },
+      onPause: () => subscription?.pause(),
+      onResume: () => subscription?.resume(),
+      onCancel: () {
+        subscription?.cancel();
+        timer?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
 }
 
-@Riverpod(keepAlive: true)
-AsyncValue<List<IncidentResponse>> filteredIncidents(Ref ref) {
-  final allIncidentsAsync = ref.watch(allIncidentsProvider);
-  final filter = ref.watch(incidentFilterProvider);
+// Global Event Stream for explicit UI refreshes bypassing Riverpod caches
+final globalRefreshEventControllerProvider = Provider<StreamController<void>>((ref) {
+  final controller = StreamController<void>.broadcast();
+  ref.onDispose(controller.close);
+  return controller;
+});
 
-  return allIncidentsAsync.whenData((incidents) {
+final globalRefreshEventProvider = StreamProvider<void>((ref) {
+  return ref.watch(globalRefreshEventControllerProvider).stream;
+});
+
+class IncidentViewModel {
+  final IncidentResponse raw;
+  final String? boilerHouseDetail;
+  final int totalResidents;
+  final String? assigneeName;
+  final String formattedTimestamp;
+  final String? stoppedServicesText;
+  final String? broadcastText;
+
+  IncidentViewModel({
+    required this.raw,
+    this.boilerHouseDetail,
+    required this.totalResidents,
+    this.assigneeName,
+    required this.formattedTimestamp,
+    this.stoppedServicesText,
+    this.broadcastText,
+  });
+}
+
+final incidentViewModelsProvider = Provider<AsyncValue<List<IncidentViewModel>>>((ref) {
+  final filteredAsync = ref.watch(filteredIncidentsProvider);
+  final usersMap = ref.watch(usersMapProvider).value ?? {};
+
+  return filteredAsync.whenData((incidents) {
+    if (incidents.isEmpty) return [];
+    return incidents.map((inc) {
+      String? boilerHouseDetail;
+      if (inc.boilerHouse != null) {
+        boilerHouseDetail = 'Нач: ${inc.boilerHouse!.siteManager ?? "?"} | Участок: ${inc.boilerHouse!.siteNumber ?? "?"}';
+      }
+      return _createViewModel(inc, boilerHouseDetail, usersMap);
+    }).toList();
+  });
+});
+
+IncidentViewModel _createViewModel(IncidentResponse inc, String? boilerHouseDetail, Map<int, dynamic> usersMap) {
+  // 1. Total Residents
+  int totalResidents = 0;
+  if (inc.affectedHouseDetails != null) {
+    for (final hd in inc.affectedHouseDetails!) {
+      totalResidents += (hd.residentsCount ?? 0);
+    }
+  }
+
+  // 2. Assignee Name
+  String? assigneeName;
+  if (inc.assignedTo != null) {
+    final user = usersMap[inc.assignedTo];
+    if (user != null) {
+      assigneeName = user.formattedDisplayName;
+    } else {
+      assigneeName = 'Неизвестный (${inc.assignedTo})';
+    }
+  }
+
+  // 3. Timestamp
+  final startDt = inc.createdAt != null && inc.createdAt!.isNotEmpty ? DateTime.tryParse(inc.createdAt!)?.toLocal() : null;
+  final startStr = startDt != null ? '${startDt.day.toString().padLeft(2, '0')}.${startDt.month.toString().padLeft(2, '0')}.${startDt.year} ${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}' : inc.createdAt ?? '';
+  
+  String formattedTimestamp;
+  if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed) {
+    final endDtStr = inc.resolvedAt ?? inc.updatedAt;
+    final endDt = endDtStr != null && endDtStr.isNotEmpty ? DateTime.tryParse(endDtStr)?.toLocal() : null;
+    final endStr = endDt != null ? '${endDt.day.toString().padLeft(2, '0')}.${endDt.month.toString().padLeft(2, '0')}.${endDt.year} ${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}' : endDtStr ?? '';
+    formattedTimestamp = 'с $startStr до $endStr';
+  } else {
+    formattedTimestamp = 'с $startStr до по наст. время';
+  }
+
+  // 4. Stopped Services
+  List<String> stopped = [];
+  if (inc.resourceHotWaterStopped == 1) stopped.add('ГВС');
+  if (inc.resourceHeatingStopped == 1) stopped.add('Отопление');
+  final stoppedServicesText = stopped.isEmpty ? null : stopped.join(', ');
+
+  // 5. Broadcast Text
+  String? broadcastText;
+  if (inc.notificationConfig != null) {
+    if (inc.notificationConfig!.type == AudienceType.broadcast) {
+      broadcastText = 'Все (Broadcast)';
+    } else {
+      broadcastText = 'Роли/Пользователи (${inc.notificationConfig!.type.name})';
+    }
+  }
+
+  return IncidentViewModel(
+    raw: inc,
+    boilerHouseDetail: boilerHouseDetail,
+    totalResidents: totalResidents,
+    assigneeName: assigneeName,
+    formattedTimestamp: formattedTimestamp,
+    stoppedServicesText: stoppedServicesText,
+    broadcastText: broadcastText,
+  );
+}
+
+final filteredIncidentsProvider = Provider<AsyncValue<List<IncidentResponse>>>((ref) {
+  final allAsync = ref.watch(allIncidentsProvider);
+  final filter = ref.watch(incidentFilterProvider);
+  final authState = ref.watch(authProvider);
+  final currentUserId = int.tryParse(authState.user?.id ?? '');
+  
+  return allAsync.whenData((incidents) {
     return incidents.where((inc) {
       // 1. Search Query
       if (filter.searchQuery.isNotEmpty) {
@@ -75,12 +245,25 @@ AsyncValue<List<IncidentResponse>> filteredIncidents(Ref ref) {
       // 2. Quick Filter
       if (filter.quickFilter == IncidentQuickFilter.active) {
         if (inc.status?.name.toLowerCase().contains('resolved') ?? false) return false;
+        if (inc.status?.name.toLowerCase().contains('closed') ?? false) return false;
+      } else if (filter.quickFilter == IncidentQuickFilter.assignedToMe) {
+        if (currentUserId != null && inc.assignedTo != currentUserId) return false;
       }
-      // Note: assignedToMe would require current user ID
 
       // 3. Period (Simplified)
       if (filter.period != IncidentPeriod.allTime) {
-        // Here we would parse inc.startedAt and check against current date
+        final now = DateTime.now();
+        final incidentDate = inc.createdAt != null && inc.createdAt!.isNotEmpty ? DateTime.tryParse(inc.createdAt!)?.toLocal() : null;
+        if (incidentDate != null) {
+          if (filter.period == IncidentPeriod.today) {
+            final startOfDay = DateTime(now.year, now.month, now.day);
+            if (incidentDate.isBefore(startOfDay)) return false;
+          } else if (filter.period == IncidentPeriod.thisWeek) {
+            final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+            final startOfWeekDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+            if (incidentDate.isBefore(startOfWeekDate)) return false;
+          }
+        }
       }
 
       // 4. Resources
@@ -96,7 +279,9 @@ AsyncValue<List<IncidentResponse>> filteredIncidents(Ref ref) {
       return true;
     }).toList();
   });
-}
+});
+
+
 
 @Riverpod(keepAlive: true)
 Stream<IncidentResponse?> singleIncident(Ref ref, int id) {

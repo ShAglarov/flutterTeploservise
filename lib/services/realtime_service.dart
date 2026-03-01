@@ -48,7 +48,9 @@ class RealtimeService {
   // The server sends {"type": "ping"} every 30s. We passively monitor
   // _lastPongReceived and tear down the connection if no ping arrives for 90s.
   Timer? _watchdogTimer;
+  Timer? _heartbeatTimer; // ADDED: Client-side active heartbeat
   DateTime? _lastPongReceived;
+  DateTime? _lastConnectedAt; // ADDED: track reconnect time to drop instant redeliveries
 
   RealtimeService(this._storage, this._deviceService);
 
@@ -60,13 +62,21 @@ class RealtimeService {
       final token = await _storage.getAccessToken();
       final deviceId = await _deviceService.getDeviceId();
 
-      if (token == null) {
-        dev.log('RealtimeService: No token, cannot connect WebSocket', name: 'WS');
+      dev.log('RealtimeService: Found token: ${token != null && token.isNotEmpty ? "YES (length: ${token.length})" : "NO"}', name: 'WS');
+
+      if (token == null || token.isEmpty) {
+        dev.log('RealtimeService: Token is empty, aborting WS connect to avoid spamming server.', name: 'WS');
         _isConnecting = false;
         return;
       }
 
-      final url = '${AppConstants.wsBaseUrl}/$deviceId?token=$token';
+      String url = '${AppConstants.wsBaseUrl}/$deviceId?token=$token';
+      
+      // NOTE: wss:// is used for all environments. MyHttpOverrides in main.dart
+      // handles self-signed certs for debug builds. The previous ws:// override
+      // for macOS debug was causing constant reconnections (every 3-60s) because
+      // plain WebSocket through nginx SSL proxy is inherently unstable.
+
       dev.log('RealtimeService: Connecting to $url', name: 'WS');
 
       _channel = WebSocketChannel.connect(Uri.parse(url));
@@ -87,9 +97,9 @@ class RealtimeService {
 
       _isConnecting = false;
 
-      // MODIFIED: Start server-ping watchdog instead of client heartbeat.
-      // No more client-originated pings — server drives keep-alive.
+      // MODIFIED: Start server-ping watchdog and client-side heartbeat.
       _startWatchdog();
+      _startHeartbeat();
 
       // Emit reconnect event if this is a RE-connection (not first connect)
       final wasConnectedBefore = _retryCount > 0;
@@ -97,6 +107,7 @@ class RealtimeService {
       // MODIFIED: Do NOT reset _retryCount = 0 instantly.
       // Schedule a deferred reset after 5 seconds of stable connection.
       _isConnected = true;
+      _lastConnectedAt = DateTime.now();
       _connectionStateController.add(true);
 
       // ADDED: ANTI-DDOS — deferred backoff reset.
@@ -123,8 +134,20 @@ class RealtimeService {
 
   void _handleMessage(dynamic data) {
     try {
+      // ADDED: Fast-drop redelivery storms immediately upon reconnect
+      final strData = data.toString();
+      if (strData.contains('"is_redelivery": true') || strData.contains('"is_redelivery":true')) {
+        if (_lastConnectedAt != null && DateTime.now().difference(_lastConnectedAt!).inSeconds < 2) {
+          dev.log('RealtimeService: 🛑 Fast-dropped redelivery immediately after reconnect', name: 'WS');
+          return;
+        }
+      }
+
       final decoded = jsonDecode(data as String);
+      
       if (decoded is Map<String, dynamic>) {
+        print('🚀 [WS] MESSAGE RECEIVED: $decoded');
+        
         // Respond to server pings immediately with JSON pong
         if (decoded['type'] == 'ping') {
           dev.log('RealtimeService: Server ping received, sending pong', name: 'WS');
@@ -150,9 +173,11 @@ class RealtimeService {
     _stableConnectionTimer?.cancel();
     _stableConnectionTimer = null;
 
-    // MODIFIED: Cancel watchdog instead of old heartbeat
+    // MODIFIED: Cancel watchdog and heartbeat
     _watchdogTimer?.cancel();
     _watchdogTimer = null;
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
 
     _subscription?.cancel();
     _subscription = null;
@@ -185,9 +210,11 @@ class RealtimeService {
     _stableConnectionTimer?.cancel();
     _stableConnectionTimer = null;
 
-    // MODIFIED: Cancel watchdog instead of old heartbeat
+    // MODIFIED: Cancel watchdog and heartbeat
     _watchdogTimer?.cancel();
     _watchdogTimer = null;
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
 
     _reconnectTimer?.cancel();
     _subscription?.cancel();
@@ -199,15 +226,13 @@ class RealtimeService {
     dev.log('RealtimeService: Manually disconnected', name: 'WS');
   }
 
-  // ADDED: Server-ping watchdog. Checks every 45s whether the server
-  // has sent a {"type": "ping"} within the last 90 seconds.
-  // If not, assumes the connection is silently dead and forces reconnect.
-  // This replaces the old _startHeartbeat() which spammed the server with text "ping".
+  // MODIFIED: Faster watchdog. Checks every 15s whether the server
+  // has sent a {"type": "ping"} within the last 45 seconds.
   void _startWatchdog() {
     _watchdogTimer?.cancel();
     _lastPongReceived = DateTime.now(); // Initialize baseline
 
-    _watchdogTimer = Timer.periodic(const Duration(seconds: 45), (timer) {
+    _watchdogTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       if (!_isConnected || _channel == null) {
         timer.cancel();
         return;
@@ -216,17 +241,38 @@ class RealtimeService {
       final lastPong = _lastPongReceived;
       if (lastPong != null) {
         final elapsed = DateTime.now().difference(lastPong).inSeconds;
-        // 90 seconds = 3 missed server pings (every 30s)
-        if (elapsed > 90) {
+        // 120 seconds timeout (increased to handle macOS debug pauses)
+        if (elapsed > 120) {
           dev.log(
-            'RealtimeService: ⚠️ Server-ping watchdog: no server ping for ${elapsed}s (timeout: 90s), reconnecting',
+            'RealtimeService: ⚠️ Server-ping watchdog: no server activity for ${elapsed}s (timeout: 120s), reconnecting',
             name: 'WS',
           );
           _handleDisconnect();
         }
       }
     });
-    dev.log('RealtimeService: Server-ping watchdog started (check: 45s, timeout: 90s)', name: 'WS');
+    dev.log('RealtimeService: Server-ping watchdog started (check: 15s, timeout: 120s)', name: 'WS');
+  }
+
+  // ADDED: Active Client Heartbeat. Proactively sends a ping every 20s.
+  // This helps keep the TCP connection alive and ensures we get a 'pong' back 
+  // to update the watchdog even if the server is quiet.
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (!_isConnected || _channel == null) {
+        timer.cancel();
+        return;
+      }
+
+      try {
+        dev.log('RealtimeService: Sending active client ping', name: 'WS');
+        _channel?.sink.add(jsonEncode({'type': 'ping'}));
+      } catch (e) {
+        dev.log('RealtimeService: Heartbeat failed to send: $e', name: 'WS');
+        _handleDisconnect();
+      }
+    });
   }
 
   void dispose() {

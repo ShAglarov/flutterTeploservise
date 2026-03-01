@@ -10,6 +10,16 @@ class APIUserResponse {
   final String email;
   @JsonKey(name: 'full_name')
   final String? fullName;
+  @JsonKey(name: 'first_name')
+  final String? firstName;
+  @JsonKey(name: 'last_name')
+  final String? lastName;
+  @JsonKey(name: 'middle_name')
+  final String? middleName;
+  final String? position;
+  @JsonKey(name: 'phone_number')
+  final String? phoneNumber;
+  @JsonKey(fromJson: UserRole.fromJson, toJson: _roleToJson)
   final UserRole role;
   @JsonKey(name: 'is_active')
   final bool isActive;
@@ -31,6 +41,11 @@ class APIUserResponse {
     required this.username,
     required this.email,
     this.fullName,
+    this.firstName,
+    this.lastName,
+    this.middleName,
+    this.position,
+    this.phoneNumber,
     required this.role,
     this.isActive = true,
     this.isBlocked,
@@ -43,6 +58,28 @@ class APIUserResponse {
 
   factory APIUserResponse.fromJson(Map<String, dynamic> json) => _$APIUserResponseFromJson(json);
   Map<String, dynamic> toJson() => _$APIUserResponseToJson(this);
+
+  static String _roleToJson(UserRole role) => role.toJson();
+
+  // Derived property for UI parity with iOS
+  String get formattedDisplayName {
+    final first = firstName?.trim() ?? '';
+    final last = lastName?.trim() ?? '';
+    final middle = middleName?.trim() ?? '';
+    final pos = position?.trim() ?? '';
+
+    String namePart = username;
+    final fioArray = [last, first, middle].where((s) => s.isNotEmpty).toList();
+    
+    if (fioArray.isNotEmpty) {
+      namePart = fioArray.join(' ');
+    } else if (fullName?.trim().isNotEmpty == true) {
+      namePart = fullName!.trim();
+    }
+
+    final validPosition = pos.isNotEmpty ? pos : role.title;
+    return "$namePart • $validPosition";
+  }
 }
 
 @JsonSerializable()

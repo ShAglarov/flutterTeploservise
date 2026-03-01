@@ -300,10 +300,12 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                           border: InputBorder.none,
                         ),
                         items: managers.map((user) {
+                          // Omit the • Role suffix for the picker to save space
+                          final label = user.formattedDisplayName.split(' • ').first;
                           return DropdownMenuItem<String>(
-                            value: user.fullName ?? user.username,
+                            value: label,
                             alignment: Alignment.centerRight,
-                            child: Text(user.fullName ?? user.username),
+                            child: Text(label),
                           );
                         }).toList(),
                         onChanged: (value) {

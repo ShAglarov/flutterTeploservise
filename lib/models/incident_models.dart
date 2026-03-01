@@ -35,11 +35,25 @@ enum AudienceType {
   @JsonValue('role_based')
   roleBased,
   @JsonValue('user_based')
-  userBased,
+  userBased;
+
+  static AudienceType fromAny(dynamic value) {
+    if (value is String) {
+      final normalized = value.toLowerCase().replaceAll('_', '');
+      return switch (normalized) {
+        'broadcast' => AudienceType.broadcast,
+        'rolebased' => AudienceType.roleBased,
+        'userbased' => AudienceType.userBased,
+        _ => AudienceType.broadcast,
+      };
+    }
+    return AudienceType.broadcast;
+  }
 }
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class NotificationConfig {
+  @JsonKey(fromJson: AudienceType.fromAny)
   final AudienceType type;
   final List<String>? roleIds;
   final List<int>? userIds;
@@ -314,12 +328,34 @@ class IncidentUpdate {
 class IncidentCommentAuthor {
   final int id;
   @JsonKey(name: 'full_name')
-  final String fullName;
+  final String? fullName;
+
+  @JsonKey(name: 'first_name')
+  final String? firstName;
+  @JsonKey(name: 'last_name')
+  final String? lastName;
+  @JsonKey(name: 'middle_name')
+  final String? middleName;
 
   IncidentCommentAuthor({
     required this.id,
-    required this.fullName,
+    this.fullName,
+    this.firstName,
+    this.lastName,
+    this.middleName,
   });
+
+  String get formattedDisplayName {
+    final first = firstName?.trim() ?? '';
+    final last = lastName?.trim() ?? '';
+    final middle = middleName?.trim() ?? '';
+
+    final fioArray = [last, first, middle].where((s) => s.isNotEmpty).toList();
+    if (fioArray.isNotEmpty) {
+      return fioArray.join(' ');
+    }
+    return fullName ?? 'ID $id';
+  }
 
   factory IncidentCommentAuthor.fromJson(Map<String, dynamic> json) => _$IncidentCommentAuthorFromJson(json);
   Map<String, dynamic> toJson() => _$IncidentCommentAuthorToJson(this);

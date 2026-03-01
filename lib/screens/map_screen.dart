@@ -428,36 +428,40 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20),
             ],
           ),
-          child: Column(
-            children: [
-              // 1. Draggable Handle
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 10),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. Draggable Handle
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
 
-              // 2. Search Bar ATTACHED to the sheet
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: _buildSearchBar(sections),
-              ),
+                // 2. Search Bar ATTACHED to the sheet
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: _buildSearchBar(sections),
+                ),
 
-              // 3. Header with back button when filtering
-              if (_selectedBoilerHouse != null)
-                _buildFilterHeader(),
-              
-              // 4. List Content
-              Expanded(
-                child: mapData.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _buildList(mapData, scrollController),
-              ),
-            ],
+                // 3. Header with back button when filtering
+                if (_selectedBoilerHouse != null)
+                  _buildFilterHeader(),
+                
+                // 4. List Content
+                mapData.isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Center(child: CircularProgressIndicator()))
+                    : _buildList(mapData),
+              ],
+            ),
           ),
         );
       },
@@ -758,24 +762,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildList(MapDataState data, ScrollController scrollController) {
+  Widget _buildList(MapDataState data) {
     if (_selectedBoilerHouse != null) {
       final filteredLocations = data.locations
           .where((loc) => loc.boilerHouseId == _selectedBoilerHouse!.id)
           .toList();
 
       if (filteredLocations.isEmpty) {
-        return ListView(
-          controller: scrollController,
-          children: const [
-            SizedBox(height: 40),
-            Center(child: Text('Нет привязанных домов', style: TextStyle(color: Colors.white54))),
-          ],
+        return const Padding(
+          padding: EdgeInsets.only(top: 40),
+          child: Center(child: Text('Нет привязанных домов', style: TextStyle(color: Colors.white54))),
         );
       }
 
       return ListView.builder(
-        controller: scrollController,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(6, 0, 6, 40),
         itemCount: filteredLocations.length,
         itemBuilder: (context, index) => _buildLocationItem(context, filteredLocations[index]),
@@ -785,17 +787,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final totalItems = data.boilerHouses.length;
     
     if (totalItems == 0) {
-      return ListView(
-        controller: scrollController,
-        children: const [
-          SizedBox(height: 40),
-          Center(child: Text('Нет результатов', style: TextStyle(color: Colors.white54))),
-        ],
+      return const Padding(
+        padding: EdgeInsets.only(top: 40),
+        child: Center(child: Text('Нет результатов', style: TextStyle(color: Colors.white54))),
       );
     }
 
     return ListView.builder(
-      controller: scrollController,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(6, 0, 6, 40),
       itemCount: totalItems,
       itemBuilder: (context, index) {

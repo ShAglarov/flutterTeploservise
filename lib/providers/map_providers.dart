@@ -78,9 +78,6 @@ const Object _sentinel = Object();
 
 @Riverpod(keepAlive: true)
 class MapData extends _$MapData {
-  Timer? _updateTimer;
-  MapDataState? _pendingState;
-
   @override
   MapDataState build() {
     final syncRepo = ref.watch(syncRepositoryProvider);
@@ -132,7 +129,6 @@ class MapData extends _$MapData {
     });
     
     ref.onDispose(() {
-      _updateTimer?.cancel();
       bhSub.cancel();
       locSub.cancel();
       incSub.cancel();
@@ -144,19 +140,9 @@ class MapData extends _$MapData {
     return MapDataState(isLoading: true);
   }
 
-  /// Batches multiple rapid stream emissions into a single state update.
-  /// This prevents the "one-by-one" loading effect and reduces UI jank.
+  /// Applies state update immediately (reliance is on SyncRepository debounce)
   void _applyBatchUpdate(MapDataState Function(MapDataState) updater) {
-    _pendingState = updater(_pendingState ?? state);
-    
-    if (_updateTimer?.isActive ?? false) return;
-    
-    _updateTimer = Timer(const Duration(milliseconds: 150), () {
-      if (_pendingState != null) {
-        state = _pendingState!;
-        _pendingState = null;
-      }
-    });
+    state = updater(state);
   }
 
   Future<void> _fetchInitialData() async {
@@ -203,8 +189,8 @@ MapDataState filteredMapData(Ref ref) {
   final query = ref.watch(mapSearchQueryProvider).toLowerCase();
   final filter = ref.watch(mapFilterProvider);
 
-  var boilerHouses = dataState.boilerHouses;
-  var locations = dataState.locations;
+  var boilerHouses = dataState.boilerHouses.toList();
+  var locations = dataState.locations.toList();
 
   // 1. Filter by Query
   if (query.isNotEmpty) {

@@ -122,7 +122,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
           Row(
             children: [
               Text(
-                comment.author.fullName,
+                comment.author.formattedDisplayName,
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,

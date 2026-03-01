@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 import 'utils/app_theme.dart';
 import 'screens/map_screen.dart';
 import 'screens/login_screen.dart';
@@ -9,10 +11,31 @@ import 'services/sync_worker.dart';
 import 'services/realtime_service.dart';
 import 'services/data_sync_service.dart';
 import 'services/sync_service.dart';
+import 'providers/incident_providers.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
-void main() {
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides();
+  
+  if (Platform.isMacOS) {
+    await windowManager.ensureInitialized();
+    windowManager.waitUntilReadyToShow(const WindowOptions(), () async {
+      await windowManager.show();
+      await windowManager.setHasShadow(true);
+      await windowManager.focus();
+    });
+  }
+
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -56,10 +79,22 @@ class _MyAppState extends ConsumerState<MyApp> {
       final syncService = ref.read(syncServiceProvider);
       await syncService.incrementalSync();
 
-      // 4. Listen for WS reconnects → gap detection
+      // 4. Listen for WS reconnects → gap detection (debounced)
+      DateTime? lastReconnectHandled;
       realtimeService.onReconnect.listen((_) async {
+        final now = DateTime.now();
+        if (lastReconnectHandled != null &&
+            now.difference(lastReconnectHandled!).inSeconds < 10) {
+          print('🔄 [Main] WS reconnected — skipping gap check (cooldown)');
+          return;
+        }
+        lastReconnectHandled = now;
         print('🔄 [Main] WS reconnected — checking for gap');
         await syncService.checkAndFillGap(dataSyncService.lastWSActionLogId);
+        
+        // Push a sledgehammer update to Riverpod to ensure any gap differences are immediately reflected on standard reconnects
+        ref.invalidate(allIncidentsProvider);
+        ref.read(globalRefreshEventControllerProvider).add(null);
       });
 
       print('✅ [Main] Sync pipeline initialized');
