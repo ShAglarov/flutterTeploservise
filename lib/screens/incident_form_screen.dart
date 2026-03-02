@@ -109,7 +109,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                             items: IncidentStatus.values.map((s) {
                               return DropdownMenuItem(
                                 value: s,
-                                child: Text(s.name.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                child: Text(s.title.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 14)),
                               );
                             }).toList(),
                             onChanged: (v) {

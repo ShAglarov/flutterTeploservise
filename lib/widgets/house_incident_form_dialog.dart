@@ -137,7 +137,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                             _buildDropdownRow<IncidentStatus>(
                               'Статус',
                               state.status,
-                              IncidentStatus.values.map((s) => DropdownMenuItem(value: s, child: Text(s.name, style: const TextStyle(color: AppTheme.errorRed)))).toList(),
+                              IncidentStatus.values.map((s) => DropdownMenuItem(value: s, child: Text(s.title, style: const TextStyle(color: AppTheme.errorRed)))).toList(),
                               (v) { if (v != null) controller.updateStatus(v); },
                               icon: Icons.flag,
                             ),

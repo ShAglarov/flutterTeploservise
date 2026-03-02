@@ -60,14 +60,14 @@ class IncidentActivityCard extends ConsumerWidget {
 
   Widget _buildActivityItem(IncidentActivity activity) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            radius: 12,
-            backgroundColor: Colors.grey[800],
-            child: const Icon(Icons.person, size: 16, color: Colors.white),
+            radius: 14,
+            backgroundColor: Colors.white.withOpacity(0.1),
+            child: const Icon(Icons.person, size: 16, color: Colors.white70),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -83,7 +83,7 @@ class IncidentActivityCard extends ConsumerWidget {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 15,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -97,12 +97,10 @@ class IncidentActivityCard extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                _buildActionRow(activity),
                 const SizedBox(height: 4),
-                _buildActionText(activity),
-                if (activity.parsedChanges.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  ...activity.parsedChanges.map((change) => _buildChangeRow(change)),
-                ],
+                ..._buildCustomChangeWidgets(activity),
               ],
             ),
           ),
@@ -111,58 +109,112 @@ class IncidentActivityCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionText(IncidentActivity activity) {
+  Widget _buildActionRow(IncidentActivity activity) {
     Color iconColor = Colors.blue;
     IconData iconData = Icons.info;
-    String actionText = '';
+    String actionSuffix = '';
 
     switch (activity.actionType) {
       case 'create':
         iconColor = Colors.green;
-        iconData = Icons.add_circle_outline;
-        actionText = 'создал(а) инцидент';
+        iconData = Icons.add_circle;
+        actionSuffix = 'создал инцидент';
         break;
       case 'update':
         iconColor = Colors.orange;
-        iconData = Icons.sync;
-        actionText = 'изменил(а) инцидент';
+        iconData = Icons.edit_note;
+        actionSuffix = 'изменил инцидент';
         break;
       case 'delete':
         iconColor = Colors.red;
-        iconData = Icons.delete_outline;
-        actionText = 'удалил(а) инцидент';
+        iconData = Icons.delete_forever;
+        actionSuffix = 'удалил инцидент';
         break;
       case 'comment':
         iconColor = Colors.blue;
-        iconData = Icons.chat_bubble_outline;
-        actionText = 'оставил(а) комментарий';
+        iconData = Icons.comment;
+        actionSuffix = 'оставил комментарий';
         break;
       default:
-        actionText = activity.message ?? 'Выполнил действие';
+        actionSuffix = activity.message ?? 'выполнил действие';
     }
 
     return Row(
       children: [
-        Icon(iconData, size: 14, color: iconColor),
-        const SizedBox(width: 4),
+        Icon(iconData, size: 18, color: iconColor),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
-            '${(activity.userName ?? "Неизвестный").split(' ').first} $actionText',
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            '${activity.userName ?? "Пользователь"} $actionSuffix',
+            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildChangeRow(ActivityChange change) {
+  List<Widget> _buildCustomChangeWidgets(IncidentActivity activity) {
+    final widgets = <Widget>[];
+    final changes = activity.parsedChanges;
+
+    // Check for specific fields to show icons
+    for (final change in changes) {
+      final field = change.field;
+      final newVal = change.newValue;
+
+      if (field == 'affected_house_ids') {
+        if (newVal is List) {
+          widgets.add(_buildPrettyRow(Icons.business, 'Затронуто домов: ${newVal.length}', Colors.blueAccent));
+          widgets.add(_buildPrettyRow(null, 'Затронутые дома:...', Colors.white54, isSub: true));
+        }
+      } else if (field == 'resource_hot_water_stopped' && _isTruthy(newVal)) {
+        widgets.add(_buildPrettyRow(Icons.warning_amber_rounded, 'ГВС остановлено', Colors.orange));
+      } else if (field == 'resource_heating_stopped' && _isTruthy(newVal)) {
+        widgets.add(_buildPrettyRow(Icons.local_fire_department, 'Отопление остановлено', Colors.orange));
+      } else if (['status', 'assigned_to', 'title', 'severity'].contains(field)) {
+        // Generic fields with translation
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(left: 26, top: 2),
+            child: Text(
+              '${_translateField(field)}: ${_formatValue(change.oldValue)} → ${_formatValue(change.newValue)}',
+              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+            ),
+          ),
+        );
+      }
+    }
+    return widgets;
+  }
+
+  Widget _buildPrettyRow(IconData? icon, String text, Color color, {bool isSub = false}) {
     return Padding(
-      padding: const EdgeInsets.only(left: 18.0, top: 2.0),
-      child: Text(
-        '${_translateField(change.field)}: ${_formatValue(change.oldValue)} → ${_formatValue(change.newValue)}',
-        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+      padding: EdgeInsets.only(left: isSub ? 44.0 : 26.0, top: 4.0),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              color: isSub ? Colors.white.withOpacity(0.4) : Colors.white.withOpacity(0.9),
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  bool _isTruthy(dynamic value) {
+    if (value == null) return false;
+    if (value is int) return value == 1;
+    if (value is bool) return value;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
   }
 
   String _translateField(String field) {
@@ -179,7 +231,6 @@ class IncidentActivityCard extends ConsumerWidget {
   String _formatValue(dynamic value) {
     if (value == null) return 'Пусто';
     
-    // Customize status translations based on backend returns
     if (value is String) {
       switch (value.toLowerCase()) {
         case 'open': return 'Открыт';

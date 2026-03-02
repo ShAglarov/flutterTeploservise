@@ -12,6 +12,15 @@ enum IncidentStatus {
   @JsonValue('closed')
   closed;
 
+  String get title {
+    return switch (this) {
+      IncidentStatus.open => 'Открыт',
+      IncidentStatus.inProgress => 'В работе',
+      IncidentStatus.resolved => 'Решен',
+      IncidentStatus.closed => 'Закрыт',
+    };
+  }
+
   static IncidentStatus fromAny(dynamic value) {
     if (value is String) {
       final normalized = value.toLowerCase();
