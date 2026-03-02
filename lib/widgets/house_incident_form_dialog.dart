@@ -363,8 +363,15 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
             Icon(icon, color: Colors.white54, size: 20),
             const SizedBox(width: 12),
             Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
-            const Spacer(),
-            Text(value, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 15)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 15),
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             if (trailing != null) ...[const SizedBox(width: 8), trailing],
           ],
         ),
@@ -407,15 +414,19 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
           Icon(icon, color: Colors.white54, size: 20),
           const SizedBox(width: 12),
           Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
-          const Spacer(),
-          DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              value: value,
-              items: items,
-              onChanged: onChanged,
-              dropdownColor: const Color(0xFF2C2C2E),
-              icon: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
-              style: const TextStyle(fontSize: 15),
+          const SizedBox(width: 16),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                isExpanded: true,
+                alignment: AlignmentDirectional.centerEnd,
+                value: value,
+                items: items,
+                onChanged: onChanged,
+                dropdownColor: const Color(0xFF2C2C2E),
+                icon: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                style: const TextStyle(fontSize: 15),
+              ),
             ),
           ),
         ],
@@ -597,7 +608,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           ),
                           TextButton(
                             onPressed: () {
-                              final allRoles = UserRole.values.map((r) => r.name).toList();
+                              final allRoles = UserRole.values.map((r) => r.serverValue).toList();
                               final allIncluded = allRoles.every((r) => selectedRoles.contains(r));
                               if (allIncluded) {
                                 controller.updateNotificationRoles([]);
@@ -616,15 +627,15 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                         itemCount: UserRole.values.length,
                         itemBuilder: (context, index) {
                           final role = UserRole.values[index];
-                          final isSelected = selectedRoles.contains(role.name);
+                          final isSelected = selectedRoles.contains(role.serverValue);
                           return CheckboxListTile(
                             title: Text(role.title, style: const TextStyle(color: Colors.white)),
                             value: isSelected,
                             onChanged: (v) {
                               if (v == true) {
-                                selectedRoles.add(role.name);
+                                selectedRoles.add(role.serverValue);
                               } else {
-                                selectedRoles.remove(role.name);
+                                selectedRoles.remove(role.serverValue);
                               }
                               controller.updateNotificationRoles(selectedRoles.toList());
                             },

@@ -159,8 +159,10 @@ class IncidentFormController extends _$IncidentFormController {
       state = state.copyWith(isSaving: false);
       return true;
     } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
       final detail = e.response?.data;
-      state = state.copyWith(isSaving: false, errorMessage: 'Ошибка 422: $detail');
+      print('❌ [IncidentFormController] DioException: $statusCode, data: $detail');
+      state = state.copyWith(isSaving: false, errorMessage: 'Ошибка $statusCode: $detail');
       return false;
     } catch (e) {
       state = state.copyWith(isSaving: false, errorMessage: 'Ошибка сохранения: $e');

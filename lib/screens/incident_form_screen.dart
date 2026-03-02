@@ -587,7 +587,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           ),
                           TextButton(
                             onPressed: () {
-                              final allRoles = UserRole.values.map((r) => r.name).toList();
+                              final allRoles = UserRole.values.map((r) => r.serverValue).toList();
                               final allIncluded = allRoles.every((r) => selectedRoles.contains(r));
                               if (allIncluded) {
                                 controller.updateNotificationRoles([]);
@@ -606,15 +606,15 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         itemCount: UserRole.values.length,
                         itemBuilder: (context, index) {
                           final role = UserRole.values[index];
-                          final isSelected = selectedRoles.contains(role.name);
+                          final isSelected = selectedRoles.contains(role.serverValue);
                           return CheckboxListTile(
                             title: Text(role.title, style: const TextStyle(color: Colors.white)),
                             value: isSelected,
                             onChanged: (v) {
                               if (v == true) {
-                                selectedRoles.add(role.name);
+                                selectedRoles.add(role.serverValue);
                               } else {
-                                selectedRoles.remove(role.name);
+                                selectedRoles.remove(role.serverValue);
                               }
                               controller.updateNotificationRoles(selectedRoles.toList());
                             },

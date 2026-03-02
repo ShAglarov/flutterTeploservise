@@ -18,7 +18,17 @@ enum UserRole {
     return UserRole.fromAnyString(value);
   }
 
-  String toJson() => name;
+  String get serverValue {
+    return switch (this) {
+      UserRole.admin => 'ADMIN',
+      UserRole.manager => 'SITE_MANAGER',
+      UserRole.operatorUser => 'OPERATOR',
+      UserRole.guest => 'GUEST',
+      UserRole.viewer => 'OBSERVER',
+    };
+  }
+
+  String toJson() => serverValue;
 
   String get title {
     return switch (this) {
