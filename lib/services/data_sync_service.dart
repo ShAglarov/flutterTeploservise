@@ -90,7 +90,7 @@ class DataSyncService {
     // when WebSocket and REST fetch the same action concurrently
     final hashStr = actionData.toString();
     if (_processedActionHashes.contains(hashStr)) {
-      final actionId = actionData['id'] as int? ?? 0;
+      final actionId = actionData['id'];
       dev.log('📥 [DataSync] IGNORING DUPLICATE ACTION (already processed): id=$actionId, type=${actionData['entity_type']}', name: 'SYNC');
       return true; // Already processed
     }
@@ -161,6 +161,10 @@ class DataSyncService {
         case 'boiler_house_photo':
           await _handlePhoto(actionType, entityType, entityIdRaw, entityData);
           break;
+        case 'incident_comment':
+        case 'comment':
+          await _handleComment(actionType, entityIdRaw, entityData);
+          break;
         case 'management_company':
           // TODO: implement if/when MC models are added
           dev.log('[DataSync] management_company action - skipping (not implemented)', name: 'SYNC');
@@ -213,7 +217,7 @@ class DataSyncService {
           // The server sends: {"type": "action_sync", "data": {...action fields...}, "timestamp": "..."}
           final actionData = message['data'] as Map<String, dynamic>?;
           if (actionData != null) {
-            final actionId = actionData['id'] as int? ?? 0;
+            final actionId = actionData['id'];
             dev.log('📥 [DataSync] QUEUED PROCESSING: Action $actionId ($timestamp)', name: 'SYNC');
             await processAction(actionData);
           } else {
@@ -243,6 +247,9 @@ class DataSyncService {
       final id = _parseInt(entityId);
       if (id != null) {
         await _syncRepo.deleteIncident(id);
+        // Force the UI list to invalidate because pure Drift row-deletions 
+        // sometimes don't propagate flawlessly through the Riverpod debouncer cascade.
+        _ref.read(globalRefreshEventControllerProvider).add(null);
       }
       return;
     }
@@ -300,12 +307,73 @@ class DataSyncService {
     }
   }
 
+  Future<void> _handleComment(String actionType, dynamic entityId, Map<String, dynamic>? entityData) async {
+    // We only care about creates/updates for now
+    if (actionType == 'delete') return;
+
+    if (entityData != null) {
+      try {
+        final comment = IncidentComment.fromJson(entityData);
+        await _syncRepo.upsertComments(comment.incidentId, [comment]);
+      } catch (e) {
+        dev.log('[DataSync] Failed to parse comment entity_data: $e', name: 'SYNC');
+      }
+    }
+  }
+
   Future<void> _handlePhoto(String actionType, String entityType, dynamic entityId, Map<String, dynamic>? entityData) async {
+    dev.log('📸 [DataSync] _handlePhoto called: actionType=$actionType, entityType=$entityType, entityId=$entityId (${entityId.runtimeType}), hasData=${entityData != null}', name: 'SYNC');
     if (actionType == 'delete') {
       final id = _parseInt(entityId);
+      dev.log('📸 [DataSync] Photo delete: parsed id=$id from raw=$entityId', name: 'SYNC');
       if (id != null) {
-          await _syncRepo.deleteIncidentPhoto(id);
-        // TODO: handle other photo types if needed
+        switch (entityType) {
+          case 'incident_photo':
+            dev.log('📸 [DataSync] Deleting incident_photo backendId=$id', name: 'SYNC');
+            await _syncRepo.deleteIncidentPhoto(id);
+            // Force UI refresh so the photo disappears immediately
+            _ref.read(globalRefreshEventControllerProvider).add(null);
+            dev.log('📸 [DataSync] globalRefreshEvent fired after photo delete', name: 'SYNC');
+            break;
+          case 'saved_location_photo':
+            dev.log('[DataSync] Deleting saved_location_photo id=$id', name: 'SYNC');
+            await _syncRepo.deleteLocationPhoto(id);
+            break;
+          case 'boiler_house_photo':
+            dev.log('[DataSync] Deleting boiler_house_photo id=$id', name: 'SYNC');
+            await _syncRepo.deleteBoilerPhoto(id);
+            break;
+          default:
+            dev.log('[DataSync] Unknown photo entity_type for delete: $entityType', name: 'SYNC');
+        }
+      } else {
+        dev.log('⚠️ [DataSync] Could not parse photo entityId: $entityId', name: 'SYNC');
+      }
+    } else if (entityData != null) {
+      // Handle create/update for photos
+      try {
+        final photoId = _parseInt(entityData['id']) ?? _parseInt(entityId) ?? 0;
+        final parentId = _parseInt(entityData['entity_id']) ?? 0;
+        final url = entityData['url'] as String? ?? '';
+        final thumbnailUrl = entityData['thumbnail_url'] as String?;
+        final createdAt = entityData['created_at'] as String?;
+
+        if (entityType == 'incident_photo' && parentId > 0) {
+          final photo = PhotoInfo(
+            id: photoId,
+            url: url,
+            thumbnailUrl: thumbnailUrl,
+            createdAt: createdAt,
+          );
+          await _syncRepo.upsertIncidentPhotos(parentId, [photo]);
+          dev.log('[DataSync] Upserted incident_photo id=$photoId for incident=$parentId', name: 'SYNC');
+        } else if (entityType == 'saved_location_photo') {
+          dev.log('[DataSync] saved_location_photo create/update - handled via location sync', name: 'SYNC');
+        } else if (entityType == 'boiler_house_photo') {
+          dev.log('[DataSync] boiler_house_photo create/update - handled via boiler_house sync', name: 'SYNC');
+        }
+      } catch (e) {
+        dev.log('[DataSync] Failed to upsert photo: $e', name: 'SYNC');
       }
     }
   }

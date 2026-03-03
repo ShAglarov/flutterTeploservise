@@ -8405,6 +8405,38 @@ class $IncidentCommentsTable extends IncidentComments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<int> userId = GeneratedColumn<int>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _authorNameMeta = const VerificationMeta(
+    'authorName',
+  );
+  @override
+  late final GeneratedColumn<String> authorName = GeneratedColumn<String>(
+    'author_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _authorPositionMeta = const VerificationMeta(
+    'authorPosition',
+  );
+  @override
+  late final GeneratedColumn<String> authorPosition = GeneratedColumn<String>(
+    'author_position',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _incidentIdMeta = const VerificationMeta(
     'incidentId',
   );
@@ -8426,6 +8458,9 @@ class $IncidentCommentsTable extends IncidentComments
     id,
     isSystemMessage,
     commentText,
+    userId,
+    authorName,
+    authorPosition,
     incidentId,
   ];
   @override
@@ -8479,6 +8514,27 @@ class $IncidentCommentsTable extends IncidentComments
     } else if (isInserting) {
       context.missing(_commentTextMeta);
     }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
+    if (data.containsKey('author_name')) {
+      context.handle(
+        _authorNameMeta,
+        authorName.isAcceptableOrUnknown(data['author_name']!, _authorNameMeta),
+      );
+    }
+    if (data.containsKey('author_position')) {
+      context.handle(
+        _authorPositionMeta,
+        authorPosition.isAcceptableOrUnknown(
+          data['author_position']!,
+          _authorPositionMeta,
+        ),
+      );
+    }
     if (data.containsKey('incident_id')) {
       context.handle(
         _incidentIdMeta,
@@ -8514,6 +8570,18 @@ class $IncidentCommentsTable extends IncidentComments
         DriftSqlType.string,
         data['${effectivePrefix}comment_text'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}user_id'],
+      ),
+      authorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_name'],
+      ),
+      authorPosition: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_position'],
+      ),
       incidentId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}incident_id'],
@@ -8534,6 +8602,9 @@ class IncidentCommentDb extends DataClass
   final String id;
   final bool isSystemMessage;
   final String commentText;
+  final int? userId;
+  final String? authorName;
+  final String? authorPosition;
   final int? incidentId;
   const IncidentCommentDb({
     required this.backendId,
@@ -8541,6 +8612,9 @@ class IncidentCommentDb extends DataClass
     required this.id,
     required this.isSystemMessage,
     required this.commentText,
+    this.userId,
+    this.authorName,
+    this.authorPosition,
     this.incidentId,
   });
   @override
@@ -8551,6 +8625,15 @@ class IncidentCommentDb extends DataClass
     map['id'] = Variable<String>(id);
     map['is_system_message'] = Variable<bool>(isSystemMessage);
     map['comment_text'] = Variable<String>(commentText);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<int>(userId);
+    }
+    if (!nullToAbsent || authorName != null) {
+      map['author_name'] = Variable<String>(authorName);
+    }
+    if (!nullToAbsent || authorPosition != null) {
+      map['author_position'] = Variable<String>(authorPosition);
+    }
     if (!nullToAbsent || incidentId != null) {
       map['incident_id'] = Variable<int>(incidentId);
     }
@@ -8564,6 +8647,15 @@ class IncidentCommentDb extends DataClass
       id: Value(id),
       isSystemMessage: Value(isSystemMessage),
       commentText: Value(commentText),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
+      authorName: authorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorName),
+      authorPosition: authorPosition == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorPosition),
       incidentId: incidentId == null && nullToAbsent
           ? const Value.absent()
           : Value(incidentId),
@@ -8581,6 +8673,9 @@ class IncidentCommentDb extends DataClass
       id: serializer.fromJson<String>(json['id']),
       isSystemMessage: serializer.fromJson<bool>(json['isSystemMessage']),
       commentText: serializer.fromJson<String>(json['commentText']),
+      userId: serializer.fromJson<int?>(json['userId']),
+      authorName: serializer.fromJson<String?>(json['authorName']),
+      authorPosition: serializer.fromJson<String?>(json['authorPosition']),
       incidentId: serializer.fromJson<int?>(json['incidentId']),
     );
   }
@@ -8593,6 +8688,9 @@ class IncidentCommentDb extends DataClass
       'id': serializer.toJson<String>(id),
       'isSystemMessage': serializer.toJson<bool>(isSystemMessage),
       'commentText': serializer.toJson<String>(commentText),
+      'userId': serializer.toJson<int?>(userId),
+      'authorName': serializer.toJson<String?>(authorName),
+      'authorPosition': serializer.toJson<String?>(authorPosition),
       'incidentId': serializer.toJson<int?>(incidentId),
     };
   }
@@ -8603,6 +8701,9 @@ class IncidentCommentDb extends DataClass
     String? id,
     bool? isSystemMessage,
     String? commentText,
+    Value<int?> userId = const Value.absent(),
+    Value<String?> authorName = const Value.absent(),
+    Value<String?> authorPosition = const Value.absent(),
     Value<int?> incidentId = const Value.absent(),
   }) => IncidentCommentDb(
     backendId: backendId ?? this.backendId,
@@ -8610,6 +8711,11 @@ class IncidentCommentDb extends DataClass
     id: id ?? this.id,
     isSystemMessage: isSystemMessage ?? this.isSystemMessage,
     commentText: commentText ?? this.commentText,
+    userId: userId.present ? userId.value : this.userId,
+    authorName: authorName.present ? authorName.value : this.authorName,
+    authorPosition: authorPosition.present
+        ? authorPosition.value
+        : this.authorPosition,
     incidentId: incidentId.present ? incidentId.value : this.incidentId,
   );
   IncidentCommentDb copyWithCompanion(IncidentCommentsCompanion data) {
@@ -8623,6 +8729,13 @@ class IncidentCommentDb extends DataClass
       commentText: data.commentText.present
           ? data.commentText.value
           : this.commentText,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      authorName: data.authorName.present
+          ? data.authorName.value
+          : this.authorName,
+      authorPosition: data.authorPosition.present
+          ? data.authorPosition.value
+          : this.authorPosition,
       incidentId: data.incidentId.present
           ? data.incidentId.value
           : this.incidentId,
@@ -8637,6 +8750,9 @@ class IncidentCommentDb extends DataClass
           ..write('id: $id, ')
           ..write('isSystemMessage: $isSystemMessage, ')
           ..write('commentText: $commentText, ')
+          ..write('userId: $userId, ')
+          ..write('authorName: $authorName, ')
+          ..write('authorPosition: $authorPosition, ')
           ..write('incidentId: $incidentId')
           ..write(')'))
         .toString();
@@ -8649,6 +8765,9 @@ class IncidentCommentDb extends DataClass
     id,
     isSystemMessage,
     commentText,
+    userId,
+    authorName,
+    authorPosition,
     incidentId,
   );
   @override
@@ -8660,6 +8779,9 @@ class IncidentCommentDb extends DataClass
           other.id == this.id &&
           other.isSystemMessage == this.isSystemMessage &&
           other.commentText == this.commentText &&
+          other.userId == this.userId &&
+          other.authorName == this.authorName &&
+          other.authorPosition == this.authorPosition &&
           other.incidentId == this.incidentId);
 }
 
@@ -8669,6 +8791,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
   final Value<String> id;
   final Value<bool> isSystemMessage;
   final Value<String> commentText;
+  final Value<int?> userId;
+  final Value<String?> authorName;
+  final Value<String?> authorPosition;
   final Value<int?> incidentId;
   const IncidentCommentsCompanion({
     this.backendId = const Value.absent(),
@@ -8676,6 +8801,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     this.id = const Value.absent(),
     this.isSystemMessage = const Value.absent(),
     this.commentText = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.authorName = const Value.absent(),
+    this.authorPosition = const Value.absent(),
     this.incidentId = const Value.absent(),
   });
   IncidentCommentsCompanion.insert({
@@ -8684,6 +8812,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     required String id,
     this.isSystemMessage = const Value.absent(),
     required String commentText,
+    this.userId = const Value.absent(),
+    this.authorName = const Value.absent(),
+    this.authorPosition = const Value.absent(),
     this.incidentId = const Value.absent(),
   }) : createdAt = Value(createdAt),
        id = Value(id),
@@ -8694,6 +8825,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     Expression<String>? id,
     Expression<bool>? isSystemMessage,
     Expression<String>? commentText,
+    Expression<int>? userId,
+    Expression<String>? authorName,
+    Expression<String>? authorPosition,
     Expression<int>? incidentId,
   }) {
     return RawValuesInsertable({
@@ -8702,6 +8836,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
       if (id != null) 'id': id,
       if (isSystemMessage != null) 'is_system_message': isSystemMessage,
       if (commentText != null) 'comment_text': commentText,
+      if (userId != null) 'user_id': userId,
+      if (authorName != null) 'author_name': authorName,
+      if (authorPosition != null) 'author_position': authorPosition,
       if (incidentId != null) 'incident_id': incidentId,
     });
   }
@@ -8712,6 +8849,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     Value<String>? id,
     Value<bool>? isSystemMessage,
     Value<String>? commentText,
+    Value<int?>? userId,
+    Value<String?>? authorName,
+    Value<String?>? authorPosition,
     Value<int?>? incidentId,
   }) {
     return IncidentCommentsCompanion(
@@ -8720,6 +8860,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
       id: id ?? this.id,
       isSystemMessage: isSystemMessage ?? this.isSystemMessage,
       commentText: commentText ?? this.commentText,
+      userId: userId ?? this.userId,
+      authorName: authorName ?? this.authorName,
+      authorPosition: authorPosition ?? this.authorPosition,
       incidentId: incidentId ?? this.incidentId,
     );
   }
@@ -8742,6 +8885,15 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     if (commentText.present) {
       map['comment_text'] = Variable<String>(commentText.value);
     }
+    if (userId.present) {
+      map['user_id'] = Variable<int>(userId.value);
+    }
+    if (authorName.present) {
+      map['author_name'] = Variable<String>(authorName.value);
+    }
+    if (authorPosition.present) {
+      map['author_position'] = Variable<String>(authorPosition.value);
+    }
     if (incidentId.present) {
       map['incident_id'] = Variable<int>(incidentId.value);
     }
@@ -8756,6 +8908,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
           ..write('id: $id, ')
           ..write('isSystemMessage: $isSystemMessage, ')
           ..write('commentText: $commentText, ')
+          ..write('userId: $userId, ')
+          ..write('authorName: $authorName, ')
+          ..write('authorPosition: $authorPosition, ')
           ..write('incidentId: $incidentId')
           ..write(')'))
         .toString();
@@ -16556,6 +16711,9 @@ typedef $$IncidentCommentsTableCreateCompanionBuilder =
       required String id,
       Value<bool> isSystemMessage,
       required String commentText,
+      Value<int?> userId,
+      Value<String?> authorName,
+      Value<String?> authorPosition,
       Value<int?> incidentId,
     });
 typedef $$IncidentCommentsTableUpdateCompanionBuilder =
@@ -16565,6 +16723,9 @@ typedef $$IncidentCommentsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<bool> isSystemMessage,
       Value<String> commentText,
+      Value<int?> userId,
+      Value<String?> authorName,
+      Value<String?> authorPosition,
       Value<int?> incidentId,
     });
 
@@ -16638,6 +16799,21 @@ class $$IncidentCommentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorPosition => $composableBuilder(
+    column: $table.authorPosition,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$IncidentsTableFilterComposer get incidentId {
     final $$IncidentsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -16696,6 +16872,21 @@ class $$IncidentCommentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorPosition => $composableBuilder(
+    column: $table.authorPosition,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$IncidentsTableOrderingComposer get incidentId {
     final $$IncidentsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -16745,6 +16936,19 @@ class $$IncidentCommentsTableAnnotationComposer
 
   GeneratedColumn<String> get commentText => $composableBuilder(
     column: $table.commentText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get authorPosition => $composableBuilder(
+    column: $table.authorPosition,
     builder: (column) => column,
   );
 
@@ -16807,6 +17011,9 @@ class $$IncidentCommentsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<bool> isSystemMessage = const Value.absent(),
                 Value<String> commentText = const Value.absent(),
+                Value<int?> userId = const Value.absent(),
+                Value<String?> authorName = const Value.absent(),
+                Value<String?> authorPosition = const Value.absent(),
                 Value<int?> incidentId = const Value.absent(),
               }) => IncidentCommentsCompanion(
                 backendId: backendId,
@@ -16814,6 +17021,9 @@ class $$IncidentCommentsTableTableManager
                 id: id,
                 isSystemMessage: isSystemMessage,
                 commentText: commentText,
+                userId: userId,
+                authorName: authorName,
+                authorPosition: authorPosition,
                 incidentId: incidentId,
               ),
           createCompanionCallback:
@@ -16823,6 +17033,9 @@ class $$IncidentCommentsTableTableManager
                 required String id,
                 Value<bool> isSystemMessage = const Value.absent(),
                 required String commentText,
+                Value<int?> userId = const Value.absent(),
+                Value<String?> authorName = const Value.absent(),
+                Value<String?> authorPosition = const Value.absent(),
                 Value<int?> incidentId = const Value.absent(),
               }) => IncidentCommentsCompanion.insert(
                 backendId: backendId,
@@ -16830,6 +17043,9 @@ class $$IncidentCommentsTableTableManager
                 id: id,
                 isSystemMessage: isSystemMessage,
                 commentText: commentText,
+                userId: userId,
+                authorName: authorName,
+                authorPosition: authorPosition,
                 incidentId: incidentId,
               ),
           withReferenceMapper: (p0) => p0

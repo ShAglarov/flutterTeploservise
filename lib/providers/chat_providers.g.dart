@@ -13,7 +13,7 @@ part of 'chat_providers.dart';
 final incidentChatProvider = IncidentChatFamily._();
 
 final class IncidentChatProvider
-    extends $AsyncNotifierProvider<IncidentChat, List<IncidentComment>> {
+    extends $StreamNotifierProvider<IncidentChat, List<IncidentComment>> {
   IncidentChatProvider._({
     required IncidentChatFamily super.from,
     required int super.argument,
@@ -50,7 +50,7 @@ final class IncidentChatProvider
   }
 }
 
-String _$incidentChatHash() => r'9003e4185737223f6d2a881b2244c5ea7d84021f';
+String _$incidentChatHash() => r'16b347e05783abecc7656ccf1c9cb74ff3022d3f';
 
 final class IncidentChatFamily extends $Family
     with
@@ -58,7 +58,7 @@ final class IncidentChatFamily extends $Family
           IncidentChat,
           AsyncValue<List<IncidentComment>>,
           List<IncidentComment>,
-          FutureOr<List<IncidentComment>>,
+          Stream<List<IncidentComment>>,
           int
         > {
   IncidentChatFamily._()
@@ -77,11 +77,11 @@ final class IncidentChatFamily extends $Family
   String toString() => r'incidentChatProvider';
 }
 
-abstract class _$IncidentChat extends $AsyncNotifier<List<IncidentComment>> {
+abstract class _$IncidentChat extends $StreamNotifier<List<IncidentComment>> {
   late final _$args = ref.$arg as int;
   int get incidentId => _$args;
 
-  FutureOr<List<IncidentComment>> build(int incidentId);
+  Stream<List<IncidentComment>> build(int incidentId);
   @$mustCallSuper
   @override
   void runBuild() {

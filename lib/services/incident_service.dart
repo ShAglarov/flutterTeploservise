@@ -113,9 +113,19 @@ class IncidentService {
   }
 
   Future<void> deleteIncidentPhoto(int incidentId, int photoId) async {
-    await _dio.delete(
-      '/incidents/$incidentId/photos/$photoId',
-    );
+    try {
+      await _dio.delete(
+        '/incidents/$incidentId/photos/$photoId',
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Photo was already deleted on the server (e.g. by another user).
+        // We still need to clean up the local DB below.
+        debugPrint('[Service] Photo $photoId already deleted on server (404), cleaning local DB');
+      } else {
+        rethrow;
+      }
+    }
     await _syncRepository.deleteIncidentPhoto(photoId);
   }
 }

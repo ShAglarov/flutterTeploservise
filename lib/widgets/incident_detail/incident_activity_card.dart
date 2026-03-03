@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/activity_providers.dart';
 import '../../models/activity_models.dart';
+import '../../services/user_service.dart';
 import '../base_card.dart';
 
 class IncidentActivityCard extends ConsumerWidget {
@@ -13,6 +14,7 @@ class IncidentActivityCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activityState = ref.watch(incidentActivityFeedProvider(incidentId));
+    final usersMap = ref.watch(usersMapProvider).value ?? {};
 
     return BaseCard(
       child: Column(
@@ -47,7 +49,7 @@ class IncidentActivityCard extends ConsumerWidget {
                 );
               }
               return Column(
-                children: activities.map((activity) => _buildActivityItem(activity)).toList(),
+                children: activities.map((activity) => _buildActivityItem(activity, usersMap)).toList(),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -57,8 +59,7 @@ class IncidentActivityCard extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _buildActivityItem(IncidentActivity activity) {
+  Widget _buildActivityItem(IncidentActivity activity, Map<int, dynamic> usersMap) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Row(
@@ -100,7 +101,7 @@ class IncidentActivityCard extends ConsumerWidget {
                 const SizedBox(height: 6),
                 _buildActionRow(activity),
                 const SizedBox(height: 4),
-                ..._buildCustomChangeWidgets(activity),
+                ..._buildCustomChangeWidgets(activity, usersMap),
               ],
             ),
           ),
@@ -153,7 +154,7 @@ class IncidentActivityCard extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildCustomChangeWidgets(IncidentActivity activity) {
+  List<Widget> _buildCustomChangeWidgets(IncidentActivity activity, Map<int, dynamic> usersMap) {
     final widgets = <Widget>[];
     final changes = activity.parsedChanges;
 
@@ -171,13 +172,15 @@ class IncidentActivityCard extends ConsumerWidget {
         widgets.add(_buildPrettyRow(Icons.warning_amber_rounded, 'ГВС остановлено', Colors.orange));
       } else if (field == 'resource_heating_stopped' && _isTruthy(newVal)) {
         widgets.add(_buildPrettyRow(Icons.local_fire_department, 'Отопление остановлено', Colors.orange));
-      } else if (['status', 'assigned_to', 'title', 'severity'].contains(field)) {
+      } else if (field == 'assigned_to') {
+        widgets.add(_buildPrettyRow(Icons.person_outline, 'Ответственный: ${_formatValue(change.oldValue, usersMap: usersMap)} → ${_formatValue(change.newValue, usersMap: usersMap)}', Colors.blue));
+      } else if (['status', 'title', 'severity'].contains(field)) {
         // Generic fields with translation
         widgets.add(
           Padding(
             padding: const EdgeInsets.only(left: 26, top: 2),
             child: Text(
-              '${_translateField(field)}: ${_formatValue(change.oldValue)} → ${_formatValue(change.newValue)}',
+              '${_translateField(field)}: ${_formatValue(change.oldValue, usersMap: usersMap)} → ${_formatValue(change.newValue, usersMap: usersMap)}',
               style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
             ),
           ),
@@ -228,8 +231,29 @@ class IncidentActivityCard extends ConsumerWidget {
     }
   }
 
-  String _formatValue(dynamic value) {
+  String _formatValue(dynamic value, {Map<int, dynamic>? usersMap}) {
     if (value == null) return 'Пусто';
+    
+    int? intVal;
+    if (value is int) {
+      intVal = value;
+    } else if (value is String) {
+      intVal = int.tryParse(value);
+    }
+    
+    if (intVal != null && usersMap != null && usersMap.containsKey(intVal)) {
+      final user = usersMap[intVal];
+      if (user != null) {
+        final fio = (user.lastName != null && user.firstName != null)
+            ? '${user.lastName} ${user.firstName}'
+            : (user.fullName ?? user.username ?? 'ID $intVal');
+        
+        if (user.position != null && user.position!.isNotEmpty) {
+          return '$fio (${user.position})';
+        }
+        return fio;
+      }
+    }
     
     if (value is String) {
       switch (value.toLowerCase()) {

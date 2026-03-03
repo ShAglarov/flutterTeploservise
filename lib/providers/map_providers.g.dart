@@ -40,7 +40,7 @@ final class MapDataProvider extends $NotifierProvider<MapData, MapDataState> {
   }
 }
 
-String _$mapDataHash() => r'35e61d75dde2a8350bd181c0822c65c5043ce9d6';
+String _$mapDataHash() => r'6a9c2222390de1ab2310f285bd3d368b7319cd4c';
 
 abstract class _$MapData extends $Notifier<MapDataState> {
   MapDataState build();
@@ -203,7 +203,7 @@ final class FilteredMapDataProvider
   }
 }
 
-String _$filteredMapDataHash() => r'7d5ca17fba1de658906b028a618be1b98b1fc5c5';
+String _$filteredMapDataHash() => r'4be1509165227a6e2c9b367ff27d7ae9d881741a';
 
 @ProviderFor(mapSections)
 final mapSectionsProvider = MapSectionsProvider._();

@@ -324,9 +324,11 @@ IncidentComment _$IncidentCommentFromJson(Map<String, dynamic> json) =>
       text: json['text'] as String,
       createdAt: json['created_at'] as String,
       userId: (json['user_id'] as num).toInt(),
-      author: IncidentCommentAuthor.fromJson(
-        json['author'] as Map<String, dynamic>,
-      ),
+      author: json['author'] == null
+          ? null
+          : IncidentCommentAuthor.fromJson(
+              json['author'] as Map<String, dynamic>,
+            ),
       isSystemMessage: json['is_system_message'] as bool? ?? false,
     );
 

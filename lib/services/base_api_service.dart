@@ -58,9 +58,13 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     if (err.response?.statusCode == 401) {
-      // Handle Unauthorized error (logout)
-      await _storageService.clearAll();
-      _eventService.fire(AppEvent.logout);
+      // Only trigger logout logic if we actually sent a token
+      // If we didn't send a token, it's a "natural" unauthenticated state
+      final sentToken = err.requestOptions.headers['Authorization'];
+      if (sentToken != null) {
+        await _storageService.clearAll();
+        _eventService.fire(AppEvent.logout);
+      }
     }
     return handler.next(err);
   }

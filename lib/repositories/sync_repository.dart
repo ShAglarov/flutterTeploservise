@@ -35,6 +35,10 @@ class SyncRepository {
             ..where((t) => t.incidentId.isIn(incidentIds)))
           .go();
 
+      await (_db.delete(_db.incidentPhotos)
+            ..where((t) => t.incidentId.isIn(incidentIds)))
+          .go();
+
       // 1.5. Clean up temporary offline duplicate rows that have the same incidentUUID
       for (final incident in incidents) {
         if (incident.localUUID != null && incident.localUUID!.isNotEmpty) {
@@ -101,6 +105,53 @@ class SyncRepository {
     });
     
     dev.log('✅ [SyncRepo] Upserted ${incidents.length} incidents', name: 'SYNC');
+  }
+
+  Future<void> upsertComments(int incidentId, List<IncidentComment> comments) async {
+    if (comments.isEmpty) return;
+
+    await _db.batch((batch) {
+      for (final comment in comments) {
+        batch.insert(
+          _db.incidentComments,
+          IncidentCommentsCompanion.insert(
+            backendId: Value(comment.id),
+            incidentId: Value(comment.incidentId),
+            commentText: comment.text,
+            createdAt: DateTime.parse(comment.createdAt),
+            isSystemMessage: Value(comment.isSystemMessage),
+            userId: Value(comment.userId),
+            authorName: Value(comment.author?.fullName),
+            authorPosition: Value(null), // Position not currently in IncidentCommentAuthor
+            id: comment.id.toString(),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+  }
+
+  Stream<List<IncidentComment>> watchComments(int incidentId) {
+    return (_db.select(_db.incidentComments)
+          ..where((t) => t.incidentId.equals(incidentId))
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)]))
+        .watch()
+        .map((rows) {
+      return rows.map((row) {
+        return IncidentComment(
+          id: row.backendId,
+          incidentId: row.incidentId ?? 0,
+          text: row.commentText,
+          createdAt: row.createdAt.toIso8601String(),
+          userId: row.userId ?? 0,
+          author: IncidentCommentAuthor(
+            id: row.userId ?? 0,
+            fullName: row.authorName,
+          ),
+          isSystemMessage: row.isSystemMessage,
+        );
+      }).toList();
+    });
   }
 
   Future<void> upsertIncidentPhotos(int incidentId, List<PhotoInfo> photos) async {
@@ -199,23 +250,45 @@ class SyncRepository {
   }
 
   Stream<IncidentResponse?> watchIncidentById(int backendId) {
-    final query = _db.select(_db.incidents).join([
+    final incidentQuery = _db.select(_db.incidents).join([
       leftOuterJoin(_db.boilerHouses, _db.boilerHouses.backendId.equalsExp(_db.incidents.boilerHouseId)),
     ])..where(_db.incidents.backendId.equals(backendId));
-    
-    return query.watch().asyncMap((rows) async {
-      if (rows.isEmpty) return null;
-      final row = rows.first;
-      final inc = row.readTable(_db.incidents);
-      final bh = row.readTableOrNull(_db.boilerHouses);
-      
-      final photos = await (_db.select(_db.incidentPhotos)..where((t) => t.incidentId.equals(inc.backendId))).get();
-      final affectedHousesRows = await (_db.select(_db.affectedHouses).join([
-        innerJoin(_db.savedLocations, _db.savedLocations.backendId.equalsExp(_db.affectedHouses.savedLocationId)),
-      ])..where(_db.affectedHouses.incidentId.equals(inc.backendId))).get();
-      
-      return _mapIncidentToResponse(inc, boilerHouse: bh, affectedHousesRows: affectedHousesRows, photos: photos);
-    });
+
+    // CRITICAL: Watch ALL related tables so that photo/house changes
+    // trigger a re-emit of the stream, not just incident row updates.
+    return _db.customSelect(
+      'SELECT 1',
+      readsFrom: {
+        _db.incidents,
+        _db.boilerHouses,
+        _db.incidentPhotos,
+        _db.affectedHouses,
+        _db.savedLocations,
+      },
+    ).watch()
+      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 100)))
+      .asyncMap((_) async {
+        final rows = await incidentQuery.get();
+        if (rows.isEmpty) return null;
+        final row = rows.first;
+        final inc = row.readTable(_db.incidents);
+        final bh = row.readTableOrNull(_db.boilerHouses);
+
+        final photos = await (_db.select(_db.incidentPhotos)
+              ..where((t) => t.incidentId.equals(inc.backendId)))
+            .get();
+        final affectedHousesRows = await (_db.select(_db.affectedHouses).join([
+          innerJoin(_db.savedLocations,
+              _db.savedLocations.backendId.equalsExp(_db.affectedHouses.savedLocationId)),
+        ])
+              ..where(_db.affectedHouses.incidentId.equals(inc.backendId)))
+            .get();
+
+        return _mapIncidentToResponse(inc,
+            boilerHouse: bh,
+            affectedHousesRows: affectedHousesRows,
+            photos: photos);
+      });
   }
 
   Future<void> saveIncidentOffline({IncidentCreate? create, IncidentUpdate? update}) async {
@@ -542,18 +615,27 @@ class SyncRepository {
         .getSingleOrNull();
     final incidentId = photo?.incidentId;
 
-    await (_db.delete(_db.incidentPhotos)
+    dev.log('📸 [SyncRepo] deleteIncidentPhoto: backendId=$backendId, found=${photo != null}, incidentId=$incidentId', name: 'SYNC');
+
+    final deletedCount = await (_db.delete(_db.incidentPhotos)
           ..where((t) => t.backendId.equals(backendId)))
         .go();
+
+    dev.log('📸 [SyncRepo] deleteIncidentPhoto: deletedCount=$deletedCount', name: 'SYNC');
 
     if (incidentId != null) {
       await (_db.update(_db.incidents)..where((t) => t.backendId.equals(incidentId)))
           .write(IncidentsCompanion(lastLocalEditAt: Value(DateTime.now())));
+      dev.log('📸 [SyncRepo] Bumped lastLocalEditAt for incident $incidentId', name: 'SYNC');
     }
   }
 
   Future<void> deleteLocationPhoto(int backendId) async {
     await (_db.delete(_db.housePhotos)..where((t) => t.backendId.equals(backendId))).go();
+  }
+
+  Future<void> deleteBoilerPhoto(int backendId) async {
+    await (_db.delete(_db.boilerPhotos)..where((t) => t.backendId.equals(backendId))).go();
   }
 
   // ----------------------------------------------------------------------

@@ -380,7 +380,7 @@ class IncidentComment {
   final String createdAt;
   @JsonKey(name: 'user_id')
   final int userId;
-  final IncidentCommentAuthor author;
+  final IncidentCommentAuthor? author;
   @JsonKey(name: 'is_system_message', defaultValue: false)
   final bool isSystemMessage;
 
@@ -390,7 +390,7 @@ class IncidentComment {
     required this.text,
     required this.createdAt,
     required this.userId,
-    required this.author,
+    this.author,
     this.isSystemMessage = false,
   });
 

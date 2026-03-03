@@ -110,6 +110,11 @@ class SyncService {
 
       dev.log('✅ [SyncService] Incremental sync complete: processed $totalProcessed actions, cursor=$cursor', name: 'SYNC');
     } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        dev.log('🔒 [SyncService] Incremental sync unauthorized (401). Stopping.', name: 'SYNC');
+        // The AuthInterceptor will handle logout if a token was actually sent.
+        return;
+      }
       dev.log('❌ [SyncService] Incremental sync HTTP error: ${e.response?.statusCode} ${e.message}', name: 'SYNC');
     } catch (e) {
       dev.log('❌ [SyncService] Incremental sync failed: $e', name: 'SYNC');
