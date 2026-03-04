@@ -276,16 +276,22 @@ class DataSyncService {
   Future<void> _handleBoilerHouse(String actionType, dynamic entityId, Map<String, dynamic>? entityData) async {
     if (actionType == 'delete') {
       final id = _parseInt(entityId);
-      if (id != null) await _syncRepo.deleteBoilerHouse(id);
+      if (id != null) {
+        await _syncRepo.deleteBoilerHouse(id);
+        _ref.read(globalRefreshEventControllerProvider).add(null);
+      }
       return;
     }
 
     if (entityData != null) {
       try {
-        final bh = BoilerHouseResponse.fromJson(entityData);
+        final normalized = _normalizeEntityKeys(entityData);
+        final bh = BoilerHouseResponse.fromJson(normalized);
         await _syncRepo.upsertBoilerHouses([bh]);
-      } catch (e) {
-        dev.log('[DataSync] Failed to parse boiler_house entity_data: $e', name: 'SYNC');
+        _ref.read(globalRefreshEventControllerProvider).add(null);
+        dev.log('✅ [DataSync] Upserted boiler_house id=${bh.id}', name: 'SYNC');
+      } catch (e, stack) {
+        dev.log('[DataSync] Failed to parse boiler_house entity_data: $e\n$stack', name: 'SYNC');
       }
     }
   }
@@ -293,16 +299,22 @@ class DataSyncService {
   Future<void> _handleSavedLocation(String actionType, dynamic entityId, Map<String, dynamic>? entityData) async {
     if (actionType == 'delete') {
       final id = _parseInt(entityId);
-      if (id != null) await _syncRepo.deleteSavedLocation(id);
+      if (id != null) {
+        await _syncRepo.deleteSavedLocation(id);
+        _ref.read(globalRefreshEventControllerProvider).add(null);
+      }
       return;
     }
 
     if (entityData != null) {
       try {
-        final loc = SavedLocationResponse.fromJson(entityData);
+        final normalized = _normalizeEntityKeys(entityData);
+        final loc = SavedLocationResponse.fromJson(normalized);
         await _syncRepo.upsertSavedLocations([loc]);
-      } catch (e) {
-        dev.log('[DataSync] Failed to parse saved_location entity_data: $e', name: 'SYNC');
+        _ref.read(globalRefreshEventControllerProvider).add(null);
+        dev.log('✅ [DataSync] Upserted saved_location id=${loc.id}', name: 'SYNC');
+      } catch (e, stack) {
+        dev.log('[DataSync] Failed to parse saved_location entity_data: $e\n$stack', name: 'SYNC');
       }
     }
   }
@@ -397,6 +409,30 @@ class DataSyncService {
     if (value is int) return value;
     if (value is String) return int.tryParse(value);
     return null;
+  }
+
+  /// Normalizes backend JSON keys to match what json_serializable expects.
+  /// Backend sends: boiler_house_uuid, location_uuid, fias_ao_guid
+  /// Flutter expects: boiler_house_u_u_i_d, location_u_u_i_d, fias_a_o_guid
+  Map<String, dynamic> _normalizeEntityKeys(Map<String, dynamic> data) {
+    final result = Map<String, dynamic>.from(data);
+
+    // Remap UUID/GUID keys
+    const keyMap = {
+      'boiler_house_uuid': 'boiler_house_u_u_i_d',
+      'location_uuid': 'location_u_u_i_d',
+      'fias_ao_guid': 'fias_a_o_guid',
+    };
+    for (final entry in keyMap.entries) {
+      if (result.containsKey(entry.key) && !result.containsKey(entry.value)) {
+        result[entry.value] = result.remove(entry.key);
+      }
+    }
+
+    // Ensure created_at is never null (required field in Flutter models)
+    result['created_at'] ??= DateTime.now().toIso8601String();
+
+    return result;
   }
 
   void dispose() {

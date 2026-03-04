@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -6,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'incident_list_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
+import '../providers/incident_providers.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
 import '../models/incident_models.dart';
@@ -41,20 +43,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _showSuccessAnimation = false;
   bool _isMenuOpen = false;
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _mapController.dispose();
-    _sheetController.dispose();
-    super.dispose();
-  }
-
   void _onBoilerHouseMarkerTap(BoilerHouseResponse bh) {
     setState(() {
       _tappedItem = bh;
       _tappedPosition = LatLng(bh.latitude, bh.longitude);
     });
     _mapController.move(LatLng(bh.latitude, bh.longitude), _mapController.camera.zoom);
+  }
+
+  StreamSubscription<void>? _refreshSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Force a complete rebuild of the map data if a global refresh is triggered
+    _refreshSubscription = ref.read(globalRefreshEventControllerProvider).stream.listen((_) {
+      if (mounted) {
+        ref.invalidate(mapDataProvider);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshSubscription?.cancel();
+    _searchController.dispose();
+    _mapController.dispose();
+    _sheetController.dispose();
+    super.dispose();
   }
 
   void _onLocationMarkerTap(SavedLocationResponse loc) {
@@ -234,14 +250,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  _buildTopButton(
-                    label: 'Инциденты',
-                    icon: Icons.warning_amber_rounded,
-                    color: AppTheme.errorRed,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const IncidentListScreen()),
+                  Builder(
+                    builder: (context) {
+                      // Live count of active incidents
+                      final activeCount = ref.watch(allIncidentsProvider).whenOrNull(
+                        data: (incidents) => incidents.where((i) {
+                          final s = i.status;
+                          return s != IncidentStatus.resolved && s != IncidentStatus.closed;
+                        }).length,
+                      ) ?? 0;
+                      return _buildTopButton(
+                        label: 'Инциденты',
+                        icon: Icons.warning_amber_rounded,
+                        color: AppTheme.errorRed,
+                        badgeCount: activeCount,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const IncidentListScreen()),
+                          );
+                        },
                       );
                     },
                   ),
@@ -273,6 +301,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     required Color color,
     required VoidCallback onTap,
     bool isCircle = false,
+    int badgeCount = 0,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -290,6 +319,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             if (label.isNotEmpty) ...[
               const SizedBox(width: 4),
               Text(label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+            ],
+            if (badgeCount > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
           ],
         ),

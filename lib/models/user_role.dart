@@ -87,7 +87,7 @@ enum UserRole {
 
     return switch (normalized) {
       'admin' || 'administrator' || 'superadmin' || 'root' => UserRole.admin,
-      'manager' || 'lead' || 'supervisor' => UserRole.manager,
+      'manager' || 'lead' || 'supervisor' || 'site_manager' => UserRole.manager,
       'operator' || 'operator_user' || 'staff' => UserRole.operatorUser,
       'guest' || 'visitor' => UserRole.guest,
       'viewer' || 'observer' => UserRole.viewer,

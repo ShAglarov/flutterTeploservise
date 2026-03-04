@@ -12,6 +12,7 @@ import 'services/realtime_service.dart';
 import 'services/data_sync_service.dart';
 import 'services/sync_service.dart';
 import 'providers/incident_providers.dart';
+import 'providers/map_providers.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -92,8 +93,9 @@ class _MyAppState extends ConsumerState<MyApp> {
         print('🔄 [Main] WS reconnected — checking for gap');
         await syncService.checkAndFillGap(dataSyncService.lastWSActionLogId);
         
-        // Push a sledgehammer update to Riverpod to ensure any gap differences are immediately reflected on standard reconnects
+        // Invalidate map data AND incidents to force a full UI refresh after reconnect
         ref.invalidate(allIncidentsProvider);
+        ref.invalidate(mapDataProvider);
         ref.read(globalRefreshEventControllerProvider).add(null);
       });
 
