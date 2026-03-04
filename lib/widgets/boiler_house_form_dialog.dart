@@ -6,7 +6,6 @@ import '../models/user_role.dart';
 import '../services/boiler_house_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
-import 'management_company_selection_dialog.dart';
 
 class BoilerHouseFormDialog extends ConsumerStatefulWidget {
   final LatLng position;
@@ -25,8 +24,6 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
   late final TextEditingController _siteNumberController;
   
   String? _selectedSiteManager;
-  String? _selectedManagementCompanyId;
-  String? _selectedManagementCompanyName;
   bool _isSaving = false;
 
   @override
@@ -47,20 +44,6 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
     super.dispose();
   }
 
-  Future<void> _selectManagementCompany() async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => const ManagementCompanySelectionDialog(),
-    );
-
-    if (result != null) {
-      setState(() {
-        _selectedManagementCompanyId = result['id'];
-        _selectedManagementCompanyName = result['name'];
-      });
-    }
-  }
-
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -73,7 +56,6 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
         longitude: double.parse(_lngController.text),
         siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
         siteManager: _selectedSiteManager,
-        managementCompanyId: _selectedManagementCompanyId,
       );
 
       final result = await ref.read(boilerHouseServiceProvider).createBoilerHouse(boilerHouse);
@@ -130,12 +112,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                       _buildDivider(),
                       _buildRow('Номер участка', controller: _siteNumberController, hint: 'Напр.: 1'),
                       _buildDivider(),
-                      _buildActionRow(
-                        'УК / УО', 
-                        _selectedManagementCompanyName ?? 'Не выбрано',
-                        onTap: _selectManagementCompany,
-                      ),
-                      _buildDivider(),
+
                       _buildManagerDropdown(),
                     ],
                   ),
