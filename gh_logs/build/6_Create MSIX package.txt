@@ -1,0 +1,23 @@
+﻿2026-03-05T09:12:16.8330831Z ##[group]Run flutter pub run msix:create
+2026-03-05T09:12:16.8331268Z [36;1mflutter pub run msix:create[0m
+2026-03-05T09:12:16.8401543Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-05T09:12:16.8401944Z env:
+2026-03-05T09:12:16.8402241Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:12:16.8402696Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:12:16.8403009Z ##[endgroup]
+2026-03-05T09:12:29.8227983Z running "flutter build windows"...      /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-10.1s
+2026-03-05T09:12:30.2957591Z building msix files...                  /-\|/-0.5s
+2026-03-05T09:12:33.0634449Z packing msix files...                   /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\ 
+2026-03-05T09:12:33.0636697Z 
+2026-03-05T09:12:33.0681225Z Unhandled exception:
+2026-03-05T09:12:33.0681838Z type 'Null' is not a subtype of type 'FutureOr<String>'
+2026-03-05T09:12:33.0682929Z #0      _AsyncCompleter.complete (dart:async/future_impl.dart:98:41)
+2026-03-05T09:12:33.0684373Z #1      Prompter.prompt.<anonymous closure>.<anonymous closure> (package:console/src/prompt.dart:222:19)
+2026-03-05T09:12:33.0685742Z #2      new Future.<anonymous closure> (dart:async/future.dart:260:40)
+2026-03-05T09:12:33.0686826Z #3      Timer._createTimer.<anonymous closure> (dart:async-patch/timer_patch.dart:18:15)
+2026-03-05T09:12:33.0687905Z #4      _Timer._runTimers (dart:isolate-patch/timer_impl.dart:423:19)
+2026-03-05T09:12:33.0688769Z #5      _Timer._handleMessage (dart:isolate-patch/timer_impl.dart:454:5)
+2026-03-05T09:12:33.0689772Z #6      _RawReceivePort._handleMessage (dart:isolate-patch/isolate_patch.dart:193:12)
+2026-03-05T09:12:33.1171308Z Failed to update packages.
+2026-03-05T09:12:33.2157889Z [1mDo you want to install the certificate: "test_certificate.pfx" ?[0m[1;30m (y/N) [0m
+2026-03-05T09:12:33.2279944Z ##[error]Process completed with exit code 1.

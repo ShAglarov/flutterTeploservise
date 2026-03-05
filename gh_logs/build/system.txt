@@ -1,0 +1,8 @@
+2026-03-05T09:06:54.6060000Z Evaluating build.if
+2026-03-05T09:06:54.6060000Z Evaluating: success()
+2026-03-05T09:06:54.6060000Z Result: true
+2026-03-05T09:06:54.6130000Z Requested labels: windows-latest
+2026-03-05T09:06:54.6130000Z Job defined at: ShAglarov/flutterTeploservise/.github/workflows/windows_msix_build.yml@refs/heads/main
+2026-03-05T09:06:54.6130000Z Waiting for a runner to pick up this job...
+2026-03-05T09:06:55.1040000Z Job is about to start running on the hosted runner: GitHub Actions 1000000022
+2026-03-05T09:06:55.1030000Z Job is waiting for a hosted runner to come online.

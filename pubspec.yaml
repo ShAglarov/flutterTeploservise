@@ -57,3 +57,5 @@ msix:
   publisher: "[PLACEHOLDER_PUBLISHER]" # Leave as placeholder for now
   version: "1.0.0.0"
   capabilities: "internetClient, pushNotification" # pushNotification is critical
+  store: true
+  install_certificate: false

@@ -1,0 +1,42 @@
+﻿2026-03-05T09:09:08.6878857Z ##[group]Run flutter pub get
+2026-03-05T09:09:08.6880305Z [36;1mflutter pub get[0m
+2026-03-05T09:09:08.7533367Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-05T09:09:08.7533928Z env:
+2026-03-05T09:09:08.7534315Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:09:08.7534915Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:09:08.7535330Z ##[endgroup]
+2026-03-05T09:09:14.8967809Z Building flutter tool... 
+2026-03-05T09:09:14.9006028Z Running pub upgrade... 
+2026-03-05T09:09:14.9359041Z Resolving dependencies...
+2026-03-05T09:09:15.5095291Z Downloading packages...
+2026-03-05T09:09:25.7131081Z Got dependencies.
+2026-03-05T09:09:42.5304557Z Resolving dependencies...
+2026-03-05T09:09:43.5745433Z Downloading packages...
+2026-03-05T09:10:01.1215609Z   _fe_analyzer_shared 92.0.0 (97.0.0 available)
+2026-03-05T09:10:01.1216546Z   analysis_server_plugin 0.3.4 (0.3.11 available)
+2026-03-05T09:10:01.1217065Z   analyzer 9.0.0 (11.0.0 available)
+2026-03-05T09:10:01.1217880Z   analyzer_buffer 0.3.0 (0.3.1 available)
+2026-03-05T09:10:01.1218482Z   analyzer_plugin 0.13.11 (0.14.5 available)
+2026-03-05T09:10:01.1219007Z   build_config 1.2.0 (1.3.0 available)
+2026-03-05T09:10:01.1219467Z   build_runner 2.11.1 (2.12.2 available)
+2026-03-05T09:10:01.1219950Z   connectivity_plus 6.1.5 (7.0.0 available)
+2026-03-05T09:10:01.1220403Z   dart_style 3.1.3 (3.1.6 available)
+2026-03-05T09:10:01.1220829Z   dio 5.9.1 (5.9.2 available)
+2026-03-05T09:10:01.1221232Z   dio_web_adapter 2.1.1 (2.1.2 available)
+2026-03-05T09:10:01.1221709Z   drift 2.31.0 (2.32.0 available)
+2026-03-05T09:10:01.1222096Z   drift_dev 2.31.0 (2.32.0 available)
+2026-03-05T09:10:01.1222528Z   flutter_map 7.0.2 (8.2.2 available)
+2026-03-05T09:10:01.1222909Z > matcher 0.12.19 (was 0.12.18)
+2026-03-05T09:10:01.1223302Z   meta 1.17.0 (1.18.1 available)
+2026-03-05T09:10:01.1223699Z   mgrs_dart 2.0.0 (3.0.0 available)
+2026-03-05T09:10:01.1224376Z   proj4dart 2.1.0 (3.0.0 available)
+2026-03-05T09:10:01.1224855Z   sqlite3 2.9.4 (3.1.6 available)
+2026-03-05T09:10:01.1225248Z   sqlparser 0.43.1 (0.44.1 available)
+2026-03-05T09:10:01.1225671Z > test 1.30.0 (was 1.29.0)
+2026-03-05T09:10:01.1226021Z > test_api 0.7.10 (was 0.7.9)
+2026-03-05T09:10:01.1226413Z > test_core 0.6.16 (was 0.6.15)
+2026-03-05T09:10:01.1226783Z   unicode 0.3.1 (1.1.9 available)
+2026-03-05T09:10:01.1227199Z   win32 5.15.0 (6.0.0 available)
+2026-03-05T09:10:01.1227678Z Changed 4 dependencies!
+2026-03-05T09:10:01.1228310Z 21 packages have newer versions incompatible with dependency constraints.
+2026-03-05T09:10:01.1229168Z Try `flutter pub outdated` for more information.
