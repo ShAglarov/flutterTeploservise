@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
 import 'incident_list_screen.dart';
+import 'action_log_list_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
 import '../providers/incident_providers.dart';
@@ -19,6 +20,8 @@ import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/boiler_house_form_dialog.dart';
 import '../widgets/house_form_dialog.dart';
 import '../widgets/house_incident_form_dialog.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import '../services/boiler_house_service.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -127,6 +130,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       );
       
       if (result != null) {
+        ref.invalidate(mapDataProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Котельная успешно добавлена')),
@@ -144,6 +148,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       );
       
       if (result != null) {
+        ref.invalidate(mapDataProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Дом успешно добавлен')),
@@ -245,7 +250,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const IncidentListScreen()),
+                        MaterialPageRoute(builder: (context) => const ActionLogListScreen()),
                       );
                     },
                   ),
@@ -261,8 +266,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       ) ?? 0;
                       return _buildTopButton(
                         label: 'Инциденты',
-                        icon: Icons.warning_amber_rounded,
-                        color: AppTheme.errorRed,
+                        icon: Icons.chat_outlined,
+                        color: activeCount > 0 ? AppTheme.errorRed : AppTheme.successGreen,
                         badgeCount: activeCount,
                         onTap: () {
                           Navigator.push(
@@ -861,115 +866,235 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // Find house count for this boiler house
     final houseCount = data.locations.where((loc) => loc.boilerHouseId == bh.id).length;
     
-    return BaseCard(
-      onTap: () {
-        setState(() {
-          _selectedBoilerHouse = bh;
-          _tappedItem = null;
-          _tappedPosition = null;
-        });
-        _mapController.move(LatLng(bh.latitude, bh.longitude), 14);
-      },
-      child: Row(
+    return Slidable(
+      key: ValueKey('bh_${bh.id}'),
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        extentRatio: 0.65,
         children: [
-          const SizedBox(width: 4), // Small padding to compensate for removed icon
-          Expanded(
+          CustomSlidableAction(
+            onPressed: (_) => _deleteBoilerHouse(bh),
+            backgroundColor: Colors.transparent,
+            padding: EdgeInsets.zero,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  '${bh.address} Котельная', 
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(24)),
+                  child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
                 ),
-                const SizedBox(height: 6),
-                if (hasIncident) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '⚠️ Инциденты: $incidentCount | Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
-                          style: const TextStyle(
-                            color: Color(0xFFFFA726), // OrangeAccent-like color from screenshot
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Text(
-                    'Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-                ],
+                const SizedBox(height: 8),
+                const Text('Удалить', style: TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: Colors.white24),
+          CustomSlidableAction(
+            onPressed: (_) => _editBoilerHouse(bh),
+            backgroundColor: Colors.transparent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(24)),
+                  child: const Icon(Icons.edit, color: Colors.white, size: 24),
+                ),
+                const SizedBox(height: 8),
+                const Text('Редакт.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+          ),
+          CustomSlidableAction(
+            onPressed: (_) => _showBoilerHouseIncidents(bh),
+            backgroundColor: Colors.transparent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(24)),
+                  child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                ),
+                const SizedBox(height: 8),
+                const Text('Инциденты', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+          ),
         ],
+      ),
+      child: BaseCard(
+        onTap: () {
+          setState(() {
+            _selectedBoilerHouse = bh;
+            _tappedItem = null;
+            _tappedPosition = null;
+          });
+          _mapController.move(LatLng(bh.latitude, bh.longitude), 14);
+        },
+        child: Row(
+          children: [
+            const SizedBox(width: 4), // Small padding to compensate for removed icon
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${bh.address} Котельная', 
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  if (hasIncident) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '⚠️ Инциденты: $incidentCount | Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
+                            style: const TextStyle(
+                              color: Color(0xFFFFA726), // OrangeAccent-like color from screenshot
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    Text(
+                      'Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white24),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildLocationItem(BuildContext context, SavedLocationResponse loc) {
-    return BaseCard(
-      onTap: () {
-        if (loc.latitude != 0 && loc.longitude != 0) {
-          _mapController.move(LatLng(loc.latitude, loc.longitude), 16);
-        }
-        _showHouseDetailSheet(loc);
-      },
-      child: Row(
+    return Slidable(
+      key: ValueKey('loc_${loc.id}'),
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        extentRatio: 0.65,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppTheme.successGreen.withAlpha(30),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.home, color: AppTheme.successGreen, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
+          CustomSlidableAction(
+            onPressed: (_) => _deleteLocation(loc),
+            backgroundColor: Colors.transparent,
+            padding: EdgeInsets.zero,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  loc.name, 
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(24)),
+                  child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _buildLocationSubtitle(loc), 
-                  style: Theme.of(context).textTheme.labelSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                const SizedBox(height: 8),
+                const Text('Удалить', style: TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ),
-          if (loc.accounts != null && loc.accounts!.isNotEmpty)
+          CustomSlidableAction(
+            onPressed: (_) => _editLocation(loc),
+            backgroundColor: Colors.transparent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(24)),
+                  child: const Icon(Icons.edit, color: Colors.white, size: 24),
+                ),
+                const SizedBox(height: 8),
+                const Text('Редакт.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+          ),
+          CustomSlidableAction(
+            onPressed: (_) => _showLocationIncidents(loc),
+            backgroundColor: Colors.transparent,
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(24)),
+                  child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                ),
+                const SizedBox(height: 8),
+                const Text('Инциденты', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+      child: BaseCard(
+        onTap: () {
+          if (loc.latitude != 0 && loc.longitude != 0) {
+            _mapController.move(LatLng(loc.latitude, loc.longitude), 16);
+          }
+          _showHouseDetailSheet(loc);
+        },
+        child: Row(
+          children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.successGreen.withAlpha(30),
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                '${loc.accounts!.length}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              child: const Icon(Icons.home, color: AppTheme.successGreen, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.name, 
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _buildLocationSubtitle(loc), 
+                    style: Theme.of(context).textTheme.labelSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
-          const SizedBox(width: 8),
-          const Icon(Icons.chevron_right, color: Colors.white24),
-        ],
+            if (loc.accounts != null && loc.accounts!.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${loc.accounts!.length}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Colors.white24),
+          ],
+        ),
       ),
     );
   }
@@ -1769,6 +1894,119 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           initialIndex: index,
         ),
       ),
+    );
+  }
+
+  Future<void> _deleteBoilerHouse(BoilerHouseResponse bh) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить котельную?'),
+        content: Text('Вы уверены, что хотите удалить котельную ${bh.address}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      try {
+        await ref.read(boilerHouseServiceProvider).deleteBoilerHouse(bh.id);
+        ref.invalidate(mapDataProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Котельная удалена')));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+        }
+      }
+    }
+  }
+
+  Future<void> _editBoilerHouse(BoilerHouseResponse bh) async {
+    final result = await showDialog<BoilerHouseResponse>(
+      context: context,
+      builder: (context) => BoilerHouseFormDialog(
+        position: LatLng(bh.latitude, bh.longitude),
+        initialBoilerHouse: bh,
+      ),
+    );
+    
+    if (result != null && mounted) {
+      ref.invalidate(mapDataProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Котельная успешно обновлена')),
+      );
+    }
+  }
+
+  void _showBoilerHouseIncidents(BoilerHouseResponse bh) {
+    ref.read(incidentFilterProvider.notifier).updateSearchQuery(bh.address);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const IncidentListScreen()),
+    );
+  }
+
+  Future<void> _deleteLocation(SavedLocationResponse loc) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить дом?'),
+        content: Text('Вы уверены, что хотите удалить дом ${loc.name}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      try {
+        await ref.read(locationServiceProvider).deleteSavedLocation(loc.id);
+        ref.invalidate(mapDataProvider);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Дом удален')));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
+        }
+      }
+    }
+  }
+
+  Future<void> _editLocation(SavedLocationResponse loc) async {
+    final result = await showDialog<SavedLocationResponse>(
+      context: context,
+      builder: (context) => HouseFormDialog(
+        position: LatLng(loc.latitude, loc.longitude),
+        boilerHouseId: loc.boilerHouseId ?? 0,
+        initialLocation: loc,
+      ),
+    );
+    
+    if (result != null && mounted) {
+      ref.invalidate(mapDataProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Дом успешно обновлен')),
+      );
+    }
+  }
+
+  void _showLocationIncidents(SavedLocationResponse loc) {
+    ref.read(incidentFilterProvider.notifier).updateSearchQuery(loc.name);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const IncidentListScreen()),
     );
   }
 

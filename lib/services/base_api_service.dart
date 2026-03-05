@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'secure_storage_service.dart';
@@ -28,6 +29,9 @@ class AuthInterceptor extends Interceptor {
   final EventService _eventService;
   final DeviceIdService _deviceIdService;
 
+  /// Mutex: if a refresh is already in progress, other 401 handlers wait for it.
+  Completer<bool>? _refreshCompleter;
+
   AuthInterceptor(this._storageService, this._eventService, this._deviceIdService);
 
   @override
@@ -44,7 +48,6 @@ class AuthInterceptor extends Interceptor {
     options.headers['X-Device-Id'] = deviceId;
     
     // Many backend endpoints require device_id as a query parameter
-    // We add it globally to avoid missing it in specific service methods
     final queryParams = Map<String, dynamic>.from(options.queryParameters);
     queryParams['device_id'] = deviceId;
     options.queryParameters = queryParams;
@@ -58,14 +61,105 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     if (err.response?.statusCode == 401) {
-      // Only trigger logout logic if we actually sent a token
-      // If we didn't send a token, it's a "natural" unauthenticated state
+      // Don't try to refresh if we didn't send a token (unauthenticated request)
       final sentToken = err.requestOptions.headers['Authorization'];
-      if (sentToken != null) {
+      if (sentToken == null) {
+        return handler.next(err);
+      }
+
+      // Don't refresh for the refresh endpoint itself (avoid infinite loop)
+      if (err.requestOptions.path == AppConstants.refresh) {
         await _storageService.clearAll();
         _eventService.fire(AppEvent.logout);
+        return handler.next(err);
+      }
+
+      // Try silent refresh
+      final refreshed = await _tryRefreshToken();
+      if (refreshed) {
+        // Retry the original request with the new token
+        try {
+          final newToken = await _storageService.getAccessToken();
+          final opts = err.requestOptions;
+          opts.headers['Authorization'] = 'Bearer $newToken';
+
+          final dio = Dio(BaseOptions(
+            baseUrl: opts.baseUrl,
+            connectTimeout: opts.connectTimeout,
+            receiveTimeout: opts.receiveTimeout,
+          ));
+          final response = await dio.fetch(opts);
+          return handler.resolve(response);
+        } catch (retryError) {
+          // Retry also failed — propagate the error
+          if (retryError is DioException) {
+            return handler.next(retryError);
+          }
+          return handler.next(err);
+        }
+      } else {
+        // Refresh failed — session is truly expired, log out
+        await _storageService.clearAll();
+        _eventService.fire(AppEvent.logout);
+        return handler.next(err);
       }
     }
     return handler.next(err);
+  }
+
+  /// Attempts to refresh the access token using the stored refresh token.
+  /// Returns true on success (new tokens saved), false on failure.
+  /// Uses a Completer mutex so concurrent 401s trigger only one refresh call.
+  Future<bool> _tryRefreshToken() async {
+    // If another request is already refreshing, wait for it
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+
+    _refreshCompleter = Completer<bool>();
+
+    try {
+      final refreshToken = await _storageService.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        _refreshCompleter!.complete(false);
+        return false;
+      }
+
+      final dio = Dio(BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 15),
+      ));
+
+      final response = await dio.post(
+        AppConstants.refresh,
+        data: {'refresh_token': refreshToken},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final newAccessToken = response.data['access_token'] as String?;
+        final newRefreshToken = response.data['refresh_token'] as String?;
+
+        if (newAccessToken != null) {
+          await _storageService.saveAccessToken(newAccessToken);
+        }
+        if (newRefreshToken != null) {
+          await _storageService.saveRefreshToken(newRefreshToken);
+        }
+
+        print('🔄 [AuthInterceptor] Token refreshed successfully');
+        _refreshCompleter!.complete(true);
+        return true;
+      }
+
+      _refreshCompleter!.complete(false);
+      return false;
+    } catch (e) {
+      print('❌ [AuthInterceptor] Token refresh failed: $e');
+      _refreshCompleter!.complete(false);
+      return false;
+    } finally {
+      _refreshCompleter = null;
+    }
   }
 }

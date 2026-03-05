@@ -9,8 +9,9 @@ import '../utils/app_theme.dart';
 
 class BoilerHouseFormDialog extends ConsumerStatefulWidget {
   final LatLng position;
+  final BoilerHouseResponse? initialBoilerHouse;
 
-  const BoilerHouseFormDialog({super.key, required this.position});
+  const BoilerHouseFormDialog({super.key, required this.position, this.initialBoilerHouse});
 
   @override
   ConsumerState<BoilerHouseFormDialog> createState() => _BoilerHouseFormDialogState();
@@ -29,10 +30,12 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
   @override
   void initState() {
     super.initState();
-    _addressController = TextEditingController();
-    _latController = TextEditingController(text: widget.position.latitude.toStringAsFixed(6));
-    _lngController = TextEditingController(text: widget.position.longitude.toStringAsFixed(6));
-    _siteNumberController = TextEditingController();
+    final initial = widget.initialBoilerHouse;
+    _addressController = TextEditingController(text: initial?.address ?? '');
+    _latController = TextEditingController(text: initial != null ? initial.latitude.toStringAsFixed(6) : widget.position.latitude.toStringAsFixed(6));
+    _lngController = TextEditingController(text: initial != null ? initial.longitude.toStringAsFixed(6) : widget.position.longitude.toStringAsFixed(6));
+    _siteNumberController = TextEditingController(text: initial?.siteNumber ?? '');
+    _selectedSiteManager = initial?.siteManager;
   }
 
   @override
@@ -50,15 +53,28 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
     setState(() => _isSaving = true);
 
     try {
-      final boilerHouse = BoilerHouseCreate(
-        address: _addressController.text,
-        latitude: double.parse(_latController.text),
-        longitude: double.parse(_lngController.text),
-        siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
-        siteManager: _selectedSiteManager,
-      );
+      final isEditing = widget.initialBoilerHouse != null;
+      dynamic result;
 
-      final result = await ref.read(boilerHouseServiceProvider).createBoilerHouse(boilerHouse);
+      if (isEditing) {
+        final update = BoilerHouseUpdate(
+          address: _addressController.text,
+          latitude: double.parse(_latController.text),
+          longitude: double.parse(_lngController.text),
+          siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
+          siteManager: _selectedSiteManager,
+        );
+        result = await ref.read(boilerHouseServiceProvider).updateBoilerHouse(widget.initialBoilerHouse!.id, update);
+      } else {
+        final boilerHouse = BoilerHouseCreate(
+          address: _addressController.text,
+          latitude: double.parse(_latController.text),
+          longitude: double.parse(_lngController.text),
+          siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
+          siteManager: _selectedSiteManager,
+        );
+        result = await ref.read(boilerHouseServiceProvider).createBoilerHouse(boilerHouse);
+      }
       
       if (mounted) {
         Navigator.of(context).pop(result);
@@ -135,9 +151,9 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
             icon: Icons.close,
             onTap: () => Navigator.pop(context),
           ),
-          const Text(
-            'Новая котельная',
-            style: TextStyle(
+          Text(
+            widget.initialBoilerHouse != null ? 'Редактировать котельную' : 'Новая котельная',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -284,7 +300,19 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                             alignment: Alignment.centerRight,
                             child: Text(label),
                           );
-                        }).toList(),
+                        }).toList()
+                          ..addAll(
+                            _selectedSiteManager != null && 
+                            !managers.any((m) => m.formattedDisplayName.split(' • ').first == _selectedSiteManager)
+                                ? [
+                                    DropdownMenuItem<String>(
+                                      value: _selectedSiteManager,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(_selectedSiteManager!),
+                                    )
+                                  ]
+                                : []
+                          ),
                         onChanged: (value) {
                           setState(() => _selectedSiteManager = value);
                         },

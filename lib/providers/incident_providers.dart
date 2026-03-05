@@ -238,7 +238,8 @@ final filteredIncidentsProvider = Provider<AsyncValue<List<IncidentResponse>>>((
       if (filter.searchQuery.isNotEmpty) {
         final query = filter.searchQuery.toLowerCase();
         final matches = (inc.title?.toLowerCase().contains(query) ?? false) ||
-            (inc.description?.toLowerCase().contains(query) ?? false);
+            (inc.description?.toLowerCase().contains(query) ?? false) ||
+            (inc.boilerHouse?.address.toLowerCase().contains(query) ?? false);
         if (!matches) return false;
       }
 

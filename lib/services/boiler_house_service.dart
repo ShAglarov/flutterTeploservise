@@ -54,6 +54,18 @@ class BoilerHouseService {
   }
 
   Future<void> deleteBoilerHouse(int id) async {
-    await _dio.delete('/boiler-houses/$id');
+    try {
+      await _dio.delete('/boiler-houses/$id');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Котельная уже удалена на сервере (например, с другого устройства)
+        // Удаляем из локального кеша
+        await _syncRepository.deleteBoilerHouse(id);
+        return;
+      }
+      rethrow;
+    }
+    // Успешное удаление — очищаем локальный кеш
+    await _syncRepository.deleteBoilerHouse(id);
   }
 }

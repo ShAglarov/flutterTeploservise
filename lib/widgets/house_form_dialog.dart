@@ -12,11 +12,13 @@ import 'management_company_selection_dialog.dart';
 class HouseFormDialog extends ConsumerStatefulWidget {
   final LatLng position;
   final int boilerHouseId;
+  final SavedLocationResponse? initialLocation;
 
   const HouseFormDialog({
     super.key,
     required this.position,
     required this.boilerHouseId,
+    this.initialLocation,
   });
 
   @override
@@ -46,16 +48,21 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _floorsController = TextEditingController();
-    _residentsController = TextEditingController();
-    _areaController = TextEditingController();
-    _yearController = TextEditingController();
-    _roomsController = TextEditingController();
-    _latController = TextEditingController(text: widget.position.latitude.toStringAsFixed(12));
-    _lngController = TextEditingController(text: widget.position.longitude.toStringAsFixed(12));
-    _fiasHouseController = TextEditingController();
-    _fiasAOController = TextEditingController();
+    final initial = widget.initialLocation;
+    _nameController = TextEditingController(text: initial?.name ?? '');
+    _floorsController = TextEditingController(text: initial?.floors?.toString() ?? '');
+    _residentsController = TextEditingController(text: initial?.residentsCount?.toString() ?? '');
+    _areaController = TextEditingController(text: initial?.totalArea?.toString() ?? '');
+    _yearController = TextEditingController(text: initial?.yearBuilt?.toString() ?? '');
+    _roomsController = TextEditingController(text: initial?.rooms?.toString() ?? '');
+    _latController = TextEditingController(text: initial != null ? initial.latitude.toStringAsFixed(12) : widget.position.latitude.toStringAsFixed(12));
+    _lngController = TextEditingController(text: initial != null ? initial.longitude.toStringAsFixed(12) : widget.position.longitude.toStringAsFixed(12));
+    _fiasHouseController = TextEditingController(text: initial?.fiasHouseGuid ?? '');
+    _fiasAOController = TextEditingController(text: initial?.fiasAOGuid ?? '');
+    _providesHeating = initial?.providesHeating ?? false;
+    _providesHotWater = initial?.providesHotWater ?? false;
+    _selectedManagementCompanyId = initial?.managementCompanyId;
+    _selectedManagementCompanyName = initial?.managementCompanyName;
   }
 
   @override
@@ -79,24 +86,46 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     setState(() => _isSaving = true);
 
     try {
-      final location = SavedLocationCreate(
-        name: _nameController.text,
-        latitude: double.parse(_latController.text),
-        longitude: double.parse(_lngController.text),
-        boilerHouseId: widget.boilerHouseId,
-        floors: int.tryParse(_floorsController.text),
-        residentsCount: int.tryParse(_residentsController.text),
-        totalArea: double.tryParse(_areaController.text),
-        yearBuilt: int.tryParse(_yearController.text),
-        rooms: int.tryParse(_roomsController.text),
-        providesHeating: _providesHeating,
-        providesHotWater: _providesHotWater,
-        fiasHouseGuid: _fiasHouseController.text.isNotEmpty ? _fiasHouseController.text : null,
-        fiasAOGuid: _fiasAOController.text.isNotEmpty ? _fiasAOController.text : null,
-        managementCompanyId: _selectedManagementCompanyId,
-      );
+      final isEditing = widget.initialLocation != null;
+      dynamic result;
 
-      final result = await ref.read(locationServiceProvider).createSavedLocation(location);
+      if (isEditing) {
+        final update = SavedLocationUpdate(
+          name: _nameController.text,
+          latitude: double.parse(_latController.text),
+          longitude: double.parse(_lngController.text),
+          boilerHouseId: widget.boilerHouseId,
+          floors: int.tryParse(_floorsController.text),
+          residentsCount: int.tryParse(_residentsController.text),
+          totalArea: double.tryParse(_areaController.text),
+          yearBuilt: int.tryParse(_yearController.text),
+          rooms: int.tryParse(_roomsController.text),
+          providesHeating: _providesHeating,
+          providesHotWater: _providesHotWater,
+          fiasHouseGuid: _fiasHouseController.text.isNotEmpty ? _fiasHouseController.text : null,
+          fiasAOGuid: _fiasAOController.text.isNotEmpty ? _fiasAOController.text : null,
+          managementCompanyId: _selectedManagementCompanyId,
+        );
+        result = await ref.read(locationServiceProvider).updateSavedLocation(widget.initialLocation!.id, update);
+      } else {
+        final location = SavedLocationCreate(
+          name: _nameController.text,
+          latitude: double.parse(_latController.text),
+          longitude: double.parse(_lngController.text),
+          boilerHouseId: widget.boilerHouseId,
+          floors: int.tryParse(_floorsController.text),
+          residentsCount: int.tryParse(_residentsController.text),
+          totalArea: double.tryParse(_areaController.text),
+          yearBuilt: int.tryParse(_yearController.text),
+          rooms: int.tryParse(_roomsController.text),
+          providesHeating: _providesHeating,
+          providesHotWater: _providesHotWater,
+          fiasHouseGuid: _fiasHouseController.text.isNotEmpty ? _fiasHouseController.text : null,
+          fiasAOGuid: _fiasAOController.text.isNotEmpty ? _fiasAOController.text : null,
+          managementCompanyId: _selectedManagementCompanyId,
+        );
+        result = await ref.read(locationServiceProvider).createSavedLocation(location);
+      }
       
       if (mounted) {
         Navigator.of(context).pop(result);
@@ -264,9 +293,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Отмена', style: TextStyle(color: Colors.white, fontSize: 17)),
           ),
-          const Text(
-            'Новый дом',
-            style: TextStyle(
+          Text(
+            widget.initialLocation != null ? 'Редактировать дом' : 'Новый дом',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -451,7 +480,18 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                           value: label,
                           child: Text(label),
                         );
-                      }).toList(),
+                      }).toList()
+                        ..addAll(
+                          _selectedSiteManager != null && 
+                          !managers.any((m) => m.formattedDisplayName.split(' • ').first == _selectedSiteManager)
+                              ? [
+                                  DropdownMenuItem<String>(
+                                    value: _selectedSiteManager,
+                                    child: Text(_selectedSiteManager!),
+                                  )
+                                ]
+                              : []
+                        ),
                     ),
                   ),
                 ],
