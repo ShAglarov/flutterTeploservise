@@ -28,7 +28,7 @@ jobs:
         run: flutter pub run msix:create
 
       - name: Upload MSIX Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: teploservicemap-msix
           path: build\windows\runner\Release\*.msix
