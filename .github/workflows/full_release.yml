@@ -61,12 +61,20 @@ jobs:
             iscc installer.iss
           }
 
-      - name: Upload to GitHub Release
+      - name: Upload to GitHub Release (Android)
+        if: matrix.platform == 'android'
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            installer/*_Setup.exe
+          files: build/app/outputs/flutter-apk/app-release.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to GitHub Release (Windows)
+        if: matrix.platform == 'windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer/*_Setup.exe
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
