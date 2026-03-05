@@ -1,48 +1,46 @@
-﻿2026-03-05T09:32:26.3410212Z ##[group]Run subosito/flutter-action@v2
-2026-03-05T09:32:26.3410620Z with:
-2026-03-05T09:32:26.3410808Z   channel: stable
-2026-03-05T09:32:26.3411024Z   architecture: X64
-2026-03-05T09:32:26.3411215Z   cache: false
-2026-03-05T09:32:26.3411417Z   pub-cache-path: default
-2026-03-05T09:32:26.3411644Z   dry-run: false
-2026-03-05T09:32:26.3411929Z   git-source: https://github.com/flutter/flutter.git
-2026-03-05T09:32:26.3412259Z ##[endgroup]
-2026-03-05T09:32:26.3630521Z ##[group]Run chmod +x "$GITHUB_ACTION_PATH/setup.sh"
-2026-03-05T09:32:26.3630902Z [36;1mchmod +x "$GITHUB_ACTION_PATH/setup.sh"[0m
-2026-03-05T09:32:26.3650967Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
-2026-03-05T09:32:26.3651346Z ##[endgroup]
-2026-03-05T09:32:26.5618808Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh -p \
-2026-03-05T09:32:26.5619162Z [36;1m$GITHUB_ACTION_PATH/setup.sh -p \[0m
-2026-03-05T09:32:26.5619396Z [36;1m  -n '' \[0m
-2026-03-05T09:32:26.5619560Z [36;1m  -f '' \[0m
-2026-03-05T09:32:26.5619745Z [36;1m  -a 'X64' \[0m
-2026-03-05T09:32:26.5619906Z [36;1m  -k '' \[0m
-2026-03-05T09:32:26.5620053Z [36;1m  -c '' \[0m
-2026-03-05T09:32:26.5620198Z [36;1m  -l '' \[0m
-2026-03-05T09:32:26.5620346Z [36;1m  -d 'default' \[0m
-2026-03-05T09:32:26.5620630Z [36;1m  -g 'https://github.com/flutter/flutter.git' \[0m
-2026-03-05T09:32:26.5620890Z [36;1m  stable[0m
-2026-03-05T09:32:26.5635541Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
-2026-03-05T09:32:26.5635911Z ##[endgroup]
-2026-03-05T09:32:29.7404367Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh \
-2026-03-05T09:32:29.7404690Z [36;1m$GITHUB_ACTION_PATH/setup.sh \[0m
-2026-03-05T09:32:29.7404920Z [36;1m  -n '3.41.4' \[0m
-2026-03-05T09:32:29.7405101Z [36;1m  -a 'x64' \[0m
-2026-03-05T09:32:29.7405363Z [36;1m  -c 'C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64' \[0m
-2026-03-05T09:32:29.7405754Z [36;1m  -d 'C:\Users\runneradmin\AppData\Local\Pub\Cache' \[0m
-2026-03-05T09:32:29.7406053Z [36;1m  stable[0m
-2026-03-05T09:32:29.7421070Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
-2026-03-05T09:32:29.7421653Z ##[endgroup]
-2026-03-05T09:32:32.2202877Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-2026-03-05T09:32:32.2204445Z                                  Dload  Upload  Total   Spent   Left   Speed
-2026-03-05T09:32:32.2204885Z 
-2026-03-05T09:32:33.2200351Z   0      0   0      0   0      0      0      0                              0
-2026-03-05T09:32:34.2190545Z  15  1.70G  15 277.5M   0      0 277.2M      0   00:06   00:01   00:05 277.5M
-2026-03-05T09:32:35.2192747Z  36  1.70G  36 637.1M   0      0 318.5M      0   00:05   00:02   00:03 318.7M
-2026-03-05T09:32:36.2191112Z  52  1.70G  52 926.2M   0      0 308.7M      0   00:05   00:03   00:02 308.8M
-2026-03-05T09:32:37.2183213Z  69  1.70G  69  1.18G   0      0 303.4M      0   00:05   00:04   00:01 303.5M
-2026-03-05T09:32:38.2174046Z  83  1.70G  83  1.43G   0      0 293.5M      0   00:05   00:04   00:01 293.5M
-2026-03-05T09:32:38.6052085Z  95  1.70G  95  1.63G   0      0 278.4M      0   00:06   00:05   00:01 278.6M
-2026-03-05T09:32:38.6053617Z 100  1.70G 100  1.70G   0      0 273.7M      0   00:06   00:06         278.6M
-2026-03-05T09:32:38.6054807Z 100  1.70G 100  1.70G   0      0 273.7M      0   00:06   00:06         278.6M
-2026-03-05T09:32:38.6055518Z 100  1.70G 100  1.70G   0      0 273.7M      0   00:06   00:06         278.6M
+﻿2026-03-05T09:53:32.1664191Z ##[group]Run subosito/flutter-action@v2
+2026-03-05T09:53:32.1664523Z with:
+2026-03-05T09:53:32.1664674Z   channel: stable
+2026-03-05T09:53:32.1664848Z   architecture: X64
+2026-03-05T09:53:32.1665011Z   cache: false
+2026-03-05T09:53:32.1665182Z   pub-cache-path: default
+2026-03-05T09:53:32.1665383Z   dry-run: false
+2026-03-05T09:53:32.1665611Z   git-source: https://github.com/flutter/flutter.git
+2026-03-05T09:53:32.1665888Z ##[endgroup]
+2026-03-05T09:53:32.1881124Z ##[group]Run chmod +x "$GITHUB_ACTION_PATH/setup.sh"
+2026-03-05T09:53:32.1881510Z [36;1mchmod +x "$GITHUB_ACTION_PATH/setup.sh"[0m
+2026-03-05T09:53:32.1901015Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-05T09:53:32.1901416Z ##[endgroup]
+2026-03-05T09:53:32.3996699Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh -p \
+2026-03-05T09:53:32.3997045Z [36;1m$GITHUB_ACTION_PATH/setup.sh -p \[0m
+2026-03-05T09:53:32.3997303Z [36;1m  -n '' \[0m
+2026-03-05T09:53:32.3997464Z [36;1m  -f '' \[0m
+2026-03-05T09:53:32.3997657Z [36;1m  -a 'X64' \[0m
+2026-03-05T09:53:32.3997827Z [36;1m  -k '' \[0m
+2026-03-05T09:53:32.3997981Z [36;1m  -c '' \[0m
+2026-03-05T09:53:32.3998217Z [36;1m  -l '' \[0m
+2026-03-05T09:53:32.3998474Z [36;1m  -d 'default' \[0m
+2026-03-05T09:53:32.3998887Z [36;1m  -g 'https://github.com/flutter/flutter.git' \[0m
+2026-03-05T09:53:32.3999164Z [36;1m  stable[0m
+2026-03-05T09:53:32.4014106Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-05T09:53:32.4014476Z ##[endgroup]
+2026-03-05T09:53:35.6026388Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh \
+2026-03-05T09:53:35.6026702Z [36;1m$GITHUB_ACTION_PATH/setup.sh \[0m
+2026-03-05T09:53:35.6026936Z [36;1m  -n '3.41.4' \[0m
+2026-03-05T09:53:35.6027115Z [36;1m  -a 'x64' \[0m
+2026-03-05T09:53:35.6027376Z [36;1m  -c 'C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64' \[0m
+2026-03-05T09:53:35.6027750Z [36;1m  -d 'C:\Users\runneradmin\AppData\Local\Pub\Cache' \[0m
+2026-03-05T09:53:35.6028037Z [36;1m  stable[0m
+2026-03-05T09:53:35.6042254Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-05T09:53:35.6042628Z ##[endgroup]
+2026-03-05T09:53:38.0495165Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+2026-03-05T09:53:38.0496045Z                                  Dload  Upload  Total   Spent   Left   Speed
+2026-03-05T09:53:38.0496462Z 
+2026-03-05T09:53:39.0484529Z   0      0   0      0   0      0      0      0                              0
+2026-03-05T09:53:40.0475022Z  20  1.70G  20 363.6M   0      0 363.5M      0   00:04   00:01   00:03 363.6M
+2026-03-05T09:53:41.0466837Z  46  1.70G  46 810.8M   0      0 405.5M      0   00:04   00:01   00:03 405.6M
+2026-03-05T09:53:42.0456235Z  68  1.70G  68  1.16G   0      0 398.2M      0   00:04   00:02   00:02 398.3M
+2026-03-05T09:53:42.5718400Z  87  1.70G  87  1.49G   0      0 381.7M      0   00:04   00:03   00:01 381.8M
+2026-03-05T09:53:42.5719285Z 100  1.70G 100  1.70G   0      0 386.4M      0   00:04   00:04         381.8M
+2026-03-05T09:53:42.5720944Z 100  1.70G 100  1.70G   0      0 386.4M      0   00:04   00:04         381.8M
+2026-03-05T09:53:42.5722656Z 100  1.70G 100  1.70G   0      0 386.4M      0   00:04   00:04         381.8M

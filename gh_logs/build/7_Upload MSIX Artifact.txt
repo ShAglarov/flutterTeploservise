@@ -1,0 +1,13 @@
+﻿2026-03-05T09:58:33.8334442Z ##[group]Run actions/upload-artifact@v4
+2026-03-05T09:58:33.8334811Z with:
+2026-03-05T09:58:33.8335038Z   name: teploservicemap-msix
+2026-03-05T09:58:33.8335310Z   path: build\windows\runner\Release\*.msix
+2026-03-05T09:58:33.8335618Z   if-no-files-found: warn
+2026-03-05T09:58:33.8335840Z   compression-level: 6
+2026-03-05T09:58:33.8336066Z   overwrite: false
+2026-03-05T09:58:33.8336277Z   include-hidden-files: false
+2026-03-05T09:58:33.8336495Z env:
+2026-03-05T09:58:33.8336795Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:58:33.8337205Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:58:33.8337535Z ##[endgroup]
+2026-03-05T09:58:34.1259364Z ##[warning]No files were found with the provided path: build\windows\runner\Release\*.msix. No artifacts will be uploaded.

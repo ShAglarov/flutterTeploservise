@@ -1,584 +1,582 @@
-﻿2026-03-05T09:32:17.7631451Z Current runner version: '2.331.0'
-2026-03-05T09:32:17.7665865Z ##[group]Runner Image Provisioner
-2026-03-05T09:32:17.7667030Z Hosted Compute Agent
-2026-03-05T09:32:17.7667933Z Version: 20260213.493
-2026-03-05T09:32:17.7668875Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
-2026-03-05T09:32:17.7670086Z Build Date: 2026-02-13T00:28:41Z
-2026-03-05T09:32:17.7671210Z Worker ID: {b03fc880-7683-43ac-a4e5-e8c520163779}
-2026-03-05T09:32:17.7672326Z Azure Region: centralus
-2026-03-05T09:32:17.7673142Z ##[endgroup]
-2026-03-05T09:32:17.7675341Z ##[group]Operating System
-2026-03-05T09:32:17.7676368Z Microsoft Windows Server 2025
-2026-03-05T09:32:17.7677243Z 10.0.26100
-2026-03-05T09:32:17.7678005Z Datacenter
-2026-03-05T09:32:17.7678688Z ##[endgroup]
-2026-03-05T09:32:17.7679478Z ##[group]Runner Image
-2026-03-05T09:32:17.7680329Z Image: windows-2025
-2026-03-05T09:32:17.7681495Z Version: 20260302.43.1
-2026-03-05T09:32:17.7683610Z Included Software: https://github.com/actions/runner-images/blob/win25/20260302.43/images/windows/Windows2025-Readme.md
-2026-03-05T09:32:17.7686249Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260302.43
-2026-03-05T09:32:17.7687772Z ##[endgroup]
-2026-03-05T09:32:17.7689570Z ##[group]GITHUB_TOKEN Permissions
-2026-03-05T09:32:17.7691944Z Contents: read
-2026-03-05T09:32:17.7692878Z Metadata: read
-2026-03-05T09:32:17.7693635Z Packages: read
-2026-03-05T09:32:17.7694384Z ##[endgroup]
-2026-03-05T09:32:17.7697017Z Secret source: Actions
-2026-03-05T09:32:17.7698066Z Prepare workflow directory
-2026-03-05T09:32:17.8106263Z Prepare all required actions
-2026-03-05T09:32:17.8146071Z Getting action download info
-2026-03-05T09:32:18.1060159Z Download action repository 'actions/checkout@v3' (SHA:f43a0e5ff2bd294095638e18286ca9a3d1956744)
-2026-03-05T09:32:18.2511488Z Download action repository 'subosito/flutter-action@v2' (SHA:fd55f4c5af5b953cc57a2be44cb082c8f6635e8e)
-2026-03-05T09:32:18.7251567Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
-2026-03-05T09:32:19.1605540Z Getting action download info
-2026-03-05T09:32:19.3505396Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
-2026-03-05T09:32:19.5523198Z Complete job name: build
-2026-03-05T09:32:19.8307571Z ##[group]Run actions/checkout@v3
-2026-03-05T09:32:19.8308894Z with:
-2026-03-05T09:32:19.8309625Z   repository: ShAglarov/flutterTeploservise
-2026-03-05T09:32:19.8310859Z   token: ***
-2026-03-05T09:32:19.8311524Z   ssh-strict: true
-2026-03-05T09:32:19.8312235Z   persist-credentials: true
-2026-03-05T09:32:19.8312988Z   clean: true
-2026-03-05T09:32:19.8313668Z   sparse-checkout-cone-mode: true
-2026-03-05T09:32:19.8314492Z   fetch-depth: 1
-2026-03-05T09:32:19.8315162Z   fetch-tags: false
-2026-03-05T09:32:19.8315824Z   lfs: false
-2026-03-05T09:32:19.8316472Z   submodules: false
-2026-03-05T09:32:19.8317160Z   set-safe-directory: true
-2026-03-05T09:32:19.8318114Z ##[endgroup]
-2026-03-05T09:32:19.9916896Z Syncing repository: ShAglarov/flutterTeploservise
-2026-03-05T09:32:19.9919601Z ##[group]Getting Git version info
-2026-03-05T09:32:19.9920798Z Working directory is 'D:\a\flutterTeploservise\flutterTeploservise'
-2026-03-05T09:32:20.1330729Z [command]"C:\Program Files\Git\bin\git.exe" version
-2026-03-05T09:32:21.0943951Z git version 2.53.0.windows.1
-2026-03-05T09:32:21.1000542Z ##[endgroup]
-2026-03-05T09:32:21.1022790Z Temporarily overriding HOME='D:\a\_temp\c202530f-96b3-4180-b364-2efc5afb5ab3' before making global git config changes
-2026-03-05T09:32:21.1024000Z Adding repository directory to the temporary git global config as a safe directory
-2026-03-05T09:32:21.1031186Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\flutterTeploservise\flutterTeploservise
-2026-03-05T09:32:21.2014461Z Deleting the contents of 'D:\a\flutterTeploservise\flutterTeploservise'
-2026-03-05T09:32:21.2020811Z ##[group]Initializing the repository
-2026-03-05T09:32:21.2028947Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\flutterTeploservise\flutterTeploservise
-2026-03-05T09:32:21.4142990Z Initialized empty Git repository in D:/a/flutterTeploservise/flutterTeploservise/.git/
-2026-03-05T09:32:21.4185603Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/ShAglarov/flutterTeploservise
-2026-03-05T09:32:21.5218673Z ##[endgroup]
-2026-03-05T09:32:21.5219151Z ##[group]Disabling automatic garbage collection
-2026-03-05T09:32:21.5226381Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
-2026-03-05T09:32:21.5529838Z ##[endgroup]
-2026-03-05T09:32:21.5530489Z ##[group]Setting up auth
-2026-03-05T09:32:21.5540372Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
-2026-03-05T09:32:21.5839249Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
-2026-03-05T09:32:24.3467609Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-03-05T09:32:24.3787066Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
-2026-03-05T09:32:24.9053901Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
-2026-03-05T09:32:24.9356192Z ##[endgroup]
-2026-03-05T09:32:24.9357034Z ##[group]Fetching the repository
-2026-03-05T09:32:24.9370343Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +7c3f7751f12ed5163ad8b333dc82efe44ff7ba67:refs/remotes/origin/main
-2026-03-05T09:32:25.8063906Z remote: Enumerating objects: 300, done.        
-2026-03-05T09:32:25.8064565Z remote: Counting objects:   0% (1/300)        
-2026-03-05T09:32:25.8065073Z remote: Counting objects:   1% (3/300)        
-2026-03-05T09:32:25.8065538Z remote: Counting objects:   2% (6/300)        
-2026-03-05T09:32:25.8068352Z remote: Counting objects:   3% (9/300)        
-2026-03-05T09:32:25.8068834Z remote: Counting objects:   4% (12/300)        
-2026-03-05T09:32:25.8069165Z remote: Counting objects:   5% (15/300)        
-2026-03-05T09:32:25.8069503Z remote: Counting objects:   6% (18/300)        
-2026-03-05T09:32:25.8069814Z remote: Counting objects:   7% (21/300)        
-2026-03-05T09:32:25.8070114Z remote: Counting objects:   8% (24/300)        
-2026-03-05T09:32:25.8070416Z remote: Counting objects:   9% (27/300)        
-2026-03-05T09:32:25.8070715Z remote: Counting objects:  10% (30/300)        
-2026-03-05T09:32:25.8071021Z remote: Counting objects:  11% (33/300)        
-2026-03-05T09:32:25.8071324Z remote: Counting objects:  12% (36/300)        
-2026-03-05T09:32:25.8071681Z remote: Counting objects:  13% (39/300)        
-2026-03-05T09:32:25.8072116Z remote: Counting objects:  14% (42/300)        
-2026-03-05T09:32:25.8072418Z remote: Counting objects:  15% (45/300)        
-2026-03-05T09:32:25.8072732Z remote: Counting objects:  16% (48/300)        
-2026-03-05T09:32:25.8073040Z remote: Counting objects:  17% (51/300)        
-2026-03-05T09:32:25.8073338Z remote: Counting objects:  18% (54/300)        
-2026-03-05T09:32:25.8073921Z remote: Counting objects:  19% (57/300)        
-2026-03-05T09:32:25.8074232Z remote: Counting objects:  20% (60/300)        
-2026-03-05T09:32:25.8074537Z remote: Counting objects:  21% (63/300)        
-2026-03-05T09:32:25.8074876Z remote: Counting objects:  22% (66/300)        
-2026-03-05T09:32:25.8075382Z remote: Counting objects:  23% (69/300)        
-2026-03-05T09:32:25.8075679Z remote: Counting objects:  24% (72/300)        
-2026-03-05T09:32:25.8075940Z remote: Counting objects:  25% (75/300)        
-2026-03-05T09:32:25.8076862Z remote: Counting objects:  26% (78/300)        
-2026-03-05T09:32:25.8077114Z remote: Counting objects:  27% (81/300)        
-2026-03-05T09:32:25.8077374Z remote: Counting objects:  28% (84/300)        
-2026-03-05T09:32:25.8077631Z remote: Counting objects:  29% (87/300)        
-2026-03-05T09:32:25.8077886Z remote: Counting objects:  30% (90/300)        
-2026-03-05T09:32:25.8078143Z remote: Counting objects:  31% (93/300)        
-2026-03-05T09:32:25.8078415Z remote: Counting objects:  32% (96/300)        
-2026-03-05T09:32:25.8078702Z remote: Counting objects:  33% (99/300)        
-2026-03-05T09:32:25.8078954Z remote: Counting objects:  34% (102/300)        
-2026-03-05T09:32:25.8079219Z remote: Counting objects:  35% (105/300)        
-2026-03-05T09:32:25.8079467Z remote: Counting objects:  36% (108/300)        
-2026-03-05T09:32:25.8079721Z remote: Counting objects:  37% (111/300)        
-2026-03-05T09:32:25.8079972Z remote: Counting objects:  38% (114/300)        
-2026-03-05T09:32:25.8080222Z remote: Counting objects:  39% (117/300)        
-2026-03-05T09:32:25.8080476Z remote: Counting objects:  40% (120/300)        
-2026-03-05T09:32:25.8080724Z remote: Counting objects:  41% (123/300)        
-2026-03-05T09:32:25.8080982Z remote: Counting objects:  42% (126/300)        
-2026-03-05T09:32:25.8081229Z remote: Counting objects:  43% (129/300)        
-2026-03-05T09:32:25.8081503Z remote: Counting objects:  44% (132/300)        
-2026-03-05T09:32:25.8081747Z remote: Counting objects:  45% (135/300)        
-2026-03-05T09:32:25.8081999Z remote: Counting objects:  46% (138/300)        
-2026-03-05T09:32:25.8082257Z remote: Counting objects:  47% (141/300)        
-2026-03-05T09:32:25.8082497Z remote: Counting objects:  48% (144/300)        
-2026-03-05T09:32:25.8082747Z remote: Counting objects:  49% (147/300)        
-2026-03-05T09:32:25.8082988Z remote: Counting objects:  50% (150/300)        
-2026-03-05T09:32:25.8083235Z remote: Counting objects:  51% (153/300)        
-2026-03-05T09:32:25.8083483Z remote: Counting objects:  52% (156/300)        
-2026-03-05T09:32:25.8083731Z remote: Counting objects:  53% (159/300)        
-2026-03-05T09:32:25.8083982Z remote: Counting objects:  54% (162/300)        
-2026-03-05T09:32:25.8084640Z remote: Counting objects:  55% (165/300)        
-2026-03-05T09:32:25.8084920Z remote: Counting objects:  56% (168/300)        
-2026-03-05T09:32:25.8085168Z remote: Counting objects:  57% (171/300)        
-2026-03-05T09:32:25.8085420Z remote: Counting objects:  58% (174/300)        
-2026-03-05T09:32:25.8085662Z remote: Counting objects:  59% (177/300)        
-2026-03-05T09:32:25.8085912Z remote: Counting objects:  60% (180/300)        
-2026-03-05T09:32:25.8086155Z remote: Counting objects:  61% (183/300)        
-2026-03-05T09:32:25.8086404Z remote: Counting objects:  62% (186/300)        
-2026-03-05T09:32:25.8086651Z remote: Counting objects:  63% (189/300)        
-2026-03-05T09:32:25.8086895Z remote: Counting objects:  64% (192/300)        
-2026-03-05T09:32:25.8087160Z remote: Counting objects:  65% (195/300)        
-2026-03-05T09:32:25.8087410Z remote: Counting objects:  66% (198/300)        
-2026-03-05T09:32:25.8087656Z remote: Counting objects:  67% (201/300)        
-2026-03-05T09:32:25.8087902Z remote: Counting objects:  68% (204/300)        
-2026-03-05T09:32:25.8088150Z remote: Counting objects:  69% (207/300)        
-2026-03-05T09:32:25.8088390Z remote: Counting objects:  70% (210/300)        
-2026-03-05T09:32:25.8088638Z remote: Counting objects:  71% (213/300)        
-2026-03-05T09:32:25.8088887Z remote: Counting objects:  72% (216/300)        
-2026-03-05T09:32:25.8089128Z remote: Counting objects:  73% (219/300)        
-2026-03-05T09:32:25.8089381Z remote: Counting objects:  74% (222/300)        
-2026-03-05T09:32:25.8089624Z remote: Counting objects:  75% (225/300)        
-2026-03-05T09:32:25.8089872Z remote: Counting objects:  76% (228/300)        
-2026-03-05T09:32:25.8090114Z remote: Counting objects:  77% (231/300)        
-2026-03-05T09:32:25.8090486Z remote: Counting objects:  78% (234/300)        
-2026-03-05T09:32:25.8090738Z remote: Counting objects:  79% (237/300)        
-2026-03-05T09:32:25.8090981Z remote: Counting objects:  80% (240/300)        
-2026-03-05T09:32:25.8091232Z remote: Counting objects:  81% (243/300)        
-2026-03-05T09:32:25.8091790Z remote: Counting objects:  82% (246/300)        
-2026-03-05T09:32:25.8092055Z remote: Counting objects:  83% (249/300)        
-2026-03-05T09:32:25.8092302Z remote: Counting objects:  84% (252/300)        
-2026-03-05T09:32:25.8092594Z remote: Counting objects:  85% (255/300)        
-2026-03-05T09:32:25.8167222Z remote: Counting objects:  86% (258/300)        
-2026-03-05T09:32:25.8167677Z remote: Counting objects:  87% (261/300)        
-2026-03-05T09:32:25.8168137Z remote: Counting objects:  88% (264/300)        
-2026-03-05T09:32:25.8168445Z remote: Counting objects:  89% (267/300)        
-2026-03-05T09:32:25.8168754Z remote: Counting objects:  90% (270/300)        
-2026-03-05T09:32:25.8169191Z remote: Counting objects:  91% (273/300)        
-2026-03-05T09:32:25.8169521Z remote: Counting objects:  92% (276/300)        
-2026-03-05T09:32:25.8169831Z remote: Counting objects:  93% (279/300)        
-2026-03-05T09:32:25.8170138Z remote: Counting objects:  94% (282/300)        
-2026-03-05T09:32:25.8170455Z remote: Counting objects:  95% (285/300)        
-2026-03-05T09:32:25.8170863Z remote: Counting objects:  96% (288/300)        
-2026-03-05T09:32:25.8171442Z remote: Counting objects:  97% (291/300)        
-2026-03-05T09:32:25.8171788Z remote: Counting objects:  98% (294/300)        
-2026-03-05T09:32:25.8172108Z remote: Counting objects:  99% (297/300)        
-2026-03-05T09:32:25.8172418Z remote: Counting objects: 100% (300/300)        
-2026-03-05T09:32:25.8172756Z remote: Counting objects: 100% (300/300), done.        
-2026-03-05T09:32:25.8173111Z remote: Compressing objects:   0% (1/244)        
-2026-03-05T09:32:25.8173437Z remote: Compressing objects:   1% (3/244)        
-2026-03-05T09:32:25.8173808Z remote: Compressing objects:   2% (5/244)        
-2026-03-05T09:32:25.8174133Z remote: Compressing objects:   3% (8/244)        
-2026-03-05T09:32:25.8174455Z remote: Compressing objects:   4% (10/244)        
-2026-03-05T09:32:25.8175001Z remote: Compressing objects:   5% (13/244)        
-2026-03-05T09:32:25.8175334Z remote: Compressing objects:   6% (15/244)        
-2026-03-05T09:32:25.8175652Z remote: Compressing objects:   7% (18/244)        
-2026-03-05T09:32:25.8175947Z remote: Compressing objects:   8% (20/244)        
-2026-03-05T09:32:25.8176248Z remote: Compressing objects:   9% (22/244)        
-2026-03-05T09:32:25.8176546Z remote: Compressing objects:  10% (25/244)        
-2026-03-05T09:32:25.8176844Z remote: Compressing objects:  11% (27/244)        
-2026-03-05T09:32:25.8177145Z remote: Compressing objects:  12% (30/244)        
-2026-03-05T09:32:25.8177441Z remote: Compressing objects:  13% (32/244)        
-2026-03-05T09:32:25.8177747Z remote: Compressing objects:  14% (35/244)        
-2026-03-05T09:32:25.8178069Z remote: Compressing objects:  15% (37/244)        
-2026-03-05T09:32:25.8178372Z remote: Compressing objects:  16% (40/244)        
-2026-03-05T09:32:25.8178671Z remote: Compressing objects:  17% (42/244)        
-2026-03-05T09:32:25.8178993Z remote: Compressing objects:  18% (44/244)        
-2026-03-05T09:32:25.8179299Z remote: Compressing objects:  19% (47/244)        
-2026-03-05T09:32:25.8179599Z remote: Compressing objects:  20% (49/244)        
-2026-03-05T09:32:25.8179932Z remote: Compressing objects:  21% (52/244)        
-2026-03-05T09:32:25.8267373Z remote: Compressing objects:  22% (54/244)        
-2026-03-05T09:32:25.8267730Z remote: Compressing objects:  23% (57/244)        
-2026-03-05T09:32:25.8268212Z remote: Compressing objects:  24% (59/244)        
-2026-03-05T09:32:25.8268650Z remote: Compressing objects:  25% (61/244)        
-2026-03-05T09:32:25.8269136Z remote: Compressing objects:  26% (64/244)        
-2026-03-05T09:32:25.8269812Z remote: Compressing objects:  27% (66/244)        
-2026-03-05T09:32:25.8270088Z remote: Compressing objects:  28% (69/244)        
-2026-03-05T09:32:25.8270373Z remote: Compressing objects:  29% (71/244)        
-2026-03-05T09:32:25.8270667Z remote: Compressing objects:  30% (74/244)        
-2026-03-05T09:32:25.8270944Z remote: Compressing objects:  31% (76/244)        
-2026-03-05T09:32:25.8271206Z remote: Compressing objects:  32% (79/244)        
-2026-03-05T09:32:25.8271470Z remote: Compressing objects:  33% (81/244)        
-2026-03-05T09:32:25.8271728Z remote: Compressing objects:  34% (83/244)        
-2026-03-05T09:32:25.8271991Z remote: Compressing objects:  35% (86/244)        
-2026-03-05T09:32:25.8272262Z remote: Compressing objects:  36% (88/244)        
-2026-03-05T09:32:25.8272535Z remote: Compressing objects:  37% (91/244)        
-2026-03-05T09:32:25.8272797Z remote: Compressing objects:  38% (93/244)        
-2026-03-05T09:32:25.8273083Z remote: Compressing objects:  39% (96/244)        
-2026-03-05T09:32:25.8273349Z remote: Compressing objects:  40% (98/244)        
-2026-03-05T09:32:25.8273613Z remote: Compressing objects:  41% (101/244)        
-2026-03-05T09:32:25.8273887Z remote: Compressing objects:  42% (103/244)        
-2026-03-05T09:32:25.8277900Z remote: Compressing objects:  43% (105/244)        
-2026-03-05T09:32:25.8278217Z remote: Compressing objects:  44% (108/244)        
-2026-03-05T09:32:25.8278499Z remote: Compressing objects:  45% (110/244)        
-2026-03-05T09:32:25.8278770Z remote: Compressing objects:  46% (113/244)        
-2026-03-05T09:32:25.8279051Z remote: Compressing objects:  47% (115/244)        
-2026-03-05T09:32:25.8279329Z remote: Compressing objects:  48% (118/244)        
-2026-03-05T09:32:25.8279610Z remote: Compressing objects:  49% (120/244)        
-2026-03-05T09:32:25.8279880Z remote: Compressing objects:  50% (122/244)        
-2026-03-05T09:32:25.8280164Z remote: Compressing objects:  51% (125/244)        
-2026-03-05T09:32:25.8280435Z remote: Compressing objects:  52% (127/244)        
-2026-03-05T09:32:25.8280706Z remote: Compressing objects:  53% (130/244)        
-2026-03-05T09:32:25.8308398Z remote: Compressing objects:  54% (132/244)        
-2026-03-05T09:32:25.8308966Z remote: Compressing objects:  55% (135/244)        
-2026-03-05T09:32:25.8309529Z remote: Compressing objects:  56% (137/244)        
-2026-03-05T09:32:25.8310075Z remote: Compressing objects:  57% (140/244)        
-2026-03-05T09:32:25.8310676Z remote: Compressing objects:  58% (142/244)        
-2026-03-05T09:32:25.8311427Z remote: Compressing objects:  59% (144/244)        
-2026-03-05T09:32:25.8311970Z remote: Compressing objects:  60% (147/244)        
-2026-03-05T09:32:25.8312497Z remote: Compressing objects:  61% (149/244)        
-2026-03-05T09:32:25.8313007Z remote: Compressing objects:  62% (152/244)        
-2026-03-05T09:32:25.8313528Z remote: Compressing objects:  63% (154/244)        
-2026-03-05T09:32:25.8313808Z remote: Compressing objects:  64% (157/244)        
-2026-03-05T09:32:25.8314090Z remote: Compressing objects:  65% (159/244)        
-2026-03-05T09:32:25.8314364Z remote: Compressing objects:  66% (162/244)        
-2026-03-05T09:32:25.8314669Z remote: Compressing objects:  67% (164/244)        
-2026-03-05T09:32:25.8314943Z remote: Compressing objects:  68% (166/244)        
-2026-03-05T09:32:25.8315204Z remote: Compressing objects:  69% (169/244)        
-2026-03-05T09:32:25.8315715Z remote: Compressing objects:  70% (171/244)        
-2026-03-05T09:32:25.8316027Z remote: Compressing objects:  71% (174/244)        
-2026-03-05T09:32:25.8316287Z remote: Compressing objects:  72% (176/244)        
-2026-03-05T09:32:25.8316549Z remote: Compressing objects:  73% (179/244)        
-2026-03-05T09:32:25.8317213Z remote: Compressing objects:  74% (181/244)        
-2026-03-05T09:32:25.8317488Z remote: Compressing objects:  75% (183/244)        
-2026-03-05T09:32:25.8317751Z remote: Compressing objects:  76% (186/244)        
-2026-03-05T09:32:25.8318019Z remote: Compressing objects:  77% (188/244)        
-2026-03-05T09:32:25.8375163Z remote: Compressing objects:  78% (191/244)        
-2026-03-05T09:32:25.8375590Z remote: Compressing objects:  79% (193/244)        
-2026-03-05T09:32:25.8376016Z remote: Compressing objects:  80% (196/244)        
-2026-03-05T09:32:25.8376427Z remote: Compressing objects:  81% (198/244)        
-2026-03-05T09:32:25.8376706Z remote: Compressing objects:  82% (201/244)        
-2026-03-05T09:32:25.8376985Z remote: Compressing objects:  83% (203/244)        
-2026-03-05T09:32:25.8377265Z remote: Compressing objects:  84% (205/244)        
-2026-03-05T09:32:25.8377557Z remote: Compressing objects:  85% (208/244)        
-2026-03-05T09:32:25.8377850Z remote: Compressing objects:  86% (210/244)        
-2026-03-05T09:32:25.8378138Z remote: Compressing objects:  87% (213/244)        
-2026-03-05T09:32:25.8378402Z remote: Compressing objects:  88% (215/244)        
-2026-03-05T09:32:25.8378667Z remote: Compressing objects:  89% (218/244)        
-2026-03-05T09:32:25.8378948Z remote: Compressing objects:  90% (220/244)        
-2026-03-05T09:32:25.8379209Z remote: Compressing objects:  91% (223/244)        
-2026-03-05T09:32:25.8379479Z remote: Compressing objects:  92% (225/244)        
-2026-03-05T09:32:25.8379746Z remote: Compressing objects:  93% (227/244)        
-2026-03-05T09:32:25.8380013Z remote: Compressing objects:  94% (230/244)        
-2026-03-05T09:32:25.8380279Z remote: Compressing objects:  95% (232/244)        
-2026-03-05T09:32:25.8380543Z remote: Compressing objects:  96% (235/244)        
-2026-03-05T09:32:25.8380810Z remote: Compressing objects:  97% (237/244)        
-2026-03-05T09:32:25.8381069Z remote: Compressing objects:  98% (240/244)        
-2026-03-05T09:32:25.8381340Z remote: Compressing objects:  99% (242/244)        
-2026-03-05T09:32:25.8381601Z remote: Compressing objects: 100% (244/244)        
-2026-03-05T09:32:25.8381904Z remote: Compressing objects: 100% (244/244), done.        
-2026-03-05T09:32:25.8924594Z Receiving objects:   0% (1/300)
-2026-03-05T09:32:25.8925454Z Receiving objects:   1% (3/300)
-2026-03-05T09:32:25.8925895Z Receiving objects:   2% (6/300)
-2026-03-05T09:32:25.8928053Z Receiving objects:   3% (9/300)
-2026-03-05T09:32:25.8929913Z Receiving objects:   4% (12/300)
-2026-03-05T09:32:25.8931950Z Receiving objects:   5% (15/300)
-2026-03-05T09:32:25.8932222Z Receiving objects:   6% (18/300)
-2026-03-05T09:32:25.8932479Z Receiving objects:   7% (21/300)
-2026-03-05T09:32:25.8933770Z Receiving objects:   8% (24/300)
-2026-03-05T09:32:25.8934944Z Receiving objects:   9% (27/300)
-2026-03-05T09:32:25.8936001Z Receiving objects:  10% (30/300)
-2026-03-05T09:32:25.8936878Z Receiving objects:  11% (33/300)
-2026-03-05T09:32:25.8937100Z Receiving objects:  12% (36/300)
-2026-03-05T09:32:25.8938689Z Receiving objects:  13% (39/300)
-2026-03-05T09:32:25.8940111Z Receiving objects:  14% (42/300)
-2026-03-05T09:32:25.8941137Z Receiving objects:  15% (45/300)
-2026-03-05T09:32:25.8942159Z Receiving objects:  16% (48/300)
-2026-03-05T09:32:25.8945447Z Receiving objects:  17% (51/300)
-2026-03-05T09:32:25.8948974Z Receiving objects:  18% (54/300)
-2026-03-05T09:32:25.8949719Z Receiving objects:  19% (57/300)
-2026-03-05T09:32:25.8951442Z Receiving objects:  20% (60/300)
-2026-03-05T09:32:25.8956222Z Receiving objects:  21% (63/300)
-2026-03-05T09:32:25.8956744Z Receiving objects:  22% (66/300)
-2026-03-05T09:32:25.8958434Z Receiving objects:  23% (69/300)
-2026-03-05T09:32:25.8959424Z Receiving objects:  24% (72/300)
-2026-03-05T09:32:25.8960673Z Receiving objects:  25% (75/300)
-2026-03-05T09:32:25.8964704Z Receiving objects:  26% (78/300)
-2026-03-05T09:32:25.8965505Z Receiving objects:  27% (81/300)
-2026-03-05T09:32:25.8966442Z Receiving objects:  28% (84/300)
-2026-03-05T09:32:25.8967310Z Receiving objects:  29% (87/300)
-2026-03-05T09:32:25.8968174Z Receiving objects:  30% (90/300)
-2026-03-05T09:32:25.8971032Z Receiving objects:  31% (93/300)
-2026-03-05T09:32:25.8971949Z Receiving objects:  32% (96/300)
-2026-03-05T09:32:25.8973353Z Receiving objects:  33% (99/300)
-2026-03-05T09:32:25.8974868Z Receiving objects:  34% (102/300)
-2026-03-05T09:32:25.8977413Z Receiving objects:  35% (105/300)
-2026-03-05T09:32:25.8978324Z Receiving objects:  36% (108/300)
-2026-03-05T09:32:25.8979011Z Receiving objects:  37% (111/300)
-2026-03-05T09:32:25.8979924Z Receiving objects:  38% (114/300)
-2026-03-05T09:32:25.8980918Z Receiving objects:  39% (117/300)
-2026-03-05T09:32:25.8981831Z Receiving objects:  40% (120/300)
-2026-03-05T09:32:25.9018659Z Receiving objects:  41% (123/300)
-2026-03-05T09:32:25.9020951Z Receiving objects:  42% (126/300)
-2026-03-05T09:32:25.9022148Z Receiving objects:  43% (129/300)
-2026-03-05T09:32:25.9023979Z Receiving objects:  44% (132/300)
-2026-03-05T09:32:25.9026317Z Receiving objects:  45% (135/300)
-2026-03-05T09:32:25.9028892Z Receiving objects:  46% (138/300)
-2026-03-05T09:32:25.9029446Z Receiving objects:  47% (141/300)
-2026-03-05T09:32:25.9031979Z Receiving objects:  48% (144/300)
-2026-03-05T09:32:25.9033330Z Receiving objects:  49% (147/300)
-2026-03-05T09:32:25.9035396Z Receiving objects:  50% (150/300)
-2026-03-05T09:32:25.9036838Z Receiving objects:  51% (153/300)
-2026-03-05T09:32:25.9038186Z Receiving objects:  52% (156/300)
-2026-03-05T09:32:25.9042558Z Receiving objects:  53% (159/300)
-2026-03-05T09:32:25.9094184Z Receiving objects:  54% (162/300)
-2026-03-05T09:32:25.9103539Z Receiving objects:  55% (165/300)
-2026-03-05T09:32:25.9114716Z Receiving objects:  56% (168/300)
-2026-03-05T09:32:25.9206942Z Receiving objects:  57% (171/300)
-2026-03-05T09:32:25.9208252Z Receiving objects:  58% (174/300)
-2026-03-05T09:32:25.9210445Z Receiving objects:  59% (177/300)
-2026-03-05T09:32:25.9212452Z Receiving objects:  60% (180/300)
-2026-03-05T09:32:25.9222128Z Receiving objects:  61% (183/300)
-2026-03-05T09:32:25.9224411Z Receiving objects:  62% (186/300)
-2026-03-05T09:32:25.9225906Z Receiving objects:  63% (189/300)
-2026-03-05T09:32:25.9227002Z Receiving objects:  64% (192/300)
-2026-03-05T09:32:25.9230157Z Receiving objects:  65% (195/300)
-2026-03-05T09:32:25.9232404Z Receiving objects:  66% (198/300)
-2026-03-05T09:32:25.9232972Z Receiving objects:  67% (201/300)
-2026-03-05T09:32:25.9236458Z Receiving objects:  68% (204/300)
-2026-03-05T09:32:25.9238342Z Receiving objects:  69% (207/300)
-2026-03-05T09:32:25.9239454Z Receiving objects:  70% (210/300)
-2026-03-05T09:32:25.9241441Z Receiving objects:  71% (213/300)
-2026-03-05T09:32:25.9243356Z Receiving objects:  72% (216/300)
-2026-03-05T09:32:25.9244124Z Receiving objects:  73% (219/300)
-2026-03-05T09:32:25.9245046Z Receiving objects:  74% (222/300)
-2026-03-05T09:32:25.9247309Z Receiving objects:  75% (225/300)
-2026-03-05T09:32:25.9248568Z Receiving objects:  76% (228/300)
-2026-03-05T09:32:25.9248970Z Receiving objects:  77% (231/300)
-2026-03-05T09:32:25.9249345Z Receiving objects:  78% (234/300)
-2026-03-05T09:32:25.9249724Z Receiving objects:  79% (237/300)
-2026-03-05T09:32:25.9250086Z Receiving objects:  80% (240/300)
-2026-03-05T09:32:25.9250455Z Receiving objects:  81% (243/300)
-2026-03-05T09:32:25.9263492Z Receiving objects:  82% (246/300)
-2026-03-05T09:32:25.9267563Z Receiving objects:  83% (249/300)
-2026-03-05T09:32:25.9338075Z Receiving objects:  84% (252/300)
-2026-03-05T09:32:25.9341197Z Receiving objects:  85% (255/300)
-2026-03-05T09:32:25.9342903Z Receiving objects:  86% (258/300)
-2026-03-05T09:32:25.9343837Z Receiving objects:  87% (261/300)
-2026-03-05T09:32:25.9344250Z Receiving objects:  88% (264/300)
-2026-03-05T09:32:25.9347785Z Receiving objects:  89% (267/300)
-2026-03-05T09:32:25.9348674Z Receiving objects:  90% (270/300)
-2026-03-05T09:32:25.9433846Z Receiving objects:  91% (273/300)
-2026-03-05T09:32:25.9438380Z Receiving objects:  92% (276/300)
-2026-03-05T09:32:25.9439814Z Receiving objects:  93% (279/300)
-2026-03-05T09:32:25.9440218Z Receiving objects:  94% (282/300)
-2026-03-05T09:32:25.9441259Z Receiving objects:  95% (285/300)
-2026-03-05T09:32:25.9441781Z Receiving objects:  96% (288/300)
-2026-03-05T09:32:25.9451718Z Receiving objects:  97% (291/300)
-2026-03-05T09:32:25.9452658Z remote: Total 300 (delta 52), reused 224 (delta 26), pack-reused 0 (from 0)        
-2026-03-05T09:32:25.9455135Z Receiving objects:  98% (294/300)
-2026-03-05T09:32:25.9457886Z Receiving objects:  99% (297/300)
-2026-03-05T09:32:25.9458578Z Receiving objects: 100% (300/300)
-2026-03-05T09:32:25.9459099Z Receiving objects: 100% (300/300), 505.53 KiB | 6.83 MiB/s, done.
-2026-03-05T09:32:25.9470086Z Resolving deltas:   0% (0/52)
-2026-03-05T09:32:25.9476692Z Resolving deltas:   1% (1/52)
-2026-03-05T09:32:25.9477692Z Resolving deltas:   3% (2/52)
-2026-03-05T09:32:25.9479759Z Resolving deltas:   5% (3/52)
-2026-03-05T09:32:25.9480206Z Resolving deltas:   7% (4/52)
-2026-03-05T09:32:25.9481423Z Resolving deltas:   9% (5/52)
-2026-03-05T09:32:25.9483587Z Resolving deltas:  11% (6/52)
-2026-03-05T09:32:25.9487280Z Resolving deltas:  13% (7/52)
-2026-03-05T09:32:25.9490335Z Resolving deltas:  15% (8/52)
-2026-03-05T09:32:25.9491694Z Resolving deltas:  17% (9/52)
-2026-03-05T09:32:25.9496360Z Resolving deltas:  19% (10/52)
-2026-03-05T09:32:25.9496982Z Resolving deltas:  21% (11/52)
-2026-03-05T09:32:25.9497705Z Resolving deltas:  23% (12/52)
-2026-03-05T09:32:25.9498059Z Resolving deltas:  25% (13/52)
-2026-03-05T09:32:25.9498405Z Resolving deltas:  26% (14/52)
-2026-03-05T09:32:25.9500243Z Resolving deltas:  28% (15/52)
-2026-03-05T09:32:25.9501272Z Resolving deltas:  30% (16/52)
-2026-03-05T09:32:25.9502268Z Resolving deltas:  32% (17/52)
-2026-03-05T09:32:25.9506397Z Resolving deltas:  34% (18/52)
-2026-03-05T09:32:25.9507008Z Resolving deltas:  36% (19/52)
-2026-03-05T09:32:25.9509913Z Resolving deltas:  38% (20/52)
-2026-03-05T09:32:25.9513593Z Resolving deltas:  40% (21/52)
-2026-03-05T09:32:25.9514295Z Resolving deltas:  42% (22/52)
-2026-03-05T09:32:25.9515229Z Resolving deltas:  44% (23/52)
-2026-03-05T09:32:25.9516456Z Resolving deltas:  46% (24/52)
-2026-03-05T09:32:25.9516912Z Resolving deltas:  48% (25/52)
-2026-03-05T09:32:25.9517361Z Resolving deltas:  50% (26/52)
-2026-03-05T09:32:25.9518079Z Resolving deltas:  51% (27/52)
-2026-03-05T09:32:25.9518463Z Resolving deltas:  53% (28/52)
-2026-03-05T09:32:25.9519049Z Resolving deltas:  55% (29/52)
-2026-03-05T09:32:25.9519790Z Resolving deltas:  57% (30/52)
-2026-03-05T09:32:25.9520209Z Resolving deltas:  59% (31/52)
-2026-03-05T09:32:25.9520433Z Resolving deltas:  61% (32/52)
-2026-03-05T09:32:25.9520640Z Resolving deltas:  65% (34/52)
-2026-03-05T09:32:25.9520842Z Resolving deltas:  67% (35/52)
-2026-03-05T09:32:25.9521040Z Resolving deltas:  69% (36/52)
-2026-03-05T09:32:25.9521226Z Resolving deltas:  71% (37/52)
-2026-03-05T09:32:25.9521548Z Resolving deltas:  73% (38/52)
-2026-03-05T09:32:25.9521868Z Resolving deltas:  75% (39/52)
-2026-03-05T09:32:25.9522067Z Resolving deltas:  76% (40/52)
-2026-03-05T09:32:25.9522260Z Resolving deltas:  78% (41/52)
-2026-03-05T09:32:25.9522453Z Resolving deltas:  80% (42/52)
-2026-03-05T09:32:25.9522637Z Resolving deltas:  82% (43/52)
-2026-03-05T09:32:25.9522835Z Resolving deltas:  86% (45/52)
-2026-03-05T09:32:25.9523023Z Resolving deltas:  88% (46/52)
-2026-03-05T09:32:25.9523214Z Resolving deltas:  92% (48/52)
-2026-03-05T09:32:25.9523405Z Resolving deltas:  94% (49/52)
-2026-03-05T09:32:25.9523593Z Resolving deltas:  96% (50/52)
-2026-03-05T09:32:25.9523785Z Resolving deltas:  98% (51/52)
-2026-03-05T09:32:25.9523980Z Resolving deltas: 100% (52/52)
-2026-03-05T09:32:25.9524189Z Resolving deltas: 100% (52/52), done.
-2026-03-05T09:32:26.0334828Z From https://github.com/ShAglarov/flutterTeploservise
-2026-03-05T09:32:26.0335424Z  * [new ref]         7c3f7751f12ed5163ad8b333dc82efe44ff7ba67 -> origin/main
-2026-03-05T09:32:26.0788978Z ##[endgroup]
-2026-03-05T09:32:26.0789448Z ##[group]Determining the checkout info
-2026-03-05T09:32:26.0793791Z ##[endgroup]
-2026-03-05T09:32:26.0794284Z ##[group]Checking out the ref
-2026-03-05T09:32:26.0801991Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
-2026-03-05T09:32:26.1988242Z Switched to a new branch 'main'
-2026-03-05T09:32:26.2015855Z branch 'main' set up to track 'origin/main'.
-2026-03-05T09:32:26.2069051Z ##[endgroup]
-2026-03-05T09:32:26.2606740Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format='%H'
-2026-03-05T09:32:26.2888353Z '7c3f7751f12ed5163ad8b333dc82efe44ff7ba67'
-2026-03-05T09:32:26.3410236Z ##[group]Run subosito/flutter-action@v2
-2026-03-05T09:32:26.3410624Z with:
-2026-03-05T09:32:26.3410811Z   channel: stable
-2026-03-05T09:32:26.3411027Z   architecture: X64
-2026-03-05T09:32:26.3411219Z   cache: false
-2026-03-05T09:32:26.3411420Z   pub-cache-path: default
-2026-03-05T09:32:26.3411647Z   dry-run: false
-2026-03-05T09:32:26.3411932Z   git-source: https://github.com/flutter/flutter.git
-2026-03-05T09:32:26.3412261Z ##[endgroup]
-2026-03-05T09:32:26.3630541Z ##[group]Run chmod +x "$GITHUB_ACTION_PATH/setup.sh"
-2026-03-05T09:32:26.3630905Z [36;1mchmod +x "$GITHUB_ACTION_PATH/setup.sh"[0m
-2026-03-05T09:32:26.3650980Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
-2026-03-05T09:32:26.3651349Z ##[endgroup]
-2026-03-05T09:32:26.5618823Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh -p \
-2026-03-05T09:32:26.5619165Z [36;1m$GITHUB_ACTION_PATH/setup.sh -p \[0m
-2026-03-05T09:32:26.5619399Z [36;1m  -n '' \[0m
-2026-03-05T09:32:26.5619597Z [36;1m  -f '' \[0m
-2026-03-05T09:32:26.5619747Z [36;1m  -a 'X64' \[0m
-2026-03-05T09:32:26.5619908Z [36;1m  -k '' \[0m
-2026-03-05T09:32:26.5620055Z [36;1m  -c '' \[0m
-2026-03-05T09:32:26.5620200Z [36;1m  -l '' \[0m
-2026-03-05T09:32:26.5620348Z [36;1m  -d 'default' \[0m
-2026-03-05T09:32:26.5620633Z [36;1m  -g 'https://github.com/flutter/flutter.git' \[0m
-2026-03-05T09:32:26.5620892Z [36;1m  stable[0m
-2026-03-05T09:32:26.5635549Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
-2026-03-05T09:32:26.5635913Z ##[endgroup]
-2026-03-05T09:32:29.7404382Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh \
-2026-03-05T09:32:29.7404692Z [36;1m$GITHUB_ACTION_PATH/setup.sh \[0m
-2026-03-05T09:32:29.7404927Z [36;1m  -n '3.41.4' \[0m
-2026-03-05T09:32:29.7405103Z [36;1m  -a 'x64' \[0m
-2026-03-05T09:32:29.7405366Z [36;1m  -c 'C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64' \[0m
-2026-03-05T09:32:29.7405772Z [36;1m  -d 'C:\Users\runneradmin\AppData\Local\Pub\Cache' \[0m
-2026-03-05T09:32:29.7406055Z [36;1m  stable[0m
-2026-03-05T09:32:29.7421079Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
-2026-03-05T09:32:29.7421657Z ##[endgroup]
-2026-03-05T09:32:32.2202924Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
-2026-03-05T09:32:32.2204459Z                                  Dload  Upload  Total   Spent   Left   Speed
-2026-03-05T09:32:32.2204894Z 
-2026-03-05T09:32:33.2200403Z   0      0   0      0   0      0      0      0                              0
-2026-03-05T09:32:34.2190594Z  15  1.70G  15 277.5M   0      0 277.2M      0   00:06   00:01   00:05 277.5M
-2026-03-05T09:32:35.2192796Z  36  1.70G  36 637.1M   0      0 318.5M      0   00:05   00:02   00:03 318.7M
-2026-03-05T09:32:36.2191163Z  52  1.70G  52 926.2M   0      0 308.7M      0   00:05   00:03   00:02 308.8M
-2026-03-05T09:32:37.2183263Z  69  1.70G  69  1.18G   0      0 303.4M      0   00:05   00:04   00:01 303.5M
-2026-03-05T09:32:38.2174125Z  83  1.70G  83  1.43G   0      0 293.5M      0   00:05   00:04   00:01 293.5M
-2026-03-05T09:32:38.6052132Z  95  1.70G  95  1.63G   0      0 278.4M      0   00:06   00:05   00:01 278.6M
-2026-03-05T09:32:38.6053633Z 100  1.70G 100  1.70G   0      0 273.7M      0   00:06   00:06         278.6M
-2026-03-05T09:32:38.6054824Z 100  1.70G 100  1.70G   0      0 273.7M      0   00:06   00:06         278.6M
-2026-03-05T09:32:38.6055525Z 100  1.70G 100  1.70G   0      0 273.7M      0   00:06   00:06         278.6M
-2026-03-05T09:34:20.8358496Z ##[group]Run flutter pub get
-2026-03-05T09:34:20.8358853Z [36;1mflutter pub get[0m
-2026-03-05T09:34:20.9053182Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
-2026-03-05T09:34:20.9053655Z env:
-2026-03-05T09:34:20.9054029Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
-2026-03-05T09:34:20.9054574Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
-2026-03-05T09:34:20.9054950Z ##[endgroup]
-2026-03-05T09:34:27.9307694Z Building flutter tool... 
-2026-03-05T09:34:27.9348892Z Running pub upgrade... 
-2026-03-05T09:34:27.9717514Z Resolving dependencies...
-2026-03-05T09:34:28.6600591Z Downloading packages...
-2026-03-05T09:34:37.6372643Z Got dependencies.
-2026-03-05T09:34:54.5626356Z Resolving dependencies...
-2026-03-05T09:34:55.7261566Z Downloading packages...
-2026-03-05T09:35:24.8918091Z   _fe_analyzer_shared 92.0.0 (97.0.0 available)
-2026-03-05T09:35:24.8918755Z   analysis_server_plugin 0.3.4 (0.3.11 available)
-2026-03-05T09:35:24.8920960Z   analyzer 9.0.0 (11.0.0 available)
-2026-03-05T09:35:24.8921436Z   analyzer_buffer 0.3.0 (0.3.1 available)
-2026-03-05T09:35:24.8921970Z   analyzer_plugin 0.13.11 (0.14.5 available)
-2026-03-05T09:35:24.8922463Z   build_config 1.2.0 (1.3.0 available)
-2026-03-05T09:35:24.8922913Z   build_runner 2.11.1 (2.12.2 available)
-2026-03-05T09:35:24.8923359Z   connectivity_plus 6.1.5 (7.0.0 available)
-2026-03-05T09:35:24.8923848Z   dart_style 3.1.3 (3.1.6 available)
-2026-03-05T09:35:24.8924608Z   dio 5.9.1 (5.9.2 available)
-2026-03-05T09:35:24.8924977Z   dio_web_adapter 2.1.1 (2.1.2 available)
-2026-03-05T09:35:24.8925458Z   drift 2.31.0 (2.32.0 available)
-2026-03-05T09:35:24.8925851Z   drift_dev 2.31.0 (2.32.0 available)
-2026-03-05T09:35:24.8926313Z   flutter_map 7.0.2 (8.2.2 available)
-2026-03-05T09:35:24.8926971Z > matcher 0.12.19 (was 0.12.18)
-2026-03-05T09:35:24.8927414Z   meta 1.17.0 (1.18.1 available)
-2026-03-05T09:35:24.8927796Z   mgrs_dart 2.0.0 (3.0.0 available)
-2026-03-05T09:35:24.8928260Z   proj4dart 2.1.0 (3.0.0 available)
-2026-03-05T09:35:24.8928699Z   sqlite3 2.9.4 (3.1.6 available)
-2026-03-05T09:35:24.8929102Z   sqlparser 0.43.1 (0.44.1 available)
-2026-03-05T09:35:24.8929559Z > test 1.30.0 (was 1.29.0)
-2026-03-05T09:35:24.8929918Z > test_api 0.7.10 (was 0.7.9)
-2026-03-05T09:35:24.8930329Z > test_core 0.6.16 (was 0.6.15)
-2026-03-05T09:35:24.8930734Z   unicode 0.3.1 (1.1.9 available)
-2026-03-05T09:35:24.8931212Z   win32 5.15.0 (6.0.0 available)
-2026-03-05T09:35:24.8931751Z Changed 4 dependencies!
-2026-03-05T09:35:24.8932402Z 21 packages have newer versions incompatible with dependency constraints.
-2026-03-05T09:35:24.8933164Z Try `flutter pub outdated` for more information.
-2026-03-05T09:35:25.8783234Z ##[group]Run flutter build windows --release
-2026-03-05T09:35:25.8783801Z [36;1mflutter build windows --release[0m
-2026-03-05T09:35:25.8891857Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
-2026-03-05T09:35:25.8892402Z env:
-2026-03-05T09:35:25.8892833Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
-2026-03-05T09:35:25.8893508Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
-2026-03-05T09:35:25.8894009Z ##[endgroup]
-2026-03-05T09:37:52.6179744Z Building Windows application...                                   141.8s
-2026-03-05T09:37:52.6212309Z √ Built build\windows\x64\runner\Release\teploservice_flutter.exe
-2026-03-05T09:37:52.7618196Z ##[group]Run flutter pub run msix:create
-2026-03-05T09:37:52.7618572Z [36;1mflutter pub run msix:create[0m
-2026-03-05T09:37:52.7690571Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
-2026-03-05T09:37:52.7690946Z env:
-2026-03-05T09:37:52.7691273Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
-2026-03-05T09:37:52.7691700Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
-2026-03-05T09:37:52.7692009Z ##[endgroup]
-2026-03-05T09:38:05.4962437Z running "flutter build windows"...      /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|9.9s
-2026-03-05T09:38:05.9492232Z building msix files...                  /-\|/-0.5s
-2026-03-05T09:38:08.4131427Z packing msix files...                   /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\ 
-2026-03-05T09:38:08.4133609Z 
-2026-03-05T09:38:08.4180727Z Unhandled exception:
-2026-03-05T09:38:08.4181442Z type 'Null' is not a subtype of type 'FutureOr<String>'
-2026-03-05T09:38:08.4183008Z #0      _AsyncCompleter.complete (dart:async/future_impl.dart:98:41)
-2026-03-05T09:38:08.4184803Z #1      Prompter.prompt.<anonymous closure>.<anonymous closure> (package:console/src/prompt.dart:222:19)
-2026-03-05T09:38:08.4185818Z #2      new Future.<anonymous closure> (dart:async/future.dart:260:40)
-2026-03-05T09:38:08.4186715Z #3      Timer._createTimer.<anonymous closure> (dart:async-patch/timer_patch.dart:18:15)
-2026-03-05T09:38:08.4187669Z #4      _Timer._runTimers (dart:isolate-patch/timer_impl.dart:423:19)
-2026-03-05T09:38:08.4188467Z #5      _Timer._handleMessage (dart:isolate-patch/timer_impl.dart:454:5)
-2026-03-05T09:38:08.4189310Z #6      _RawReceivePort._handleMessage (dart:isolate-patch/isolate_patch.dart:193:12)
-2026-03-05T09:38:08.4673365Z Failed to update packages.
-2026-03-05T09:38:08.5661175Z [1mDo you want to install the certificate: "test_certificate.pfx" ?[0m[1;30m (y/N) [0m
-2026-03-05T09:38:08.5781143Z ##[error]Process completed with exit code 1.
-2026-03-05T09:38:08.6063917Z Post job cleanup.
-2026-03-05T09:38:08.6251488Z Post job cleanup.
-2026-03-05T09:38:08.8481172Z [command]"C:\Program Files\Git\bin\git.exe" version
-2026-03-05T09:38:08.8776349Z git version 2.53.0.windows.1
-2026-03-05T09:38:08.8853301Z Temporarily overriding HOME='D:\a\_temp\59028d38-0379-4b4b-83bf-83302d980205' before making global git config changes
-2026-03-05T09:38:08.8854425Z Adding repository directory to the temporary git global config as a safe directory
-2026-03-05T09:38:08.8861992Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\flutterTeploservise\flutterTeploservise
-2026-03-05T09:38:08.9186841Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
-2026-03-05T09:38:08.9507132Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
-2026-03-05T09:38:09.5320603Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-03-05T09:38:09.5574824Z http.https://github.com/.extraheader
-2026-03-05T09:38:09.5616989Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
-2026-03-05T09:38:09.5921639Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
-2026-03-05T09:38:10.1485710Z Cleaning up orphan processes
-2026-03-05T09:38:10.1821937Z Terminate orphan process: pid (2800) (vctip)
+﻿2026-03-05T09:53:26.8426057Z Current runner version: '2.331.0'
+2026-03-05T09:53:26.8452792Z ##[group]Runner Image Provisioner
+2026-03-05T09:53:26.8453464Z Hosted Compute Agent
+2026-03-05T09:53:26.8453996Z Version: 20260213.493
+2026-03-05T09:53:26.8454510Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+2026-03-05T09:53:26.8455288Z Build Date: 2026-02-13T00:28:41Z
+2026-03-05T09:53:26.8455959Z Worker ID: {1de63b80-6d43-490d-8d21-a254adbb6527}
+2026-03-05T09:53:26.8456758Z Azure Region: eastus2
+2026-03-05T09:53:26.8457416Z ##[endgroup]
+2026-03-05T09:53:26.8459573Z ##[group]Operating System
+2026-03-05T09:53:26.8460327Z Microsoft Windows Server 2025
+2026-03-05T09:53:26.8460810Z 10.0.26100
+2026-03-05T09:53:26.8461311Z Datacenter
+2026-03-05T09:53:26.8461796Z ##[endgroup]
+2026-03-05T09:53:26.8462340Z ##[group]Runner Image
+2026-03-05T09:53:26.8463089Z Image: windows-2025
+2026-03-05T09:53:26.8463644Z Version: 20260302.43.1
+2026-03-05T09:53:26.8465007Z Included Software: https://github.com/actions/runner-images/blob/win25/20260302.43/images/windows/Windows2025-Readme.md
+2026-03-05T09:53:26.8466453Z Image Release: https://github.com/actions/runner-images/releases/tag/win25%2F20260302.43
+2026-03-05T09:53:26.8467268Z ##[endgroup]
+2026-03-05T09:53:26.8468481Z ##[group]GITHUB_TOKEN Permissions
+2026-03-05T09:53:26.8470326Z Contents: read
+2026-03-05T09:53:26.8470864Z Metadata: read
+2026-03-05T09:53:26.8471284Z Packages: read
+2026-03-05T09:53:26.8471717Z ##[endgroup]
+2026-03-05T09:53:26.8473771Z Secret source: Actions
+2026-03-05T09:53:26.8474440Z Prepare workflow directory
+2026-03-05T09:53:26.8828160Z Prepare all required actions
+2026-03-05T09:53:26.8865152Z Getting action download info
+2026-03-05T09:53:27.1457083Z Download action repository 'actions/checkout@v3' (SHA:f43a0e5ff2bd294095638e18286ca9a3d1956744)
+2026-03-05T09:53:27.2731998Z Download action repository 'subosito/flutter-action@v2' (SHA:fd55f4c5af5b953cc57a2be44cb082c8f6635e8e)
+2026-03-05T09:53:27.5245552Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-03-05T09:53:27.8716639Z Getting action download info
+2026-03-05T09:53:27.9961418Z Download action repository 'actions/cache@v4' (SHA:0057852bfaa89a56745cba8c7296529d2fc39830)
+2026-03-05T09:53:28.2157017Z Complete job name: build
+2026-03-05T09:53:28.3502820Z ##[group]Run actions/checkout@v3
+2026-03-05T09:53:28.3504199Z with:
+2026-03-05T09:53:28.3505009Z   repository: ShAglarov/flutterTeploservise
+2026-03-05T09:53:28.3506338Z   token: ***
+2026-03-05T09:53:28.3507025Z   ssh-strict: true
+2026-03-05T09:53:28.3507761Z   persist-credentials: true
+2026-03-05T09:53:28.3508564Z   clean: true
+2026-03-05T09:53:28.3509564Z   sparse-checkout-cone-mode: true
+2026-03-05T09:53:28.3510663Z   fetch-depth: 1
+2026-03-05T09:53:28.3511357Z   fetch-tags: false
+2026-03-05T09:53:28.3512052Z   lfs: false
+2026-03-05T09:53:28.3512714Z   submodules: false
+2026-03-05T09:53:28.3513452Z   set-safe-directory: true
+2026-03-05T09:53:28.3514509Z ##[endgroup]
+2026-03-05T09:53:28.4868353Z Syncing repository: ShAglarov/flutterTeploservise
+2026-03-05T09:53:28.4870879Z ##[group]Getting Git version info
+2026-03-05T09:53:28.4872172Z Working directory is 'D:\a\flutterTeploservise\flutterTeploservise'
+2026-03-05T09:53:28.5940576Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-03-05T09:53:28.9151613Z git version 2.53.0.windows.1
+2026-03-05T09:53:28.9209370Z ##[endgroup]
+2026-03-05T09:53:28.9235222Z Temporarily overriding HOME='D:\a\_temp\4c151409-ba24-4137-8ec0-92f34ff849cb' before making global git config changes
+2026-03-05T09:53:28.9239468Z Adding repository directory to the temporary git global config as a safe directory
+2026-03-05T09:53:28.9244166Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\flutterTeploservise\flutterTeploservise
+2026-03-05T09:53:28.9745813Z Deleting the contents of 'D:\a\flutterTeploservise\flutterTeploservise'
+2026-03-05T09:53:28.9752517Z ##[group]Initializing the repository
+2026-03-05T09:53:28.9760922Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\flutterTeploservise\flutterTeploservise
+2026-03-05T09:53:29.0580102Z Initialized empty Git repository in D:/a/flutterTeploservise/flutterTeploservise/.git/
+2026-03-05T09:53:29.0625684Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/ShAglarov/flutterTeploservise
+2026-03-05T09:53:29.1131637Z ##[endgroup]
+2026-03-05T09:53:29.1132935Z ##[group]Disabling automatic garbage collection
+2026-03-05T09:53:29.1137766Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2026-03-05T09:53:29.1484628Z ##[endgroup]
+2026-03-05T09:53:29.1485912Z ##[group]Setting up auth
+2026-03-05T09:53:29.1487412Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-03-05T09:53:29.1831788Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-03-05T09:53:30.4697352Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-03-05T09:53:30.5002117Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-03-05T09:53:31.0149404Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2026-03-05T09:53:31.0458329Z ##[endgroup]
+2026-03-05T09:53:31.0459739Z ##[group]Fetching the repository
+2026-03-05T09:53:31.0473897Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +4876aae0ac006012e39ca252e3f4012ab53a1274:refs/remotes/origin/main
+2026-03-05T09:53:31.6799540Z remote: Enumerating objects: 300, done.        
+2026-03-05T09:53:31.6800466Z remote: Counting objects:   0% (1/300)        
+2026-03-05T09:53:31.6800920Z remote: Counting objects:   1% (3/300)        
+2026-03-05T09:53:31.6801328Z remote: Counting objects:   2% (6/300)        
+2026-03-05T09:53:31.6803835Z remote: Counting objects:   3% (9/300)        
+2026-03-05T09:53:31.6804325Z remote: Counting objects:   4% (12/300)        
+2026-03-05T09:53:31.6804710Z remote: Counting objects:   5% (15/300)        
+2026-03-05T09:53:31.6805091Z remote: Counting objects:   6% (18/300)        
+2026-03-05T09:53:31.6805472Z remote: Counting objects:   7% (21/300)        
+2026-03-05T09:53:31.6805856Z remote: Counting objects:   8% (24/300)        
+2026-03-05T09:53:31.6806214Z remote: Counting objects:   9% (27/300)        
+2026-03-05T09:53:31.6806573Z remote: Counting objects:  10% (30/300)        
+2026-03-05T09:53:31.6806947Z remote: Counting objects:  11% (33/300)        
+2026-03-05T09:53:31.6807311Z remote: Counting objects:  12% (36/300)        
+2026-03-05T09:53:31.6807769Z remote: Counting objects:  13% (39/300)        
+2026-03-05T09:53:31.6808156Z remote: Counting objects:  14% (42/300)        
+2026-03-05T09:53:31.6808576Z remote: Counting objects:  15% (45/300)        
+2026-03-05T09:53:31.6808938Z remote: Counting objects:  16% (48/300)        
+2026-03-05T09:53:31.6809291Z remote: Counting objects:  17% (51/300)        
+2026-03-05T09:53:31.6809642Z remote: Counting objects:  18% (54/300)        
+2026-03-05T09:53:31.6810013Z remote: Counting objects:  19% (57/300)        
+2026-03-05T09:53:31.6810303Z remote: Counting objects:  20% (60/300)        
+2026-03-05T09:53:31.6810606Z remote: Counting objects:  21% (63/300)        
+2026-03-05T09:53:31.6810926Z remote: Counting objects:  22% (66/300)        
+2026-03-05T09:53:31.6811264Z remote: Counting objects:  23% (69/300)        
+2026-03-05T09:53:31.6811556Z remote: Counting objects:  24% (72/300)        
+2026-03-05T09:53:31.6811850Z remote: Counting objects:  25% (75/300)        
+2026-03-05T09:53:31.6813295Z remote: Counting objects:  26% (78/300)        
+2026-03-05T09:53:31.6813658Z remote: Counting objects:  27% (81/300)        
+2026-03-05T09:53:31.6813974Z remote: Counting objects:  28% (84/300)        
+2026-03-05T09:53:31.6814287Z remote: Counting objects:  29% (87/300)        
+2026-03-05T09:53:31.6814579Z remote: Counting objects:  30% (90/300)        
+2026-03-05T09:53:31.6814876Z remote: Counting objects:  31% (93/300)        
+2026-03-05T09:53:31.6815189Z remote: Counting objects:  32% (96/300)        
+2026-03-05T09:53:31.6815529Z remote: Counting objects:  33% (99/300)        
+2026-03-05T09:53:31.6815827Z remote: Counting objects:  34% (102/300)        
+2026-03-05T09:53:31.6816136Z remote: Counting objects:  35% (105/300)        
+2026-03-05T09:53:31.6816427Z remote: Counting objects:  36% (108/300)        
+2026-03-05T09:53:31.6816721Z remote: Counting objects:  37% (111/300)        
+2026-03-05T09:53:31.6817012Z remote: Counting objects:  38% (114/300)        
+2026-03-05T09:53:31.6817306Z remote: Counting objects:  39% (117/300)        
+2026-03-05T09:53:31.6817600Z remote: Counting objects:  40% (120/300)        
+2026-03-05T09:53:31.6817895Z remote: Counting objects:  41% (123/300)        
+2026-03-05T09:53:31.6818193Z remote: Counting objects:  42% (126/300)        
+2026-03-05T09:53:31.6818529Z remote: Counting objects:  43% (129/300)        
+2026-03-05T09:53:31.6818832Z remote: Counting objects:  44% (132/300)        
+2026-03-05T09:53:31.6819126Z remote: Counting objects:  45% (135/300)        
+2026-03-05T09:53:31.6819413Z remote: Counting objects:  46% (138/300)        
+2026-03-05T09:53:31.6819706Z remote: Counting objects:  47% (141/300)        
+2026-03-05T09:53:31.6819993Z remote: Counting objects:  48% (144/300)        
+2026-03-05T09:53:31.6820276Z remote: Counting objects:  49% (147/300)        
+2026-03-05T09:53:31.6820624Z remote: Counting objects:  50% (150/300)        
+2026-03-05T09:53:31.6820909Z remote: Counting objects:  51% (153/300)        
+2026-03-05T09:53:31.6821230Z remote: Counting objects:  52% (156/300)        
+2026-03-05T09:53:31.6821518Z remote: Counting objects:  53% (159/300)        
+2026-03-05T09:53:31.6821801Z remote: Counting objects:  54% (162/300)        
+2026-03-05T09:53:31.6822660Z remote: Counting objects:  55% (165/300)        
+2026-03-05T09:53:31.6823007Z remote: Counting objects:  56% (168/300)        
+2026-03-05T09:53:31.6823309Z remote: Counting objects:  57% (171/300)        
+2026-03-05T09:53:31.6823595Z remote: Counting objects:  58% (174/300)        
+2026-03-05T09:53:31.6823884Z remote: Counting objects:  59% (177/300)        
+2026-03-05T09:53:31.6824173Z remote: Counting objects:  60% (180/300)        
+2026-03-05T09:53:31.6824462Z remote: Counting objects:  61% (183/300)        
+2026-03-05T09:53:31.6824750Z remote: Counting objects:  62% (186/300)        
+2026-03-05T09:53:31.6825036Z remote: Counting objects:  63% (189/300)        
+2026-03-05T09:53:31.6825326Z remote: Counting objects:  64% (192/300)        
+2026-03-05T09:53:31.6825622Z remote: Counting objects:  65% (195/300)        
+2026-03-05T09:53:31.6825910Z remote: Counting objects:  66% (198/300)        
+2026-03-05T09:53:31.6826191Z remote: Counting objects:  67% (201/300)        
+2026-03-05T09:53:31.6826524Z remote: Counting objects:  68% (204/300)        
+2026-03-05T09:53:31.6826811Z remote: Counting objects:  69% (207/300)        
+2026-03-05T09:53:31.6827096Z remote: Counting objects:  70% (210/300)        
+2026-03-05T09:53:31.6827388Z remote: Counting objects:  71% (213/300)        
+2026-03-05T09:53:31.6827670Z remote: Counting objects:  72% (216/300)        
+2026-03-05T09:53:31.6827960Z remote: Counting objects:  73% (219/300)        
+2026-03-05T09:53:31.6828247Z remote: Counting objects:  74% (222/300)        
+2026-03-05T09:53:31.6828538Z remote: Counting objects:  75% (225/300)        
+2026-03-05T09:53:31.6828826Z remote: Counting objects:  76% (228/300)        
+2026-03-05T09:53:31.6829109Z remote: Counting objects:  77% (231/300)        
+2026-03-05T09:53:31.6829634Z remote: Counting objects:  78% (234/300)        
+2026-03-05T09:53:31.6829917Z remote: Counting objects:  79% (237/300)        
+2026-03-05T09:53:31.6830208Z remote: Counting objects:  80% (240/300)        
+2026-03-05T09:53:31.6830497Z remote: Counting objects:  81% (243/300)        
+2026-03-05T09:53:31.6830787Z remote: Counting objects:  82% (246/300)        
+2026-03-05T09:53:31.6831071Z remote: Counting objects:  83% (249/300)        
+2026-03-05T09:53:31.6831365Z remote: Counting objects:  84% (252/300)        
+2026-03-05T09:53:31.6831657Z remote: Counting objects:  85% (255/300)        
+2026-03-05T09:53:31.6831939Z remote: Counting objects:  86% (258/300)        
+2026-03-05T09:53:31.6832227Z remote: Counting objects:  87% (261/300)        
+2026-03-05T09:53:31.6832514Z remote: Counting objects:  88% (264/300)        
+2026-03-05T09:53:31.6832808Z remote: Counting objects:  89% (267/300)        
+2026-03-05T09:53:31.6833447Z remote: Counting objects:  90% (270/300)        
+2026-03-05T09:53:31.6833845Z remote: Counting objects:  91% (273/300)        
+2026-03-05T09:53:31.6834139Z remote: Counting objects:  92% (276/300)        
+2026-03-05T09:53:31.6834437Z remote: Counting objects:  93% (279/300)        
+2026-03-05T09:53:31.6834733Z remote: Counting objects:  94% (282/300)        
+2026-03-05T09:53:31.6835020Z remote: Counting objects:  95% (285/300)        
+2026-03-05T09:53:31.6847991Z remote: Counting objects:  96% (288/300)        
+2026-03-05T09:53:31.6848652Z remote: Counting objects:  97% (291/300)        
+2026-03-05T09:53:31.6849040Z remote: Counting objects:  98% (294/300)        
+2026-03-05T09:53:31.6849407Z remote: Counting objects:  99% (297/300)        
+2026-03-05T09:53:31.6849791Z remote: Counting objects: 100% (300/300)        
+2026-03-05T09:53:31.6850176Z remote: Counting objects: 100% (300/300), done.        
+2026-03-05T09:53:31.6850575Z remote: Compressing objects:   0% (1/246)        
+2026-03-05T09:53:31.6850941Z remote: Compressing objects:   1% (3/246)        
+2026-03-05T09:53:31.6851843Z remote: Compressing objects:   2% (5/246)        
+2026-03-05T09:53:31.6852225Z remote: Compressing objects:   3% (8/246)        
+2026-03-05T09:53:31.6852605Z remote: Compressing objects:   4% (10/246)        
+2026-03-05T09:53:31.6853172Z remote: Compressing objects:   5% (13/246)        
+2026-03-05T09:53:31.6853563Z remote: Compressing objects:   6% (15/246)        
+2026-03-05T09:53:31.6854664Z remote: Compressing objects:   7% (18/246)        
+2026-03-05T09:53:31.6855361Z remote: Compressing objects:   8% (20/246)        
+2026-03-05T09:53:31.6855761Z remote: Compressing objects:   9% (23/246)        
+2026-03-05T09:53:31.6856134Z remote: Compressing objects:  10% (25/246)        
+2026-03-05T09:53:31.6856507Z remote: Compressing objects:  11% (28/246)        
+2026-03-05T09:53:31.6856871Z remote: Compressing objects:  12% (30/246)        
+2026-03-05T09:53:31.6857236Z remote: Compressing objects:  13% (32/246)        
+2026-03-05T09:53:31.6857596Z remote: Compressing objects:  14% (35/246)        
+2026-03-05T09:53:31.6903951Z remote: Compressing objects:  15% (37/246)        
+2026-03-05T09:53:31.6904343Z remote: Compressing objects:  16% (40/246)        
+2026-03-05T09:53:31.6904940Z remote: Compressing objects:  17% (42/246)        
+2026-03-05T09:53:31.6905331Z remote: Compressing objects:  18% (45/246)        
+2026-03-05T09:53:31.6905647Z remote: Compressing objects:  19% (47/246)        
+2026-03-05T09:53:31.6905960Z remote: Compressing objects:  20% (50/246)        
+2026-03-05T09:53:31.7025609Z remote: Compressing objects:  21% (52/246)        
+2026-03-05T09:53:31.7026057Z remote: Compressing objects:  22% (55/246)        
+2026-03-05T09:53:31.7026453Z remote: Compressing objects:  23% (57/246)        
+2026-03-05T09:53:31.7026829Z remote: Compressing objects:  24% (60/246)        
+2026-03-05T09:53:31.7027207Z remote: Compressing objects:  25% (62/246)        
+2026-03-05T09:53:31.7028064Z remote: Compressing objects:  26% (64/246)        
+2026-03-05T09:53:31.7028578Z remote: Compressing objects:  27% (67/246)        
+2026-03-05T09:53:31.7029224Z remote: Compressing objects:  28% (69/246)        
+2026-03-05T09:53:31.7029595Z remote: Compressing objects:  29% (72/246)        
+2026-03-05T09:53:31.7030380Z remote: Compressing objects:  30% (74/246)        
+2026-03-05T09:53:31.7030767Z remote: Compressing objects:  31% (77/246)        
+2026-03-05T09:53:31.7031145Z remote: Compressing objects:  32% (79/246)        
+2026-03-05T09:53:31.7031513Z remote: Compressing objects:  33% (82/246)        
+2026-03-05T09:53:31.7031880Z remote: Compressing objects:  34% (84/246)        
+2026-03-05T09:53:31.7032258Z remote: Compressing objects:  35% (87/246)        
+2026-03-05T09:53:31.7032626Z remote: Compressing objects:  36% (89/246)        
+2026-03-05T09:53:31.7033003Z remote: Compressing objects:  37% (92/246)        
+2026-03-05T09:53:31.7033369Z remote: Compressing objects:  38% (94/246)        
+2026-03-05T09:53:31.7033735Z remote: Compressing objects:  39% (96/246)        
+2026-03-05T09:53:31.7034105Z remote: Compressing objects:  40% (99/246)        
+2026-03-05T09:53:31.7034481Z remote: Compressing objects:  41% (101/246)        
+2026-03-05T09:53:31.7034856Z remote: Compressing objects:  42% (104/246)        
+2026-03-05T09:53:31.7035240Z remote: Compressing objects:  43% (106/246)        
+2026-03-05T09:53:31.7062233Z remote: Compressing objects:  44% (109/246)        
+2026-03-05T09:53:31.7062598Z remote: Compressing objects:  45% (111/246)        
+2026-03-05T09:53:31.7063193Z remote: Compressing objects:  46% (114/246)        
+2026-03-05T09:53:31.7063555Z remote: Compressing objects:  47% (116/246)        
+2026-03-05T09:53:31.7063873Z remote: Compressing objects:  48% (119/246)        
+2026-03-05T09:53:31.7064305Z remote: Compressing objects:  49% (121/246)        
+2026-03-05T09:53:31.7064670Z remote: Compressing objects:  50% (123/246)        
+2026-03-05T09:53:31.7064978Z remote: Compressing objects:  51% (126/246)        
+2026-03-05T09:53:31.7065284Z remote: Compressing objects:  52% (128/246)        
+2026-03-05T09:53:31.7065621Z remote: Compressing objects:  53% (131/246)        
+2026-03-05T09:53:31.7065931Z remote: Compressing objects:  54% (133/246)        
+2026-03-05T09:53:31.7066476Z remote: Compressing objects:  55% (136/246)        
+2026-03-05T09:53:31.7066812Z remote: Compressing objects:  56% (138/246)        
+2026-03-05T09:53:31.7067120Z remote: Compressing objects:  57% (141/246)        
+2026-03-05T09:53:31.7067430Z remote: Compressing objects:  58% (143/246)        
+2026-03-05T09:53:31.7068378Z remote: Compressing objects:  59% (146/246)        
+2026-03-05T09:53:31.7068705Z remote: Compressing objects:  60% (148/246)        
+2026-03-05T09:53:31.7069008Z remote: Compressing objects:  61% (151/246)        
+2026-03-05T09:53:31.7069314Z remote: Compressing objects:  62% (153/246)        
+2026-03-05T09:53:31.7069616Z remote: Compressing objects:  63% (155/246)        
+2026-03-05T09:53:31.7069937Z remote: Compressing objects:  64% (158/246)        
+2026-03-05T09:53:31.7070258Z remote: Compressing objects:  65% (160/246)        
+2026-03-05T09:53:31.7070558Z remote: Compressing objects:  66% (163/246)        
+2026-03-05T09:53:31.7070863Z remote: Compressing objects:  67% (165/246)        
+2026-03-05T09:53:31.7071170Z remote: Compressing objects:  68% (168/246)        
+2026-03-05T09:53:31.7071473Z remote: Compressing objects:  69% (170/246)        
+2026-03-05T09:53:31.7071777Z remote: Compressing objects:  70% (173/246)        
+2026-03-05T09:53:31.7072083Z remote: Compressing objects:  71% (175/246)        
+2026-03-05T09:53:31.7072384Z remote: Compressing objects:  72% (178/246)        
+2026-03-05T09:53:31.7078012Z remote: Compressing objects:  73% (180/246)        
+2026-03-05T09:53:31.7078485Z remote: Compressing objects:  74% (183/246)        
+2026-03-05T09:53:31.7079016Z remote: Compressing objects:  75% (185/246)        
+2026-03-05T09:53:31.7079352Z remote: Compressing objects:  76% (187/246)        
+2026-03-05T09:53:31.7079810Z remote: Compressing objects:  77% (190/246)        
+2026-03-05T09:53:31.7081007Z remote: Compressing objects:  78% (192/246)        
+2026-03-05T09:53:31.7081346Z remote: Compressing objects:  79% (195/246)        
+2026-03-05T09:53:31.7137947Z remote: Compressing objects:  80% (197/246)        
+2026-03-05T09:53:31.7138594Z remote: Compressing objects:  81% (200/246)        
+2026-03-05T09:53:31.7139133Z remote: Compressing objects:  82% (202/246)        
+2026-03-05T09:53:31.7139617Z remote: Compressing objects:  83% (205/246)        
+2026-03-05T09:53:31.7140143Z remote: Compressing objects:  84% (207/246)        
+2026-03-05T09:53:31.7140658Z remote: Compressing objects:  85% (210/246)        
+2026-03-05T09:53:31.7141160Z remote: Compressing objects:  86% (212/246)        
+2026-03-05T09:53:31.7141655Z remote: Compressing objects:  87% (215/246)        
+2026-03-05T09:53:31.7142237Z remote: Compressing objects:  88% (217/246)        
+2026-03-05T09:53:31.7142790Z remote: Compressing objects:  89% (219/246)        
+2026-03-05T09:53:31.7143379Z remote: Compressing objects:  90% (222/246)        
+2026-03-05T09:53:31.7143981Z remote: Compressing objects:  91% (224/246)        
+2026-03-05T09:53:31.7144570Z remote: Compressing objects:  92% (227/246)        
+2026-03-05T09:53:31.7145180Z remote: Compressing objects:  93% (229/246)        
+2026-03-05T09:53:31.7145870Z remote: Compressing objects:  94% (232/246)        
+2026-03-05T09:53:31.7146470Z remote: Compressing objects:  95% (234/246)        
+2026-03-05T09:53:31.7147033Z remote: Compressing objects:  96% (237/246)        
+2026-03-05T09:53:31.7147596Z remote: Compressing objects:  97% (239/246)        
+2026-03-05T09:53:31.7148613Z remote: Compressing objects:  98% (242/246)        
+2026-03-05T09:53:31.7149233Z remote: Compressing objects:  99% (244/246)        
+2026-03-05T09:53:31.7149799Z remote: Compressing objects: 100% (246/246)        
+2026-03-05T09:53:31.7150424Z remote: Compressing objects: 100% (246/246), done.        
+2026-03-05T09:53:31.7547791Z Receiving objects:   0% (1/300)
+2026-03-05T09:53:31.7548497Z Receiving objects:   1% (3/300)
+2026-03-05T09:53:31.7548967Z Receiving objects:   2% (6/300)
+2026-03-05T09:53:31.7551808Z Receiving objects:   3% (9/300)
+2026-03-05T09:53:31.7554316Z Receiving objects:   4% (12/300)
+2026-03-05T09:53:31.7555835Z Receiving objects:   5% (15/300)
+2026-03-05T09:53:31.7556921Z Receiving objects:   6% (18/300)
+2026-03-05T09:53:31.7557913Z Receiving objects:   7% (21/300)
+2026-03-05T09:53:31.7559537Z Receiving objects:   8% (24/300)
+2026-03-05T09:53:31.7560528Z Receiving objects:   9% (27/300)
+2026-03-05T09:53:31.7561068Z Receiving objects:  10% (30/300)
+2026-03-05T09:53:31.7561564Z Receiving objects:  11% (33/300)
+2026-03-05T09:53:31.7562467Z Receiving objects:  12% (36/300)
+2026-03-05T09:53:31.7563552Z Receiving objects:  13% (39/300)
+2026-03-05T09:53:31.7564439Z Receiving objects:  14% (42/300)
+2026-03-05T09:53:31.7565477Z Receiving objects:  15% (45/300)
+2026-03-05T09:53:31.7565970Z Receiving objects:  16% (48/300)
+2026-03-05T09:53:31.7569241Z Receiving objects:  17% (51/300)
+2026-03-05T09:53:31.7572521Z Receiving objects:  18% (54/300)
+2026-03-05T09:53:31.7573678Z Receiving objects:  19% (57/300)
+2026-03-05T09:53:31.7575170Z Receiving objects:  20% (60/300)
+2026-03-05T09:53:31.7579922Z Receiving objects:  21% (63/300)
+2026-03-05T09:53:31.7581443Z Receiving objects:  22% (66/300)
+2026-03-05T09:53:31.7582093Z Receiving objects:  23% (69/300)
+2026-03-05T09:53:31.7584394Z Receiving objects:  24% (72/300)
+2026-03-05T09:53:31.7584915Z Receiving objects:  25% (75/300)
+2026-03-05T09:53:31.7588843Z Receiving objects:  26% (78/300)
+2026-03-05T09:53:31.7589531Z Receiving objects:  27% (81/300)
+2026-03-05T09:53:31.7590664Z Receiving objects:  28% (84/300)
+2026-03-05T09:53:31.7592059Z Receiving objects:  29% (87/300)
+2026-03-05T09:53:31.7593017Z Receiving objects:  30% (90/300)
+2026-03-05T09:53:31.7596120Z Receiving objects:  31% (93/300)
+2026-03-05T09:53:31.7597035Z Receiving objects:  32% (96/300)
+2026-03-05T09:53:31.7597876Z Receiving objects:  33% (99/300)
+2026-03-05T09:53:31.7598998Z Receiving objects:  34% (102/300)
+2026-03-05T09:53:31.7601648Z Receiving objects:  35% (105/300)
+2026-03-05T09:53:31.7602994Z Receiving objects:  36% (108/300)
+2026-03-05T09:53:31.7603814Z Receiving objects:  37% (111/300)
+2026-03-05T09:53:31.7604790Z Receiving objects:  38% (114/300)
+2026-03-05T09:53:31.7605434Z Receiving objects:  39% (117/300)
+2026-03-05T09:53:31.7606503Z Receiving objects:  40% (120/300)
+2026-03-05T09:53:31.7639448Z Receiving objects:  41% (123/300)
+2026-03-05T09:53:31.7641900Z Receiving objects:  42% (126/300)
+2026-03-05T09:53:31.7643057Z Receiving objects:  43% (129/300)
+2026-03-05T09:53:31.7645170Z Receiving objects:  44% (132/300)
+2026-03-05T09:53:31.7647443Z Receiving objects:  45% (135/300)
+2026-03-05T09:53:31.7650431Z Receiving objects:  46% (138/300)
+2026-03-05T09:53:31.7651866Z Receiving objects:  47% (141/300)
+2026-03-05T09:53:31.7653401Z Receiving objects:  48% (144/300)
+2026-03-05T09:53:31.7655238Z Receiving objects:  49% (147/300)
+2026-03-05T09:53:31.7656848Z Receiving objects:  50% (150/300)
+2026-03-05T09:53:31.7658361Z Receiving objects:  51% (153/300)
+2026-03-05T09:53:31.7661003Z Receiving objects:  52% (156/300)
+2026-03-05T09:53:31.7664974Z Receiving objects:  53% (159/300)
+2026-03-05T09:53:31.7668563Z Receiving objects:  54% (162/300)
+2026-03-05T09:53:31.7672560Z Receiving objects:  55% (165/300)
+2026-03-05T09:53:31.7680454Z Receiving objects:  56% (168/300)
+2026-03-05T09:53:31.7681964Z Receiving objects:  57% (171/300)
+2026-03-05T09:53:31.7683943Z Receiving objects:  58% (174/300)
+2026-03-05T09:53:31.7686856Z Receiving objects:  59% (177/300)
+2026-03-05T09:53:31.7689637Z Receiving objects:  60% (180/300)
+2026-03-05T09:53:31.7691876Z Receiving objects:  61% (183/300)
+2026-03-05T09:53:31.7694126Z Receiving objects:  62% (186/300)
+2026-03-05T09:53:31.7696045Z Receiving objects:  63% (189/300)
+2026-03-05T09:53:31.7697060Z Receiving objects:  64% (192/300)
+2026-03-05T09:53:31.7700405Z Receiving objects:  65% (195/300)
+2026-03-05T09:53:31.7702765Z Receiving objects:  66% (198/300)
+2026-03-05T09:53:31.7704448Z Receiving objects:  67% (201/300)
+2026-03-05T09:53:31.7707612Z Receiving objects:  68% (204/300)
+2026-03-05T09:53:31.7710266Z Receiving objects:  69% (207/300)
+2026-03-05T09:53:31.7711574Z Receiving objects:  70% (210/300)
+2026-03-05T09:53:31.7713109Z Receiving objects:  71% (213/300)
+2026-03-05T09:53:31.7715237Z Receiving objects:  72% (216/300)
+2026-03-05T09:53:31.7716585Z Receiving objects:  73% (219/300)
+2026-03-05T09:53:31.7717147Z Receiving objects:  74% (222/300)
+2026-03-05T09:53:31.7717757Z Receiving objects:  75% (225/300)
+2026-03-05T09:53:31.7718641Z Receiving objects:  76% (228/300)
+2026-03-05T09:53:31.7719110Z Receiving objects:  77% (231/300)
+2026-03-05T09:53:31.7720547Z Receiving objects:  78% (234/300)
+2026-03-05T09:53:31.7720909Z Receiving objects:  79% (237/300)
+2026-03-05T09:53:31.7721404Z Receiving objects:  80% (240/300)
+2026-03-05T09:53:31.7721822Z Receiving objects:  81% (243/300)
+2026-03-05T09:53:31.7734788Z Receiving objects:  82% (246/300)
+2026-03-05T09:53:31.7739554Z Receiving objects:  83% (249/300)
+2026-03-05T09:53:31.7745737Z Receiving objects:  84% (252/300)
+2026-03-05T09:53:31.7749090Z Receiving objects:  85% (255/300)
+2026-03-05T09:53:31.7755236Z Receiving objects:  86% (258/300)
+2026-03-05T09:53:31.7755906Z Receiving objects:  87% (261/300)
+2026-03-05T09:53:31.7756788Z Receiving objects:  88% (264/300)
+2026-03-05T09:53:31.7757265Z Receiving objects:  89% (267/300)
+2026-03-05T09:53:31.7757813Z Receiving objects:  90% (270/300)
+2026-03-05T09:53:31.7759795Z Receiving objects:  91% (273/300)
+2026-03-05T09:53:31.7764505Z Receiving objects:  92% (276/300)
+2026-03-05T09:53:31.7765522Z Receiving objects:  93% (279/300)
+2026-03-05T09:53:31.7766032Z Receiving objects:  94% (282/300)
+2026-03-05T09:53:31.7767682Z Receiving objects:  95% (285/300)
+2026-03-05T09:53:31.7769307Z Receiving objects:  96% (288/300)
+2026-03-05T09:53:31.7773006Z Receiving objects:  97% (291/300)
+2026-03-05T09:53:31.7773777Z remote: Total 300 (delta 52), reused 219 (delta 24), pack-reused 0 (from 0)        
+2026-03-05T09:53:31.7775627Z Receiving objects:  98% (294/300)
+2026-03-05T09:53:31.7779603Z Receiving objects:  99% (297/300)
+2026-03-05T09:53:31.7780409Z Receiving objects: 100% (300/300)
+2026-03-05T09:53:31.7781375Z Receiving objects: 100% (300/300), 505.43 KiB | 12.33 MiB/s, done.
+2026-03-05T09:53:31.7789437Z Resolving deltas:   0% (0/52)
+2026-03-05T09:53:31.7793351Z Resolving deltas:   1% (1/52)
+2026-03-05T09:53:31.7795042Z Resolving deltas:   3% (2/52)
+2026-03-05T09:53:31.7807748Z Resolving deltas:   5% (3/52)
+2026-03-05T09:53:31.7808322Z Resolving deltas:   7% (4/52)
+2026-03-05T09:53:31.7809947Z Resolving deltas:   9% (5/52)
+2026-03-05T09:53:31.7811082Z Resolving deltas:  11% (6/52)
+2026-03-05T09:53:31.7813853Z Resolving deltas:  13% (7/52)
+2026-03-05T09:53:31.7817731Z Resolving deltas:  15% (8/52)
+2026-03-05T09:53:31.7819656Z Resolving deltas:  17% (9/52)
+2026-03-05T09:53:31.7820322Z Resolving deltas:  19% (10/52)
+2026-03-05T09:53:31.7823972Z Resolving deltas:  21% (11/52)
+2026-03-05T09:53:31.7825904Z Resolving deltas:  23% (12/52)
+2026-03-05T09:53:31.7831005Z Resolving deltas:  25% (13/52)
+2026-03-05T09:53:31.7835189Z Resolving deltas:  26% (14/52)
+2026-03-05T09:53:31.7836157Z Resolving deltas:  28% (15/52)
+2026-03-05T09:53:31.7836620Z Resolving deltas:  30% (16/52)
+2026-03-05T09:53:31.7837040Z Resolving deltas:  32% (17/52)
+2026-03-05T09:53:31.7837485Z Resolving deltas:  34% (18/52)
+2026-03-05T09:53:31.7838476Z Resolving deltas:  38% (20/52)
+2026-03-05T09:53:31.7838772Z Resolving deltas:  40% (21/52)
+2026-03-05T09:53:31.7839011Z Resolving deltas:  42% (22/52)
+2026-03-05T09:53:31.7839357Z Resolving deltas:  44% (23/52)
+2026-03-05T09:53:31.7839696Z Resolving deltas:  46% (24/52)
+2026-03-05T09:53:31.7839930Z Resolving deltas:  50% (26/52)
+2026-03-05T09:53:31.7840156Z Resolving deltas:  51% (27/52)
+2026-03-05T09:53:31.7840421Z Resolving deltas:  53% (28/52)
+2026-03-05T09:53:31.7840668Z Resolving deltas:  55% (29/52)
+2026-03-05T09:53:31.7840895Z Resolving deltas:  57% (30/52)
+2026-03-05T09:53:31.7841136Z Resolving deltas:  59% (31/52)
+2026-03-05T09:53:31.7841630Z Resolving deltas:  61% (32/52)
+2026-03-05T09:53:31.7841882Z Resolving deltas:  63% (33/52)
+2026-03-05T09:53:31.7842110Z Resolving deltas:  65% (34/52)
+2026-03-05T09:53:31.7842338Z Resolving deltas:  69% (36/52)
+2026-03-05T09:53:31.7842562Z Resolving deltas:  71% (37/52)
+2026-03-05T09:53:31.7842789Z Resolving deltas:  73% (38/52)
+2026-03-05T09:53:31.7843012Z Resolving deltas:  75% (39/52)
+2026-03-05T09:53:31.7843243Z Resolving deltas:  76% (40/52)
+2026-03-05T09:53:31.7843473Z Resolving deltas:  78% (41/52)
+2026-03-05T09:53:31.7843693Z Resolving deltas:  80% (42/52)
+2026-03-05T09:53:31.7843920Z Resolving deltas:  82% (43/52)
+2026-03-05T09:53:31.7844143Z Resolving deltas:  86% (45/52)
+2026-03-05T09:53:31.7844374Z Resolving deltas:  88% (46/52)
+2026-03-05T09:53:31.7844605Z Resolving deltas:  90% (47/52)
+2026-03-05T09:53:31.7844923Z Resolving deltas:  92% (48/52)
+2026-03-05T09:53:31.7845347Z Resolving deltas:  94% (49/52)
+2026-03-05T09:53:31.7846028Z Resolving deltas:  96% (50/52)
+2026-03-05T09:53:31.7846276Z Resolving deltas:  98% (51/52)
+2026-03-05T09:53:31.7846509Z Resolving deltas: 100% (52/52)
+2026-03-05T09:53:31.7846748Z Resolving deltas: 100% (52/52), done.
+2026-03-05T09:53:31.8690550Z From https://github.com/ShAglarov/flutterTeploservise
+2026-03-05T09:53:31.8691168Z  * [new ref]         4876aae0ac006012e39ca252e3f4012ab53a1274 -> origin/main
+2026-03-05T09:53:31.9083942Z ##[endgroup]
+2026-03-05T09:53:31.9085126Z ##[group]Determining the checkout info
+2026-03-05T09:53:31.9087601Z ##[endgroup]
+2026-03-05T09:53:31.9088640Z ##[group]Checking out the ref
+2026-03-05T09:53:31.9096331Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B main refs/remotes/origin/main
+2026-03-05T09:53:32.0284742Z Switched to a new branch 'main'
+2026-03-05T09:53:32.0307130Z branch 'main' set up to track 'origin/main'.
+2026-03-05T09:53:32.0357751Z ##[endgroup]
+2026-03-05T09:53:32.0805939Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format='%H'
+2026-03-05T09:53:32.1142905Z '4876aae0ac006012e39ca252e3f4012ab53a1274'
+2026-03-05T09:53:32.1664210Z ##[group]Run subosito/flutter-action@v2
+2026-03-05T09:53:32.1664526Z with:
+2026-03-05T09:53:32.1664677Z   channel: stable
+2026-03-05T09:53:32.1664851Z   architecture: X64
+2026-03-05T09:53:32.1665020Z   cache: false
+2026-03-05T09:53:32.1665185Z   pub-cache-path: default
+2026-03-05T09:53:32.1665385Z   dry-run: false
+2026-03-05T09:53:32.1665614Z   git-source: https://github.com/flutter/flutter.git
+2026-03-05T09:53:32.1665890Z ##[endgroup]
+2026-03-05T09:53:32.1881148Z ##[group]Run chmod +x "$GITHUB_ACTION_PATH/setup.sh"
+2026-03-05T09:53:32.1881513Z [36;1mchmod +x "$GITHUB_ACTION_PATH/setup.sh"[0m
+2026-03-05T09:53:32.1901026Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-05T09:53:32.1901419Z ##[endgroup]
+2026-03-05T09:53:32.3996713Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh -p \
+2026-03-05T09:53:32.3997048Z [36;1m$GITHUB_ACTION_PATH/setup.sh -p \[0m
+2026-03-05T09:53:32.3997306Z [36;1m  -n '' \[0m
+2026-03-05T09:53:32.3997505Z [36;1m  -f '' \[0m
+2026-03-05T09:53:32.3997659Z [36;1m  -a 'X64' \[0m
+2026-03-05T09:53:32.3997829Z [36;1m  -k '' \[0m
+2026-03-05T09:53:32.3997983Z [36;1m  -c '' \[0m
+2026-03-05T09:53:32.3998223Z [36;1m  -l '' \[0m
+2026-03-05T09:53:32.3998480Z [36;1m  -d 'default' \[0m
+2026-03-05T09:53:32.3998891Z [36;1m  -g 'https://github.com/flutter/flutter.git' \[0m
+2026-03-05T09:53:32.3999166Z [36;1m  stable[0m
+2026-03-05T09:53:32.4014113Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-05T09:53:32.4014478Z ##[endgroup]
+2026-03-05T09:53:35.6026406Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh \
+2026-03-05T09:53:35.6026704Z [36;1m$GITHUB_ACTION_PATH/setup.sh \[0m
+2026-03-05T09:53:35.6026939Z [36;1m  -n '3.41.4' \[0m
+2026-03-05T09:53:35.6027117Z [36;1m  -a 'x64' \[0m
+2026-03-05T09:53:35.6027379Z [36;1m  -c 'C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64' \[0m
+2026-03-05T09:53:35.6027766Z [36;1m  -d 'C:\Users\runneradmin\AppData\Local\Pub\Cache' \[0m
+2026-03-05T09:53:35.6028039Z [36;1m  stable[0m
+2026-03-05T09:53:35.6042260Z shell: C:\Program Files\Git\bin\bash.EXE --noprofile --norc -e -o pipefail {0}
+2026-03-05T09:53:35.6042631Z ##[endgroup]
+2026-03-05T09:53:38.0495206Z   % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+2026-03-05T09:53:38.0496054Z                                  Dload  Upload  Total   Spent   Left   Speed
+2026-03-05T09:53:38.0496470Z 
+2026-03-05T09:53:39.0484592Z   0      0   0      0   0      0      0      0                              0
+2026-03-05T09:53:40.0475061Z  20  1.70G  20 363.6M   0      0 363.5M      0   00:04   00:01   00:03 363.6M
+2026-03-05T09:53:41.0466874Z  46  1.70G  46 810.8M   0      0 405.5M      0   00:04   00:01   00:03 405.6M
+2026-03-05T09:53:42.0456284Z  68  1.70G  68  1.16G   0      0 398.2M      0   00:04   00:02   00:02 398.3M
+2026-03-05T09:53:42.5718443Z  87  1.70G  87  1.49G   0      0 381.7M      0   00:04   00:03   00:01 381.8M
+2026-03-05T09:53:42.5719323Z 100  1.70G 100  1.70G   0      0 386.4M      0   00:04   00:04         381.8M
+2026-03-05T09:53:42.5720960Z 100  1.70G 100  1.70G   0      0 386.4M      0   00:04   00:04         381.8M
+2026-03-05T09:53:42.5722667Z 100  1.70G 100  1.70G   0      0 386.4M      0   00:04   00:04         381.8M
+2026-03-05T09:55:15.6729091Z ##[group]Run flutter pub get
+2026-03-05T09:55:15.6729426Z [36;1mflutter pub get[0m
+2026-03-05T09:55:15.7382104Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-05T09:55:15.7382556Z env:
+2026-03-05T09:55:15.7382932Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:55:15.7383483Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:55:15.7384753Z ##[endgroup]
+2026-03-05T09:55:22.1699484Z Building flutter tool... 
+2026-03-05T09:55:22.1737438Z Running pub upgrade... 
+2026-03-05T09:55:22.2101911Z Resolving dependencies...
+2026-03-05T09:55:23.4952283Z Downloading packages...
+2026-03-05T09:55:31.3289231Z Got dependencies.
+2026-03-05T09:55:48.4821220Z Resolving dependencies...
+2026-03-05T09:55:49.3194508Z Downloading packages...
+2026-03-05T09:56:05.4188109Z   _fe_analyzer_shared 92.0.0 (97.0.0 available)
+2026-03-05T09:56:05.4188801Z   analysis_server_plugin 0.3.4 (0.3.11 available)
+2026-03-05T09:56:05.4189966Z   analyzer 9.0.0 (11.0.0 available)
+2026-03-05T09:56:05.4190445Z   analyzer_buffer 0.3.0 (0.3.1 available)
+2026-03-05T09:56:05.4190887Z   analyzer_plugin 0.13.11 (0.14.5 available)
+2026-03-05T09:56:05.4191316Z   build_config 1.2.0 (1.3.0 available)
+2026-03-05T09:56:05.4191791Z   build_runner 2.11.1 (2.12.2 available)
+2026-03-05T09:56:05.4192338Z   connectivity_plus 6.1.5 (7.0.0 available)
+2026-03-05T09:56:05.4192927Z   dart_style 3.1.3 (3.1.6 available)
+2026-03-05T09:56:05.4193370Z   dio 5.9.1 (5.9.2 available)
+2026-03-05T09:56:05.4193746Z   dio_web_adapter 2.1.1 (2.1.2 available)
+2026-03-05T09:56:05.4194222Z   drift 2.31.0 (2.32.0 available)
+2026-03-05T09:56:05.4194605Z   drift_dev 2.31.0 (2.32.0 available)
+2026-03-05T09:56:05.4195005Z   flutter_map 7.0.2 (8.2.2 available)
+2026-03-05T09:56:05.4195434Z > matcher 0.12.19 (was 0.12.18)
+2026-03-05T09:56:05.4195920Z   meta 1.17.0 (1.18.1 available)
+2026-03-05T09:56:05.4196345Z   mgrs_dart 2.0.0 (3.0.0 available)
+2026-03-05T09:56:05.4196859Z   proj4dart 2.1.0 (3.0.0 available)
+2026-03-05T09:56:05.4197359Z   sqlite3 2.9.4 (3.1.6 available)
+2026-03-05T09:56:05.4197841Z   sqlparser 0.43.1 (0.44.1 available)
+2026-03-05T09:56:05.4198400Z > test 1.30.0 (was 1.29.0)
+2026-03-05T09:56:05.4198787Z > test_api 0.7.10 (was 0.7.9)
+2026-03-05T09:56:05.4199235Z > test_core 0.6.16 (was 0.6.15)
+2026-03-05T09:56:05.4199654Z   unicode 0.3.1 (1.1.9 available)
+2026-03-05T09:56:05.4200160Z   win32 5.15.0 (6.0.0 available)
+2026-03-05T09:56:05.4200683Z Changed 4 dependencies!
+2026-03-05T09:56:05.4201423Z 21 packages have newer versions incompatible with dependency constraints.
+2026-03-05T09:56:05.4202352Z Try `flutter pub outdated` for more information.
+2026-03-05T09:56:06.2659508Z ##[group]Run flutter build windows --release
+2026-03-05T09:56:06.2659912Z [36;1mflutter build windows --release[0m
+2026-03-05T09:56:06.2730614Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-05T09:56:06.2730993Z env:
+2026-03-05T09:56:06.2731270Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:56:06.2731968Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:56:06.2732292Z ##[endgroup]
+2026-03-05T09:58:17.6093981Z Building Windows application...                                   129.2s
+2026-03-05T09:58:17.6125370Z √ Built build\windows\x64\runner\Release\teploservice_flutter.exe
+2026-03-05T09:58:17.7527359Z ##[group]Run flutter pub run msix:create --install-certificate false
+2026-03-05T09:58:17.7527975Z [36;1mflutter pub run msix:create --install-certificate false[0m
+2026-03-05T09:58:17.7596048Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-05T09:58:17.7596427Z env:
+2026-03-05T09:58:17.7596717Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:58:17.7597155Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:58:17.7597462Z ##[endgroup]
+2026-03-05T09:58:30.6255492Z running "flutter build windows"...      /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/9.9s
+2026-03-05T09:58:31.1424170Z building msix files...                  /-\|/-\0.5s
+2026-03-05T09:58:33.6618243Z packing msix files...                   /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|2.5s
+2026-03-05T09:58:33.8032956Z [32mmsix created: [0m[1m[34mbuild\windows\x64\runner\Release\teploservice_flutter.msix[0m[0m
+2026-03-05T09:58:33.8334463Z ##[group]Run actions/upload-artifact@v4
+2026-03-05T09:58:33.8334815Z with:
+2026-03-05T09:58:33.8335041Z   name: teploservicemap-msix
+2026-03-05T09:58:33.8335313Z   path: build\windows\runner\Release\*.msix
+2026-03-05T09:58:33.8335620Z   if-no-files-found: warn
+2026-03-05T09:58:33.8335842Z   compression-level: 6
+2026-03-05T09:58:33.8336068Z   overwrite: false
+2026-03-05T09:58:33.8336279Z   include-hidden-files: false
+2026-03-05T09:58:33.8336497Z env:
+2026-03-05T09:58:33.8336798Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:58:33.8337208Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:58:33.8337538Z ##[endgroup]
+2026-03-05T09:58:34.1259403Z ##[warning]No files were found with the provided path: build\windows\runner\Release\*.msix. No artifacts will be uploaded.
+2026-03-05T09:58:34.1610167Z Post job cleanup.
+2026-03-05T09:58:34.1788121Z Post job cleanup.
+2026-03-05T09:58:34.3826300Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-03-05T09:58:34.4109503Z git version 2.53.0.windows.1
+2026-03-05T09:58:34.4183522Z Temporarily overriding HOME='D:\a\_temp\4df5ef51-6886-4c37-8c70-ad942fb5bf94' before making global git config changes
+2026-03-05T09:58:34.4184655Z Adding repository directory to the temporary git global config as a safe directory
+2026-03-05T09:58:34.4192583Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\flutterTeploservise\flutterTeploservise
+2026-03-05T09:58:34.4504782Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-03-05T09:58:34.4830979Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-03-05T09:58:35.0274829Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-03-05T09:58:35.0541608Z http.https://github.com/.extraheader
+2026-03-05T09:58:35.0588908Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-03-05T09:58:35.0978104Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2026-03-05T09:58:35.6510285Z Cleaning up orphan processes
+2026-03-05T09:58:35.6704923Z Terminate orphan process: pid (5052) (vctip)

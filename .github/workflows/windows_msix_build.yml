@@ -31,4 +31,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: teploservicemap-msix
-          path: build\windows\runner\Release\*.msix
+          path: build\windows\**\*.msix

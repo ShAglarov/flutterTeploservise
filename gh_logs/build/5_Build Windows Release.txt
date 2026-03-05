@@ -1,9 +1,9 @@
-﻿2026-03-05T09:35:25.8783211Z ##[group]Run flutter build windows --release
-2026-03-05T09:35:25.8783793Z [36;1mflutter build windows --release[0m
-2026-03-05T09:35:25.8891847Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
-2026-03-05T09:35:25.8892397Z env:
-2026-03-05T09:35:25.8892828Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
-2026-03-05T09:35:25.8893500Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
-2026-03-05T09:35:25.8894003Z ##[endgroup]
-2026-03-05T09:37:52.6179697Z Building Windows application...                                   141.8s
-2026-03-05T09:37:52.6212289Z √ Built build\windows\x64\runner\Release\teploservice_flutter.exe
+﻿2026-03-05T09:56:06.2659489Z ##[group]Run flutter build windows --release
+2026-03-05T09:56:06.2659909Z [36;1mflutter build windows --release[0m
+2026-03-05T09:56:06.2730602Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-05T09:56:06.2730990Z env:
+2026-03-05T09:56:06.2731267Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:56:06.2731964Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:56:06.2732290Z ##[endgroup]
+2026-03-05T09:58:17.6093934Z Building Windows application...                                   129.2s
+2026-03-05T09:58:17.6125353Z √ Built build\windows\x64\runner\Release\teploservice_flutter.exe

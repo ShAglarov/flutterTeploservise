@@ -1,23 +1,11 @@
-﻿2026-03-05T09:37:52.7618178Z ##[group]Run flutter pub run msix:create
-2026-03-05T09:37:52.7618569Z [36;1mflutter pub run msix:create[0m
-2026-03-05T09:37:52.7690562Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
-2026-03-05T09:37:52.7690943Z env:
-2026-03-05T09:37:52.7691271Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
-2026-03-05T09:37:52.7691697Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
-2026-03-05T09:37:52.7692007Z ##[endgroup]
-2026-03-05T09:38:05.4962396Z running "flutter build windows"...      /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|9.9s
-2026-03-05T09:38:05.9492205Z building msix files...                  /-\|/-0.5s
-2026-03-05T09:38:08.4131304Z packing msix files...                   /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\ 
-2026-03-05T09:38:08.4133594Z 
-2026-03-05T09:38:08.4180700Z Unhandled exception:
-2026-03-05T09:38:08.4181434Z type 'Null' is not a subtype of type 'FutureOr<String>'
-2026-03-05T09:38:08.4182985Z #0      _AsyncCompleter.complete (dart:async/future_impl.dart:98:41)
-2026-03-05T09:38:08.4184787Z #1      Prompter.prompt.<anonymous closure>.<anonymous closure> (package:console/src/prompt.dart:222:19)
-2026-03-05T09:38:08.4185812Z #2      new Future.<anonymous closure> (dart:async/future.dart:260:40)
-2026-03-05T09:38:08.4186706Z #3      Timer._createTimer.<anonymous closure> (dart:async-patch/timer_patch.dart:18:15)
-2026-03-05T09:38:08.4187655Z #4      _Timer._runTimers (dart:isolate-patch/timer_impl.dart:423:19)
-2026-03-05T09:38:08.4188460Z #5      _Timer._handleMessage (dart:isolate-patch/timer_impl.dart:454:5)
-2026-03-05T09:38:08.4189303Z #6      _RawReceivePort._handleMessage (dart:isolate-patch/isolate_patch.dart:193:12)
-2026-03-05T09:38:08.4673324Z Failed to update packages.
-2026-03-05T09:38:08.5661127Z [1mDo you want to install the certificate: "test_certificate.pfx" ?[0m[1;30m (y/N) [0m
-2026-03-05T09:38:08.5781121Z ##[error]Process completed with exit code 1.
+﻿2026-03-05T09:58:17.7527334Z ##[group]Run flutter pub run msix:create --install-certificate false
+2026-03-05T09:58:17.7527971Z [36;1mflutter pub run msix:create --install-certificate false[0m
+2026-03-05T09:58:17.7596038Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2026-03-05T09:58:17.7596424Z env:
+2026-03-05T09:58:17.7596714Z   FLUTTER_ROOT: C:\hostedtoolcache\windows\flutter\stable-3.41.4-x64
+2026-03-05T09:58:17.7597152Z   PUB_CACHE: C:\Users\runneradmin\AppData\Local\Pub\Cache
+2026-03-05T09:58:17.7597459Z ##[endgroup]
+2026-03-05T09:58:30.6255456Z running "flutter build windows"...      /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|/9.9s
+2026-03-05T09:58:31.1424134Z building msix files...                  /-\|/-\0.5s
+2026-03-05T09:58:33.6618114Z packing msix files...                   /-\|/-\|/-\|/-\|/-\|/-\|/-\|/-\|2.5s
+2026-03-05T09:58:33.8032927Z [32mmsix created: [0m[1m[34mbuild\windows\x64\runner\Release\teploservice_flutter.msix[0m[0m
