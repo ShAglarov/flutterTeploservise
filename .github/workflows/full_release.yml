@@ -67,7 +67,6 @@ jobs:
           files: |
             build/app/outputs/flutter-apk/app-release.apk
             installer/*_Setup.exe
-            build/windows/x64/runner/Release/*.exe
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
