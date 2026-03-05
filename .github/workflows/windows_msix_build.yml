@@ -25,7 +25,7 @@ jobs:
         run: flutter build windows --release
 
       - name: Create MSIX package
-        run: flutter pub run msix:create
+        run: flutter pub run msix:create --install-certificate false
 
       - name: Upload MSIX Artifact
         uses: actions/upload-artifact@v4

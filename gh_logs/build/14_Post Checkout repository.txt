@@ -1,12 +1,12 @@
-﻿2026-03-05T09:12:33.2774304Z Post job cleanup.
-2026-03-05T09:12:33.5262232Z [command]"C:\Program Files\Git\bin\git.exe" version
-2026-03-05T09:12:33.5585863Z git version 2.53.0.windows.1
-2026-03-05T09:12:33.5670696Z Temporarily overriding HOME='D:\a\_temp\9442463f-6150-4f52-94f0-785fda1fb2eb' before making global git config changes
-2026-03-05T09:12:33.5672347Z Adding repository directory to the temporary git global config as a safe directory
-2026-03-05T09:12:33.5681707Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\flutterTeploservise\flutterTeploservise
-2026-03-05T09:12:33.6010799Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
-2026-03-05T09:12:33.6340106Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
-2026-03-05T09:12:34.2551999Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-2026-03-05T09:12:34.2876835Z http.https://github.com/.extraheader
-2026-03-05T09:12:34.2927999Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
-2026-03-05T09:12:34.3316239Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+﻿2026-03-05T09:38:08.6251469Z Post job cleanup.
+2026-03-05T09:38:08.8481131Z [command]"C:\Program Files\Git\bin\git.exe" version
+2026-03-05T09:38:08.8776300Z git version 2.53.0.windows.1
+2026-03-05T09:38:08.8853274Z Temporarily overriding HOME='D:\a\_temp\59028d38-0379-4b4b-83bf-83302d980205' before making global git config changes
+2026-03-05T09:38:08.8854420Z Adding repository directory to the temporary git global config as a safe directory
+2026-03-05T09:38:08.8861984Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\flutterTeploservise\flutterTeploservise
+2026-03-05T09:38:08.9186804Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2026-03-05T09:38:08.9507105Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2026-03-05T09:38:09.5320478Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-03-05T09:38:09.5574797Z http.https://github.com/.extraheader
+2026-03-05T09:38:09.5616973Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2026-03-05T09:38:09.5921548Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
