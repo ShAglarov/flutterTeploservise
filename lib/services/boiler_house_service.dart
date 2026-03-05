@@ -45,12 +45,22 @@ class BoilerHouseService {
 
   Future<BoilerHouseResponse> createBoilerHouse(BoilerHouseCreate boilerHouse) async {
     final response = await _dio.post('/boiler-houses/', data: boilerHouse.toJson());
-    return BoilerHouseResponse.fromJson(response.data);
+    final result = BoilerHouseResponse.fromJson(response.data);
+    
+    // Cache to local DB so map UI updates immediately on this device
+    await _syncRepository.upsertBoilerHouses([result]);
+    
+    return result;
   }
 
   Future<BoilerHouseResponse> updateBoilerHouse(int id, BoilerHouseUpdate update) async {
     final response = await _dio.put('/boiler-houses/$id', data: update.toJson());
-    return BoilerHouseResponse.fromJson(response.data);
+    final result = BoilerHouseResponse.fromJson(response.data);
+    
+    // Cache to local DB so map UI updates immediately on this device
+    await _syncRepository.upsertBoilerHouses([result]);
+    
+    return result;
   }
 
   Future<void> deleteBoilerHouse(int id) async {

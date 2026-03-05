@@ -73,16 +73,28 @@ class LocationService {
 
   Future<SavedLocationResponse> createSavedLocation(SavedLocationCreate location) async {
     final response = await _dio.post('/locations/', data: location.toJson());
-    return SavedLocationResponse.fromJson(response.data);
+    final result = SavedLocationResponse.fromJson(response.data);
+    
+    // Cache to local DB so map UI updates immediately on this device
+    await _syncRepository.upsertSavedLocations([result]);
+    
+    return result;
   }
 
   Future<SavedLocationResponse> updateSavedLocation(int id, SavedLocationUpdate update) async {
     final response = await _dio.put('/locations/$id', data: update.toJson());
-    return SavedLocationResponse.fromJson(response.data);
+    final result = SavedLocationResponse.fromJson(response.data);
+    
+    // Cache to local DB so map UI updates immediately on this device
+    await _syncRepository.upsertSavedLocations([result]);
+    
+    return result;
   }
 
   Future<void> deleteSavedLocation(int id) async {
     await _dio.delete('/locations/$id');
+    // Remove from local DB so map UI updates immediately
+    await _syncRepository.deleteSavedLocation(id);
   }
 
   Future<PhotoInfo> uploadLocationPhoto(int locationId, String filePath) async {
@@ -171,9 +183,14 @@ class LocationService {
       '/locations/batch-update',
       data: updates.map((e) => e.toJson()).toList(),
     );
-    return (response.data as List)
+    final results = (response.data as List)
         .map((e) => SavedLocationResponse.fromJson(e))
         .toList();
+    
+    // Cache to local DB
+    await _syncRepository.upsertSavedLocations(results);
+    
+    return results;
   }
 
   Future<List<SavedLocationResponse>> batchCreateSavedLocations(List<SavedLocationCreate> locations) async {
@@ -181,8 +198,13 @@ class LocationService {
       '/locations/batch-create',
       data: locations.map((e) => e.toJson()).toList(),
     );
-    return (response.data as List)
+    final results = (response.data as List)
         .map((e) => SavedLocationResponse.fromJson(e))
         .toList();
+    
+    // Cache to local DB
+    await _syncRepository.upsertSavedLocations(results);
+    
+    return results;
   }
 }
