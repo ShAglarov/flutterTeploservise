@@ -52,9 +52,9 @@ flutter:
 
 msix:
   display_name: "TeploserviceMap"
-  publisher_display_name: "Teploservice"
-  identity_name: "[PLACEHOLDER_IDENTITY]" # Leave as placeholder for now
-  publisher: "[PLACEHOLDER_PUBLISHER]" # Leave as placeholder for now
+  publisher_display_name: "ShAglarov"
+  identity_name: "ShAglarov.TeploserviseMap"
+  publisher: "CN=7256F9B6-2A6A-4C62-AEFE-DDE0611409E3"
   version: "1.0.0.0"
   capabilities: "internetClient, pushNotification" # pushNotification is critical
   store: true
