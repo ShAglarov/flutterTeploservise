@@ -51,7 +51,7 @@ flutter:
   uses-material-design: true
 
 msix_config:
-  display_name: "TeploserviceMap"
+  display_name: "TeploserviseMap"
   publisher_display_name: "ShAglarov"
   identity_name: "ShAglarov.TeploserviseMap"
   publisher: "CN=7256F9B6-2A6A-4C62-AEFE-DDE0611409E3"
