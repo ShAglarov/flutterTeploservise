@@ -11,6 +11,7 @@ import 'services/sync_worker.dart';
 import 'services/realtime_service.dart';
 import 'services/data_sync_service.dart';
 import 'services/sync_service.dart';
+import 'services/wns_push_service.dart';
 import 'providers/incident_providers.dart';
 import 'providers/map_providers.dart';
 
@@ -100,6 +101,12 @@ class _MyAppState extends ConsumerState<MyApp> {
       });
 
       print('✅ [Main] Sync pipeline initialized');
+
+      // 5. Register WNS channel for Windows push notifications
+      if (Platform.isWindows) {
+        final wnsPushService = ref.read(wnsPushServiceProvider);
+        await wnsPushService.registerIfWindows();
+      }
     });
   }
 
