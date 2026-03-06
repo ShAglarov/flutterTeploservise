@@ -53,6 +53,10 @@ jobs:
           flutter config --enable-windows-desktop
           flutter build windows --release
 
+      - name: Create MSIX package
+        if: matrix.platform == 'windows'
+        run: flutter pub run msix:create --install-certificate false
+
       - name: Compile Windows Installer
         if: matrix.platform == 'windows'
         shell: powershell
@@ -74,7 +78,9 @@ jobs:
         if: matrix.platform == 'windows'
         uses: softprops/action-gh-release@v2
         with:
-          files: installer/*_Setup.exe
+          files: |
+            installer/*_Setup.exe
+            build/windows/**/runner/Release/*.msix
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
