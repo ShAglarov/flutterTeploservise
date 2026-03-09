@@ -601,6 +601,32 @@ class SyncRepository {
     await (_db.delete(_db.incidents)..where((t) => t.backendId.equals(backendId))).go();
   }
 
+  /// Remove local incidents that no longer exist on the server.
+  /// Called after a full GET /incidents/ refresh to reconcile stale data.
+  Future<void> reconcileIncidents(List<int> serverIncidentIds) async {
+    if (serverIncidentIds.isEmpty) return;
+
+    final localIncidents = await _db.select(_db.incidents).get();
+    final serverIdSet = serverIncidentIds.toSet();
+
+    final toDelete = localIncidents
+        .where((inc) => inc.backendId > 0 && !serverIdSet.contains(inc.backendId))
+        .map((inc) => inc.backendId)
+        .toList();
+
+    if (toDelete.isEmpty) return;
+
+    await _db.transaction(() async {
+      for (final id in toDelete) {
+        await (_db.delete(_db.affectedHouses)..where((t) => t.incidentId.equals(id))).go();
+        await (_db.delete(_db.incidentPhotos)..where((t) => t.incidentId.equals(id))).go();
+        await (_db.delete(_db.incidents)..where((t) => t.backendId.equals(id))).go();
+      }
+    });
+
+    dev.log('🗑️ [SyncRepo] Reconciled: removed ${toDelete.length} stale incidents', name: 'SYNC');
+  }
+
   Future<void> deleteBoilerHouse(int backendId) async {
     await (_db.delete(_db.boilerHouses)..where((t) => t.backendId.equals(backendId))).go();
   }

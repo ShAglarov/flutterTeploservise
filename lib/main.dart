@@ -12,6 +12,7 @@ import 'services/realtime_service.dart';
 import 'services/data_sync_service.dart';
 import 'services/sync_service.dart';
 import 'services/wns_push_service.dart';
+import 'services/incident_service.dart';
 import 'providers/incident_providers.dart';
 import 'providers/map_providers.dart';
 
@@ -69,6 +70,9 @@ class _MyAppState extends ConsumerState<MyApp> {
     _syncInitialized = true;
 
     Future.microtask(() async {
+      // 0. Force fresh re-read from local DB
+      ref.invalidate(allIncidentsProvider);
+
       // 1. Connect WebSocket
       final realtimeService = ref.read(realtimeServiceProvider);
       await realtimeService.connect();
@@ -80,6 +84,15 @@ class _MyAppState extends ConsumerState<MyApp> {
       // 3. Run initial incremental sync (catch-up via HTTP)
       final syncService = ref.read(syncServiceProvider);
       await syncService.incrementalSync();
+
+      // 3.5 Full incident refresh: reconcile local DB against server
+      try {
+        final incidentService = ref.read(incidentServiceProvider);
+        await incidentService.getAllIncidents();
+        print('✅ [Main] Full incident refresh completed');
+      } catch (e) {
+        print('⚠️ [Main] Full incident refresh failed: $e');
+      }
 
       // 4. Listen for WS reconnects → gap detection (debounced)
       DateTime? lastReconnectHandled;
@@ -113,6 +126,11 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+
+    // Reset sync flag when user logs out so the pipeline re-initializes on next login
+    if (authState.status != AuthStatus.authenticated) {
+      _syncInitialized = false;
+    }
 
     // When authenticated, initialize the sync pipeline
     if (authState.status == AuthStatus.authenticated && !_syncInitialized) {

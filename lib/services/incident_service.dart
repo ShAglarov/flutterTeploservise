@@ -26,6 +26,9 @@ class IncidentService {
     // Cache to local DB
     await _syncRepository.upsertIncidents(incidents);
     
+    // Remove local incidents that no longer exist on the server
+    await _syncRepository.reconcileIncidents(incidents.map((i) => i.id).toList());
+    
     return incidents;
   }
 
