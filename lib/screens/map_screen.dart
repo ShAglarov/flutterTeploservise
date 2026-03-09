@@ -46,6 +46,25 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _showSuccessAnimation = false;
   bool _isMenuOpen = false;
 
+  /// Cached markers to avoid rebuilding the entire list on unrelated state changes
+  List<Marker> _cachedMarkers = [];
+  List<Polyline> _cachedPolylines = [];
+  /// Tracks which boiler house is selected for marker filtering (to invalidate cache)
+  int? _cachedSelectedBhId;
+  /// Tracks which item is tapped (to invalidate cache for selection highlight)
+  dynamic _cachedTappedItem;
+  /// Tracks marker-relevant data to avoid rebuilding on unrelated state changes
+  int _cachedBhCount = -1;
+  int _cachedLocCount = -1;
+  Set<int> _cachedBhIncidentIds = {};
+  Set<int> _cachedLocIncidentIds = {};
+
+  /// Value-based set equality check
+  bool _setsEqual(Set<int> a, Set<int> b) {
+    if (a.length != b.length) return false;
+    return a.containsAll(b);
+  }
+
   void _onBoilerHouseMarkerTap(BoilerHouseResponse bh) {
     setState(() {
       _tappedItem = bh;
@@ -194,24 +213,47 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           Positioned.fill(
             child: GestureDetector(
               onTap: _onMapTap,
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: const LatLng(42.9849, 47.5047),
-                  initialZoom: 13,
-                  onTap: (_, __) => _onMapTap(),
-                  onLongPress: _onMapLongPress,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.teploservice',
-                    tileBuilder: _darkModeTileBuilder,
+              child: Builder(builder: (context) {
+                // Rebuild markers only when marker-RELEVANT data actually changed,
+                // not on every MapDataState reference change. This prevents
+                // rapid rebuilds from multiple WebSocket updates.
+                final selectedBhId = _selectedBoilerHouse?.id;
+                final needsRebuild = _cachedMarkers.isEmpty ||
+                    _cachedSelectedBhId != selectedBhId ||
+                    !identical(_cachedTappedItem, _tappedItem) ||
+                    _cachedBhCount != mapData.boilerHouses.length ||
+                    _cachedLocCount != mapData.locations.length ||
+                    !_setsEqual(_cachedBhIncidentIds, mapData.boilerHouseIdsWithIncidents) ||
+                    !_setsEqual(_cachedLocIncidentIds, mapData.locationIdsWithIncidents);
+                if (needsRebuild) {
+                  _cachedMarkers = _buildMarkers(mapData);
+                  _cachedPolylines = _buildPolylines(mapData);
+                  _cachedSelectedBhId = selectedBhId;
+                  _cachedTappedItem = _tappedItem;
+                  _cachedBhCount = mapData.boilerHouses.length;
+                  _cachedLocCount = mapData.locations.length;
+                  _cachedBhIncidentIds = Set.of(mapData.boilerHouseIdsWithIncidents);
+                  _cachedLocIncidentIds = Set.of(mapData.locationIdsWithIncidents);
+                }
+                return FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: const LatLng(42.9849, 47.5047),
+                    initialZoom: 13,
+                    onTap: (_, __) => _onMapTap(),
+                    onLongPress: _onMapLongPress,
                   ),
-                  PolylineLayer(polylines: _buildPolylines(mapData)),
-                  MarkerLayer(markers: _buildMarkers(mapData)),
-                ],
-              ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.teploservice',
+                      tileBuilder: _darkModeTileBuilder,
+                    ),
+                    PolylineLayer(polylines: _cachedPolylines),
+                    MarkerLayer(markers: _cachedMarkers),
+                  ],
+                );
+              }),
             ),
           ),
 
@@ -651,24 +693,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       final hasIncident = data.boilerHouseIdsWithIncidents.contains(bh.id);
       final isSelected = _tappedItem is BoilerHouseResponse && (_tappedItem as BoilerHouseResponse).id == bh.id;
       markers.add(Marker(
+        key: ValueKey('bh_${bh.id}'),
         point: LatLng(bh.latitude, bh.longitude),
         width: isSelected ? 44 : 36,
         height: isSelected ? 44 : 36,
-        child: GestureDetector(
-          onTap: () => _onBoilerHouseMarkerTap(bh),
-          child: Container(
-            decoration: BoxDecoration(
-              color: hasIncident ? AppTheme.errorRed : AppTheme.primaryBlue,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? Colors.yellow : Colors.white,
-                width: isSelected ? 3 : 2,
+        child: RepaintBoundary(
+          child: GestureDetector(
+            onTap: () => _onBoilerHouseMarkerTap(bh),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: hasIncident ? AppTheme.errorRed : AppTheme.primaryBlue,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? Colors.yellow : Colors.white,
+                  width: isSelected ? 3 : 2,
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
-              ],
+              child: const Icon(Icons.factory, color: Colors.white, size: 18),
             ),
-            child: const Icon(Icons.factory, color: Colors.white, size: 18),
           ),
         ),
       ));
@@ -683,26 +730,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (loc.latitude == 0 && loc.longitude == 0) continue;
       final isSelected = _tappedItem is SavedLocationResponse && (_tappedItem as SavedLocationResponse).id == loc.id;
       markers.add(Marker(
+        key: ValueKey('loc_${loc.id}'),
         point: LatLng(loc.latitude, loc.longitude),
         width: isSelected ? 34 : 28,
         height: isSelected ? 34 : 28,
-        child: GestureDetector(
-          onTap: () => _onLocationMarkerTap(loc),
-          child: Container(
-            decoration: BoxDecoration(
-              color: data.locationIdsWithIncidents.contains(loc.id)
-                  ? AppTheme.errorRed
-                  : AppTheme.successGreen,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? Colors.yellow : Colors.white,
-                width: isSelected ? 2.5 : 1.5,
+        child: RepaintBoundary(
+          child: GestureDetector(
+            onTap: () => _onLocationMarkerTap(loc),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              decoration: BoxDecoration(
+                color: data.locationIdsWithIncidents.contains(loc.id)
+                    ? AppTheme.errorRed
+                    : AppTheme.successGreen,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? Colors.yellow : Colors.white,
+                  width: isSelected ? 2.5 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
-              ],
+              child: const Icon(Icons.home, color: Colors.white, size: 14),
             ),
-            child: const Icon(Icons.home, color: Colors.white, size: 14),
           ),
         ),
       ));
