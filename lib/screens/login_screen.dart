@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_providers.dart';
+import '../services/server_manager.dart';
 import '../utils/app_theme.dart';
+import 'server_list_screen.dart';
+import 'add_server_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +17,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _firstBuild = true;
 
   @override
   void dispose() {
@@ -41,9 +45,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _openServerList() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.35,
+        maxChildSize: 0.85,
+        builder: (_, controller) => ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: const ServerListScreen(),
+        ),
+      ),
+    );
+  }
+
+  void _openAddServerScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddServerScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final serverState = ref.watch(serverStateProvider).value ?? ref.read(serverManagerProvider).state;
+    final activeServer = serverState.activeServer;
+
+    // КРИТИЧНО: Если серверов нет (первый запуск), автоматически открываем добавление
+    if (_firstBuild && serverState.servers.isEmpty) {
+      _firstBuild = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openAddServerScreen();
+      });
+    } else {
+      _firstBuild = false;
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -73,7 +113,78 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     letterSpacing: 2,
                   ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 32),
+
+                // ============================================================
+                // Server Indicator
+                // ============================================================
+                GestureDetector(
+                  onTap: _openServerList,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.primaryBlue.withOpacity(0.15),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Icon
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryBlue.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.dns_outlined,
+                            size: 16,
+                            color: AppTheme.primaryBlue,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Name + URL
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                activeServer?.name ?? 'Сервер не выбран',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                activeServer?.displayURL ??
+                                    'Нажмите для настройки',
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Chevron
+                        const Icon(
+                          Icons.chevron_right,
+                          color: Colors.white24,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 
                 // Username Field
                 TextFormField(
@@ -155,3 +266,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 }
+

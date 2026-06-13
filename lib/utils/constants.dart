@@ -1,7 +1,12 @@
 class AppConstants {
-  // Use the production domain. The backend expects URLs without double slashes.
-  static const String baseUrl = 'https://api.teploservis05.ru/api/v1';
-  static const String wsBaseUrl = 'wss://api.teploservis05.ru/api/v1/sync/ws';
+  // ============================================================
+  // Dynamic server URLs — обновляются при смене сервера
+  // ============================================================
+  
+  /// Текущий baseUrl. По умолчанию дефолтный продакшн-сервер.
+  /// Обновляется из ServerManager при инициализации и смене сервера.
+  static String baseUrl = 'https://api.teploservis05.ru/api/v1';
+  static String wsBaseUrl = 'wss://api.teploservis05.ru/api/v1/sync/ws';
   
   // Auth Endpoints (ensure they start with a slash)
   static const String login = '/auth/login';
@@ -16,3 +21,4 @@ class AppConstants {
   static const String refreshTokenKey = 'refresh_token';
   static const String userProfileKey = 'user_profile';
 }
+

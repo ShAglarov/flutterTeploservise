@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
 import 'incident_list_screen.dart';
 import 'action_log_list_screen.dart';
+import 'profile_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
 import '../providers/incident_providers.dart';
@@ -278,7 +279,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           if (_tappedItem != null && _tappedPosition != null)
             _buildInfoPopup(),
 
-          // 3. Top-Left Control Buttons (Journal & Incidents)
+          // 3. Top-Left Control Buttons (Journal & Incidents & Profile)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.only(left: 12.0, top: 12.0),
@@ -391,7 +392,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // The main trigger button (blue circular)
+        // The main trigger button (blue circular — person icon like iOS)
         GestureDetector(
           onTap: () {
             setState(() {
@@ -407,55 +408,74 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               shape: BoxShape.circle,
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8)],
             ),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: _isMenuOpen ? 1.0 : 0.0),
-              duration: const Duration(milliseconds: 200),
-              builder: (context, value, child) {
-                return Transform.rotate(
-                  angle: value * 3.14159 / 4, // rotate 45 degrees
-                  child: Icon(
-                    _isMenuOpen ? Icons.close : Icons.tune,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                );
-              },
+            child: Icon(
+              _isMenuOpen ? Icons.close : Icons.person_outline,
+              color: Colors.white,
+              size: 24,
             ),
           ),
         ),
         
-        // Menu Items (shown stacked like in high-end apps)
+        // Menu Items (dropdown like iOS)
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          height: _isMenuOpen ? 140 : 0, // Match the height roughly to fit the 3 buttons
+          height: _isMenuOpen ? 280 : 0,
           child: SingleChildScrollView(
             physics: const NeverScrollableScrollPhysics(),
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 150),
               opacity: _isMenuOpen ? 1.0 : 0.0,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const SizedBox(height: 12),
-                  _buildMenuItem(Icons.business, 'Упр. компания', () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Раздел Управляющие компании скоро появится')),
-                    );
-                  }),
-                  const SizedBox(height: 8),
-                  _buildMenuItem(Icons.search, 'Найти', () {
-                    if (_isSheetHidden) {
-                      _toggleSheet(); // Just expand the sheet so search is visible
-                    }
-                  }),
-                  const SizedBox(height: 8),
-                  _buildMenuItem(Icons.settings, 'Настройки', () {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Настройки скоро появятся')),
-                    );
-                  }),
-                ],
+              child: Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBackground.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildDropdownItem(Icons.person_outline, 'Профиль', () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      );
+                    }),
+                    _buildDropdownDivider(),
+                    _buildDropdownItem(Icons.business, 'Управляющие\nкомпании', () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Раздел Управляющие компании скоро появится')),
+                      );
+                    }),
+                    _buildDropdownDivider(),
+                    _buildDropdownItem(Icons.ios_share, 'Экспорт', () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Экспорт скоро появится')),
+                      );
+                    }, hasChevron: true),
+                    _buildDropdownDivider(),
+                    _buildDropdownItem(Icons.search, 'Найти', () {
+                      if (_isSheetHidden) {
+                        _toggleSheet();
+                      }
+                    }),
+                    _buildDropdownDivider(),
+                    _buildDropdownItem(Icons.settings_outlined, 'Настройки', () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Настройки скоро появятся')),
+                      );
+                    }),
+                  ],
+                ),
               ),
             ),
           ),
@@ -464,39 +484,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String label, VoidCallback onTap) {
-    return GestureDetector(
+  Widget _buildDropdownItem(IconData icon, String label, VoidCallback onTap, {bool hasChevron = false}) {
+    return InkWell(
       onTap: () {
-        setState(() {
-          _isMenuOpen = false;
-        });
+        setState(() => _isMenuOpen = false);
         onTap();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppTheme.cardBackground.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
-            const SizedBox(width: 10),
-            Icon(icon, color: Colors.white70, size: 18),
+            Icon(icon, color: Colors.white70, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
+            ),
+            if (hasChevron) ...[
+              const SizedBox(width: 12),
+              const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
+            ],
           ],
         ),
       ),
     );
   }
+
+  Widget _buildDropdownDivider() {
+    return Divider(
+      height: 1,
+      color: Colors.white.withOpacity(0.08),
+      indent: 16,
+      endIndent: 16,
+    );
+  }
+
 
   // --------------------------------------------------------------------------
   // Draggable Bottom Sheet

@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:window_manager/window_manager.dart';
 import 'utils/app_theme.dart';
+import 'utils/constants.dart';
 import 'screens/map_screen.dart';
 import 'screens/login_screen.dart';
 import 'providers/auth_providers.dart';
+import 'services/server_manager.dart';
 
 import 'services/sync_worker.dart';
 import 'services/realtime_service.dart';
@@ -39,11 +42,50 @@ void main() async {
     });
   }
 
+  // ============================================================
+  // Инициализация ServerManager
+  // ============================================================
+  const storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    mOptions: MacOsOptions(accessibility: KeychainAccessibility.first_unlock),
+  );
+
+  final serverManager = ServerManagerNotifier(
+    read: (key) => storage.read(key: 'sm_$key'),
+    write: (key, value) => storage.write(key: 'sm_$key', value: value),
+    onServerSwitch: () async {
+      // Очищаем токены при смене сервера
+      await storage.delete(key: AppConstants.accessTokenKey);
+      await storage.delete(key: AppConstants.refreshTokenKey);
+      debugPrint('🖥️ [Main] Токены очищены при смене сервера');
+    },
+  );
+  await serverManager.init();
+
+  // Устанавливаем текущие URL в AppConstants
+  _syncConstants(serverManager.state);
+
+  // Слушаем изменения сервера для обновления AppConstants
+  serverManager.addListener(() {
+    _syncConstants(serverManager.state);
+  });
+
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        serverManagerProvider.overrideWith((_) => serverManager),
+      ],
+      child: const MyApp(),
     ),
   );
+}
+
+/// Синхронизация AppConstants с текущим активным сервером
+void _syncConstants(ServerManagerState state) {
+  AppConstants.baseUrl = state.currentBaseUrl;
+  AppConstants.wsBaseUrl = state.currentWsBaseUrl;
+  debugPrint('🖥️ [Main] baseUrl = ${AppConstants.baseUrl}');
 }
 
 class MyApp extends ConsumerStatefulWidget {

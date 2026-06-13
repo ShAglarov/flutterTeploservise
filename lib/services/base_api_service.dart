@@ -4,12 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'secure_storage_service.dart';
 import 'event_service.dart';
 import 'device_id_service.dart';
+import 'server_manager.dart';
 import '../utils/constants.dart';
 
 final dioProvider = Provider<Dio>((ref) {
+  // КРИТИЧНО: Наблюдаем за serverStateProvider, чтобы Dio пересоздавался при смене сервера
+  final serverState = ref.watch(serverStateProvider).value ?? ref.read(serverManagerProvider).state;
+  final currentBaseUrl = serverState.currentBaseUrl;
+  
   final dio = Dio(
     BaseOptions(
-      baseUrl: AppConstants.baseUrl,
+      baseUrl: currentBaseUrl,
       connectTimeout: const Duration(seconds: 120),
       receiveTimeout: const Duration(seconds: 180),
     ),
@@ -23,6 +28,7 @@ final dioProvider = Provider<Dio>((ref) {
 
   return dio;
 });
+
 
 class AuthInterceptor extends Interceptor {
   final SecureStorageService _storageService;
