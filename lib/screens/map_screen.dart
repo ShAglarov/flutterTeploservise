@@ -72,7 +72,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _tappedItem = bh;
       _tappedPosition = LatLng(bh.latitude, bh.longitude);
     });
-    _mapController.move(LatLng(bh.latitude, bh.longitude), _mapController.camera.zoom);
+    // Не двигаем карту при нажатии — только показываем popup
   }
 
   StreamSubscription<void>? _refreshSubscription;
@@ -102,7 +102,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       _tappedItem = loc;
       _tappedPosition = LatLng(loc.latitude, loc.longitude);
     });
-    _mapController.move(LatLng(loc.latitude, loc.longitude), _mapController.camera.zoom);
+    // Не двигаем карту при нажатии — только показываем popup
   }
 
   void _onPopupTap() {
@@ -805,7 +805,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _buildBoilerHouseCallout(MapDataState data) {
     final bh = _tappedItem as BoilerHouseResponse;
     
-    // Calculate stats
     final activeIncidents = data.incidents.where((inc) => 
       inc.boilerHouseId == bh.id && 
       inc.status != IncidentStatus.resolved && 
@@ -816,7 +815,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final houseCount = linkedHouses.length;
     final totalResidents = linkedHouses.fold<int>(0, (sum, loc) => sum + (loc.residentsCount ?? 0));
     
-    // Calculate affected residents (without hot water / heating)
     int residentsWithoutHotWater = 0;
     int residentsWithoutHeating = 0;
     for (final inc in activeIncidents) {
@@ -833,146 +831,98 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     final hasIncident = incidentCount > 0;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final calloutWidth = screenWidth * 0.50;
 
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 60,
-      left: 16,
-      right: 16,
+      top: MediaQuery.of(context).size.height * 0.20,
+      left: (screenWidth - calloutWidth) / 2,
       child: GestureDetector(
         onTap: _onPopupTap,
         child: Material(
           color: Colors.transparent,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title label
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.cardBackground.withOpacity(0.95),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: Text(
-                  'Котельная',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: calloutWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title label
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardBackground.withOpacity(0.95),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                  ),
+                  child: Text(
+                    'Котельная',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-              // Main card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppTheme.cardBackground.withOpacity(0.95),
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
+                // Main card
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardBackground.withOpacity(0.95),
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(10),
+                      bottomLeft: Radius.circular(10),
+                      bottomRight: Radius.circular(10),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Boiler house name
-                    Text(
-                      bh.address,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 10),
-                    // Manager
-                    _buildCalloutRow('👤', 'Начальник: ${bh.siteManager ?? "—"}'),
-                    const SizedBox(height: 5),
-                    // Site number
-                    _buildCalloutRow('📍', 'Участок: ${bh.siteNumber ?? "—"}'),
-                    const SizedBox(height: 5),
-                    // Houses count
-                    _buildCalloutRow('🏠', 'Домов: $houseCount'),
-                    const SizedBox(height: 5),
-                    // Total residents
-                    _buildCalloutRow('👥', 'Жильцов всего: $totalResidents'),
-                    const SizedBox(height: 8),
-                    // Status
-                    if (!hasIncident)
-                      Row(
-                        children: [
-                          const Text('✅ ', style: TextStyle(fontSize: 14)),
-                          Text(
-                            'Норма',
-                            style: TextStyle(
-                              color: AppTheme.successGreen,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      )
-                    else ...[
-                      Row(
-                        children: [
-                          const Text('⚠️ ', style: TextStyle(fontSize: 14)),
-                          Text(
-                            'Есть инциденты',
-                            style: TextStyle(
-                              color: AppTheme.warningOrange,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (residentsWithoutHeating > 0) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Text('⚠️ ', style: TextStyle(fontSize: 14)),
-                            Text(
-                              'Без отопления: $residentsWithoutHeating чел.',
-                              style: TextStyle(
-                                color: AppTheme.errorRed,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        bh.address,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
-                      ],
-                      if (residentsWithoutHotWater > 0) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Text('⚠️ ', style: TextStyle(fontSize: 14)),
-                            Text(
-                              'Без ГВС: $residentsWithoutHotWater чел.',
-                              style: TextStyle(
-                                color: AppTheme.errorRed,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      _buildCalloutRow('👤', 'Начальник: ${bh.siteManager ?? "—"}'),
+                      const SizedBox(height: 3),
+                      _buildCalloutRow('📍', 'Участок: ${bh.siteNumber ?? "—"}'),
+                      const SizedBox(height: 3),
+                      _buildCalloutRow('🏠', 'Домов: $houseCount'),
+                      const SizedBox(height: 3),
+                      _buildCalloutRow('👥', 'Жильцов всего: $totalResidents'),
+                      const SizedBox(height: 5),
+                      if (!hasIncident)
+                        _buildStatusRow('✅', 'Норма', AppTheme.successGreen)
+                      else ...[
+                        _buildStatusRow('⚠️', 'Есть инциденты', AppTheme.warningOrange),
+                        if (residentsWithoutHeating > 0) ...[
+                          const SizedBox(height: 2),
+                          _buildStatusRow('⚠️', 'Без отопл.: $residentsWithoutHeating чел.', AppTheme.errorRed),
+                        ],
+                        if (residentsWithoutHotWater > 0) ...[
+                          const SizedBox(height: 2),
+                          _buildStatusRow('⚠️', 'Без ГВС: $residentsWithoutHotWater чел.', AppTheme.errorRed),
+                        ],
                       ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -982,7 +932,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _buildHouseCallout(MapDataState data) {
     final loc = _tappedItem as SavedLocationResponse;
     
-    // Find linked boiler house
     final linkedBH = loc.boilerHouseId != null 
         ? data.boilerHouses.cast<BoilerHouseResponse?>().firstWhere(
             (bh) => bh!.id == loc.boilerHouseId, 
@@ -990,10 +939,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           )
         : null;
     
-    // Check if house has incidents
     final hasIncident = data.locationIdsWithIncidents.contains(loc.id);
     
-    // Find related incidents for this house
     final houseIncidents = data.incidents.where((inc) =>
       (inc.affectedHouseIds?.contains(loc.id) ?? false) &&
       inc.status != IncidentStatus.resolved &&
@@ -1002,190 +949,144 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     
     bool hotWaterStopped = false;
     bool heatingStopped = false;
-    int residentsAffected = 0;
     
     for (final inc in houseIncidents) {
       if (inc.resourceHotWaterStopped == 1) hotWaterStopped = true;
       if (inc.resourceHeatingStopped == 1) heatingStopped = true;
     }
-    if (hotWaterStopped || heatingStopped) {
-      residentsAffected = loc.residentsCount ?? 0;
-    }
+    
+    // Количество жильцов без услуг
+    final residentsAffected = (hotWaterStopped || heatingStopped) ? (loc.residentsCount ?? 0) : 0;
 
     final accountsCount = loc.accountsCount ?? loc.accounts?.length ?? 0;
     final servicesProvided = !hotWaterStopped && !heatingStopped && !hasIncident;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final calloutWidth = screenWidth * 0.50;
 
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 60,
-      left: 16,
-      right: 16,
+      top: MediaQuery.of(context).size.height * 0.20,
+      left: (screenWidth - calloutWidth) / 2,
       child: GestureDetector(
         onTap: _onPopupTap,
         child: Material(
           color: Colors.transparent,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title label with address
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.cardBackground.withOpacity(0.95),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: Text(
-                  loc.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: calloutWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title label
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardBackground.withOpacity(0.95),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              // Main card
-              Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppTheme.cardBackground.withOpacity(0.95),
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(12),
-                        bottomRight: Radius.circular(12),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                  child: Text(
+                    loc.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Accounts count
-                        if (accountsCount > 0) ...[
-                          _buildCalloutRow('📋', 'Лицевых счетов: $accountsCount'),
-                          const SizedBox(height: 5),
-                        ],
-                        // Residents
-                        _buildCalloutRow('👥', 'Жильцов: ${loc.residentsCount ?? 0}'),
-                        const SizedBox(height: 8),
-                        // Service status
-                        if (servicesProvided)
-                          Row(
-                            children: [
-                              const Text('✅ ', style: TextStyle(fontSize: 14)),
-                              Text(
-                                'Услуги подаются',
-                                style: TextStyle(
-                                  color: AppTheme.successGreen,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          )
-                        else ...[
-                          if (hotWaterStopped) ...[
-                            Row(
-                              children: [
-                                const Text('🚫 ', style: TextStyle(fontSize: 14)),
-                                Text(
-                                  'ГВС отключено',
-                                  style: TextStyle(
-                                    color: AppTheme.errorRed,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                          ],
-                          if (heatingStopped) ...[
-                            Row(
-                              children: [
-                                const Text('🚫 ', style: TextStyle(fontSize: 14)),
-                                Text(
-                                  'Отопление отключено',
-                                  style: TextStyle(
-                                    color: AppTheme.errorRed,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                          ],
-                          if (residentsAffected > 0) ...[
-                            Row(
-                              children: [
-                                const Text('⚠️ ', style: TextStyle(fontSize: 14)),
-                                Expanded(
-                                  child: Text(
-                                    hotWaterStopped && heatingStopped
-                                        ? 'Без отопления и ГВС: $residentsAffected чел.'
-                                        : hotWaterStopped
-                                            ? 'Без ГВС: $residentsAffected чел.'
-                                            : 'Без отопления: $residentsAffected чел.',
-                                    style: TextStyle(
-                                      color: AppTheme.warningOrange,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                          ],
-                        ],
-                        // Linked boiler house
-                        if (linkedBH != null) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Text('🏭 ', style: TextStyle(fontSize: 14)),
-                              Expanded(
-                                child: Text(
-                                  'Котельная: ${linkedBH.address}',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
-                                    fontSize: 13,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // Main card
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.only(left: 10, right: 36, top: 8, bottom: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardBackground.withOpacity(0.95),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(10),
+                          bottomRight: Radius.circular(10),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
-                  // Info button
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryBlue,
-                        shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.info_outline, color: Colors.white, size: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (accountsCount > 0) ...[
+                            _buildCalloutRow('📋', 'Лицевых счетов: $accountsCount'),
+                            const SizedBox(height: 3),
+                          ],
+                          _buildCalloutRow('👥', 'Жильцов: ${loc.residentsCount ?? 0}'),
+                          const SizedBox(height: 5),
+                          if (servicesProvided)
+                            _buildStatusRow('✅', 'Услуги подаются', AppTheme.successGreen)
+                          else ...[
+                            if (hotWaterStopped) ...[
+                              _buildStatusRow('🚫', 'ГВС отключено', AppTheme.errorRed),
+                              const SizedBox(height: 2),
+                            ],
+                            if (heatingStopped) ...[
+                              _buildStatusRow('🚫', 'Отопление отключено', AppTheme.errorRed),
+                              const SizedBox(height: 2),
+                            ],
+                            if (residentsAffected > 0) ...[
+                              _buildStatusRow(
+                                '⚠️',
+                                hotWaterStopped && heatingStopped
+                                    ? 'Без отопления и ГВС: $residentsAffected чел.'
+                                    : hotWaterStopped
+                                        ? 'Без ГВС: $residentsAffected чел.'
+                                        : 'Без отопления: $residentsAffected чел.',
+                                AppTheme.warningOrange,
+                              ),
+                              const SizedBox(height: 2),
+                            ],
+                          ],
+                          if (linkedBH != null) ...[
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                const Text('🏭 ', style: TextStyle(fontSize: 12)),
+                                Expanded(
+                                  child: Text(
+                                    'Котельная: ${linkedBH.address}',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.6),
+                                      fontSize: 12,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    // Info button
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryBlue,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.info_outline, color: Colors.white, size: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1194,15 +1095,38 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   Widget _buildCalloutRow(String emoji, String text) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 14)),
-        const SizedBox(width: 6),
-        Expanded(
+        Text(emoji, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 4),
+        Flexible(
           child: Text(
             text,
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
-              fontSize: 14,
+              fontSize: 13,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusRow(String emoji, String text, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
