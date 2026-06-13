@@ -30,6 +30,12 @@ class RealtimeService {
   final _reconnectController = StreamController<void>.broadcast();
   Stream<void> get onReconnect => _reconnectController.stream;
 
+  /// Stream that emits when server sends force_logout (deactivation/block).
+  /// Payload is the reason string (e.g. 'deactivated', 'blocked').
+  final _forceLogoutController = StreamController<String>.broadcast();
+  Stream<String> get onForceLogout => _forceLogoutController.stream;
+  bool _forceLoggedOut = false;
+
   /// Connection state (true = connected)
   final _connectionStateController = StreamController<bool>.broadcast();
   Stream<bool> get connectionState => _connectionStateController.stream;
@@ -57,6 +63,7 @@ class RealtimeService {
   Future<void> connect() async {
     if (_isConnecting || _channel != null) return;
     _isConnecting = true;
+    _forceLoggedOut = false; // Reset flag on new connection attempt
 
     try {
       final token = await _storage.getAccessToken();
@@ -148,6 +155,16 @@ class RealtimeService {
       if (decoded is Map<String, dynamic>) {
         print('🚀 [WS] MESSAGE RECEIVED: $decoded');
         
+        // КРИТИЧНО: Обработка принудительного выхода (деактивация/блокировка)
+        if (decoded['type'] == 'force_logout') {
+          final reason = (decoded['data'] as Map<String, dynamic>?)?['reason'] ?? 'unknown';
+          dev.log('RealtimeService: ⛔ FORCE_LOGOUT received: reason=$reason', name: 'WS');
+          _forceLoggedOut = true;
+          _forceLogoutController.add(reason);
+          disconnect(); // Чистое закрытие без reconnect
+          return;
+        }
+
         // Respond to server pings immediately with JSON pong
         if (decoded['type'] == 'ping') {
           dev.log('RealtimeService: Server ping received, sending pong', name: 'WS');
@@ -184,6 +201,12 @@ class RealtimeService {
     _channel = null;
     _isConnected = false;
     _connectionStateController.add(false);
+
+    // КРИТИЧНО: Если сервер прислал force_logout — НЕ переподключаемся
+    if (_forceLoggedOut) {
+      dev.log('RealtimeService: ⛔ Force-logged out, NOT reconnecting', name: 'WS');
+      return;
+    }
 
     // MODIFIED: Removed `if (_retryCount < 10)` — client now retries indefinitely.
     // MODIFIED: Max delay raised from 30s to 60s.
@@ -279,6 +302,7 @@ class RealtimeService {
     disconnect();
     _messageController.close();
     _reconnectController.close();
+    _forceLogoutController.close();
     _connectionStateController.close();
   }
 }

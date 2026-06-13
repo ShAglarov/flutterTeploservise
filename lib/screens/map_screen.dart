@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'incident_list_screen.dart';
 import 'action_log_list_screen.dart';
 import 'profile_screen.dart';
+import 'settings_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
 import '../providers/incident_providers.dart';
@@ -470,8 +471,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     }),
                     _buildDropdownDivider(),
                     _buildDropdownItem(Icons.settings_outlined, 'Настройки', () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Настройки скоро появятся')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
                       );
                     }),
                   ],

@@ -20,6 +20,26 @@ class UserService {
         .toList();
     return users;
   }
+
+  /// Деактивация пользователя (POST /users/{id}/deactivate)
+  Future<void> deactivateUser(int userId) async {
+    await _dio.post('/users/$userId/deactivate');
+  }
+
+  /// Активация пользователя (POST /users/{id}/activate)
+  Future<void> activateUser(int userId) async {
+    await _dio.post('/users/$userId/activate');
+  }
+
+  /// Блокировка пользователя (POST /users/{id}/block)
+  Future<void> blockUser(int userId) async {
+    await _dio.post('/users/$userId/block');
+  }
+
+  /// Разблокировка пользователя (POST /users/{id}/unblock)
+  Future<void> unblockUser(int userId) async {
+    await _dio.post('/users/$userId/unblock');
+  }
 }
 
 // Provider to hold and cache the list of users

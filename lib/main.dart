@@ -16,6 +16,7 @@ import 'services/data_sync_service.dart';
 import 'services/sync_service.dart';
 import 'services/wns_push_service.dart';
 import 'services/incident_service.dart';
+import 'services/secure_storage_service.dart';
 import 'providers/incident_providers.dart';
 import 'providers/map_providers.dart';
 
@@ -118,6 +119,36 @@ class _MyAppState extends ConsumerState<MyApp> {
       // 1. Connect WebSocket
       final realtimeService = ref.read(realtimeServiceProvider);
       await realtimeService.connect();
+
+      // 1.5 КРИТИЧНО: Слушаем force_logout (деактивация/блокировка админом)
+      realtimeService.onForceLogout.listen((reason) async {
+        print('⛔ [Main] Force logout received: $reason');
+        
+        // Очищаем сохраненные токены
+        final storage = ref.read(secureStorageServiceProvider);
+        await storage.clearAll();
+        
+        // Отключаем WebSocket (уже сделано в RealtimeService, но для надёжности)
+        realtimeService.disconnect();
+        
+        // Обновляем состояние авторизации → выкидываем на экран логина
+        ref.read(authProvider.notifier).logout();
+        
+        // Показываем уведомление пользователю
+        final message = reason == 'deactivated'
+            ? 'Ваш аккаунт был деактивирован администратором'
+            : reason == 'blocked'
+                ? 'Ваш аккаунт был заблокирован администратором'
+                : 'Вы были отключены: $reason';
+        
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.red,
+          ),
+        );
+      });
 
       // 2. Start DataSyncService (listens to WS messages)
       final dataSyncService = ref.read(dataSyncServiceProvider);
