@@ -33,6 +33,7 @@ dependencies:
   image_picker: ^1.1.2
   window_manager: ^0.5.1
   windows_notification: ^1.1.2
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

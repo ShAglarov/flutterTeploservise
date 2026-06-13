@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -918,6 +919,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           _buildStatusRow('⚠️', 'Без ГВС: $residentsWithoutHotWater чел.', AppTheme.errorRed),
                         ],
                       ],
+                      // Кнопка 2GIS
+                      const SizedBox(height: 6),
+                      _build2GISButton(bh.latitude, bh.longitude),
                     ],
                   ),
                 ),
@@ -1066,6 +1070,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               ],
                             ),
                           ],
+                          // Кнопка 2GIS
+                          const SizedBox(height: 4),
+                          _build2GISButton(loc.latitude, loc.longitude),
                         ],
                       ),
                     ),
@@ -1132,6 +1139,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       ],
     );
+  }
+
+  Widget _build2GISButton(double lat, double lng) {
+    return GestureDetector(
+      onTap: () => _open2GIS(lat, lng),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryBlue.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🗺', style: TextStyle(fontSize: 12)),
+            const SizedBox(width: 4),
+            Text(
+              'Найти в 2ГИС',
+              style: TextStyle(
+                color: AppTheme.primaryBlue,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _open2GIS(double lat, double lng) async {
+    final url = Uri.parse('https://2gis.ru/search/$lat,$lng');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildList(MapDataState data) {
