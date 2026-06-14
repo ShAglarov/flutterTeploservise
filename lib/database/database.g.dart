@@ -1248,6 +1248,30 @@ class $AppUsersTable extends AppUsers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _lastLatitudeMeta = const VerificationMeta(
+    'lastLatitude',
+  );
+  @override
+  late final GeneratedColumn<double> lastLatitude = GeneratedColumn<double>(
+    'last_latitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _lastLongitudeMeta = const VerificationMeta(
+    'lastLongitude',
+  );
+  @override
+  late final GeneratedColumn<double> lastLongitude = GeneratedColumn<double>(
+    'last_longitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -1307,6 +1331,8 @@ class $AppUsersTable extends AppUsers
     userId,
     username,
     verificationCode,
+    lastLatitude,
+    lastLongitude,
     id,
   ];
   @override
@@ -1653,6 +1679,24 @@ class $AppUsersTable extends AppUsers
         ),
       );
     }
+    if (data.containsKey('last_latitude')) {
+      context.handle(
+        _lastLatitudeMeta,
+        lastLatitude.isAcceptableOrUnknown(
+          data['last_latitude']!,
+          _lastLatitudeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_longitude')) {
+      context.handle(
+        _lastLongitudeMeta,
+        lastLongitude.isAcceptableOrUnknown(
+          data['last_longitude']!,
+          _lastLongitudeMeta,
+        ),
+      );
+    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
@@ -1841,6 +1885,14 @@ class $AppUsersTable extends AppUsers
         DriftSqlType.string,
         data['${effectivePrefix}verification_code'],
       ),
+      lastLatitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}last_latitude'],
+      ),
+      lastLongitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}last_longitude'],
+      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -1899,6 +1951,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
   final String? userId;
   final String? username;
   final String? verificationCode;
+  final double? lastLatitude;
+  final double? lastLongitude;
   final int id;
   const AppUserDb({
     this.activeStatus,
@@ -1945,6 +1999,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     this.userId,
     this.username,
     this.verificationCode,
+    this.lastLatitude,
+    this.lastLongitude,
     required this.id,
   });
   @override
@@ -2060,6 +2116,12 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     if (!nullToAbsent || verificationCode != null) {
       map['verification_code'] = Variable<String>(verificationCode);
     }
+    if (!nullToAbsent || lastLatitude != null) {
+      map['last_latitude'] = Variable<double>(lastLatitude);
+    }
+    if (!nullToAbsent || lastLongitude != null) {
+      map['last_longitude'] = Variable<double>(lastLongitude);
+    }
     map['id'] = Variable<int>(id);
     return map;
   }
@@ -2174,6 +2236,12 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       verificationCode: verificationCode == null && nullToAbsent
           ? const Value.absent()
           : Value(verificationCode),
+      lastLatitude: lastLatitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastLatitude),
+      lastLongitude: lastLongitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastLongitude),
       id: Value(id),
     );
   }
@@ -2234,6 +2302,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       userId: serializer.fromJson<String?>(json['userId']),
       username: serializer.fromJson<String?>(json['username']),
       verificationCode: serializer.fromJson<String?>(json['verificationCode']),
+      lastLatitude: serializer.fromJson<double?>(json['lastLatitude']),
+      lastLongitude: serializer.fromJson<double?>(json['lastLongitude']),
       id: serializer.fromJson<int>(json['id']),
     );
   }
@@ -2285,6 +2355,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       'userId': serializer.toJson<String?>(userId),
       'username': serializer.toJson<String?>(username),
       'verificationCode': serializer.toJson<String?>(verificationCode),
+      'lastLatitude': serializer.toJson<double?>(lastLatitude),
+      'lastLongitude': serializer.toJson<double?>(lastLongitude),
       'id': serializer.toJson<int>(id),
     };
   }
@@ -2334,6 +2406,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     Value<String?> userId = const Value.absent(),
     Value<String?> username = const Value.absent(),
     Value<String?> verificationCode = const Value.absent(),
+    Value<double?> lastLatitude = const Value.absent(),
+    Value<double?> lastLongitude = const Value.absent(),
     int? id,
   }) => AppUserDb(
     activeStatus: activeStatus.present ? activeStatus.value : this.activeStatus,
@@ -2394,6 +2468,10 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     verificationCode: verificationCode.present
         ? verificationCode.value
         : this.verificationCode,
+    lastLatitude: lastLatitude.present ? lastLatitude.value : this.lastLatitude,
+    lastLongitude: lastLongitude.present
+        ? lastLongitude.value
+        : this.lastLongitude,
     id: id ?? this.id,
   );
   AppUserDb copyWithCompanion(AppUsersCompanion data) {
@@ -2486,6 +2564,12 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       verificationCode: data.verificationCode.present
           ? data.verificationCode.value
           : this.verificationCode,
+      lastLatitude: data.lastLatitude.present
+          ? data.lastLatitude.value
+          : this.lastLatitude,
+      lastLongitude: data.lastLongitude.present
+          ? data.lastLongitude.value
+          : this.lastLongitude,
       id: data.id.present ? data.id.value : this.id,
     );
   }
@@ -2537,6 +2621,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
           ..write('userId: $userId, ')
           ..write('username: $username, ')
           ..write('verificationCode: $verificationCode, ')
+          ..write('lastLatitude: $lastLatitude, ')
+          ..write('lastLongitude: $lastLongitude, ')
           ..write('id: $id')
           ..write(')'))
         .toString();
@@ -2588,6 +2674,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     userId,
     username,
     verificationCode,
+    lastLatitude,
+    lastLongitude,
     id,
   ]);
   @override
@@ -2638,6 +2726,8 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
           other.userId == this.userId &&
           other.username == this.username &&
           other.verificationCode == this.verificationCode &&
+          other.lastLatitude == this.lastLatitude &&
+          other.lastLongitude == this.lastLongitude &&
           other.id == this.id);
 }
 
@@ -2686,6 +2776,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
   final Value<String?> userId;
   final Value<String?> username;
   final Value<String?> verificationCode;
+  final Value<double?> lastLatitude;
+  final Value<double?> lastLongitude;
   final Value<int> id;
   const AppUsersCompanion({
     this.activeStatus = const Value.absent(),
@@ -2732,6 +2824,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     this.userId = const Value.absent(),
     this.username = const Value.absent(),
     this.verificationCode = const Value.absent(),
+    this.lastLatitude = const Value.absent(),
+    this.lastLongitude = const Value.absent(),
     this.id = const Value.absent(),
   });
   AppUsersCompanion.insert({
@@ -2779,6 +2873,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     this.userId = const Value.absent(),
     this.username = const Value.absent(),
     this.verificationCode = const Value.absent(),
+    this.lastLatitude = const Value.absent(),
+    this.lastLongitude = const Value.absent(),
     this.id = const Value.absent(),
   }) : passwordHash = Value(passwordHash);
   static Insertable<AppUserDb> custom({
@@ -2826,6 +2922,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     Expression<String>? userId,
     Expression<String>? username,
     Expression<String>? verificationCode,
+    Expression<double>? lastLatitude,
+    Expression<double>? lastLongitude,
     Expression<int>? id,
   }) {
     return RawValuesInsertable({
@@ -2875,6 +2973,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
       if (userId != null) 'user_id': userId,
       if (username != null) 'username': username,
       if (verificationCode != null) 'verification_code': verificationCode,
+      if (lastLatitude != null) 'last_latitude': lastLatitude,
+      if (lastLongitude != null) 'last_longitude': lastLongitude,
       if (id != null) 'id': id,
     });
   }
@@ -2924,6 +3024,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     Value<String?>? userId,
     Value<String?>? username,
     Value<String?>? verificationCode,
+    Value<double?>? lastLatitude,
+    Value<double?>? lastLongitude,
     Value<int>? id,
   }) {
     return AppUsersCompanion(
@@ -2971,6 +3073,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
       userId: userId ?? this.userId,
       username: username ?? this.username,
       verificationCode: verificationCode ?? this.verificationCode,
+      lastLatitude: lastLatitude ?? this.lastLatitude,
+      lastLongitude: lastLongitude ?? this.lastLongitude,
       id: id ?? this.id,
     );
   }
@@ -3112,6 +3216,12 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     if (verificationCode.present) {
       map['verification_code'] = Variable<String>(verificationCode.value);
     }
+    if (lastLatitude.present) {
+      map['last_latitude'] = Variable<double>(lastLatitude.value);
+    }
+    if (lastLongitude.present) {
+      map['last_longitude'] = Variable<double>(lastLongitude.value);
+    }
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
@@ -3165,6 +3275,8 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
           ..write('userId: $userId, ')
           ..write('username: $username, ')
           ..write('verificationCode: $verificationCode, ')
+          ..write('lastLatitude: $lastLatitude, ')
+          ..write('lastLongitude: $lastLongitude, ')
           ..write('id: $id')
           ..write(')'))
         .toString();
@@ -11655,6 +11767,8 @@ typedef $$AppUsersTableCreateCompanionBuilder =
       Value<String?> userId,
       Value<String?> username,
       Value<String?> verificationCode,
+      Value<double?> lastLatitude,
+      Value<double?> lastLongitude,
       Value<int> id,
     });
 typedef $$AppUsersTableUpdateCompanionBuilder =
@@ -11703,6 +11817,8 @@ typedef $$AppUsersTableUpdateCompanionBuilder =
       Value<String?> userId,
       Value<String?> username,
       Value<String?> verificationCode,
+      Value<double?> lastLatitude,
+      Value<double?> lastLongitude,
       Value<int> id,
     });
 
@@ -11932,6 +12048,16 @@ class $$AppUsersTableFilterComposer
 
   ColumnFilters<String> get verificationCode => $composableBuilder(
     column: $table.verificationCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lastLatitude => $composableBuilder(
+    column: $table.lastLatitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lastLongitude => $composableBuilder(
+    column: $table.lastLongitude,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12170,6 +12296,16 @@ class $$AppUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get lastLatitude => $composableBuilder(
+    column: $table.lastLatitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lastLongitude => $composableBuilder(
+    column: $table.lastLongitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -12361,6 +12497,16 @@ class $$AppUsersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<double> get lastLatitude => $composableBuilder(
+    column: $table.lastLatitude,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get lastLongitude => $composableBuilder(
+    column: $table.lastLongitude,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 }
@@ -12437,6 +12583,8 @@ class $$AppUsersTableTableManager
                 Value<String?> userId = const Value.absent(),
                 Value<String?> username = const Value.absent(),
                 Value<String?> verificationCode = const Value.absent(),
+                Value<double?> lastLatitude = const Value.absent(),
+                Value<double?> lastLongitude = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => AppUsersCompanion(
                 activeStatus: activeStatus,
@@ -12483,6 +12631,8 @@ class $$AppUsersTableTableManager
                 userId: userId,
                 username: username,
                 verificationCode: verificationCode,
+                lastLatitude: lastLatitude,
+                lastLongitude: lastLongitude,
                 id: id,
               ),
           createCompanionCallback:
@@ -12531,6 +12681,8 @@ class $$AppUsersTableTableManager
                 Value<String?> userId = const Value.absent(),
                 Value<String?> username = const Value.absent(),
                 Value<String?> verificationCode = const Value.absent(),
+                Value<double?> lastLatitude = const Value.absent(),
+                Value<double?> lastLongitude = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => AppUsersCompanion.insert(
                 activeStatus: activeStatus,
@@ -12577,6 +12729,8 @@ class $$AppUsersTableTableManager
                 userId: userId,
                 username: username,
                 verificationCode: verificationCode,
+                lastLatitude: lastLatitude,
+                lastLongitude: lastLongitude,
                 id: id,
               ),
           withReferenceMapper: (p0) => p0

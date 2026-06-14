@@ -11,15 +11,21 @@ import '../services/user_service.dart';
 class UserPresence {
   final bool isOnline;
   final DateTime? lastSeen;
+  final double? lastLatitude;
+  final double? lastLongitude;
 
-  const UserPresence({this.isOnline = false, this.lastSeen});
+  const UserPresence({this.isOnline = false, this.lastSeen, this.lastLatitude, this.lastLongitude});
 
-  UserPresence copyWith({bool? isOnline, DateTime? lastSeen}) {
+  UserPresence copyWith({bool? isOnline, DateTime? lastSeen, double? lastLatitude, double? lastLongitude}) {
     return UserPresence(
       isOnline: isOnline ?? this.isOnline,
       lastSeen: lastSeen ?? this.lastSeen,
+      lastLatitude: lastLatitude ?? this.lastLatitude,
+      lastLongitude: lastLongitude ?? this.lastLongitude,
     );
   }
+
+  bool get hasLocation => (lastLatitude ?? 0) != 0 || (lastLongitude ?? 0) != 0;
 }
 
 /// ─────────────────────────────────────────────────
@@ -81,6 +87,37 @@ class UsersState {
       } catch (_) {}
     }
     return null;
+  }
+
+  /// Get last latitude for a user
+  double? lastLatFor(int userId) {
+    if (presence.containsKey(userId) && presence[userId]!.lastLatitude != null) {
+      return presence[userId]!.lastLatitude;
+    }
+    final user = users.cast<APIUserResponse?>().firstWhere(
+      (u) => u?.id == userId,
+      orElse: () => null,
+    );
+    return user?.lastLatitude;
+  }
+
+  /// Get last longitude for a user
+  double? lastLngFor(int userId) {
+    if (presence.containsKey(userId) && presence[userId]!.lastLongitude != null) {
+      return presence[userId]!.lastLongitude;
+    }
+    final user = users.cast<APIUserResponse?>().firstWhere(
+      (u) => u?.id == userId,
+      orElse: () => null,
+    );
+    return user?.lastLongitude;
+  }
+
+  /// Check if user has a known location
+  bool hasLocationFor(int userId) {
+    final lat = lastLatFor(userId) ?? 0;
+    final lng = lastLngFor(userId) ?? 0;
+    return lat != 0 || lng != 0;
   }
 }
 
@@ -145,6 +182,8 @@ class UsersNotifier extends Notifier<UsersState> {
         presenceMap[user.id] = UserPresence(
           isOnline: user.isOnline == true,
           lastSeen: lastSeen,
+          lastLatitude: user.lastLatitude,
+          lastLongitude: user.lastLongitude,
         );
       }
 
@@ -199,6 +238,8 @@ class UsersNotifier extends Notifier<UsersState> {
     final userId = data['user_id'] as int?;
     final isOnline = data['is_online'] as bool?;
     final lastSeenStr = data['last_seen'] as String?;
+    final lastLat = (data['last_latitude'] as num?)?.toDouble();
+    final lastLng = (data['last_longitude'] as num?)?.toDouble();
 
     if (userId == null || isOnline == null) return;
 
@@ -210,15 +251,18 @@ class UsersNotifier extends Notifier<UsersState> {
     }
 
     dev.log(
-      'UsersNotifier: PRESENCE update: user=$userId, online=$isOnline, lastSeen=$lastSeenStr',
+      'UsersNotifier: PRESENCE update: user=$userId, online=$isOnline, lastSeen=$lastSeenStr, lat=$lastLat, lng=$lastLng',
       name: 'PRESENCE',
     );
 
     // Update presence map
+    final existing = state.presence[userId];
     final newPresence = Map<int, UserPresence>.from(state.presence);
     newPresence[userId] = UserPresence(
       isOnline: isOnline,
-      lastSeen: lastSeen ?? state.presence[userId]?.lastSeen,
+      lastSeen: lastSeen ?? existing?.lastSeen,
+      lastLatitude: lastLat ?? existing?.lastLatitude,
+      lastLongitude: lastLng ?? existing?.lastLongitude,
     );
 
     state = state.copyWith(presence: newPresence);

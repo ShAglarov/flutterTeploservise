@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/api_models.dart';
 import '../providers/auth_providers.dart';
 import '../providers/user_presence_provider.dart';
@@ -992,7 +993,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 // User Profile Screen (detailed profile view)
 // ═══════════════════════════════════════════════════
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends ConsumerWidget {
   final APIUserResponse user;
 
   const UserProfileScreen({super.key, required this.user});
@@ -1037,8 +1038,47 @@ class UserProfileScreen extends StatelessWidget {
     }
   }
 
+  String _formatDateTime(DateTime? dt) {
+    if (dt == null) return '—';
+    final day = dt.day.toString().padLeft(2, '0');
+    final month = dt.month.toString().padLeft(2, '0');
+    final year = dt.year;
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return '$day.$month.$year $hour:$minute';
+  }
+
+  void _open2GIS(BuildContext context, double lat, double lng) {
+    if (lat == 0 && lng == 0) return;
+    final uri = Uri.parse('https://2gis.ru/search/$lat,$lng');
+    launchUrl(uri, mode: LaunchMode.externalApplication).catchError((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось открыть 2GIS')),
+      );
+      return false;
+    });
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Подписываемся на presence — UI перестраивается при смене онлайн/оффлайн
+    final usersState = ref.watch(usersWithPresenceProvider);
+    final isOnline = usersState.isUserOnline(user.id);
+    final lastSeen = usersState.lastSeenFor(user.id);
+    final hasLocation = usersState.hasLocationFor(user.id);
+    final lat = usersState.lastLatFor(user.id) ?? 0;
+    final lng = usersState.lastLngFor(user.id) ?? 0;
+
+    // Определяем текст «Последний вход»
+    String lastSeenText;
+    if (isOnline) {
+      lastSeenText = '● Онлайн';
+    } else if (lastSeen != null) {
+      lastSeenText = _formatDateTime(lastSeen);
+    } else {
+      lastSeenText = _formatDate(user.lastLoginAt);
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
@@ -1103,19 +1143,21 @@ class UserProfileScreen extends StatelessWidget {
               ),
             const SizedBox(height: 8),
 
-            // Status badge
+            // Online status indicator
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
-                color: user.isActive
+                color: isOnline
                     ? AppTheme.successGreen.withAlpha(30)
-                    : AppTheme.errorRed.withAlpha(30),
+                    : user.isActive
+                        ? Colors.white.withAlpha(15)
+                        : AppTheme.errorRed.withAlpha(30),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                user.isActive ? 'Активен' : 'Заблокирован',
+                isOnline ? '● Онлайн' : (user.isActive ? 'Оффлайн' : 'Заблокирован'),
                 style: TextStyle(
-                  color: user.isActive ? AppTheme.successGreen : AppTheme.errorRed,
+                  color: isOnline ? AppTheme.successGreen : (user.isActive ? Colors.white54 : AppTheme.errorRed),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1128,10 +1170,34 @@ class UserProfileScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildActionButton(context, Icons.edit, 'Редакт.', AppTheme.successGreen),
-                _buildActionButton(context, Icons.map_outlined, 'На карте', AppTheme.primaryBlue),
-                _buildActionButton(context, Icons.vpn_key, 'Пароль', AppTheme.warningOrange),
-                _buildActionButton(context, Icons.article_outlined, 'Журнал', Colors.purpleAccent),
+                _buildActionButton(context, Icons.edit, 'Редакт.', AppTheme.successGreen, () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Редактирование скоро появится')),
+                  );
+                }),
+                _buildActionButton(
+                  context,
+                  Icons.map_outlined,
+                  'На карте',
+                  hasLocation ? AppTheme.primaryBlue : Colors.white24,
+                  hasLocation
+                      ? () => _open2GIS(context, lat, lng)
+                      : () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Местоположение пока неизвестно')),
+                          );
+                        },
+                ),
+                _buildActionButton(context, Icons.vpn_key, 'Пароль', AppTheme.warningOrange, () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Сброс пароля скоро появится')),
+                  );
+                }),
+                _buildActionButton(context, Icons.article_outlined, 'Журнал', Colors.purpleAccent, () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Журнал скоро появится')),
+                  );
+                }),
               ],
             ),
 
@@ -1144,7 +1210,7 @@ class UserProfileScreen extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 4),
                 child: Row(
                   children: [
-                    Icon(Icons.list_alt, color: Colors.white54, size: 16),
+                    const Icon(Icons.list_alt, color: Colors.white54, size: 16),
                     const SizedBox(width: 6),
                     const Text('Данные',
                         style: TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500)),
@@ -1171,8 +1237,14 @@ class UserProfileScreen extends StatelessWidget {
                   _buildRowDivider(),
                   _buildDataRow(
                     'Последний\nвход',
-                    user.isOnline == true ? 'Онлайн' : _formatDate(user.lastLoginAt),
+                    lastSeenText,
+                    valueColor: isOnline ? AppTheme.successGreen : null,
                   ),
+                  // Кнопка «Последнее местоположение» — если есть координаты
+                  if (hasLocation) ...[
+                    _buildRowDivider(),
+                    _buildLocationRow(context, lat, lng),
+                  ],
                 ],
               ),
             ),
@@ -1184,13 +1256,30 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(BuildContext context, IconData icon, String label, Color color) {
+  Widget _buildLocationRow(BuildContext context, double lat, double lng) {
+    return InkWell(
+      onTap: () => _open2GIS(context, lat, lng),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.location_on, color: Colors.blue, size: 18),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Последнее\nместоположение', style: TextStyle(color: Colors.blue, fontSize: 15)),
+            ),
+            const Icon(Icons.open_in_new, color: Colors.blue, size: 16),
+            const SizedBox(width: 4),
+            const Text('Найти на 2GIS', style: TextStyle(color: Colors.blue, fontSize: 14)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, IconData icon, String label, Color color, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$label скоро появится')),
-        );
-      },
+      onTap: onTap,
       child: Column(
         children: [
           Container(
@@ -1213,7 +1302,7 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDataRow(String label, String value) {
+  Widget _buildDataRow(String label, String value, {Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
@@ -1224,7 +1313,7 @@ class UserProfileScreen extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: TextStyle(color: valueColor ?? Colors.white, fontSize: 15),
             ),
           ),
         ],
@@ -1241,3 +1330,4 @@ class UserProfileScreen extends StatelessWidget {
     );
   }
 }
+

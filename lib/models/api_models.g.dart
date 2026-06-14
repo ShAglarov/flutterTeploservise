@@ -25,6 +25,8 @@ APIUserResponse _$APIUserResponseFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updated_at'] as String?,
       lastLoginAt: json['last_login_at'] as String?,
       isOnline: json['is_online'] as bool?,
+      lastLatitude: (json['last_latitude'] as num?)?.toDouble(),
+      lastLongitude: (json['last_longitude'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$APIUserResponseToJson(APIUserResponse instance) =>
@@ -46,6 +48,8 @@ Map<String, dynamic> _$APIUserResponseToJson(APIUserResponse instance) =>
       'updated_at': instance.updatedAt,
       'last_login_at': instance.lastLoginAt,
       'is_online': instance.isOnline,
+      'last_latitude': instance.lastLatitude,
+      'last_longitude': instance.lastLongitude,
     };
 
 APILoginResponse _$APILoginResponseFromJson(Map<String, dynamic> json) =>

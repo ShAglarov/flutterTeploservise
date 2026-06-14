@@ -78,6 +78,8 @@ class AppUsers extends Table {
   TextColumn get userId => text().nullable()();
   TextColumn get username => text().nullable().unique()();
   TextColumn get verificationCode => text().nullable()();
+  RealColumn get lastLatitude => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get lastLongitude => real().nullable().withDefault(const Constant(0.0))();
 
   // CoreData allows an AppUser object to not have a clear primary key except username or objectID. 
   // We can use username as the PK or an auto-incrementing ID. Since username has a unique constraint, let's just let Drift auto-create an id for rowid, but 'username' is our unique identifier if we need one.
@@ -341,7 +343,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

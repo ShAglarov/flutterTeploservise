@@ -7,6 +7,7 @@ import '../utils/constants.dart';
 import 'secure_storage_service.dart';
 import 'device_id_service.dart';
 import 'dart:developer' as dev;
+import 'package:geolocator/geolocator.dart';
 
 final realtimeServiceProvider = Provider<RealtimeService>((ref) {
   ref.keepAlive();
@@ -165,10 +166,10 @@ class RealtimeService {
           return;
         }
 
-        // Respond to server pings immediately with JSON pong
+        // Respond to server pings immediately with JSON pong + GPS coordinates
         if (decoded['type'] == 'ping') {
-          dev.log('RealtimeService: Server ping received, sending pong', name: 'WS');
-          _channel?.sink.add(jsonEncode({'type': 'pong'}));
+          dev.log('RealtimeService: Server ping received, sending pong with GPS', name: 'WS');
+          _sendPongWithLocation();
           // ADDED: Update watchdog timestamp — server is alive
           _lastPongReceived = DateTime.now();
           return;
@@ -275,6 +276,26 @@ class RealtimeService {
       }
     });
     dev.log('RealtimeService: Server-ping watchdog started (check: 15s, timeout: 120s)', name: 'WS');
+  }
+
+  // ADDED: Send pong with GPS coordinates
+  void _sendPongWithLocation() {
+    try {
+      // Try to get last known position (non-blocking, cached)
+      Geolocator.getLastKnownPosition().then((position) {
+        final Map<String, dynamic> pongData = {'type': 'pong'};
+        if (position != null) {
+          pongData['latitude'] = position.latitude;
+          pongData['longitude'] = position.longitude;
+        }
+        _channel?.sink.add(jsonEncode(pongData));
+      }).catchError((_) {
+        // Fallback: send pong without GPS
+        _channel?.sink.add(jsonEncode({'type': 'pong'}));
+      });
+    } catch (_) {
+      _channel?.sink.add(jsonEncode({'type': 'pong'}));
+    }
   }
 
   // ADDED: Active Client Heartbeat. Proactively sends a ping every 20s.
