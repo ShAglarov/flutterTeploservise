@@ -63,7 +63,17 @@ class IncidentService {
   }
 
   Future<void> deleteIncident(int id) async {
-    await _dio.delete('/incidents/$id');
+    try {
+      await _dio.delete('/incidents/$id');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Инцидент уже удалён на сервере (например, напрямую из БД).
+        // Всё равно удаляем из локальной БД ниже.
+        debugPrint('[Service] Incident $id already deleted on server (404), cleaning local DB');
+      } else {
+        rethrow;
+      }
+    }
     await _syncRepository.deleteIncident(id);
   }
 

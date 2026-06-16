@@ -180,6 +180,18 @@ class _MyAppState extends ConsumerState<MyApp> {
         print('🔄 [Main] WS reconnected — checking for gap');
         await syncService.checkAndFillGap(dataSyncService.lastWSActionLogId);
         
+        // КРИТИЧНО: Полный reconcile инцидентов при reconnect.
+        // Если инциденты были удалены напрямую из БД (не через API),
+        // action_log не создаётся и WebSocket не уведомляет.
+        // reconcileIncidents() сверяет локальную БД с сервером и удаляет стейл записи.
+        try {
+          final incidentService = ref.read(incidentServiceProvider);
+          await incidentService.getAllIncidents();
+          print('✅ [Main] Incident reconcile on reconnect completed');
+        } catch (e) {
+          print('⚠️ [Main] Incident reconcile on reconnect failed: $e');
+        }
+        
         // Invalidate map data AND incidents to force a full UI refresh after reconnect
         ref.invalidate(allIncidentsProvider);
         ref.invalidate(mapDataProvider);
