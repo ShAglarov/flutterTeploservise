@@ -221,6 +221,14 @@ class UsersNotifier extends Notifier<UsersState> {
       return;
     }
 
+    // КРИТИЧНО: Обработка presence_snapshot — бэкенд отправляет при подключении/переподключении
+    // полный снимок онлайн-статусов всех пользователей. Без этого Flutter использует
+    // устаревшие данные до прихода индивидуальных presence events.
+    if (type == 'presence_snapshot') {
+      _handlePresenceSnapshot(message);
+      return;
+    }
+
     // Handle user entity updates (action_sync with entity_type=user)
     if (type == 'action_sync') {
       final data = message['data'] as Map<String, dynamic>?;
@@ -266,6 +274,54 @@ class UsersNotifier extends Notifier<UsersState> {
     );
 
     state = state.copyWith(presence: newPresence);
+  }
+
+  /// Handle full presence snapshot (sent by backend on connect/reconnect)
+  /// Format: {"type": "presence_snapshot", "data": {"users": [{"user_id": 1, "is_online": true, ...}, ...]}}
+  void _handlePresenceSnapshot(Map<String, dynamic> message) {
+    final data = message['data'] as Map<String, dynamic>?;
+    if (data == null) return;
+
+    final users = data['users'] as List<dynamic>?;
+    if (users == null || users.isEmpty) return;
+
+    final newPresence = Map<int, UserPresence>.from(state.presence);
+    int onlineCount = 0;
+
+    for (final userEntry in users) {
+      if (userEntry is! Map<String, dynamic>) continue;
+
+      final userId = userEntry['user_id'] as int?;
+      final isOnline = userEntry['is_online'] as bool?;
+      if (userId == null || isOnline == null) continue;
+
+      final lastSeenStr = userEntry['last_seen'] as String?;
+      final lastLat = (userEntry['last_latitude'] as num?)?.toDouble();
+      final lastLng = (userEntry['last_longitude'] as num?)?.toDouble();
+
+      DateTime? lastSeen;
+      if (lastSeenStr != null) {
+        try {
+          lastSeen = DateTime.parse(lastSeenStr);
+        } catch (_) {}
+      }
+
+      final existing = newPresence[userId];
+      newPresence[userId] = UserPresence(
+        isOnline: isOnline,
+        lastSeen: lastSeen ?? existing?.lastSeen,
+        lastLatitude: lastLat ?? existing?.lastLatitude,
+        lastLongitude: lastLng ?? existing?.lastLongitude,
+      );
+
+      if (isOnline) onlineCount++;
+    }
+
+    state = state.copyWith(presence: newPresence);
+    dev.log(
+      'UsersNotifier: PRESENCE SNAPSHOT applied: ${users.length} users, $onlineCount online',
+      name: 'PRESENCE',
+    );
   }
 
   /// Handle user entity update (is_active, is_blocked changes)

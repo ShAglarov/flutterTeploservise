@@ -227,7 +227,7 @@ class DataSyncService {
           // Direct action format (no wrapper)
           dev.log('📥 [DataSync] QUEUED PROCESSING: Direct Action ($timestamp)', name: 'SYNC');
           await processAction(message);
-        } else if (type == 'ping' || type == 'pong' || type == 'connection_established' || type == 'presence' || type == 'force_logout') {
+        } else if (type == 'ping' || type == 'pong' || type == 'connection_established' || type == 'presence' || type == 'presence_snapshot' || type == 'force_logout') {
           // Heartbeat / connection confirmation / presence - ignore in DataSync
         } else {
           dev.log('[DataSync] Unhandled WS message type: $type', name: 'SYNC');
