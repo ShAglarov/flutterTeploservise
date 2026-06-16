@@ -534,6 +534,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
   }
 
   String _getFullName(APIUserResponse user) {
+    if (user.username == 'adm') {
+      return 'Агларов Шамиль Рамазанович';
+    }
     final parts = [user.lastName, user.firstName, user.middleName]
         .where((s) => s != null && s.trim().isNotEmpty)
         .map((s) => s!.trim())
