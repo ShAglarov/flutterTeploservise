@@ -488,7 +488,8 @@ class UserManagementScreen extends ConsumerStatefulWidget {
   ConsumerState<UserManagementScreen> createState() => _UserManagementScreenState();
 }
 
-class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
+class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
+    with WidgetsBindingObserver {
   bool _showUsersOnMap = true;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -496,6 +497,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.toLowerCase());
     });
@@ -503,8 +505,18 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// При возвращении из фона — обновляем список пользователей,
+  /// чтобы получить актуальные онлайн-статусы из API
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(usersWithPresenceProvider.notifier).refresh();
+    }
   }
 
   List<APIUserResponse> _applySearch(List<APIUserResponse> users) {
@@ -625,6 +637,18 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
     final activeUsers = filtered.where((u) => u.isActive && u.isBlocked != true).toList();
     final deactivatedUsers = filtered.where((u) => !u.isActive && u.isBlocked != true).toList();
     final blockedUsers = filtered.where((u) => u.isBlocked == true).toList();
+
+    // Сортировка: онлайн-пользователи поднимаются вверх, затем по имени
+    int compareByOnlineThenName(APIUserResponse a, APIUserResponse b) {
+      final aOnline = usersState.isUserOnline(a.id);
+      final bOnline = usersState.isUserOnline(b.id);
+      if (aOnline != bOnline) return aOnline ? -1 : 1;
+      return _getFullName(a).toLowerCase().compareTo(_getFullName(b).toLowerCase());
+    }
+
+    activeUsers.sort(compareByOnlineThenName);
+    deactivatedUsers.sort(compareByOnlineThenName);
+    blockedUsers.sort(compareByOnlineThenName);
 
     return RefreshIndicator(
       onRefresh: () => ref.read(usersWithPresenceProvider.notifier).refresh(),
@@ -797,6 +821,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
 
     // Build subtitle parts
     final subtitleParts = <String>[];
+    subtitleParts.add(user.username); // Добавляем логин (username) всегда
     if (position.isNotEmpty) subtitleParts.add(position);
     if (email.isNotEmpty) subtitleParts.add(email);
     if (phone.isNotEmpty) subtitleParts.add(phone);
