@@ -194,10 +194,28 @@ MapDataState filteredMapData(Ref ref) {
 
   // 1. Filter by Query
   if (query.isNotEmpty) {
+    // Build a set of boiler house IDs that have at least one linked house
+    // matching the search query (by house name or management company).
+    // This mirrors the iOS Core Data predicate:
+    //   ANY savedLocations.name CONTAINS[cd] %@
+    //   ANY savedLocations.managementCompany CONTAINS[cd] %@
+    final matchedBhIdsByHouse = <int>{};
+    for (final loc in locations) {
+      final nameMatches = loc.name.toLowerCase().contains(query);
+      final mcMatches = loc.managementCompanyName?.toLowerCase().contains(query) ?? false;
+      if ((nameMatches || mcMatches) && loc.boilerHouseId != null) {
+        matchedBhIdsByHouse.add(loc.boilerHouseId!);
+      }
+    }
+
     boilerHouses = boilerHouses.where((bh) {
-      return bh.address.toLowerCase().contains(query) ||
+      // Direct match on boiler house fields
+      final directMatch = bh.address.toLowerCase().contains(query) ||
              (bh.siteManager?.toLowerCase().contains(query) ?? false) ||
              (bh.siteNumber?.toLowerCase().contains(query) ?? false);
+      // Indirect match: a linked house name/management company matches
+      final houseMatch = matchedBhIdsByHouse.contains(bh.id);
+      return directMatch || houseMatch;
     }).toList();
 
     locations = locations.where((loc) =>

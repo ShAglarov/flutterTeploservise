@@ -9,6 +9,7 @@ import 'incident_list_screen.dart';
 import 'action_log_list_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
+import 'management_company_list_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/map_providers.dart';
 import '../providers/incident_providers.dart';
@@ -454,8 +455,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     }),
                     _buildDropdownDivider(),
                     _buildDropdownItem(Icons.business, 'Управляющие\nкомпании', () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Раздел Управляющие компании скоро появится')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ManagementCompanyListScreen()),
                       );
                     }),
                     _buildDropdownDivider(),
@@ -610,7 +612,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onChanged: (value) => ref.read(mapSearchQueryProvider.notifier).update(value),
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Поиск...',
+                    hintText: 'Название, адрес дома, начальник, участок…',
                     hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
                     border: InputBorder.none,
                     isDense: true,
