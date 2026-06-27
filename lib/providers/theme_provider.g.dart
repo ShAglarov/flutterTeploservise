@@ -9,28 +9,28 @@ part of 'theme_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(AppTheme)
-final appThemeProvider = AppThemeProvider._();
+@ProviderFor(ThemeController)
+final themeControllerProvider = ThemeControllerProvider._();
 
-final class AppThemeProvider
-    extends $NotifierProvider<AppTheme, ThemePreference> {
-  AppThemeProvider._()
+final class ThemeControllerProvider
+    extends $NotifierProvider<ThemeController, ThemePreference> {
+  ThemeControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'appThemeProvider',
+        name: r'themeControllerProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$appThemeHash();
+  String debugGetCreateSourceHash() => _$themeControllerHash();
 
   @$internal
   @override
-  AppTheme create() => AppTheme();
+  ThemeController create() => ThemeController();
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(ThemePreference value) {
@@ -41,9 +41,9 @@ final class AppThemeProvider
   }
 }
 
-String _$appThemeHash() => r'54c679b31845b0d93f24cec4ea2bf6a49b0279a6';
+String _$themeControllerHash() => r'75b97216981ac96cd9e62b9c1ab857f8e1ab2b81';
 
-abstract class _$AppTheme extends $Notifier<ThemePreference> {
+abstract class _$ThemeController extends $Notifier<ThemePreference> {
   ThemePreference build();
   @$mustCallSuper
   @override
@@ -105,7 +105,7 @@ final class ThemeModeProvider
   }
 }
 
-String _$themeModeHash() => r'e03bdba5a136fa275a853f52a7538bebf800c8bb';
+String _$themeModeHash() => r'3d6cb948921634e72ea639bef2f0709bd2bb3e53';
 
 /// Convenience provider: true when the effective theme is dark.
 /// Takes system brightness into account when preference is 'system'.
@@ -153,4 +153,4 @@ final class IsDarkModeProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isDarkModeHash() => r'91e21c0f91caadae7d2c0d8ec06c1022cc097312';
+String _$isDarkModeHash() => r'ecebcc7fc7ec953a3f79e2a329b3ed3f6b1287d6';
