@@ -16,7 +16,7 @@ const String _themeStorageKey = 'app_theme_preference';
 // Notifier
 // ─────────────────────────────────────────────────
 @riverpod
-class Theme extends _$Theme {
+class AppTheme extends _$AppTheme {
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -60,7 +60,7 @@ class Theme extends _$Theme {
 /// Convenience provider: resolves ThemePreference → ThemeMode
 @riverpod
 ThemeMode themeMode(Ref ref) {
-  final pref = ref.watch(themeProvider);
+  final pref = ref.watch(appThemeProvider);
   switch (pref) {
     case ThemePreference.light:
       return ThemeMode.light;
@@ -75,7 +75,7 @@ ThemeMode themeMode(Ref ref) {
 /// Takes system brightness into account when preference is 'system'.
 @riverpod
 bool isDarkMode(Ref ref) {
-  final pref = ref.watch(themeProvider);
+  final pref = ref.watch(appThemeProvider);
   switch (pref) {
     case ThemePreference.dark:
       return true;

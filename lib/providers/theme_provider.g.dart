@@ -9,27 +9,28 @@ part of 'theme_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(Theme)
-final themeProvider = ThemeProvider._();
+@ProviderFor(AppTheme)
+final appThemeProvider = AppThemeProvider._();
 
-final class ThemeProvider extends $NotifierProvider<Theme, ThemePreference> {
-  ThemeProvider._()
+final class AppThemeProvider
+    extends $NotifierProvider<AppTheme, ThemePreference> {
+  AppThemeProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'themeProvider',
+        name: r'appThemeProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$themeHash();
+  String debugGetCreateSourceHash() => _$appThemeHash();
 
   @$internal
   @override
-  Theme create() => Theme();
+  AppTheme create() => AppTheme();
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(ThemePreference value) {
@@ -40,9 +41,9 @@ final class ThemeProvider extends $NotifierProvider<Theme, ThemePreference> {
   }
 }
 
-String _$themeHash() => r'32fb1e1e2b7b5e0c304960881098839b21f25093';
+String _$appThemeHash() => r'54c679b31845b0d93f24cec4ea2bf6a49b0279a6';
 
-abstract class _$Theme extends $Notifier<ThemePreference> {
+abstract class _$AppTheme extends $Notifier<ThemePreference> {
   ThemePreference build();
   @$mustCallSuper
   @override
@@ -104,7 +105,7 @@ final class ThemeModeProvider
   }
 }
 
-String _$themeModeHash() => r'0508bf6bbbe234fb42507704d7ac6288fdce6f25';
+String _$themeModeHash() => r'e03bdba5a136fa275a853f52a7538bebf800c8bb';
 
 /// Convenience provider: true when the effective theme is dark.
 /// Takes system brightness into account when preference is 'system'.
@@ -152,4 +153,4 @@ final class IsDarkModeProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isDarkModeHash() => r'dda4921375861e50917b55c3b51d32c661b74f8c';
+String _$isDarkModeHash() => r'91e21c0f91caadae7d2c0d8ec06c1022cc097312';
