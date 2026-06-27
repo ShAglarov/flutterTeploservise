@@ -7,7 +7,9 @@ import '../utils/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class ActionLogListScreen extends ConsumerStatefulWidget {
-  const ActionLogListScreen({super.key});
+  final int? initialUserId;
+
+  const ActionLogListScreen({super.key, this.initialUserId});
 
   @override
   ConsumerState<ActionLogListScreen> createState() =>
@@ -46,6 +48,7 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedUserId = widget.initialUserId;
     _scrollController.addListener(_onScroll);
     // Fire request-flush when entering the journal
     WidgetsBinding.instance.addPostFrameCallback((_) => _requestFlush());

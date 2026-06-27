@@ -203,7 +203,7 @@ final class FilteredMapDataProvider
   }
 }
 
-String _$filteredMapDataHash() => r'4be1509165227a6e2c9b367ff27d7ae9d881741a';
+String _$filteredMapDataHash() => r'01e537ceca2d5567bb4972efc75598a69f618230';
 
 @ProviderFor(mapSections)
 final mapSectionsProvider = MapSectionsProvider._();

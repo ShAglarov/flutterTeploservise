@@ -4,14 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/api_models.dart';
 import '../providers/auth_providers.dart';
 import '../providers/user_presence_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/time_formatter.dart';
+import 'action_log_list_screen.dart';
 import 'profile_screen.dart';
-
-// ─────────────────────────────────────────────────
-// Theme preference
-// ─────────────────────────────────────────────────
-enum ThemePreference { system, light, dark }
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -24,7 +22,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   APIUserResponse? _currentUser;
   bool _isLoading = true;
   bool _showPipes = true;
-  ThemePreference _themePreference = ThemePreference.dark;
 
   @override
   void initState() {
@@ -360,27 +357,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildThemeSelector() {
+    final currentTheme = ref.watch(themeProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Тема приложения',
-              style: TextStyle(color: Colors.white, fontSize: 16)),
+          Text('Тема приложения',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16)),
           const SizedBox(height: 2),
-          const Text('Системная, светлая или тёмная тема',
-              style: TextStyle(color: Colors.white54, fontSize: 12)),
+          Text('Системная, светлая или тёмная тема',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12)),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.tertiaryDarkBackground,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                _buildThemeButton('Система', ThemePreference.system),
-                _buildThemeButton('Светлая', ThemePreference.light),
-                _buildThemeButton('Тёмная', ThemePreference.dark),
+                _buildThemeButton('Система', ThemePreference.system, currentTheme),
+                _buildThemeButton('Светлая', ThemePreference.light, currentTheme),
+                _buildThemeButton('Тёмная', ThemePreference.dark, currentTheme),
               ],
             ),
           ),
@@ -389,23 +387,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeButton(String label, ThemePreference pref) {
-    final isSelected = _themePreference == pref;
+  Widget _buildThemeButton(String label, ThemePreference pref, ThemePreference currentTheme) {
+    final isSelected = currentTheme == pref;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _themePreference = pref),
+        onTap: () => ref.read(themeProvider.notifier).setTheme(pref),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withAlpha(30) : Colors.transparent,
+            color: isSelected
+                ? (isDark ? Colors.white.withAlpha(30) : Colors.black.withAlpha(20))
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(7),
           ),
           alignment: Alignment.center,
           child: Text(
             label,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white54,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onSurface
+                  : Theme.of(context).colorScheme.onSurface.withAlpha(140),
               fontSize: 14,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
@@ -557,18 +560,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
 
   String _getLastSeenText(int userId, UsersState usersState) {
     final isOnline = usersState.isUserOnline(userId);
-    if (isOnline) return '● Онлайн';
-    
     final lastSeen = usersState.lastSeenFor(userId);
-    if (lastSeen != null) {
-      final day = lastSeen.day.toString().padLeft(2, '0');
-      final month = lastSeen.month.toString().padLeft(2, '0');
-      final year = lastSeen.year;
-      final hour = lastSeen.hour.toString().padLeft(2, '0');
-      final minute = lastSeen.minute.toString().padLeft(2, '0');
-      return 'В сети: $day.$month.$year $hour:$minute';
-    }
-    return '';
+    return TimeFormatter.formatActivitySummary(
+      isOnline: isOnline,
+      lastLoginAt: lastSeen,
+    );
   }
 
   Color _getAvatarColor(APIUserResponse user) {
@@ -1095,14 +1091,10 @@ class UserProfileScreen extends ConsumerWidget {
     final lng = usersState.lastLngFor(user.id) ?? 0;
 
     // Определяем текст «Последний вход»
-    String lastSeenText;
-    if (isOnline) {
-      lastSeenText = '● Онлайн';
-    } else if (lastSeen != null) {
-      lastSeenText = _formatDateTime(lastSeen);
-    } else {
-      lastSeenText = _formatDate(user.lastLoginAt);
-    }
+    final lastSeenText = TimeFormatter.formatActivitySummary(
+      isOnline: isOnline,
+      lastLoginAt: lastSeen,
+    );
 
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
@@ -1219,8 +1211,11 @@ class UserProfileScreen extends ConsumerWidget {
                   );
                 }),
                 _buildActionButton(context, Icons.article_outlined, 'Журнал', Colors.purpleAccent, () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Журнал скоро появится')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ActionLogListScreen(initialUserId: user.id),
+                    ),
                   );
                 }),
               ],

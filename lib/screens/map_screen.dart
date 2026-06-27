@@ -18,6 +18,7 @@ import '../models/location_models.dart';
 import '../models/incident_models.dart';
 import '../services/location_service.dart';
 import '../utils/app_theme.dart';
+import '../providers/theme_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/base_card.dart';
 import '../widgets/fullscreen_image_viewer.dart';
@@ -209,8 +210,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final sections = ref.watch(mapSectionsProvider);
     final isOffline = ref.watch(isOfflineProvider);
 
+    final isDark = ref.watch(isDarkModeProvider);
+
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // 1. FlutterMap Layer
@@ -251,7 +254,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     TileLayer(
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.teploservice',
-                      tileBuilder: _darkModeTileBuilder,
+                      tileBuilder: isDark ? _darkModeTileBuilder : null,
                     ),
                     PolylineLayer(polylines: _cachedPolylines),
                     MarkerLayer(markers: _cachedMarkers),

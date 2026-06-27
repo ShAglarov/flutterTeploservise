@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:window_manager/window_manager.dart';
 import 'utils/app_theme.dart';
+import 'providers/theme_provider.dart';
 import 'utils/constants.dart';
 import 'screens/map_screen.dart';
 import 'screens/login_screen.dart';
@@ -222,10 +223,14 @@ class _MyAppState extends ConsumerState<MyApp> {
       _initializeSyncPipeline();
     }
 
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp(
       title: 'Teplo Service',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       scaffoldMessengerKey: scaffoldMessengerKey,
       home: _getHome(authState),
     );
