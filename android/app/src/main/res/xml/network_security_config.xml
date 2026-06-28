@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Разрешаем самоподписанные сертификаты для api.teploservis05.ru -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">teploservis05.ru</domain>
+        <trust-anchors>
+            <!-- Доверяем системным сертификатам -->
+            <certificates src="system" />
+            <!-- Доверяем пользовательским сертификатам (для self-signed) -->
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+    <!-- Разрешаем тайлы карт (CARTO, OSM и другие) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
