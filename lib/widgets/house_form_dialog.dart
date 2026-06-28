@@ -191,9 +191,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
       child: Container(
         width: 500,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
         ),
         child: Column(
           children: [
@@ -291,12 +291,12 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
         children: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Отмена', style: TextStyle(color: Colors.white, fontSize: 17)),
+            child: Text('Отмена', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 17)),
           ),
           Text(
             widget.initialLocation != null ? 'Редактировать дом' : 'Новый дом',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
@@ -323,7 +323,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(children: children),
@@ -348,7 +348,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
             flex: 4,
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
             ),
           ),
           Expanded(
@@ -357,10 +357,10 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
               controller: controller,
               keyboardType: keyboardType,
               textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
                 border: InputBorder.none,
@@ -391,7 +391,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
               ),
             ),
             Text(
@@ -399,7 +399,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
               style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 16),
             ),
             if (value == 'Выбрать' || value == 'Не выбрано')
-              Icon(Icons.chevron_right, size: 20, color: Colors.white.withValues(alpha: 0.3)),
+              Icon(Icons.chevron_right, size: 20, color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
           ],
         ),
       ),
@@ -423,7 +423,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
             ),
           ),
           Switch(
@@ -457,22 +457,22 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                     child: const Icon(Icons.person, size: 18, color: Colors.grey),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Начальник участка',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
                     ),
                   ),
                   DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: _selectedSiteManager,
-                      dropdownColor: const Color(0xFF2C2C2E),
+                      dropdownColor: Theme.of(context).colorScheme.surface,
                       icon: const SizedBox.shrink(),
                       hint: Text(
                         'Выберите',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 16),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77), fontSize: 16),
                       ),
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
                       onChanged: (v) => setState(() => _selectedSiteManager = v),
                       items: managers.map((u) {
                         final label = u.formattedDisplayName.split(' • ').first;
@@ -506,7 +506,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   }
 
   Widget _buildDivider() {
-    return Divider(color: Colors.white.withValues(alpha: 0.1), height: 1, indent: 46);
+    return Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25), height: 1, indent: 46);
   }
 }
 
@@ -520,8 +520,8 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       child: Text(
         title.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           fontSize: 11,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,

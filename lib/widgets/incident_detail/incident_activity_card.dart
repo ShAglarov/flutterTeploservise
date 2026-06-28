@@ -22,14 +22,14 @@ class IncidentActivityCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.history, color: Colors.white.withOpacity(0.7), size: 20),
+              Icon(Icons.history, color: Theme.of(context).colorScheme.onSurface.withAlpha(180), size: 20),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Лента активности',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -49,7 +49,7 @@ class IncidentActivityCard extends ConsumerWidget {
                 );
               }
               return Column(
-                children: activities.map((activity) => _buildActivityItem(activity, usersMap)).toList(),
+                children: activities.map((activity) => _buildActivityItem(context, activity, usersMap)).toList(),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -59,7 +59,7 @@ class IncidentActivityCard extends ConsumerWidget {
       ),
     );
   }
-  Widget _buildActivityItem(IncidentActivity activity, Map<int, dynamic> usersMap) {
+  Widget _buildActivityItem(BuildContext context, IncidentActivity activity, Map<int, dynamic> usersMap) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Row(
@@ -67,8 +67,8 @@ class IncidentActivityCard extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 14,
-            backgroundColor: Colors.white.withOpacity(0.1),
-            child: const Icon(Icons.person, size: 16, color: Colors.white70),
+            backgroundColor: Theme.of(context).colorScheme.onSurface.withAlpha(25),
+            child: Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -81,9 +81,9 @@ class IncidentActivityCard extends ConsumerWidget {
                     Expanded(
                       child: Text(
                         activity.userName ?? 'Неизвестный пользователь',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 15,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -92,16 +92,16 @@ class IncidentActivityCard extends ConsumerWidget {
                     Text(
                       _formatTime(activity.timestamp),
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
                         fontSize: 12,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                _buildActionRow(activity),
+                _buildActionRow(context, activity),
                 const SizedBox(height: 4),
-                ..._buildCustomChangeWidgets(activity, usersMap),
+                ..._buildCustomChangeWidgets(context, activity, usersMap),
               ],
             ),
           ),
@@ -110,7 +110,7 @@ class IncidentActivityCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionRow(IncidentActivity activity) {
+  Widget _buildActionRow(BuildContext context, IncidentActivity activity) {
     Color iconColor = Colors.blue;
     IconData iconData = Icons.info;
     String actionSuffix = '';
@@ -147,14 +147,14 @@ class IncidentActivityCard extends ConsumerWidget {
         Expanded(
           child: Text(
             '${activity.userName ?? "Пользователь"} $actionSuffix',
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ),
       ],
     );
   }
 
-  List<Widget> _buildCustomChangeWidgets(IncidentActivity activity, Map<int, dynamic> usersMap) {
+  List<Widget> _buildCustomChangeWidgets(BuildContext context, IncidentActivity activity, Map<int, dynamic> usersMap) {
     final widgets = <Widget>[];
     final changes = activity.parsedChanges;
 
@@ -165,15 +165,15 @@ class IncidentActivityCard extends ConsumerWidget {
 
       if (field == 'affected_house_ids') {
         if (newVal is List) {
-          widgets.add(_buildPrettyRow(Icons.business, 'Затронуто домов: ${newVal.length}', Colors.blueAccent));
-          widgets.add(_buildPrettyRow(null, 'Затронутые дома:...', Colors.white54, isSub: true));
+          widgets.add(_buildPrettyRow(context, Icons.business, 'Затронуто домов: ${newVal.length}', Colors.blueAccent));
+          widgets.add(_buildPrettyRow(context, null, 'Затронутые дома:...', Theme.of(context).colorScheme.onSurface.withAlpha(140), isSub: true));
         }
       } else if (field == 'resource_hot_water_stopped' && _isTruthy(newVal)) {
-        widgets.add(_buildPrettyRow(Icons.warning_amber_rounded, 'ГВС остановлено', Colors.orange));
+        widgets.add(_buildPrettyRow(context, Icons.warning_amber_rounded, 'ГВС остановлено', Colors.orange));
       } else if (field == 'resource_heating_stopped' && _isTruthy(newVal)) {
-        widgets.add(_buildPrettyRow(Icons.local_fire_department, 'Отопление остановлено', Colors.orange));
+        widgets.add(_buildPrettyRow(context, Icons.local_fire_department, 'Отопление остановлено', Colors.orange));
       } else if (field == 'assigned_to') {
-        widgets.add(_buildPrettyRow(Icons.person_outline, 'Ответственный: ${_formatValue(change.oldValue, usersMap: usersMap)} → ${_formatValue(change.newValue, usersMap: usersMap)}', Colors.blue));
+        widgets.add(_buildPrettyRow(context, Icons.person_outline, 'Ответственный: ${_formatValue(change.oldValue, usersMap: usersMap)} → ${_formatValue(change.newValue, usersMap: usersMap)}', Colors.blue));
       } else if (['status', 'title', 'severity'].contains(field)) {
         // Generic fields with translation
         widgets.add(
@@ -181,7 +181,7 @@ class IncidentActivityCard extends ConsumerWidget {
             padding: const EdgeInsets.only(left: 26, top: 2),
             child: Text(
               '${_translateField(field)}: ${_formatValue(change.oldValue, usersMap: usersMap)} → ${_formatValue(change.newValue, usersMap: usersMap)}',
-              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(153), fontSize: 12),
             ),
           ),
         );
@@ -190,7 +190,7 @@ class IncidentActivityCard extends ConsumerWidget {
     return widgets;
   }
 
-  Widget _buildPrettyRow(IconData? icon, String text, Color color, {bool isSub = false}) {
+  Widget _buildPrettyRow(BuildContext context, IconData? icon, String text, Color color, {bool isSub = false}) {
     return Padding(
       padding: EdgeInsets.only(left: isSub ? 44.0 : 26.0, top: 4.0),
       child: Row(
@@ -203,7 +203,7 @@ class IncidentActivityCard extends ConsumerWidget {
           Text(
             text,
             style: TextStyle(
-              color: isSub ? Colors.white.withOpacity(0.4) : Colors.white.withOpacity(0.9),
+              color: isSub ? Theme.of(context).colorScheme.onSurface.withAlpha(100) : Theme.of(context).colorScheme.onSurface.withAlpha(230),
               fontSize: 13,
             ),
           ),

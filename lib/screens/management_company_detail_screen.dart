@@ -63,12 +63,12 @@ class _ManagementCompanyDetailScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.secondaryDarkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title:
-            const Text('Удалить УК', style: TextStyle(color: Colors.white)),
+            Text('Удалить УК', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
         content: Text(
           'Удалить управляющую компанию «${_company.name}»?',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
         ),
         actions: [
           TextButton(
@@ -124,18 +124,18 @@ class _ManagementCompanyDetailScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
           icon:
-              const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+              Icon(Icons.arrow_back_ios, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _company.name,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 17),
           overflow: TextOverflow.ellipsis,
         ),
         centerTitle: true,
@@ -215,13 +215,13 @@ class _ManagementCompanyDetailScreenState
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.secondaryDarkBackground,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
                     _company.notes!,
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 15, height: 1.4),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 15, height: 1.4),
                   ),
                 ),
               ],
@@ -261,9 +261,9 @@ class _ManagementCompanyDetailScreenState
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(15)),
       ),
       child: Row(
         children: [
@@ -284,8 +284,8 @@ class _ManagementCompanyDetailScreenState
               children: [
                 Text(
                   _company.name,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -296,7 +296,7 @@ class _ManagementCompanyDetailScreenState
                 Text(
                   'ID: ${_company.id}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(77),
                     fontSize: 12,
                   ),
                 ),
@@ -313,8 +313,8 @@ class _ManagementCompanyDetailScreenState
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
@@ -330,20 +330,20 @@ class _ManagementCompanyDetailScreenState
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.secondaryDarkBackground,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
           'Нет контактной информации',
           style:
-              TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
+              TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77), fontSize: 14),
         ),
       );
     }
 
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -353,7 +353,7 @@ class _ManagementCompanyDetailScreenState
             if (i < nonNullChildren.length - 1)
               Divider(
                 height: 1,
-                color: Colors.white.withAlpha(15),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
                 indent: 52,
                 endIndent: 16,
               ),
@@ -383,15 +383,15 @@ class _ManagementCompanyDetailScreenState
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
                     fontSize: 12,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 15,
                   ),
                 ),
@@ -400,7 +400,7 @@ class _ManagementCompanyDetailScreenState
             const Spacer(),
             if (onTap != null)
               Icon(Icons.copy_outlined,
-                  color: Colors.white.withOpacity(0.2), size: 16),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(50), size: 16),
           ],
         ),
       ),
@@ -433,7 +433,7 @@ class _ManagementCompanyDetailScreenState
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -453,8 +453,8 @@ class _ManagementCompanyDetailScreenState
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                 ),
@@ -462,7 +462,7 @@ class _ManagementCompanyDetailScreenState
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
                   fontSize: 13,
                 ),
               ),

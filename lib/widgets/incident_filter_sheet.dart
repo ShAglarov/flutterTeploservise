@@ -12,9 +12,9 @@ class IncidentFilterSheet extends ConsumerWidget {
     final filterNotifier = ref.read(incidentFilterProvider.notifier);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.only(bottom: 32, top: 16),
       child: Column(
@@ -27,7 +27,7 @@ class IncidentFilterSheet extends ConsumerWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -38,12 +38,12 @@ class IncidentFilterSheet extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Фильтры',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 TextButton(
@@ -67,7 +67,7 @@ class IncidentFilterSheet extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Период', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text('Период', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 14)),
                 const SizedBox(height: 12),
                 SegmentedButton<IncidentPeriod>(
                   segments: const [
@@ -87,24 +87,24 @@ class IncidentFilterSheet extends ConsumerWidget {
                     }),
                     foregroundColor: WidgetStateProperty.resolveWith((states) {
                       if (states.contains(WidgetState.selected)) return Colors.white;
-                      return Colors.white70;
+                      return Theme.of(context).colorScheme.onSurface.withAlpha(180);
                     }),
-                    side: WidgetStateProperty.all(const BorderSide(color: Colors.white24)),
+                    side: WidgetStateProperty.all(BorderSide(color: Theme.of(context).colorScheme.onSurface.withAlpha(60))),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          const Divider(color: Colors.white10),
+          const Divider(color: Colors.black12),
           
           // Resources Toggles
-           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Text('Остановленные ресурсы', style: TextStyle(color: Colors.white70, fontSize: 14)),
+           Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Text('Остановленные ресурсы', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 14)),
           ),
           CheckboxListTile(
-            title: const Text('Горячая вода (ГВС)', style: TextStyle(color: Colors.white)),
+            title: Text('Горячая вода (ГВС)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
             value: filterState.stoppedHotWater ?? false,
             onChanged: (bool? value) {
               filterNotifier.setStoppedHotWater(value == true ? true : null);
@@ -113,7 +113,7 @@ class IncidentFilterSheet extends ConsumerWidget {
             controlAffinity: ListTileControlAffinity.leading,
           ),
           CheckboxListTile(
-            title: const Text('Отопление', style: TextStyle(color: Colors.white)),
+            title: Text('Отопление', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
             value: filterState.stoppedHeating ?? false,
             onChanged: (bool? value) {
               filterNotifier.setStoppedHeating(value == true ? true : null);

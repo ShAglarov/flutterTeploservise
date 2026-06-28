@@ -117,9 +117,9 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
       child: Container(
         width: 500,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
         ),
         child: Column(
           children: [
@@ -129,7 +129,7 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
               child: _isLoading 
                 ? const Center(child: CircularProgressIndicator(color: Colors.blue))
                 : _houses.isEmpty
-                  ? const Center(child: Text('Дома не найдены', style: TextStyle(color: Colors.white54)))
+                  ? Center(child: Text('Дома не найдены', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140))))
                   : ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -161,10 +161,10 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
             icon: Icons.chevron_left,
             onTap: () => Navigator.pop(context),
           ),
-          const Text(
+          Text(
             'Выбрать дом',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
@@ -181,16 +181,16 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
           borderRadius: BorderRadius.circular(12),
         ),
         child: TextField(
           controller: _searchController,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
           decoration: InputDecoration(
             hintText: 'Поиск по дому / УК / ЛС...',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-            prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.3), size: 20),
+            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
+            prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface.withAlpha(77), size: 20),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 10),
           ),
@@ -209,7 +209,7 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -220,17 +220,17 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
                   children: [
                     Text(
                       house.name,
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Год: ${house.yearBuilt ?? "Н/Д"} • Этажей: ${house.floors ?? "Н/Д"} • Помещений: ${house.rooms ?? "Н/Д"} • Площадь: ${house.totalArea ?? "Н/Д"}',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.3), size: 20),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(77), size: 20),
             ],
           ),
         ),
@@ -253,10 +253,10 @@ class _CircleButton extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(25),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 20, color: Colors.white),
+        child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }

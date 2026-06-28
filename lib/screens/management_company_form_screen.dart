@@ -130,18 +130,18 @@ class _ManagementCompanyFormScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
           icon:
-              const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+              Icon(Icons.arrow_back_ios, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _isEditing ? 'Редактировать УК' : 'Новая УК',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         actions: [
@@ -246,8 +246,8 @@ class _ManagementCompanyFormScreenState
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
@@ -258,7 +258,7 @@ class _ManagementCompanyFormScreenState
   Widget _buildFieldCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(children: children),
@@ -268,7 +268,7 @@ class _ManagementCompanyFormScreenState
   Widget _buildDivider() {
     return Divider(
       height: 1,
-      color: Colors.white.withAlpha(15),
+      color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
       indent: 52,
       endIndent: 16,
     );
@@ -299,11 +299,11 @@ class _ManagementCompanyFormScreenState
               keyboardType: keyboardType,
               maxLines: maxLines,
               validator: validator,
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
               decoration: InputDecoration(
                 labelText: label,
                 labelStyle: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
                   fontSize: 14,
                 ),
                 border: InputBorder.none,

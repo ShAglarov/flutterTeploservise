@@ -96,17 +96,20 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: theme.scaffoldBackgroundColor,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(Icons.close, color: colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _isEditing ? 'Редактирование' : 'Новый сервер',
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: colorScheme.onSurface),
         ),
       ),
       body: GestureDetector(
@@ -121,24 +124,24 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
               // Header
               Text(
                 _isEditing ? 'Редактирование сервера' : 'Новый сервер',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Укажите данные сервера теплоснабжающей организации',
-                style: TextStyle(color: Colors.white54, fontSize: 15),
+                style: TextStyle(color: colorScheme.onSurface.withAlpha(140), fontSize: 15),
               ),
               const SizedBox(height: 32),
 
               // Name field
-              const Text(
+              Text(
                 'НАЗВАНИЕ ОРГАНИЗАЦИИ',
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: colorScheme.onSurface.withAlpha(140),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -147,13 +150,13 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: _nameController,
-                style: const TextStyle(color: Colors.white, fontSize: 17),
+                style: TextStyle(color: colorScheme.onSurface, fontSize: 17),
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
                   hintText: 'МУП Теплосеть Казань',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.25)),
+                  hintStyle: TextStyle(color: colorScheme.onSurface.withAlpha(65)),
                   filled: true,
-                  fillColor: AppTheme.secondaryDarkBackground,
+                  fillColor: colorScheme.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -167,10 +170,10 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
               const SizedBox(height: 24),
 
               // URL field
-              const Text(
+              Text(
                 'АДРЕС СЕРВЕРА',
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: colorScheme.onSurface.withAlpha(140),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
@@ -179,14 +182,14 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: _urlController,
-                style: const TextStyle(color: Colors.white, fontSize: 17),
+                style: TextStyle(color: colorScheme.onSurface, fontSize: 17),
                 keyboardType: TextInputType.url,
                 autocorrect: false,
                 decoration: InputDecoration(
                   hintText: 'https://api.company.ru',
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.25)),
+                  hintStyle: TextStyle(color: colorScheme.onSurface.withAlpha(65)),
                   filled: true,
-                  fillColor: AppTheme.secondaryDarkBackground,
+                  fillColor: colorScheme.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -244,7 +247,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: _checkResult == null
-                          ? Colors.white.withOpacity(0.05)
+                          ? colorScheme.onSurface.withAlpha(13)
                           : _checkResult!
                               ? AppTheme.successGreen.withOpacity(0.15)
                               : AppTheme.errorRed.withOpacity(0.15),
@@ -268,7 +271,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                             _checkMessage,
                             style: TextStyle(
                               color: _checkResult == null
-                                  ? Colors.white54
+                                  ? colorScheme.onSurface.withAlpha(140)
                                   : _checkResult!
                                       ? AppTheme.successGreen
                                       : AppTheme.errorRed,

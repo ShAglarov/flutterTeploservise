@@ -85,8 +85,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _firstBuild = false;
     }
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -103,11 +106,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   color: AppTheme.primaryBlue,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'TEPLOSERVICE',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colorScheme.onSurface,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2,
@@ -155,8 +158,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             children: [
                               Text(
                                 activeServer?.name ?? 'Сервер не выбран',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -165,8 +168,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Text(
                                 activeServer?.displayURL ??
                                     'Нажмите для настройки',
-                                style: const TextStyle(
-                                  color: Colors.white54,
+                                style: TextStyle(
+                                  color: colorScheme.onSurface.withAlpha(140),
                                   fontSize: 12,
                                 ),
                               ),
@@ -175,9 +178,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
 
                         // Chevron
-                        const Icon(
+                        Icon(
                           Icons.chevron_right,
-                          color: Colors.white24,
+                          color: colorScheme.onSurface.withAlpha(60),
                           size: 20,
                         ),
                       ],
@@ -189,18 +192,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Username Field
                 TextFormField(
                   controller: _usernameController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     labelText: 'Логин',
-                    prefixIcon: const Icon(Icons.person_outline, color: Colors.white70),
-                    labelStyle: const TextStyle(color: Colors.white70),
+                    prefixIcon: Icon(Icons.person_outline, color: colorScheme.onSurface.withAlpha(180)),
+                    labelStyle: TextStyle(color: colorScheme.onSurface.withAlpha(180)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white24),
+                      borderSide: BorderSide(color: colorScheme.onSurface.withAlpha(60)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryBlue),
+                      borderSide: BorderSide(color: colorScheme.primary),
                     ),
                   ),
                   validator: (v) => v == null || v.isEmpty ? 'Введите логин' : null,
@@ -212,18 +215,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     labelText: 'Пароль',
-                    prefixIcon: const Icon(Icons.lock_outline, color: Colors.white70),
-                    labelStyle: const TextStyle(color: Colors.white70),
+                    prefixIcon: Icon(Icons.lock_outline, color: colorScheme.onSurface.withAlpha(180)),
+                    labelStyle: TextStyle(color: colorScheme.onSurface.withAlpha(180)),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.white24),
+                      borderSide: BorderSide(color: colorScheme.onSurface.withAlpha(60)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primaryBlue),
+                      borderSide: BorderSide(color: colorScheme.primary),
                     ),
                   ),
                   validator: (v) => v == null || v.isEmpty ? 'Введите пароль' : null,

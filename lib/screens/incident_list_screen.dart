@@ -111,7 +111,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.secondaryDarkBackground,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
         ),
         child: TextField(
@@ -119,12 +119,12 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           onChanged: (value) => ref.read(incidentFilterProvider.notifier).updateSearchQuery(value),
           decoration: InputDecoration(
             hintText: 'Поиск по типу или деталям...',
-            prefixIcon: const Icon(Icons.search, color: Colors.white54),
+            prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 12),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white54),
+                    icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                     onPressed: () {
                       _searchController.clear();
                       ref.read(incidentFilterProvider.notifier).updateSearchQuery('');
@@ -168,14 +168,14 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   Widget _buildList(List<IncidentViewModel> viewModels) {
     if (viewModels.isEmpty) {
       return ListView(
-        children: const [
-          SizedBox(height: 100),
+        children: [
+          const SizedBox(height: 100),
           Center(
             child: Column(
               children: [
-                Icon(Icons.search_off, size: 64, color: Colors.white24),
-                SizedBox(height: 16),
-                Text('Инцидентов не найдено', style: TextStyle(color: Colors.white54, fontSize: 16)),
+                Icon(Icons.search_off, size: 64, color: Theme.of(context).colorScheme.onSurface.withAlpha(60)),
+                const SizedBox(height: 16),
+                Text('Инцидентов не найдено', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 16)),
               ],
             ),
           ),
@@ -274,7 +274,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12),
           ),
         ],
       ),
@@ -316,16 +316,16 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppTheme.secondaryDarkBackground,
-          title: const Text('Удаление инцидента', style: TextStyle(color: Colors.white)),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Text('Удаление инцидента', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
           content: Text(
             'Вы уверены, что хотите удалить ${title ?? "#$id"}?',
-            style: const TextStyle(color: Colors.white70),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Отмена', style: TextStyle(color: Colors.white70)),
+              child: Text('Отмена', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180))),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
@@ -393,11 +393,11 @@ class _FilterChip extends StatelessWidget {
       selectedColor: AppTheme.primaryBlue.withAlpha(100),
       backgroundColor: Colors.transparent,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.white70,
+        color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withAlpha(180),
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       shape: StadiumBorder(
-        side: BorderSide(color: isSelected ? AppTheme.primaryBlue : Colors.white24),
+        side: BorderSide(color: isSelected ? AppTheme.primaryBlue : Theme.of(context).colorScheme.onSurface.withAlpha(60)),
       ),
       showCheckmark: false,
     );

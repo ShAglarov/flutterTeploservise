@@ -30,12 +30,12 @@ class _ManagementCompanyListScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.secondaryDarkBackground,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         title:
-            const Text('Удалить УК', style: TextStyle(color: Colors.white)),
+            Text('Удалить УК', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
         content: Text(
           'Удалить управляющую компанию «${company.name}»?',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
         ),
         actions: [
           TextButton(
@@ -103,17 +103,17 @@ class _ManagementCompanyListScreenState
     final companiesAsync = ref.watch(managementCompaniesProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
           icon:
-              const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+              Icon(Icons.arrow_back_ios, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Управляющие компании',
+        title: Text('Управляющие компании',
             style:
-                TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
         centerTitle: true,
         actions: [
           IconButton(
@@ -131,24 +131,24 @@ class _ManagementCompanyListScreenState
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Icon(Icons.search,
-                      color: Colors.white.withOpacity(0.5), size: 18),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(128), size: 18),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _searchController,
                       onChanged: (v) => setState(() => _searchQuery = v),
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14),
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                       decoration: InputDecoration(
                         hintText: 'Поиск УК…',
                         hintStyle: TextStyle(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(77),
                             fontSize: 14),
                         border: InputBorder.none,
                         isDense: true,
@@ -159,8 +159,8 @@ class _ManagementCompanyListScreenState
                   ),
                   if (_searchQuery.isNotEmpty)
                     IconButton(
-                      icon: const Icon(Icons.clear,
-                          color: Colors.white30, size: 18),
+                      icon: Icon(Icons.clear,
+                          color: Theme.of(context).colorScheme.onSurface.withAlpha(77), size: 18),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: () {
@@ -188,8 +188,8 @@ class _ManagementCompanyListScreenState
                         color: AppTheme.errorRed, size: 48),
                     const SizedBox(height: 16),
                     Text('Ошибка загрузки: $err',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 14),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 14),
                         textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -251,10 +251,10 @@ class _ManagementCompanyListScreenState
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppTheme.secondaryDarkBackground,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: Colors.white.withOpacity(0.06), width: 1),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(15), width: 1),
             ),
             child: Row(
               children: [
@@ -278,8 +278,8 @@ class _ManagementCompanyListScreenState
                     children: [
                       Text(
                         company.name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -290,13 +290,13 @@ class _ManagementCompanyListScreenState
                       Row(
                         children: [
                           Icon(Icons.home_outlined,
-                              color: Colors.white.withOpacity(0.4),
+                              color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
                               size: 14),
                           const SizedBox(width: 4),
                           Text(
                             'Домов: $housesCount',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
                               fontSize: 13,
                             ),
                           ),
@@ -304,14 +304,14 @@ class _ManagementCompanyListScreenState
                               company.phone!.isNotEmpty) ...[
                             const SizedBox(width: 12),
                             Icon(Icons.phone_outlined,
-                                color: Colors.white.withOpacity(0.4),
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
                                 size: 14),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 company.phone!,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
                                   fontSize: 13,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -327,8 +327,8 @@ class _ManagementCompanyListScreenState
                 // Actions
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert,
-                      color: Colors.white.withOpacity(0.4), size: 20),
-                  color: AppTheme.tertiaryDarkBackground,
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(100), size: 20),
+                  color: Theme.of(context).colorScheme.surface,
                   onSelected: (value) {
                     if (value == 'edit') {
                       Navigator.push<bool>(
@@ -354,8 +354,7 @@ class _ManagementCompanyListScreenState
                           Icon(Icons.edit_outlined,
                               color: AppTheme.warningOrange, size: 18),
                           SizedBox(width: 10),
-                          Text('Редактировать',
-                              style: TextStyle(color: Colors.white)),
+                          Text('Редактировать'),
                         ],
                       ),
                     ),
@@ -382,19 +381,20 @@ class _ManagementCompanyListScreenState
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.business_outlined,
-              color: Colors.white.withOpacity(0.2), size: 64),
+              color: colorScheme.onSurface.withAlpha(50), size: 64),
           const SizedBox(height: 16),
           Text(
             _searchQuery.isNotEmpty
                 ? 'Ничего не найдено'
                 : 'Нет управляющих компаний',
-            style: const TextStyle(
-              color: Colors.white54,
+            style: TextStyle(
+              color: colorScheme.onSurface.withAlpha(140),
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -405,7 +405,7 @@ class _ManagementCompanyListScreenState
                 ? 'Попробуйте изменить запрос'
                 : 'Добавьте новую УК нажав +',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.3),
+              color: colorScheme.onSurface.withAlpha(77),
               fontSize: 14,
             ),
           ),

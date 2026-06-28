@@ -90,44 +90,56 @@ class AppTheme {
         secondary: primaryBlueLight,
         surface: secondaryLightBackground,
         error: errorRedLight,
-        onSurface: Colors.black,
+        onSurface: Color(0xFF1C1C1E), // Soft black for better readability
+      ),
+      dividerTheme: DividerThemeData(
+        color: Colors.black.withAlpha(20),
+        thickness: 0.5,
       ),
       cardTheme: CardThemeData(
         color: secondaryLightBackground,
-        elevation: 0,
+        elevation: 1,
+        shadowColor: Colors.black.withAlpha(25),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardCornerRadius),
-          side: BorderSide(
-            color: Colors.black.withAlpha(20),
-            width: cardBorderWidth,
+          side: const BorderSide(
+            color: Color(0xFFD1D1D6), // iOS separator color
+            width: 0.5,
           ),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: secondaryLightBackground,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: lightBackground,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          color: Colors.black,
+          color: Color(0xFF1C1C1E),
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: Color(0xFF1C1C1E)),
       ),
       textTheme: const TextTheme(
         headlineMedium: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: Colors.black,
+          color: Color(0xFF1C1C1E),
         ),
         bodyMedium: TextStyle(
           fontSize: 15,
-          color: Colors.black87,
+          color: Color(0xFF3C3C43), // secondaryLabel
         ),
         labelSmall: TextStyle(
           fontSize: 13,
-          color: Colors.black54,
+          color: Color(0xFF8E8E93), // tertiaryLabel
         ),
       ),
     );

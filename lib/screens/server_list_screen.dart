@@ -14,9 +14,11 @@ class ServerListScreen extends ConsumerWidget {
     final serverState = ref.watch(serverStateProvider).value ?? ref.read(serverManagerProvider).state;
     final servers = serverState.servers;
     final activeId = serverState.activeServer?.id;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -26,16 +28,16 @@ class ServerListScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Выбор сервера',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colorScheme.onSurface,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
+                    icon: Icon(Icons.close, color: colorScheme.onSurface.withAlpha(140)),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -47,7 +49,7 @@ class ServerListScreen extends ConsumerWidget {
             // Server list or empty state
             Expanded(
               child: servers.isEmpty
-                  ? _buildEmptyState()
+                  ? _buildEmptyState(context)
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
@@ -101,17 +103,18 @@ class ServerListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.dns_outlined, size: 48, color: Colors.white.withOpacity(0.2)),
+          Icon(Icons.dns_outlined, size: 48, color: colorScheme.onSurface.withAlpha(50)),
           const SizedBox(height: 16),
           Text(
             'Нет сохранённых серверов',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: colorScheme.onSurface.withAlpha(100),
               fontSize: 17,
               fontWeight: FontWeight.w500,
             ),
@@ -121,7 +124,7 @@ class ServerListScreen extends ConsumerWidget {
             'Добавьте сервер теплоснабжающей\nорганизации для начала работы',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.25),
+              color: colorScheme.onSurface.withAlpha(65),
               fontSize: 14,
             ),
           ),
@@ -151,12 +154,12 @@ class ServerListScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.secondaryDarkBackground,
-        title: const Text('Удалить сервер?',
-            style: TextStyle(color: Colors.white)),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('Удалить сервер?',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
         content: Text(
           '«${server.name}» будет удалён из списка.',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
         ),
         actions: [
           TextButton(
@@ -200,6 +203,8 @@ class _ServerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: ClipRRect(
@@ -245,7 +250,7 @@ class _ServerTile extends StatelessWidget {
           child: Material(
             color: isActive
                 ? AppTheme.primaryBlue.withOpacity(0.12)
-                : AppTheme.secondaryDarkBackground,
+                : colorScheme.surface,
             child: InkWell(
               onTap: onTap,
               child: Padding(
@@ -279,8 +284,8 @@ class _ServerTile extends StatelessWidget {
                         children: [
                           Text(
                             server.name,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -288,8 +293,8 @@ class _ServerTile extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             server.displayURL,
-                            style: const TextStyle(
-                              color: Colors.white54,
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withAlpha(140),
                               fontSize: 13,
                             ),
                           ),

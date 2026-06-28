@@ -100,9 +100,9 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
       child: Container(
         width: 500,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -115,7 +115,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                 child: Container(
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -153,8 +153,8 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
           ),
           Text(
             widget.initialBoilerHouse != null ? 'Редактировать котельную' : 'Новая котельная',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
@@ -190,7 +190,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
             flex: 2,
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 16),
             ),
           ),
           Expanded(
@@ -199,10 +199,10 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
               controller: controller,
               keyboardType: keyboardType,
               textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
                 border: InputBorder.none,
@@ -225,7 +225,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
               flex: 2,
               child: Text(
                 label,
-                style: const TextStyle(color: Colors.white70, fontSize: 16),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 16),
               ),
             ),
             Expanded(
@@ -236,13 +236,13 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                   Text(
                     value,
                     style: TextStyle(
-                      color: value == 'Не выбрано' ? Colors.white38 : Colors.white,
+                      color: value == 'Не выбрано' ? Theme.of(context).colorScheme.onSurface.withAlpha(97) : Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, size: 20, color: Colors.white24),
+                  Icon(Icons.chevron_right, size: 20, color: Theme.of(context).colorScheme.onSurface.withAlpha(60)),
                 ],
               ),
             ),
@@ -267,7 +267,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                     flex: 2,
                     child: Text(
                       'Начальник участка',
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                      style: TextStyle(color: Colors.grey, fontSize: 16),
                     ),
                   ),
                   Expanded(
@@ -275,18 +275,18 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButtonFormField<String>(
                         value: _selectedSiteManager,
-                        dropdownColor: const Color(0xFF2C2C2E),
+                        dropdownColor: Theme.of(context).colorScheme.surface,
                         icon: const SizedBox.shrink(),
                         alignment: Alignment.centerRight,
                         hint: Align(
                           alignment: Alignment.centerRight,
                           child: Text(
                             'Выберите',
-                            style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 16),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77), fontSize: 16),
                           ),
                         ),
                         isExpanded: true,
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
                         decoration: const InputDecoration(
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
@@ -331,7 +331,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
   }
 
   Widget _buildDivider() {
-    return Divider(color: Colors.white.withOpacity(0.1), height: 1, indent: 16);
+    return Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25), height: 1, indent: 16);
   }
 }
 
@@ -349,10 +349,10 @@ class _CircleButton extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(25),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 20, color: Colors.white),
+        child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }

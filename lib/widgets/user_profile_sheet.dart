@@ -10,8 +10,8 @@ class UserProfileSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.only(bottom: 32, top: 16),
@@ -23,7 +23,7 @@ class UserProfileSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -47,19 +47,19 @@ class UserProfileSheet extends StatelessWidget {
           // Name and Role
           Text(
             user.formattedDisplayName.split(' • ').first,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             user.position?.isNotEmpty == true ? user.position! : user.role.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Colors.white70,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(180),
             ),
             textAlign: TextAlign.center,
           ),
@@ -83,15 +83,15 @@ class UserProfileSheet extends StatelessWidget {
           ),
           
           const SizedBox(height: 24),
-          const Divider(color: Colors.white10),
+          Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
           
           // Details
           if (user.phoneNumber?.isNotEmpty == true)
-            _buildDetailRow(Icons.phone, user.phoneNumber!),
+            _buildDetailRow(context, Icons.phone, user.phoneNumber!),
           
-          _buildDetailRow(Icons.email, user.email),
+          _buildDetailRow(context, Icons.email, user.email),
           
-          _buildDetailRow(Icons.admin_panel_settings, 'Роль: ${user.role.title}'),
+          _buildDetailRow(context, Icons.admin_panel_settings, 'Роль: ${user.role.title}'),
           
           const SizedBox(height: 16),
         ],
@@ -99,18 +99,18 @@ class UserProfileSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String text) {
+  Widget _buildDetailRow(BuildContext context, IconData icon, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white54, size: 24),
+          Icon(icon, color: Theme.of(context).colorScheme.onSurface.withAlpha(140), size: 24),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 16,
               ),
             ),

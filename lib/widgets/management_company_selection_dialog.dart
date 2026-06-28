@@ -63,9 +63,9 @@ class _ManagementCompanySelectionDialogState extends ConsumerState<ManagementCom
       child: Container(
         width: 500,
         decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
         ),
         child: Column(
           children: [
@@ -75,7 +75,7 @@ class _ManagementCompanySelectionDialogState extends ConsumerState<ManagementCom
               child: _isLoading 
                 ? const Center(child: CircularProgressIndicator(color: Colors.blue))
                 : filtered.isEmpty
-                  ? const Center(child: Text('УК не найдены', style: TextStyle(color: Colors.white54)))
+                  ? Center(child: Text('УК не найдены', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140))))
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       itemCount: filtered.length,
@@ -101,10 +101,10 @@ class _ManagementCompanySelectionDialogState extends ConsumerState<ManagementCom
             icon: Icons.chevron_left,
             onTap: () => Navigator.pop(context),
           ),
-          const Text(
+          Text(
             'Выбрать УК / УО',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
@@ -121,16 +121,16 @@ class _ManagementCompanySelectionDialogState extends ConsumerState<ManagementCom
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
           borderRadius: BorderRadius.circular(12),
         ),
         child: TextField(
           controller: _searchController,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
           decoration: InputDecoration(
             hintText: 'Поиск УК...',
-            hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-            prefixIcon: Icon(Icons.search, color: Colors.white.withValues(alpha: 0.3), size: 20),
+            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
+            prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface.withAlpha(77), size: 20),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 10),
           ),
@@ -149,7 +149,7 @@ class _ManagementCompanySelectionDialogState extends ConsumerState<ManagementCom
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -160,7 +160,7 @@ class _ManagementCompanySelectionDialogState extends ConsumerState<ManagementCom
                   children: [
                     Text(
                       company['name'] ?? 'Без названия',
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w500),
                     ),
                     if (company['address'] != null) ...[
                       const SizedBox(height: 4),
@@ -174,7 +174,7 @@ class _ManagementCompanySelectionDialogState extends ConsumerState<ManagementCom
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.3), size: 20),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(77), size: 20),
             ],
           ),
         ),
@@ -197,10 +197,10 @@ class _CircleButton extends StatelessWidget {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(25),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 20, color: Colors.white),
+        child: Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }

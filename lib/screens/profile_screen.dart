@@ -58,11 +58,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.secondaryDarkBackground,
-        title: const Text('Выход', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('Выход', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        content: Text(
           'Вы уверены, что хотите выйти из аккаунта?',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
         ),
         actions: [
           TextButton(
@@ -96,15 +96,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Профиль',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        title: Text('Профиль',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
         centerTitle: true,
         actions: [
           TextButton(
@@ -132,8 +132,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           color: AppTheme.errorRed, size: 48),
                       const SizedBox(height: 16),
                       Text(_error!,
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 16)),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 16)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
@@ -247,8 +247,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
@@ -259,7 +259,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -269,7 +269,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             if (i < children.length - 1)
               Divider(
                 height: 1,
-                color: Colors.white.withAlpha(15),
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
                 indent: 16,
                 endIndent: 16,
               ),
@@ -286,8 +286,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 16,
             ),
           ),
@@ -297,7 +297,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               value,
               textAlign: TextAlign.right,
               style: TextStyle(
-                color: valueColor ?? Colors.white54,
+                color: valueColor ?? Theme.of(context).colorScheme.onSurface.withAlpha(140),
                 fontSize: 16,
               ),
             ),
@@ -320,16 +320,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          const Text(
+          Text(
             'Device ID',
-            style: TextStyle(color: Colors.white, fontSize: 16),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               shortId,
               textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 13),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -363,7 +363,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
             ),
           ),
           Text(

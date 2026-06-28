@@ -19,6 +19,7 @@ import '../models/incident_models.dart';
 import '../services/location_service.dart';
 import '../utils/app_theme.dart';
 import '../providers/theme_provider.dart';
+import '../providers/map_tile_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/base_card.dart';
 import '../widgets/fullscreen_image_viewer.dart';
@@ -211,6 +212,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final isOffline = ref.watch(isOfflineProvider);
 
     final isDark = ref.watch(isDarkModeProvider);
+    final tileConfig = ref.watch(resolvedMapTileSourceProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -252,9 +254,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate: tileConfig.urlTemplate,
+                      subdomains: tileConfig.subdomains,
                       userAgentPackageName: 'com.example.teploservice',
-                      tileBuilder: isDark ? _darkModeTileBuilder : null,
+                      tileBuilder: tileConfig.needsDarkFilter 
+                        ? _darkModeTileBuilder 
+                        : (Theme.of(context).brightness == Brightness.light 
+                          ? _lightModeTileBuilder 
+                          : null),
                     ),
                     PolylineLayer(polylines: _cachedPolylines),
                     MarkerLayer(markers: _cachedMarkers),
@@ -273,10 +280,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               child: Container(
                 color: Colors.red.withOpacity(0.9),
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: const Text(
+                child: Text(
                   'Нет подключения к сети',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -384,7 +391,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
                 child: Text(
                   '$badgeCount',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -416,7 +423,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
             child: Icon(
               _isMenuOpen ? Icons.close : Icons.person_outline,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               size: 24,
             ),
           ),
@@ -436,9 +443,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 margin: const EdgeInsets.only(top: 12),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppTheme.cardBackground.withOpacity(0.95),
+                  color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.3),
@@ -503,15 +510,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white70, size: 22),
+            Icon(icon, color: Theme.of(context).colorScheme.onSurface.withAlpha(180), size: 22),
             const SizedBox(width: 12),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w400),
             ),
             if (hasChevron) ...[
               const SizedBox(width: 12),
-              const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
             ],
           ],
         ),
@@ -522,7 +529,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _buildDropdownDivider() {
     return Divider(
       height: 1,
-      color: Colors.white.withOpacity(0.08),
+      color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
       indent: 16,
       endIndent: 16,
     );
@@ -543,7 +550,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: AppTheme.darkBackground,
+            color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20),
@@ -560,7 +567,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(50),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -602,21 +609,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             borderRadius: BorderRadius.circular(22),
           ),
           child: Row(
             children: [
-              Icon(Icons.search, color: Colors.white.withOpacity(0.5), size: 18),
+              Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface.withAlpha(128), size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: _searchController,
                   onChanged: (value) => ref.read(mapSearchQueryProvider.notifier).update(value),
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'Название, адрес дома, начальник, участок…',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+                    hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77), fontSize: 13),
                     border: InputBorder.none,
                     isDense: true,
                   ),
@@ -624,7 +631,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
               if (searchQuery.isNotEmpty)
                 IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.white30, size: 18),
+                  icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.onSurface.withAlpha(77), size: 18),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: () {
@@ -632,11 +639,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ref.read(mapSearchQueryProvider.notifier).update('');
                   },
                 ),
-              const VerticalDivider(width: 16, indent: 8, endIndent: 8, color: Colors.white12),
+              VerticalDivider(width: 16, indent: 8, endIndent: 8, color: Theme.of(context).colorScheme.onSurface.withAlpha(30)),
               IconButton(
                 icon: Icon(
                   filter.showOnlyIncidents ? Icons.warning : Icons.warning_amber_outlined,
-                  color: filter.showOnlyIncidents ? AppTheme.errorRed : Colors.white60,
+                  color: filter.showOnlyIncidents ? AppTheme.errorRed : Theme.of(context).colorScheme.onSurface.withAlpha(153),
                   size: 20,
                 ),
                 padding: EdgeInsets.zero,
@@ -681,6 +688,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         -0.2126, -0.7152, -0.0722, 0, 255,
         -0.2126, -0.7152, -0.0722, 0, 255,
          0,       0,       0,      1,   0,
+      ]),
+      child: tileWidget,
+    );
+  }
+
+  // Subtle darkening for light theme: reduce brightness by ~12%, boost contrast
+  Widget _lightModeTileBuilder(BuildContext context, Widget tileWidget, TileImage tile) {
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix(<double>[
+        1.1,  0,    0,    0, -20,
+        0,    1.1,  0,    0, -20,
+        0,    0,    1.1,  0, -20,
+        0,    0,    0,    1,   0,
       ]),
       child: tileWidget,
     );
@@ -745,7 +765,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
                 ],
               ),
-              child: const Icon(Icons.factory, color: Colors.white, size: 18),
+              child: Icon(Icons.factory, color: Theme.of(context).colorScheme.onSurface, size: 18),
             ),
           ),
         ),
@@ -784,7 +804,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
                 ],
               ),
-              child: const Icon(Icons.home, color: Colors.white, size: 14),
+              child: Icon(Icons.home, color: Theme.of(context).colorScheme.onSurface, size: 14),
             ),
           ),
         ),
@@ -858,13 +878,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppTheme.cardBackground.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                   ),
                   child: Text(
                     'Котельная',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -874,7 +894,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.cardBackground.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
                     borderRadius: const BorderRadius.only(
                       topRight: Radius.circular(10),
                       bottomLeft: Radius.circular(10),
@@ -894,8 +914,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     children: [
                       Text(
                         bh.address,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
@@ -989,13 +1009,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppTheme.cardBackground.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                   ),
                   child: Text(
                     loc.name,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1009,7 +1029,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     Container(
                       padding: const EdgeInsets.only(left: 10, right: 36, top: 8, bottom: 10),
                       decoration: BoxDecoration(
-                        color: AppTheme.cardBackground.withOpacity(0.95),
+                        color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(10),
                           bottomRight: Radius.circular(10),
@@ -1065,7 +1085,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   child: Text(
                                     'Котельная: ${linkedBH.address}',
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.6),
+                                      color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
                                       fontSize: 12,
                                     ),
                                     maxLines: 2,
@@ -1092,7 +1112,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           color: AppTheme.primaryBlue,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.info_outline, color: Colors.white, size: 14),
+                        child: Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurface, size: 14),
                       ),
                     ),
                   ],
@@ -1115,7 +1135,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           child: Text(
             text,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(217),
               fontSize: 13,
             ),
             maxLines: 1,
@@ -1189,9 +1209,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           .toList();
 
       if (filteredLocations.isEmpty) {
-        return const Padding(
-          padding: EdgeInsets.only(top: 40),
-          child: Center(child: Text('Нет привязанных домов', style: TextStyle(color: Colors.white54))),
+        return Padding(
+          padding: const EdgeInsets.only(top: 40),
+          child: Center(child: Text('Нет привязанных домов', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140)))),
         );
       }
 
@@ -1207,17 +1227,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final totalItems = data.boilerHouses.length;
     
     if (totalItems == 0) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 40),
-        child: Center(child: Text('Нет результатов', style: TextStyle(color: Colors.white54))),
+      return Padding(
+        padding: const EdgeInsets.only(top: 40),
+        child: Center(child: Text('Нет результатов', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140)))),
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(6, 0, 6, 40),
       itemCount: totalItems,
+      separatorBuilder: (context, index) => Divider(
+        height: 1,
+        thickness: 0.5,
+        indent: 16,
+        endIndent: 16,
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(30),
+      ),
       itemBuilder: (context, index) {
         return _buildBoilerHouseItem(context, data, data.boilerHouses[index]);
       },
@@ -1254,10 +1281,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(24)),
-                  child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
+                  child: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.onSurface, size: 24),
                 ),
                 const SizedBox(height: 8),
-                const Text('Удалить', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Удалить', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
               ],
             ),
           ),
@@ -1271,10 +1298,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(24)),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 24),
+                  child: Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface, size: 24),
                 ),
                 const SizedBox(height: 8),
-                const Text('Редакт.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Редакт.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
               ],
             ),
           ),
@@ -1288,10 +1315,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(24)),
-                  child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                  child: Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.onSurface, size: 24),
                 ),
                 const SizedBox(height: 8),
-                const Text('Инциденты', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Инциденты', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
               ],
             ),
           ),
@@ -1346,7 +1373,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white24),
+            Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(60)),
           ],
         ),
       ),
@@ -1370,10 +1397,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(24)),
-                  child: const Icon(Icons.delete_outline, color: Colors.white, size: 24),
+                  child: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.onSurface, size: 24),
                 ),
                 const SizedBox(height: 8),
-                const Text('Удалить', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Удалить', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
               ],
             ),
           ),
@@ -1387,10 +1414,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(24)),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 24),
+                  child: Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurface, size: 24),
                 ),
                 const SizedBox(height: 8),
-                const Text('Редакт.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Редакт.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
               ],
             ),
           ),
@@ -1404,10 +1431,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(24)),
-                  child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                  child: Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.onSurface, size: 24),
                 ),
                 const SizedBox(height: 8),
-                const Text('Инциденты', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text('Инциденты', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
               ],
             ),
           ),
@@ -1455,16 +1482,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${loc.accounts!.length}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12),
                 ),
               ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: Colors.white24),
+            Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(60)),
           ],
         ),
       ),
@@ -1485,15 +1512,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       padding: const EdgeInsets.only(right: 8.0),
       child: ChoiceChip(
         label: Text(label, style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white70,
+          color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withAlpha(180),
           fontSize: 12,
         )),
         selected: isSelected,
         onSelected: (_) => onSelected(),
         selectedColor: AppTheme.primaryBlue.withAlpha(100),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: StadiumBorder(side: BorderSide(
-          color: isSelected ? AppTheme.primaryBlue : Colors.white24,
+          color: isSelected ? AppTheme.primaryBlue : Theme.of(context).colorScheme.onSurface.withAlpha(60),
         )),
         showCheckmark: false,
       ),
@@ -1528,9 +1555,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground.withAlpha(230),
+        color: Theme.of(context).colorScheme.surface.withAlpha(230),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withAlpha(30)),
+        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(30)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(80),
@@ -1579,7 +1606,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               children: [
                 Text(
                   bh.address,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 14),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1591,7 +1618,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 else
                   Text(
                     'Нач: ${bh.siteManager ?? "?"} | Участок: ${bh.siteNumber ?? "?"} | 🏠 домов: $houseCount',
-                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 11),
                   ),
               ],
             ),
@@ -1640,7 +1667,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               builder: (ctx, controller) {
                 return Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.darkBackground,
+                    color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
                   ),
                   child: Column(
@@ -1697,17 +1724,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                icon: Icon(Icons.arrow_back_ios_new, color: Theme.of(context).colorScheme.onSurface, size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
               Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.more_horiz, color: Colors.white, size: 24),
+                    icon: Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.onSurface, size: 24),
                     onPressed: () {},
                   ),
                   IconButton(
-                    icon: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
+                    icon: Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.onSurface, size: 24),
                     onPressed: () async {
                       final result = await showDialog<bool>(
                         context: context,
@@ -1728,7 +1755,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 100),
             child: Text(
               loc.name,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1742,7 +1769,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -1752,19 +1779,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               const Icon(Icons.apartment, color: AppTheme.primaryBlue, size: 24),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Информация о доме',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 20),
           
           _buildInfoLabel('Название'),
-          Text(loc.name, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+          Text(loc.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.w600)),
           
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
+          Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
           const SizedBox(height: 16),
           
           // Grid of characteristics
@@ -1789,7 +1816,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             children: [
                               const Icon(Icons.water_drop, color: Colors.blue, size: 16),
                               const SizedBox(width: 4),
-                              const Text('ГВС', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                              const Text('ГВС', style: TextStyle(color: Colors.blue, fontSize: 15, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ],
@@ -1799,7 +1826,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             children: [
                               const Icon(Icons.local_fire_department, color: Colors.orange, size: 16),
                               const SizedBox(width: 4),
-                              const Text('Отопление', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                              const Text('Отопление', style: TextStyle(color: Colors.orange, fontSize: 15, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ],
@@ -1842,7 +1869,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
           
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
+          Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
           const SizedBox(height: 16),
           
           _buildInfoLabel('УК/УО'),
@@ -1852,13 +1879,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               const SizedBox(width: 8),
               Text(
                 loc.managementCompanyName ?? 'Не указана',
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
+          Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
           const SizedBox(height: 16),
           
           // Technical info block (FIAS, Coords)
@@ -1872,7 +1899,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2C2C2E),
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1896,7 +1923,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             Expanded(
               child: Text(
                 'Ш: ${loc.latitude.toStringAsFixed(7)} Д: ${loc.longitude.toStringAsFixed(7)}',
-                style: const TextStyle(color: Colors.white70, fontSize: 14, fontFamily: 'monospace'),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 14, fontFamily: 'monospace'),
               ),
             ),
           ],
@@ -1910,7 +1937,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             Expanded(
               child: Text(
                 'ФИАС Дом: ${loc.fiasHouseGuid ?? "—"}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12),
               ),
             ),
           ],
@@ -1924,7 +1951,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             Expanded(
               child: Text(
                 'ФИАС АО: ${loc.fiasAOGuid ?? "—"}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12),
               ),
             ),
           ],
@@ -1944,26 +1971,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.local_fire_department, color: Colors.orange, size: 24),
               SizedBox(width: 8),
               Text(
                 'Информация о котельной',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 16),
           
           _buildInfoLabel('Котельная'),
-          Text(bh.address, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(bh.address, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
           
           const SizedBox(height: 16),
           
@@ -1974,7 +2001,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildIconLabel(Icons.tag, 'Номер участка'),
-                    Text(bh.siteNumber ?? '—', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(bh.siteNumber ?? '—', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -1983,7 +2010,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildIconLabel(Icons.account_circle_outlined, 'Начальник участка'),
-                    Text(bh.siteManager ?? '—', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(bh.siteManager ?? '—', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -1991,7 +2018,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
           
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
+          Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
           const SizedBox(height: 16),
           
           _buildInfoLabel('Ресурсы сейчас'),
@@ -2005,7 +2032,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
           
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
+          Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
           const SizedBox(height: 16),
           
           Row(
@@ -2019,7 +2046,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               Text(
                 activeIncidents.isEmpty ? 'Нет активных инцидентов' : 'Активных инцидентов: ${activeIncidents.length}',
                 style: TextStyle(
-                  color: activeIncidents.isEmpty ? Colors.white70 : AppTheme.errorRed,
+                  color: activeIncidents.isEmpty ? Theme.of(context).colorScheme.onSurface.withAlpha(180) : AppTheme.errorRed,
                   fontSize: 14,
                   fontWeight: activeIncidents.isEmpty ? FontWeight.normal : FontWeight.bold,
                 ),
@@ -2062,9 +2089,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               children: [
                 const Icon(Icons.image_outlined, color: AppTheme.primaryBlue, size: 24),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Фотографии дома',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -2087,7 +2114,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               padding: const EdgeInsets.symmetric(vertical: 30),
               child: Column(
                 children: [
-                  const Text('Нет фотографий', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                  Text('Нет фотографий', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 14)),
                   const SizedBox(height: 12),
                   GestureDetector(
                     onTap: () => _uploadPhotoForLocation(loc.id),
@@ -2136,8 +2163,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               onTap: () => _deletePhotoForLocation(locationId, photo.id),
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                child: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface, size: 16),
               ),
             ),
           ),
@@ -2159,7 +2186,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         label,
-        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 12),
       ),
     );
   }
@@ -2167,11 +2194,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _buildIconLabel(IconData icon, String label) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white.withOpacity(0.3), size: 16),
+        Icon(icon, color: Theme.of(context).colorScheme.onSurface.withAlpha(77), size: 16),
         const SizedBox(width: 4),
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 12),
         ),
       ],
     );
@@ -2180,7 +2207,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _buildGridItem({required IconData icon, required String label, String? value, Widget? content, double? itemWidth}) {
     final body = content ?? Text(
       value ?? '—', 
-      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15, fontWeight: FontWeight.bold),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -2199,10 +2226,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildResourceChip(String label, IconData icon, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF14223A),
+        color: isDark ? const Color(0xFF14223A) : color.withAlpha(20),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
@@ -2210,7 +2238,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         children: [
           Icon(icon, color: color, size: 16),
           const SizedBox(width: 8),
-          Expanded(child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500))),
+          Expanded(child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13, fontWeight: FontWeight.w500))),
           const Icon(Icons.check_circle, color: Color(0xFF30D158), size: 16),
         ],
       ),

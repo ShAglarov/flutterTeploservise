@@ -34,14 +34,22 @@ class IncidentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      elevation: isDark ? 0 : 2,
+      shadowColor: isDark ? Colors.transparent : Colors.black.withAlpha(40),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.white10, width: 1),
+        side: BorderSide(
+          color: isDark 
+            ? Theme.of(context).colorScheme.onSurface.withAlpha(25) 
+            : const Color(0xFFD1D1D6), // iOS separator color
+          width: 1,
+        ),
       ),
-      color: AppTheme.secondaryDarkBackground,
+      color: Theme.of(context).colorScheme.surface,
       child: InkWell(
         onTap: onTap,
         child: IntrinsicHeight(
@@ -73,7 +81,7 @@ class IncidentCard extends StatelessWidget {
                           Flexible(
                             child: Text(
                               timestamp,
-                              style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12, fontWeight: FontWeight.w600),
                               textAlign: TextAlign.right,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -83,45 +91,49 @@ class IncidentCard extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         boilerHouseDetail ?? location,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withAlpha(180),
                           fontSize: 14,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const Divider(height: 1, color: Colors.white10),
+                                            Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                       _buildActionRow(
+                        context,
                         icon: Icons.account_circle,
                         text: assigneeName ?? 'Не назначен',
                         rightText: 'Assigned',
                       ),
                       if (broadcastText != null) ...[
-                        const Divider(height: 1, color: Colors.white10),
+                                              Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                         _buildActionRow(
+                          context,
                           icon: Icons.campaign,
                           text: broadcastText!,
                         ),
                       ],
                       if (stoppedServicesText != null) ...[
-                        const Divider(height: 1, color: Colors.white10),
+                                              Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                         _buildActionRow(
+                          context,
                           icon: Icons.warning_rounded,
                           iconColor: AppTheme.warningOrange,
                           text: 'Остановлено: $stoppedServicesText',
                         ),
                       ],
                       if (affectedPopulationCount > 0) ...[
-                        const Divider(height: 1, color: Colors.white10),
+                                              Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                         _buildActionRow(
+                          context,
                           icon: Icons.people,
                           text: 'Без услуг: $affectedPopulationCount чел.',
                         ),
@@ -155,23 +167,25 @@ class IncidentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionRow({
+  Widget _buildActionRow(
+    BuildContext context, {
     required IconData icon,
     required String text,
     String? rightText,
-    Color iconColor = Colors.white54,
+    Color? iconColor,
   }) {
+    final defaultIconColor = Theme.of(context).colorScheme.onSurface.withAlpha(140);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: iconColor),
+          Icon(icon, size: 20, color: iconColor ?? defaultIconColor),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -180,8 +194,8 @@ class IncidentCard extends StatelessWidget {
           if (rightText != null)
             Text(
               rightText,
-              style: const TextStyle(
-                color: Colors.white54,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),

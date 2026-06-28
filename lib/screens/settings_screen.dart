@@ -5,6 +5,7 @@ import '../models/api_models.dart';
 import '../providers/auth_providers.dart';
 import '../providers/user_presence_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/map_tile_provider.dart';
 import '../services/auth_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
@@ -50,11 +51,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppTheme.secondaryDarkBackground,
-        title: const Text('Выход', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('Выход', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+        content: Text(
           'Вы уверены, что хотите выйти из аккаунта?',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
         ),
         actions: [
           TextButton(
@@ -93,15 +94,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white, size: 22),
+          icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface, size: 22),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Настройки',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        title: Text('Настройки',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
         centerTitle: true,
         actions: [
           if (_currentUser != null) _buildUserBadge(),
@@ -126,16 +127,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               Text(
                 user.username,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 user.role.title,
-                style: const TextStyle(
-                  color: Colors.white54,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                   fontSize: 11,
                 ),
               ),
@@ -152,8 +153,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             alignment: Alignment.center,
             child: Text(
               _getInitials(user),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -184,6 +185,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildDivider(),
           // Тема приложения
           _buildThemeSelector(),
+          _buildDivider(),
+          // Подложка карты
+          _buildMapTileSelector(),
           _buildDivider(),
           // Настройка кнопок и меню
           _buildNavRow(
@@ -276,8 +280,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           fontSize: 13,
           fontWeight: FontWeight.w500,
           letterSpacing: 0.3,
@@ -291,8 +295,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       padding: const EdgeInsets.only(left: 4, top: 8),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Colors.white38,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(97),
           fontSize: 12,
         ),
       ),
@@ -302,7 +306,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildCard(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.secondaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       clipBehavior: Clip.antiAlias,
@@ -316,7 +320,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildDivider() {
     return Divider(
       height: 1,
-      color: Colors.white.withAlpha(15),
+      color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
       indent: 52,
       endIndent: 16,
     );
@@ -340,9 +344,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text(subtitle, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12)),
               ],
             ),
           ),
@@ -398,7 +402,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? Colors.white.withAlpha(30) : Colors.black.withAlpha(20))
+                ? (isDark ? Theme.of(context).colorScheme.onSurface.withAlpha(30) : Colors.black.withAlpha(20))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(7),
           ),
@@ -413,6 +417,78 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapTileSelector() {
+    final currentSource = ref.watch(mapTileSourceProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Подложка карты',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16)),
+          const SizedBox(height: 2),
+          Text('Выберите стиль карты',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12)),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 90,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: mapTileDisplayOptions.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final option = mapTileDisplayOptions[index];
+                return _buildTileOption(option, currentSource);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTileOption(MapTileDisplayInfo option, MapTileSource currentSource) {
+    final isSelected = currentSource == option.source;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: () => ref.read(mapTileSourceProvider.notifier).setSource(option.source),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 100,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? Theme.of(context).colorScheme.onSurface.withAlpha(30) : Colors.black.withAlpha(20))
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? Border.all(color: AppTheme.primaryBlue, width: 2)
+              : Border.all(color: Colors.transparent, width: 2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(option.icon, style: const TextStyle(fontSize: 22)),
+            const SizedBox(height: 4),
+            Text(
+              option.displayName,
+              style: TextStyle(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onSurface
+                    : Theme.of(context).colorScheme.onSurface.withAlpha(140),
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );
@@ -437,13 +513,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                  Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  Text(subtitle, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white38, size: 20),
+            Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
           ],
         ),
       ),
@@ -468,7 +544,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Text(
               title,
               style: TextStyle(
-                color: titleColor ?? Colors.white,
+                color: titleColor ?? Theme.of(context).colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -581,17 +657,17 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
     final usersState = ref.watch(usersWithPresenceProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Закрыть',
               style: TextStyle(color: AppTheme.primaryBlue, fontSize: 15)),
         ),
         leadingWidth: 80,
-        title: const Text('Управление пользователями',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 17)),
+        title: Text('Управление пользователями',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 17)),
         centerTitle: true,
         actions: [
           IconButton(
@@ -613,7 +689,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                     children: [
                       const Icon(Icons.error_outline, color: AppTheme.errorRed, size: 48),
                       const SizedBox(height: 16),
-                      Text(usersState.error!, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                      Text(usersState.error!, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 16)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
@@ -656,21 +732,21 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
           // Search bar
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.secondaryDarkBackground,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: TextField(
               controller: _searchController,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Поиск пользователей...',
-                hintStyle: const TextStyle(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 20),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(97)),
+                prefixIcon: Icon(Icons.search, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white38, size: 18),
+                        icon: Icon(Icons.clear, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 18),
                         onPressed: () => _searchController.clear(),
                       )
                     : null,
@@ -682,15 +758,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
           // Show on map toggle
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.secondaryDarkBackground,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(14),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text('Показывать пользователей на карте',
-                      style: TextStyle(color: Colors.white, fontSize: 15)),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15)),
                 ),
                 Switch.adaptive(
                   value: _showUsersOnMap,
@@ -709,7 +785,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.secondaryDarkBackground,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
               ),
               clipBehavior: Clip.antiAlias,
@@ -720,7 +796,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                     if (i < activeUsers.length - 1)
                       Divider(
                         height: 1,
-                        color: Colors.white.withAlpha(15),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
                         indent: 72,
                         endIndent: 16,
                       ),
@@ -737,7 +813,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.secondaryDarkBackground,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
               ),
               clipBehavior: Clip.antiAlias,
@@ -748,7 +824,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                     if (i < deactivatedUsers.length - 1)
                       Divider(
                         height: 1,
-                        color: Colors.white.withAlpha(15),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
                         indent: 72,
                         endIndent: 16,
                       ),
@@ -765,7 +841,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.secondaryDarkBackground,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
               ),
               clipBehavior: Clip.antiAlias,
@@ -776,7 +852,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                     if (i < blockedUsers.length - 1)
                       Divider(
                         height: 1,
-                        color: Colors.white.withAlpha(15),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
                         indent: 72,
                         endIndent: 16,
                       ),
@@ -797,8 +873,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white54,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
@@ -847,8 +923,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                   alignment: Alignment.center,
                   child: Text(
                     _getInitials(user),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -865,7 +941,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                       decoration: BoxDecoration(
                         color: AppTheme.successGreen,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.secondaryDarkBackground, width: 2),
+                        border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
                       ),
                     ),
                   ),
@@ -882,8 +958,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                       Flexible(
                         child: Text(
                           fullName,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -917,7 +993,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                     const SizedBox(height: 2),
                     Text(
                       '$role • ${subtitleParts.join(' • ')}',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -927,7 +1003,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                     Text(
                       lastSeen,
                       style: TextStyle(
-                        color: isOnline ? AppTheme.successGreen : Colors.white38,
+                        color: isOnline ? AppTheme.successGreen : Theme.of(context).colorScheme.onSurface.withAlpha(97),
                         fontSize: 12,
                       ),
                     ),
@@ -962,11 +1038,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                   final confirmed = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: AppTheme.secondaryDarkBackground,
-                      title: const Text('Деактивация', style: TextStyle(color: Colors.white)),
+                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      title: Text('Деактивация', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       content: Text(
                         'Деактивировать пользователя ${_getFullName(user)}?\n\nПользователь будет отключён от системы и не сможет войти.',
-                        style: const TextStyle(color: Colors.white70),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
                       ),
                       actions: [
                         TextButton(
@@ -1097,19 +1173,19 @@ class UserProfileScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: AppTheme.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppTheme.darkBackground,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Профиль',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        title: Text('Профиль',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_horiz, color: Colors.white54, size: 24),
+            icon: Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.onSurface.withAlpha(140), size: 24),
             onPressed: () {},
           ),
         ],
@@ -1131,8 +1207,8 @@ class UserProfileScreen extends ConsumerWidget {
               alignment: Alignment.center,
               child: Text(
                 _getInitials(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1143,8 +1219,8 @@ class UserProfileScreen extends ConsumerWidget {
             // Name
             Text(
               _getFullName(),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
@@ -1156,7 +1232,7 @@ class UserProfileScreen extends ConsumerWidget {
             if (user.position?.isNotEmpty == true)
               Text(
                 user.position!,
-                style: const TextStyle(color: Colors.white54, fontSize: 15),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 15),
               ),
             const SizedBox(height: 8),
 
@@ -1167,14 +1243,14 @@ class UserProfileScreen extends ConsumerWidget {
                 color: isOnline
                     ? AppTheme.successGreen.withAlpha(30)
                     : user.isActive
-                        ? Colors.white.withAlpha(15)
+                        ? Theme.of(context).colorScheme.onSurface.withAlpha(15)
                         : AppTheme.errorRed.withAlpha(30),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 isOnline ? '● Онлайн' : (user.isActive ? 'Оффлайн' : 'Заблокирован'),
                 style: TextStyle(
-                  color: isOnline ? AppTheme.successGreen : (user.isActive ? Colors.white54 : AppTheme.errorRed),
+                  color: isOnline ? AppTheme.successGreen : (user.isActive ? Theme.of(context).colorScheme.onSurface.withAlpha(140) : AppTheme.errorRed),
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1196,7 +1272,7 @@ class UserProfileScreen extends ConsumerWidget {
                   context,
                   Icons.map_outlined,
                   'На карте',
-                  hasLocation ? AppTheme.primaryBlue : Colors.white24,
+                  hasLocation ? AppTheme.primaryBlue : Theme.of(context).colorScheme.onSurface.withAlpha(60),
                   hasLocation
                       ? () => _open2GIS(context, lat, lng)
                       : () {
@@ -1230,10 +1306,10 @@ class UserProfileScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(left: 4),
                 child: Row(
                   children: [
-                    const Icon(Icons.list_alt, color: Colors.white54, size: 16),
+                    Icon(Icons.list_alt, color: Theme.of(context).colorScheme.onSurface.withAlpha(140), size: 16),
                     const SizedBox(width: 6),
-                    const Text('Данные',
-                        style: TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.w500)),
+                    Text('Данные',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 13, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -1242,27 +1318,28 @@ class UserProfileScreen extends ConsumerWidget {
 
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.secondaryDarkBackground,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(
                 children: [
-                  _buildDataRow('ФИО', _getFullName()),
-                  _buildRowDivider(),
-                  _buildDataRow('Должность', user.position ?? '—'),
-                  _buildRowDivider(),
-                  _buildDataRow('Роль', user.role.title),
-                  _buildRowDivider(),
-                  _buildDataRow('Создан', _formatDate(user.createdAt)),
-                  _buildRowDivider(),
+                  _buildDataRow(context, 'ФИО', _getFullName()),
+                  _buildRowDivider(context),
+                  _buildDataRow(context, 'Должность', user.position ?? '—'),
+                  _buildRowDivider(context),
+                  _buildDataRow(context, 'Роль', user.role.title),
+                  _buildRowDivider(context),
+                  _buildDataRow(context, 'Создан', _formatDate(user.createdAt)),
+                  _buildRowDivider(context),
                   _buildDataRow(
+                    context,
                     'Последний\nвход',
                     lastSeenText,
                     valueColor: isOnline ? AppTheme.successGreen : null,
                   ),
                   // Кнопка «Последнее местоположение» — если есть координаты
                   if (hasLocation) ...[
-                    _buildRowDivider(),
+                    _buildRowDivider(context),
                     _buildLocationRow(context, lat, lng),
                   ],
                 ],
@@ -1315,25 +1392,25 @@ class UserProfileScreen extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDataRow(String label, String value, {Color? valueColor}) {
+  Widget _buildDataRow(BuildContext context, String label, String value, {Color? valueColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 15)),
+          Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 15)),
           const SizedBox(width: 16),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: TextStyle(color: valueColor ?? Colors.white, fontSize: 15),
+              style: TextStyle(color: valueColor ?? Theme.of(context).colorScheme.onSurface, fontSize: 15),
             ),
           ),
         ],
@@ -1341,10 +1418,10 @@ class UserProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRowDivider() {
+  Widget _buildRowDivider(BuildContext context) {
     return Divider(
       height: 1,
-      color: Colors.white.withAlpha(15),
+      color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
       indent: 16,
       endIndent: 16,
     );

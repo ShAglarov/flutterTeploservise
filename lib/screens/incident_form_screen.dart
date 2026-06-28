@@ -80,19 +80,19 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     TextFormField(
                       initialValue: state.title,
                       decoration: _inputDecoration('Название / Тип инцидента'),
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       onChanged: controller.updateTitle,
                       validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
                       value: state.boilerHouseId,
-                      dropdownColor: AppTheme.secondaryDarkBackground,
+                      dropdownColor: Theme.of(context).colorScheme.surface,
                       decoration: _inputDecoration('Котельная'),
                       items: mapData.boilerHouses.map((bh) {
                         return DropdownMenuItem(
                           value: bh.id,
-                          child: Text(bh.address, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                          child: Text(bh.address, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                         );
                       }).toList(),
                       onChanged: controller.updateBoilerHouse,
@@ -104,12 +104,12 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         Expanded(
                           child: DropdownButtonFormField<IncidentStatus>(
                             value: state.status,
-                            dropdownColor: AppTheme.secondaryDarkBackground,
+                            dropdownColor: Theme.of(context).colorScheme.surface,
                             decoration: _inputDecoration('Статус'),
                             items: IncidentStatus.values.map((s) {
                               return DropdownMenuItem(
                                 value: s,
-                                child: Text(s.title.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                child: Text(s.title.toUpperCase(), style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                               );
                             }).toList(),
                             onChanged: (v) {
@@ -121,12 +121,12 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: state.severity,
-                            dropdownColor: AppTheme.secondaryDarkBackground,
+                            dropdownColor: Theme.of(context).colorScheme.surface,
                             decoration: _inputDecoration('Серьезность'),
                             items: ['1', '2', '3'].map((s) {
                               return DropdownMenuItem(
                                 value: s,
-                                child: Text(s, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                child: Text(s, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                               );
                             }).toList(),
                             onChanged: (v) {
@@ -150,17 +150,17 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       data: (users) {
                         return DropdownButtonFormField<int>(
                           value: state.assignedTo,
-                          dropdownColor: AppTheme.secondaryDarkBackground,
+                          dropdownColor: Theme.of(context).colorScheme.surface,
                           decoration: _inputDecoration('Ответственный'),
                           items: [
-                            const DropdownMenuItem<int>(
+                            DropdownMenuItem<int>(
                               value: null,
-                              child: Text('Не назначен', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                              child: Text('Не назначен', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 14)),
                             ),
                             ...users.map((u) {
                               return DropdownMenuItem<int>(
                                 value: u.id,
-                                child: Text(u.formattedDisplayName, style: const TextStyle(color: Colors.white, fontSize: 14)),
+                                child: Text(u.formattedDisplayName, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                               );
                             }),
                           ],
@@ -176,9 +176,9 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     const SizedBox(height: 16),
                     ListTile(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      tileColor: Colors.white.withOpacity(0.05),
-                      title: const Text('Время создания', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      subtitle: Text(DateFormat('dd.MM.yyyy HH:mm').format(state.createdAt), style: const TextStyle(color: Colors.white)),
+                      tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                      title: Text('Время создания', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
+                      subtitle: Text(DateFormat('dd.MM.yyyy HH:mm').format(state.createdAt), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       trailing: const Icon(Icons.calendar_today, color: Colors.blue, size: 20),
                       onTap: () async {
                         final date = await showDatePicker(
@@ -202,11 +202,11 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       const SizedBox(height: 16),
                       ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        tileColor: Colors.white.withOpacity(0.05),
-                        title: const Text('Время решения', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        title: Text('Время решения', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
                         subtitle: Text(
                           state.resolvedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.resolvedAt!) : 'Не указано',
-                          style: const TextStyle(color: Colors.white)
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface)
                         ),
                         trailing: const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
                         onTap: () async {
@@ -240,25 +240,25 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                 child: Column(
                   children: [
                     SwitchListTile(
-                      title: const Text('Остановить ГВС', style: TextStyle(color: Colors.white)),
+                      title: Text('Остановить ГВС', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       value: state.stopHotWater,
                       onChanged: controller.updateStopHotWater,
                       activeColor: Colors.blue,
                     ),
                     SwitchListTile(
-                      title: const Text('Остановить отопление', style: TextStyle(color: Colors.white)),
+                      title: Text('Остановить отопление', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       value: state.stopHeating,
                       onChanged: controller.updateStopHeating,
                       activeColor: Colors.red,
                     ),
-                    const Divider(color: Colors.white10),
+                    Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                     ListTile(
-                      title: const Text('Выбрать дома', style: TextStyle(color: Colors.white)),
+                      title: Text('Выбрать дома', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       subtitle: Text(
                         'Выбрано: ${state.affectedHouseIds.length}',
-                        style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128)),
                       ),
-                      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                       onTap: () => _showHouseSelector(context, ref, state, controller),
                     ),
                   ],
@@ -273,20 +273,20 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                   children: [
                     DropdownButtonFormField<AudienceType>(
                       value: state.notificationConfig?.type ?? AudienceType.broadcast,
-                      dropdownColor: AppTheme.secondaryDarkBackground,
+                      dropdownColor: Theme.of(context).colorScheme.surface,
                       decoration: _inputDecoration('Кому отправить уведомление'),
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: AudienceType.broadcast,
-                          child: Text('Всем пользователям', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          child: Text('Всем пользователям', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                         ),
                         DropdownMenuItem(
                           value: AudienceType.roleBased,
-                          child: Text('По ролям', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          child: Text('По ролям', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                         ),
                         DropdownMenuItem(
                           value: AudienceType.userBased,
-                          child: Text('Выбранным пользователям', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          child: Text('Выбранным пользователям', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                         ),
                       ],
                       onChanged: (v) {
@@ -301,13 +301,13 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       const SizedBox(height: 16),
                       ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        tileColor: Colors.white.withOpacity(0.05),
-                        title: const Text('Выбрать получателей', style: TextStyle(color: Colors.white)),
+                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        title: Text('Выбрать получателей', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                         subtitle: Text(
                           'Выбрано: ${state.notificationConfig?.userIds?.length ?? 0}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128)),
                         ),
-                        trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                        trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                         onTap: () => _showUserSelector(context, ref, state, controller),
                       ),
                     ],
@@ -315,13 +315,13 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       const SizedBox(height: 16),
                       ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        tileColor: Colors.white.withOpacity(0.05),
-                        title: const Text('Выбрать роли', style: TextStyle(color: Colors.white)),
+                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        title: Text('Выбрать роли', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                         subtitle: Text(
                           'Выбрано: ${state.notificationConfig?.roleIds?.length ?? 0}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5)),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128)),
                         ),
-                        trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                        trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                         onTap: () => _showRoleSelector(context, ref, state, controller),
                       ),
                     ],
@@ -337,7 +337,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                   initialValue: state.description,
                   maxLines: 5,
                   decoration: _inputDecoration('Детали инцидента'),
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   onChanged: controller.updateDescription,
                 ),
               ),
@@ -359,7 +359,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
           child: Text(
             title,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
               fontSize: 12,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -374,9 +374,9 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128)),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide.none,
@@ -404,7 +404,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.secondaryDarkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -424,9 +424,9 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'ВЫБОР ДОМОВ',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                           ),
                           TextButton(
                             onPressed: () {
@@ -446,7 +446,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           final house = relevantHouses[index];
                           final isSelected = modalState.affectedHouseIds.contains(house.id);
                           return CheckboxListTile(
-                            title: Text(house.name, style: const TextStyle(color: Colors.white)),
+                            title: Text(house.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                             value: isSelected,
                             onChanged: (v) {
                               controller.toggleHouse(house.id);
@@ -476,7 +476,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.secondaryDarkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -498,9 +498,9 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'ВЫБОР ПОЛЬЗОВАТЕЛЕЙ',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                           ),
                           TextButton(
                             onPressed: () {
@@ -525,7 +525,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           final user = users[index];
                           final isSelected = selectedUserIds.contains(user.id);
                           return CheckboxListTile(
-                            title: Text(user.formattedDisplayName, style: const TextStyle(color: Colors.white)),
+                            title: Text(user.formattedDisplayName, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                             subtitle: null,
                             value: isSelected,
                             onChanged: (v) {
@@ -559,7 +559,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.secondaryDarkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -581,9 +581,9 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'ВЫБОР РОЛЕЙ',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                           ),
                           TextButton(
                             onPressed: () {
@@ -608,7 +608,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           final role = UserRole.values[index];
                           final isSelected = selectedRoles.contains(role.serverValue);
                           return CheckboxListTile(
-                            title: Text(role.title, style: const TextStyle(color: Colors.white)),
+                            title: Text(role.title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                             value: isSelected,
                             onChanged: (v) {
                               if (v == true) {

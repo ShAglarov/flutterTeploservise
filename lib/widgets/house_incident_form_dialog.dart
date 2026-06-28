@@ -64,12 +64,12 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
+                    icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Text(
+                  Text(
                     'Новый инцидент',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   state.isSaving
                       ? const Padding(
@@ -85,7 +85,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                               }
                             }
                           },
-                          child: const Text('Сохранить', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          child: Text('Сохранить', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
                         ),
                 ],
               ),
@@ -234,15 +234,15 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                                   'Исполнитель',
                                   state.assignedTo,
                                   [
-                                    const DropdownMenuItem<int?>(
+                                    DropdownMenuItem<int?>(
                                       value: null,
-                                      child: Text('Не назначен', style: TextStyle(color: Colors.white70)),
+                                      child: Text('Не назначен', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180))),
                                     ),
                                     ...users.map((u) {
                                       final label = u.formattedDisplayName.split(' • ').first;
                                       return DropdownMenuItem<int?>(
                                         value: u.id,
-                                        child: Text(label, style: const TextStyle(color: Colors.white)),
+                                        child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                                       );
                                     }),
                                   ],
@@ -260,10 +260,10 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                             _buildDropdownRow<AudienceType>(
                               'Уведомить (Пуш)',
                               state.notificationConfig?.type ?? AudienceType.broadcast,
-                              const [
-                                DropdownMenuItem(value: AudienceType.broadcast, child: Text('Всем пользователям', style: TextStyle(color: Colors.white))),
-                                DropdownMenuItem(value: AudienceType.roleBased, child: Text('По ролям', style: TextStyle(color: Colors.white))),
-                                DropdownMenuItem(value: AudienceType.userBased, child: Text('По пользователям', style: TextStyle(color: Colors.white))),
+                              [
+                                DropdownMenuItem(value: AudienceType.broadcast, child: Text('Всем пользователям', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+                                DropdownMenuItem(value: AudienceType.roleBased, child: Text('По ролям', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+                                DropdownMenuItem(value: AudienceType.userBased, child: Text('По пользователям', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
                               ],
                               (v) {
                                 if (v != null) {
@@ -303,10 +303,10 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                         child: TextFormField(
                           initialValue: state.description,
                           maxLines: 4,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                           decoration: InputDecoration(
                             hintText: 'Описание инцидента...',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                            hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.all(16),
                           ),
@@ -342,7 +342,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Theme.of(context).colorScheme.onSurface.withAlpha(13),
         borderRadius: BorderRadius.circular(12),
       ),
       child: child,
@@ -350,7 +350,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
   }
 
   Widget _buildDivider() {
-    return Divider(height: 1, color: Colors.white.withOpacity(0.05), indent: 48, endIndent: 16);
+    return Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(13), indent: 48, endIndent: 16);
   }
 
   Widget _buildRow(String title, String value, {required IconData icon, Widget? trailing, VoidCallback? onTap}) {
@@ -360,14 +360,14 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white54, size: 20),
+            Icon(icon, color: Theme.of(context).colorScheme.onSurface.withAlpha(140), size: 20),
             const SizedBox(width: 12),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+            Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15)),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 value,
-                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 15),
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 15),
                 textAlign: TextAlign.right,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -386,7 +386,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
         children: [
           Icon(icon, color: iconColor, size: 20),
           const SizedBox(width: 12),
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+          Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15)),
           const Spacer(),
           Switch(
             value: value,
@@ -411,9 +411,9 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white54, size: 20),
+          Icon(icon, color: Theme.of(context).colorScheme.onSurface.withAlpha(140), size: 20),
           const SizedBox(width: 12),
-          Text(title, style: const TextStyle(color: Colors.white, fontSize: 15)),
+          Text(title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15)),
           const SizedBox(width: 16),
           Expanded(
             child: DropdownButtonHideUnderline(
@@ -423,7 +423,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                 value: value,
                 items: items,
                 onChanged: onChanged,
-                dropdownColor: const Color(0xFF2C2C2E),
+                dropdownColor: Theme.of(context).colorScheme.surface,
                 icon: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
                 style: const TextStyle(fontSize: 15),
               ),
@@ -446,16 +446,16 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.cardBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Тип', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text('Тип', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               Expanded(
                 child: ListView.builder(
@@ -496,7 +496,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.secondaryDarkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -518,9 +518,9 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'ВЫБОР ПОЛЬЗОВАТЕЛЕЙ',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                           ),
                           TextButton(
                             onPressed: () {
@@ -545,8 +545,8 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           final user = users[index];
                           final isSelected = selectedUserIds.contains(user.id);
                           return CheckboxListTile(
-                            title: Text(user.formattedDisplayName.split(' • ').first, style: const TextStyle(color: Colors.white)),
-                            subtitle: Text(user.role.name, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                            title: Text(user.formattedDisplayName.split(' • ').first, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                            subtitle: Text(user.role.name, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12)),
                             value: isSelected,
                             onChanged: (v) {
                               if (v == true) {
@@ -580,7 +580,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
   ) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.secondaryDarkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -602,9 +602,9 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'ВЫБОР РОЛЕЙ',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                           ),
                           TextButton(
                             onPressed: () {
@@ -629,7 +629,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           final role = UserRole.values[index];
                           final isSelected = selectedRoles.contains(role.serverValue);
                           return CheckboxListTile(
-                            title: Text(role.title, style: const TextStyle(color: Colors.white)),
+                            title: Text(role.title, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                             value: isSelected,
                             onChanged: (v) {
                               if (v == true) {

@@ -54,7 +54,7 @@ class _MainTabsScreenState extends ConsumerState<MainTabsScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(
-              color: Colors.white.withAlpha(20),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
               width: 0.5,
             ),
           ),
@@ -62,9 +62,9 @@ class _MainTabsScreenState extends ConsumerState<MainTabsScreen> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
-          backgroundColor: AppTheme.darkBackground,
-          selectedItemColor: AppTheme.primaryBlue,
-          unselectedItemColor: Colors.white54,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
@@ -100,7 +100,7 @@ class PlaceholderScreen extends StatelessWidget {
       body: Center(
         child: Text(
           '$title - В разработке',
-          style: const TextStyle(color: Colors.white54),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
         ),
       ),
     );

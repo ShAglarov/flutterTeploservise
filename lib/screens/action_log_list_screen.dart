@@ -173,7 +173,7 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
                 const SizedBox(height: 12),
                 Text('Ошибка загрузки журнала:\n$err',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70)),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180))),
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _resetAndLoad,
@@ -265,7 +265,7 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       decoration: BoxDecoration(
-        color: AppTheme.tertiaryDarkBackground,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
@@ -273,11 +273,11 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
           value: value,
           items: items,
           onChanged: onChanged,
-          dropdownColor: AppTheme.tertiaryDarkBackground,
+          dropdownColor: Theme.of(context).colorScheme.surface,
           isDense: true,
           hint: Text(hint,
-              style: const TextStyle(fontSize: 13, color: Colors.white54)),
-          style: const TextStyle(fontSize: 13, color: Colors.white),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withAlpha(140))),
+          style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface),
         ),
       ),
     );
@@ -285,11 +285,11 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
 
   Widget _buildLogList() {
     if (_allLogs.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text('Журнал действий пуст',
-              style: TextStyle(color: Colors.white54, fontSize: 16)),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 16)),
         ),
       );
     }
@@ -326,10 +326,10 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.cardBackground,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: Colors.white.withAlpha(20),
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             width: 1,
           ),
         ),
@@ -347,10 +347,10 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
           ),
           title: Text(
             log.displayDescription,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: Colors.white),
+                color: Theme.of(context).colorScheme.onSurface),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -359,23 +359,23 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
             child: Row(
               children: [
                 Icon(Icons.person_outline,
-                    size: 14, color: Colors.white54),
+                    size: 14, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     log.userName ?? 'ID ${log.userId}',
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.white54),
+                    style: TextStyle(
+                        fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Icon(Icons.access_time,
-                    size: 14, color: Colors.white54),
+                    size: 14, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
                 const SizedBox(width: 4),
                 Text(dateStr,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.white54)),
+                    style: TextStyle(
+                        fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withAlpha(140))),
               ],
             ),
           ),
@@ -390,7 +390,7 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
         DateFormat('dd.MM.yyyy HH:mm:ss').format(log.timestamp.toLocal());
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.secondaryDarkBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -406,17 +406,17 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(60),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               Text(log.displayDescription,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white)),
+                      color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 12),
               _detailRow('Пользователь',
                   log.userName ?? 'ID ${log.userId}'),
@@ -428,24 +428,24 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
                 _detailRow('Устройство', log.deviceId!),
               if (log.changes != null && log.changes!.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Text('Изменения:',
+                Text('Изменения:',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white70)),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(180))),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.tertiaryDarkBackground,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     _formatChanges(log.changes!),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white60,
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
                         fontFamily: 'monospace'),
                   ),
                 ),
@@ -467,13 +467,13 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
           SizedBox(
             width: 130,
             child: Text(label,
-                style: const TextStyle(
-                    fontSize: 13, color: Colors.white54)),
+                style: TextStyle(
+                    fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withAlpha(140))),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(
-                    fontSize: 13, color: Colors.white)),
+                style: TextStyle(
+                    fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
           ),
         ],
       ),
@@ -518,7 +518,7 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
       case 'logout':
         return AppTheme.warningOrange;
       default:
-        return Colors.white54;
+        return Theme.of(context).colorScheme.onSurface.withAlpha(140);
     }
   }
 }
