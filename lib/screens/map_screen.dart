@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
+import '../providers/cached_tile_provider.dart';
 import 'incident_list_screen.dart';
 import 'action_log_list_screen.dart';
 import 'profile_screen.dart';
@@ -28,6 +29,7 @@ import '../widgets/house_form_dialog.dart';
 import '../widgets/house_incident_form_dialog.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../services/boiler_house_service.dart';
+import '../providers/user_presence_provider.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -213,6 +215,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     final isDark = ref.watch(isDarkModeProvider);
     final tileConfig = ref.watch(resolvedMapTileSourceProvider);
+    final usersState = ref.watch(usersWithPresenceProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -257,6 +260,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       urlTemplate: tileConfig.urlTemplate,
                       subdomains: tileConfig.subdomains,
                       userAgentPackageName: 'com.example.teploservice',
+                      tileProvider: CachedTileProviderManager.instance.tileProvider,
                       tileBuilder: tileConfig.needsDarkFilter 
                         ? _darkModeTileBuilder 
                         : (Theme.of(context).brightness == Brightness.light 
@@ -265,6 +269,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     PolylineLayer(polylines: _cachedPolylines),
                     MarkerLayer(markers: _cachedMarkers),
+                    // User location markers
+                    MarkerLayer(markers: _buildUserMarkers(usersState)),
                   ],
                 );
               }),
@@ -729,6 +735,136 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     }
     return polylines;
+  }
+
+  // --------------------------------------------------------------------------
+  // User location markers
+  // --------------------------------------------------------------------------
+  List<Marker> _buildUserMarkers(UsersState usersState) {
+    final markers = <Marker>[];
+    
+    for (final user in usersState.users) {
+      if (!usersState.hasLocationFor(user.id)) continue;
+      
+      final lat = usersState.lastLatFor(user.id)!;
+      final lng = usersState.lastLngFor(user.id)!;
+      final isOnline = usersState.isUserOnline(user.id);
+      final initials = _getUserInitials(user.formattedDisplayName);
+      
+      markers.add(
+        Marker(
+          point: LatLng(lat, lng),
+          width: 40,
+          height: 40,
+          child: GestureDetector(
+            onTap: () => _showUserLocationPopup(user, isOnline, usersState.lastSeenFor(user.id)),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isOnline ? Colors.green : Colors.grey.shade600,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isOnline ? Colors.green : Colors.grey).withAlpha(100),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return markers;
+  }
+
+  String _getUserInitials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0].substring(0, 1).toUpperCase();
+    return '${parts[0].substring(0, 1)}${parts[1].substring(0, 1)}'.toUpperCase();
+  }
+
+  void _showUserLocationPopup(dynamic user, bool isOnline, DateTime? lastSeen) {
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: isOnline ? Colors.green : Colors.grey.shade600,
+              child: Text(
+                _getUserInitials(user.formattedDisplayName),
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              user.formattedDisplayName,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 8, height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isOnline ? Colors.green : Colors.grey,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isOnline ? 'Онлайн' : (lastSeen != null ? 'Был(а) ${_formatLastSeen(lastSeen)}' : 'Оффлайн'),
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withAlpha(140),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatLastSeen(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'только что';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} мин. назад';
+    if (diff.inHours < 24) return '${diff.inHours} ч. назад';
+    return '${diff.inDays} дн. назад';
   }
 
   // --------------------------------------------------------------------------

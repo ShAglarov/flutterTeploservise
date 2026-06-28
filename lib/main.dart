@@ -10,6 +10,7 @@ import 'screens/map_screen.dart';
 import 'screens/login_screen.dart';
 import 'providers/auth_providers.dart';
 import 'services/server_manager.dart';
+import 'providers/cached_tile_provider.dart';
 
 import 'services/sync_worker.dart';
 import 'services/realtime_service.dart';
@@ -34,6 +35,7 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
+  await CachedTileProviderManager.instance.init();
   
   if (Platform.isMacOS) {
     await windowManager.ensureInitialized();
