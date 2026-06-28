@@ -410,6 +410,15 @@ class SyncRepository {
     });
   }
 
+  /// Полная очистка кэша домов и котельных для принудительной пересинхронизации
+  Future<void> clearAllCachedData() async {
+    await _db.transaction(() async {
+      await _db.delete(_db.savedLocations).go();
+      await _db.delete(_db.boilerHouses).go();
+    });
+    print('🗑️ [SyncRepo] Cleared all cached locations and boiler houses');
+  }
+
   Future<void> upsertSavedLocations(List<SavedLocationResponse> locations) async {
     if (locations.isEmpty) return;
     final backendIds = locations.where((l) => l.id > 0).map((l) => l.id).toList();
