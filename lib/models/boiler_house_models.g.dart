@@ -20,6 +20,7 @@ BoilerHouseResponse _$BoilerHouseResponseFromJson(Map<String, dynamic> json) =>
       updatedAt: json['updated_at'] as String?,
       siteNumber: json['site_number'] as String?,
       siteManager: json['site_manager'] as String?,
+      siteManagerId: (json['site_manager_id'] as num?)?.toInt(),
       boilerHouseUUID: json['boiler_house_u_u_i_d'] as String?,
       incidentCount: (json['incident_count'] as num?)?.toInt(),
       photos: (json['photos'] as List<dynamic>?)
@@ -42,6 +43,7 @@ Map<String, dynamic> _$BoilerHouseResponseToJson(
   'updated_at': instance.updatedAt,
   'site_number': instance.siteNumber,
   'site_manager': instance.siteManager,
+  'site_manager_id': instance.siteManagerId,
   'boiler_house_u_u_i_d': instance.boilerHouseUUID,
   'incident_count': instance.incidentCount,
   'photos': instance.photos,
@@ -56,6 +58,7 @@ BoilerHouseCreate _$BoilerHouseCreateFromJson(Map<String, dynamic> json) =>
       additionalData: json['additional_data'] as Map<String, dynamic>?,
       siteNumber: json['site_number'] as String?,
       siteManager: json['site_manager'] as String?,
+      siteManagerId: (json['site_manager_id'] as num?)?.toInt(),
       boilerHouseUUID: json['boiler_house_u_u_i_d'] as String?,
     );
 
@@ -68,6 +71,7 @@ Map<String, dynamic> _$BoilerHouseCreateToJson(BoilerHouseCreate instance) =>
       'additional_data': instance.additionalData,
       'site_number': instance.siteNumber,
       'site_manager': instance.siteManager,
+      'site_manager_id': instance.siteManagerId,
       'boiler_house_u_u_i_d': instance.boilerHouseUUID,
     };
 
@@ -80,6 +84,7 @@ BoilerHouseUpdate _$BoilerHouseUpdateFromJson(Map<String, dynamic> json) =>
       additionalData: json['additional_data'] as Map<String, dynamic>?,
       siteNumber: json['site_number'] as String?,
       siteManager: json['site_manager'] as String?,
+      siteManagerId: (json['site_manager_id'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$BoilerHouseUpdateToJson(BoilerHouseUpdate instance) =>
@@ -91,4 +96,5 @@ Map<String, dynamic> _$BoilerHouseUpdateToJson(BoilerHouseUpdate instance) =>
       'additional_data': instance.additionalData,
       'site_number': instance.siteNumber,
       'site_manager': instance.siteManager,
+      'site_manager_id': instance.siteManagerId,
     };

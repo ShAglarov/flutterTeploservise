@@ -95,6 +95,7 @@ class BoilerHouses extends Table {
   RealColumn get longitude => real().nullable().withDefault(const Constant(0.0))();
   TextColumn get name => text().nullable()();
   TextColumn get siteManager => text().nullable()();
+  IntColumn get siteManagerId => integer().nullable().withDefault(const Constant(0))();
   TextColumn get siteNumber => text().nullable()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
 
@@ -343,7 +344,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

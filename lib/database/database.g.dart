@@ -3356,6 +3356,18 @@ class $BoilerHousesTable extends BoilerHouses
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _siteManagerIdMeta = const VerificationMeta(
+    'siteManagerId',
+  );
+  @override
+  late final GeneratedColumn<int> siteManagerId = GeneratedColumn<int>(
+    'site_manager_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _siteNumberMeta = const VerificationMeta(
     'siteNumber',
   );
@@ -3386,6 +3398,7 @@ class $BoilerHousesTable extends BoilerHouses
     longitude,
     name,
     siteManager,
+    siteManagerId,
     siteNumber,
     updatedAt,
   ];
@@ -3443,6 +3456,15 @@ class $BoilerHousesTable extends BoilerHouses
         ),
       );
     }
+    if (data.containsKey('site_manager_id')) {
+      context.handle(
+        _siteManagerIdMeta,
+        siteManagerId.isAcceptableOrUnknown(
+          data['site_manager_id']!,
+          _siteManagerIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('site_number')) {
       context.handle(
         _siteNumberMeta,
@@ -3488,6 +3510,10 @@ class $BoilerHousesTable extends BoilerHouses
         DriftSqlType.string,
         data['${effectivePrefix}site_manager'],
       ),
+      siteManagerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}site_manager_id'],
+      ),
       siteNumber: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}site_number'],
@@ -3512,6 +3538,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
   final double? longitude;
   final String? name;
   final String? siteManager;
+  final int? siteManagerId;
   final String? siteNumber;
   final DateTime? updatedAt;
   const BoilerHouseDb({
@@ -3521,6 +3548,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     this.longitude,
     this.name,
     this.siteManager,
+    this.siteManagerId,
     this.siteNumber,
     this.updatedAt,
   });
@@ -3542,6 +3570,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     }
     if (!nullToAbsent || siteManager != null) {
       map['site_manager'] = Variable<String>(siteManager);
+    }
+    if (!nullToAbsent || siteManagerId != null) {
+      map['site_manager_id'] = Variable<int>(siteManagerId);
     }
     if (!nullToAbsent || siteNumber != null) {
       map['site_number'] = Variable<String>(siteNumber);
@@ -3568,6 +3599,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
       siteManager: siteManager == null && nullToAbsent
           ? const Value.absent()
           : Value(siteManager),
+      siteManagerId: siteManagerId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(siteManagerId),
       siteNumber: siteNumber == null && nullToAbsent
           ? const Value.absent()
           : Value(siteNumber),
@@ -3589,6 +3623,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
       longitude: serializer.fromJson<double?>(json['longitude']),
       name: serializer.fromJson<String?>(json['name']),
       siteManager: serializer.fromJson<String?>(json['siteManager']),
+      siteManagerId: serializer.fromJson<int?>(json['siteManagerId']),
       siteNumber: serializer.fromJson<String?>(json['siteNumber']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
@@ -3603,6 +3638,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
       'longitude': serializer.toJson<double?>(longitude),
       'name': serializer.toJson<String?>(name),
       'siteManager': serializer.toJson<String?>(siteManager),
+      'siteManagerId': serializer.toJson<int?>(siteManagerId),
       'siteNumber': serializer.toJson<String?>(siteNumber),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
@@ -3615,6 +3651,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     Value<double?> longitude = const Value.absent(),
     Value<String?> name = const Value.absent(),
     Value<String?> siteManager = const Value.absent(),
+    Value<int?> siteManagerId = const Value.absent(),
     Value<String?> siteNumber = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
   }) => BoilerHouseDb(
@@ -3626,6 +3663,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     longitude: longitude.present ? longitude.value : this.longitude,
     name: name.present ? name.value : this.name,
     siteManager: siteManager.present ? siteManager.value : this.siteManager,
+    siteManagerId: siteManagerId.present
+        ? siteManagerId.value
+        : this.siteManagerId,
     siteNumber: siteNumber.present ? siteNumber.value : this.siteNumber,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
@@ -3641,6 +3681,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
       siteManager: data.siteManager.present
           ? data.siteManager.value
           : this.siteManager,
+      siteManagerId: data.siteManagerId.present
+          ? data.siteManagerId.value
+          : this.siteManagerId,
       siteNumber: data.siteNumber.present
           ? data.siteNumber.value
           : this.siteNumber,
@@ -3657,6 +3700,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
           ..write('longitude: $longitude, ')
           ..write('name: $name, ')
           ..write('siteManager: $siteManager, ')
+          ..write('siteManagerId: $siteManagerId, ')
           ..write('siteNumber: $siteNumber, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -3671,6 +3715,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     longitude,
     name,
     siteManager,
+    siteManagerId,
     siteNumber,
     updatedAt,
   );
@@ -3684,6 +3729,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
           other.longitude == this.longitude &&
           other.name == this.name &&
           other.siteManager == this.siteManager &&
+          other.siteManagerId == this.siteManagerId &&
           other.siteNumber == this.siteNumber &&
           other.updatedAt == this.updatedAt);
 }
@@ -3695,6 +3741,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
   final Value<double?> longitude;
   final Value<String?> name;
   final Value<String?> siteManager;
+  final Value<int?> siteManagerId;
   final Value<String?> siteNumber;
   final Value<DateTime?> updatedAt;
   const BoilerHousesCompanion({
@@ -3704,6 +3751,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     this.longitude = const Value.absent(),
     this.name = const Value.absent(),
     this.siteManager = const Value.absent(),
+    this.siteManagerId = const Value.absent(),
     this.siteNumber = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -3714,6 +3762,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     this.longitude = const Value.absent(),
     this.name = const Value.absent(),
     this.siteManager = const Value.absent(),
+    this.siteManagerId = const Value.absent(),
     this.siteNumber = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -3724,6 +3773,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     Expression<double>? longitude,
     Expression<String>? name,
     Expression<String>? siteManager,
+    Expression<int>? siteManagerId,
     Expression<String>? siteNumber,
     Expression<DateTime>? updatedAt,
   }) {
@@ -3734,6 +3784,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
       if (longitude != null) 'longitude': longitude,
       if (name != null) 'name': name,
       if (siteManager != null) 'site_manager': siteManager,
+      if (siteManagerId != null) 'site_manager_id': siteManagerId,
       if (siteNumber != null) 'site_number': siteNumber,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -3746,6 +3797,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     Value<double?>? longitude,
     Value<String?>? name,
     Value<String?>? siteManager,
+    Value<int?>? siteManagerId,
     Value<String?>? siteNumber,
     Value<DateTime?>? updatedAt,
   }) {
@@ -3756,6 +3808,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
       longitude: longitude ?? this.longitude,
       name: name ?? this.name,
       siteManager: siteManager ?? this.siteManager,
+      siteManagerId: siteManagerId ?? this.siteManagerId,
       siteNumber: siteNumber ?? this.siteNumber,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -3782,6 +3835,9 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     if (siteManager.present) {
       map['site_manager'] = Variable<String>(siteManager.value);
     }
+    if (siteManagerId.present) {
+      map['site_manager_id'] = Variable<int>(siteManagerId.value);
+    }
     if (siteNumber.present) {
       map['site_number'] = Variable<String>(siteNumber.value);
     }
@@ -3800,6 +3856,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
           ..write('longitude: $longitude, ')
           ..write('name: $name, ')
           ..write('siteManager: $siteManager, ')
+          ..write('siteManagerId: $siteManagerId, ')
           ..write('siteNumber: $siteNumber, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -12763,6 +12820,7 @@ typedef $$BoilerHousesTableCreateCompanionBuilder =
       Value<double?> longitude,
       Value<String?> name,
       Value<String?> siteManager,
+      Value<int?> siteManagerId,
       Value<String?> siteNumber,
       Value<DateTime?> updatedAt,
     });
@@ -12774,6 +12832,7 @@ typedef $$BoilerHousesTableUpdateCompanionBuilder =
       Value<double?> longitude,
       Value<String?> name,
       Value<String?> siteManager,
+      Value<int?> siteManagerId,
       Value<String?> siteNumber,
       Value<DateTime?> updatedAt,
     });
@@ -12886,6 +12945,11 @@ class $$BoilerHousesTableFilterComposer
 
   ColumnFilters<String> get siteManager => $composableBuilder(
     column: $table.siteManager,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get siteManagerId => $composableBuilder(
+    column: $table.siteManagerId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13014,6 +13078,11 @@ class $$BoilerHousesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get siteManagerId => $composableBuilder(
+    column: $table.siteManagerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get siteNumber => $composableBuilder(
     column: $table.siteNumber,
     builder: (column) => ColumnOrderings(column),
@@ -13053,6 +13122,11 @@ class $$BoilerHousesTableAnnotationComposer
 
   GeneratedColumn<String> get siteManager => $composableBuilder(
     column: $table.siteManager,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get siteManagerId => $composableBuilder(
+    column: $table.siteManagerId,
     builder: (column) => column,
   );
 
@@ -13178,6 +13252,7 @@ class $$BoilerHousesTableTableManager
                 Value<double?> longitude = const Value.absent(),
                 Value<String?> name = const Value.absent(),
                 Value<String?> siteManager = const Value.absent(),
+                Value<int?> siteManagerId = const Value.absent(),
                 Value<String?> siteNumber = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => BoilerHousesCompanion(
@@ -13187,6 +13262,7 @@ class $$BoilerHousesTableTableManager
                 longitude: longitude,
                 name: name,
                 siteManager: siteManager,
+                siteManagerId: siteManagerId,
                 siteNumber: siteNumber,
                 updatedAt: updatedAt,
               ),
@@ -13198,6 +13274,7 @@ class $$BoilerHousesTableTableManager
                 Value<double?> longitude = const Value.absent(),
                 Value<String?> name = const Value.absent(),
                 Value<String?> siteManager = const Value.absent(),
+                Value<int?> siteManagerId = const Value.absent(),
                 Value<String?> siteNumber = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
               }) => BoilerHousesCompanion.insert(
@@ -13207,6 +13284,7 @@ class $$BoilerHousesTableTableManager
                 longitude: longitude,
                 name: name,
                 siteManager: siteManager,
+                siteManagerId: siteManagerId,
                 siteNumber: siteNumber,
                 updatedAt: updatedAt,
               ),

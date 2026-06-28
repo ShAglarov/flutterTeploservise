@@ -9,6 +9,7 @@ import '../providers/user_presence_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/map_tile_provider.dart';
 import '../services/auth_service.dart';
+import '../services/boiler_house_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
@@ -1479,6 +1480,18 @@ class UserProfileScreen extends ConsumerWidget {
               ],
             ),
 
+            const SizedBox(height: 12),
+
+            // Reassign sites button (second row)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildActionButton(context, Icons.swap_horiz, 'Передать\nучастки', Colors.deepOrangeAccent, () {
+                  _showReassignDialog(context, ref);
+                }),
+              ],
+            ),
+
             const SizedBox(height: 24),
 
             // Data section
@@ -1885,5 +1898,150 @@ class UserProfileScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
+  // ═══════════════════════════════════════════════════
+  // Reassign Sites Dialog
+  // ═══════════════════════════════════════════════════
+
+  void _showReassignDialog(BuildContext context, WidgetRef ref) {
+    final usersAsync = ref.read(usersProvider);
+    
+    usersAsync.when(
+      data: (users) {
+        // Filter managers (exclude current user)
+        final managers = users
+            .where((u) => u.role == UserRole.manager && u.id != user.id)
+            .toList();
+        
+        if (managers.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Нет доступных начальников участка для передачи')),
+          );
+          return;
+        }
+
+        APIUserResponse? selectedManager;
+        bool isLoading = false;
+
+        showDialog(
+          context: context,
+          builder: (ctx) => StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              return AlertDialog(
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                title: Text(
+                  'Передать участки от\n${_getFullName()}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Все котельные этого начальника будут переданы выбранному сотруднику. Номер участка также изменится.',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<APIUserResponse>(
+                      value: selectedManager,
+                      dropdownColor: Theme.of(context).colorScheme.surface,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: 'Новый начальник',
+                        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: managers.map((m) {
+                        final name = [m.lastName, m.firstName, m.middleName]
+                            .where((s) => s != null && s.trim().isNotEmpty)
+                            .map((s) => s!.trim())
+                            .join(' ');
+                        final label = name.isNotEmpty ? name : m.username;
+                        return DropdownMenuItem<APIUserResponse>(
+                          value: m,
+                          child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                        );
+                      }).toList(),
+                      onChanged: (v) => setDialogState(() => selectedManager = v),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text('Отмена', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140))),
+                  ),
+                  ElevatedButton(
+                    onPressed: selectedManager == null || isLoading
+                        ? null
+                        : () async {
+                            setDialogState(() => isLoading = true);
+                            try {
+                              final result = await ref.read(boilerHouseServiceProvider).reassignManager(
+                                    oldManagerId: user.id,
+                                    newManagerId: selectedManager!.id,
+                                  );
+                              if (ctx.mounted) {
+                                Navigator.pop(ctx);
+                              }
+                              if (context.mounted) {
+                                final newName = [selectedManager!.lastName, selectedManager!.firstName]
+                                    .where((s) => s != null && s.trim().isNotEmpty)
+                                    .map((s) => s!.trim())
+                                    .join(' ');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('✅ Передано ${result.updatedCount} котельных → $newName'),
+                                    backgroundColor: AppTheme.successGreen,
+                                  ),
+                                );
+                              }
+                            } on DioException catch (e) {
+                              final detail = e.response?.data is Map
+                                  ? (e.response?.data['detail'] ?? e.message)
+                                  : e.message;
+                              setDialogState(() => isLoading = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Ошибка: $detail'),
+                                    backgroundColor: AppTheme.errorRed,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setDialogState(() => isLoading = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Ошибка: $e'), backgroundColor: AppTheme.errorRed),
+                                );
+                              }
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrangeAccent),
+                    child: isLoading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Передать', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+      loading: () => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Загрузка пользователей...')),
+      ),
+      error: (err, _) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка: $err')),
+      ),
+    );
+  }
+}

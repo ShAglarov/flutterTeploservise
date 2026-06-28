@@ -78,4 +78,47 @@ class BoilerHouseService {
     // Успешное удаление — очищаем локальный кеш
     await _syncRepository.deleteBoilerHouse(id);
   }
+
+  /// Массовая смена начальника участка во всех котельных
+  Future<ReassignManagerResult> reassignManager({
+    required int oldManagerId,
+    required int newManagerId,
+    String? newSiteNumber,
+  }) async {
+    final response = await _dio.post('/boiler-houses/reassign-manager', data: {
+      'old_manager_id': oldManagerId,
+      'new_manager_id': newManagerId,
+      if (newSiteNumber != null) 'new_site_number': newSiteNumber,
+    });
+    return ReassignManagerResult.fromJson(response.data);
+  }
+}
+
+class ReassignManagerResult {
+  final int updatedCount;
+  final List<int>? updatedBoilerHouseIds;
+  final String oldManager;
+  final String newManager;
+  final String? newSiteNumber;
+  final String message;
+
+  ReassignManagerResult({
+    required this.updatedCount,
+    this.updatedBoilerHouseIds,
+    required this.oldManager,
+    required this.newManager,
+    this.newSiteNumber,
+    required this.message,
+  });
+
+  factory ReassignManagerResult.fromJson(Map<String, dynamic> json) {
+    return ReassignManagerResult(
+      updatedCount: json['updated_count'] ?? 0,
+      updatedBoilerHouseIds: (json['updated_boiler_house_ids'] as List?)?.cast<int>(),
+      oldManager: json['old_manager'] ?? '',
+      newManager: json['new_manager'] ?? '',
+      newSiteNumber: json['new_site_number'],
+      message: json['message'] ?? '',
+    );
+  }
 }

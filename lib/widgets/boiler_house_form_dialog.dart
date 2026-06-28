@@ -25,6 +25,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
   late final TextEditingController _siteNumberController;
   
   String? _selectedSiteManager;
+  int? _selectedSiteManagerId;
   bool _isSaving = false;
 
   @override
@@ -36,6 +37,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
     _lngController = TextEditingController(text: initial != null ? initial.longitude.toStringAsFixed(6) : widget.position.longitude.toStringAsFixed(6));
     _siteNumberController = TextEditingController(text: initial?.siteNumber ?? '');
     _selectedSiteManager = initial?.siteManager;
+    _selectedSiteManagerId = initial?.siteManagerId;
   }
 
   @override
@@ -63,6 +65,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
           longitude: double.parse(_lngController.text),
           siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
           siteManager: _selectedSiteManager,
+          siteManagerId: _selectedSiteManagerId,
         );
         result = await ref.read(boilerHouseServiceProvider).updateBoilerHouse(widget.initialBoilerHouse!.id, update);
       } else {
@@ -72,6 +75,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
           longitude: double.parse(_lngController.text),
           siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
           siteManager: _selectedSiteManager,
+          siteManagerId: _selectedSiteManagerId,
         );
         result = await ref.read(boilerHouseServiceProvider).createBoilerHouse(boilerHouse);
       }
@@ -314,7 +318,12 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                                 : []
                           ),
                         onChanged: (value) {
-                          setState(() => _selectedSiteManager = value);
+                          setState(() {
+                            _selectedSiteManager = value;
+                            // Find the user ID for the selected manager
+                            final selectedUser = managers.where((m) => m.formattedDisplayName.split(' • ').first == value).firstOrNull;
+                            _selectedSiteManagerId = selectedUser?.id;
+                          });
                         },
                       ),
                     ),
