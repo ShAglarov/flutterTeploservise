@@ -264,8 +264,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         subdomains: tileConfig.subdomains,
                         userAgentPackageName: 'com.example.teploservice',
                         tileProvider: CachedTileProviderManager.instance.tileProvider,
-                        keepBuffer: 8,
+                        keepBuffer: 15,
                         panBuffer: 3,
+                        maxZoom: 18,
+                        // Показывать тайлы мгновенно (без мигающих квадратов)
+                        tileDisplay: const TileDisplay.instantaneous(),
                         tileBuilder: tileConfig.needsDarkFilter 
                           ? _darkModeTileBuilder 
                           : (Theme.of(context).brightness == Brightness.light 
