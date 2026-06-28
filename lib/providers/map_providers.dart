@@ -148,9 +148,6 @@ class MapData extends _$MapData {
   Future<void> _fetchInitialData() async {
     try {
       final syncRepo = ref.read(syncRepositoryProvider);
-      
-      // Принудительная очистка кэша — гарантирует актуальные данные с API
-      await syncRepo.clearAllCachedData();
       await syncRepo.deduplicateSavedLocations();
 
       final bhService = ref.read(boilerHouseServiceProvider);

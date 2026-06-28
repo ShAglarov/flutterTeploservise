@@ -10,7 +10,10 @@ import '../providers/theme_provider.dart';
 import '../providers/map_tile_provider.dart';
 import '../services/auth_service.dart';
 import '../services/boiler_house_service.dart';
+import '../services/location_service.dart';
+import '../services/incident_service.dart';
 import '../services/user_service.dart';
+import '../repositories/sync_repository.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
 import 'action_log_list_screen.dart';
@@ -78,6 +81,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed == true && mounted) {
       await ref.read(authProvider.notifier).logout();
       if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Future<void> _handleFullSync() async {
+    // Показать диалог загрузки
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        content: Row(
+          children: [
+            const CircularProgressIndicator(color: AppTheme.primaryBlue),
+            const SizedBox(width: 24),
+            Expanded(
+              child: Text(
+                'Загрузка данных с сервера...',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final syncRepo = ref.read(syncRepositoryProvider);
+      final bhService = ref.read(boilerHouseServiceProvider);
+      final locService = ref.read(locationServiceProvider);
+      final incService = ref.read(incidentServiceProvider);
+
+      // 1. Очищаем кэш
+      await syncRepo.clearAllCachedData();
+
+      // 2. Загружаем все данные заново
+      await Future.wait([
+        bhService.getAllBoilerHouses(),
+        locService.getAllSavedLocations(),
+        incService.getAllIncidents(),
+      ]);
+
+      if (mounted) {
+        Navigator.pop(context); // закрыть диалог загрузки
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Все данные загружены с сервера'),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // закрыть диалог загрузки
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Ошибка: $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
     }
   }
 
@@ -243,6 +306,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ]),
           const SizedBox(height: 24),
         ],
+
+        // ═══════ Данные ═══════
+        _buildSectionHeader('Данные'),
+        const SizedBox(height: 8),
+        _buildCard([
+          _buildActionRow(
+            icon: Icons.cloud_download_outlined,
+            iconColor: Colors.orangeAccent,
+            title: 'Загрузить все данные с сервера',
+            onTap: _handleFullSync,
+          ),
+        ]),
+        _buildSectionFooter('Полная пересинхронизация котельных и домов с сервера'),
+
+        const SizedBox(height: 24),
 
         // ═══════ Аккаунт ═══════
         _buildSectionHeader('Аккаунт'),
