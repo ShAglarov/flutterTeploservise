@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
 import 'package:flutter_map_cache/flutter_map_cache.dart';
@@ -17,7 +18,7 @@ class CachedTileProviderManager {
   bool _initialized = false;
 
   /// Кэшированный экземпляр TileProvider — создаётся один раз
-  TileProvider? _cachedProvider;
+  CachedTileProvider? _cachedProvider;
   TileProvider? _fallbackProvider;
 
   /// Must be called once at app startup (e.g., in main.dart).
@@ -48,5 +49,20 @@ class CachedTileProviderManager {
       return _fallbackProvider!;
     }
     return _cachedProvider!;
+  }
+
+  /// Pre-загружает тайл в Hive кэш (скачивает через Dio с кэш-интерцептором).
+  /// Вызывается фоново для предзагрузки тайлов соседних уровней зума.
+  /// Если тайл уже в кэше — Dio вернёт его мгновенно (CachePolicy.forceCache).
+  Future<void> prefetchTile(String url) async {
+    if (!_initialized || _cachedProvider == null) return;
+    try {
+      await _cachedProvider!.dio.get<List<int>>(
+        url,
+        options: Options(responseType: ResponseType.bytes),
+      );
+    } catch (_) {
+      // Молча игнорируем ошибки предзагрузки
+    }
   }
 }

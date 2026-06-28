@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,6 +55,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   bool _showSuccessAnimation = false;
   bool _isMenuOpen = false;
 
+  /// Предзагрузка тайлов соседних уровней зума
+  Timer? _preloadTimer;
+  StreamSubscription? _mapEventSubscription;
+
   /// Cached markers to avoid rebuilding the entire list on unrelated state changes
   List<Marker> _cachedMarkers = [];
   List<Polyline> _cachedPolylines = [];
@@ -92,10 +97,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ref.invalidate(mapDataProvider);
       }
     });
+
+    // Предзагрузка тайлов: когда карта перестаёт двигаться на 500мс,
+    // фоново загружаем тайлы для следующего уровня зума
+    _mapEventSubscription = _mapController.mapEventStream.listen((_) {
+      _preloadTimer?.cancel();
+      _preloadTimer = Timer(const Duration(milliseconds: 500), _preloadAdjacentZoomTiles);
+    });
   }
 
   @override
   void dispose() {
+    _preloadTimer?.cancel();
+    _mapEventSubscription?.cancel();
     _refreshSubscription?.cancel();
     _searchController.dispose();
     _mapController.dispose();
@@ -2566,6 +2580,78 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       context,
       MaterialPageRoute(builder: (context) => const IncidentListScreen()),
     );
+  }
+
+  // --------------------------------------------------------------------------
+  // Предзагрузка тайлов соседних уровней зума
+  // --------------------------------------------------------------------------
+
+  /// Вызывается когда карта «успокоилась» (500мс без движения).
+  /// Фоново загружает тайлы для zoom+1 и zoom-1 в Hive-кэш,
+  /// чтобы при следующем зуме они были уже готовы.
+  void _preloadAdjacentZoomTiles() {
+    if (!mounted) return;
+
+    final camera = _mapController.camera;
+    final currentZoom = camera.zoom.round();
+    final bounds = camera.visibleBounds;
+    final tileConfig = ref.read(resolvedMapTileSourceProvider);
+
+    // Предзагружаем тайлы для zoom+1 (приближение) и zoom-1 (отдаление)
+    for (final targetZoom in [currentZoom + 1, currentZoom - 1]) {
+      if (targetZoom < 1 || targetZoom > 20) continue;
+
+      final minX = _lngToTileX(bounds.west, targetZoom);
+      final maxX = _lngToTileX(bounds.east, targetZoom);
+      final minY = _latToTileY(bounds.north, targetZoom);
+      final maxY = _latToTileY(bounds.south, targetZoom);
+
+      // Ограничиваем количество тайлов (не более 64 за раз)
+      final tileCount = (maxX - minX + 1) * (maxY - minY + 1);
+      if (tileCount > 64) continue;
+
+      for (var x = minX; x <= maxX; x++) {
+        for (var y = minY; y <= maxY; y++) {
+          final url = _buildTileUrl(
+            tileConfig.urlTemplate, targetZoom, x, y, tileConfig.subdomains,
+          );
+          CachedTileProviderManager.instance.prefetchTile(url);
+        }
+      }
+    }
+  }
+
+  /// Конвертирует долготу → номер тайла по X (Slippy Map Tilenames)
+  int _lngToTileX(double lng, int zoom) {
+    return ((lng + 180.0) / 360.0 * (1 << zoom))
+        .floor()
+        .clamp(0, (1 << zoom) - 1);
+  }
+
+  /// Конвертирует широту → номер тайла по Y (Slippy Map Tilenames)
+  int _latToTileY(double lat, int zoom) {
+    final latRad = lat * math.pi / 180.0;
+    return ((1.0 -
+                    math.log(math.tan(latRad) + 1.0 / math.cos(latRad)) /
+                        math.pi) /
+                2.0 *
+                (1 << zoom))
+        .floor()
+        .clamp(0, (1 << zoom) - 1);
+  }
+
+  /// Строит URL тайла из шаблона (заменяет {z}, {x}, {y}, {s})
+  String _buildTileUrl(
+    String template, int z, int x, int y, List<String> subdomains,
+  ) {
+    var url = template
+        .replaceAll('{z}', z.toString())
+        .replaceAll('{x}', x.toString())
+        .replaceAll('{y}', y.toString());
+    if (subdomains.isNotEmpty) {
+      url = url.replaceAll('{s}', subdomains[(x + y) % subdomains.length]);
+    }
+    return url;
   }
 
 }

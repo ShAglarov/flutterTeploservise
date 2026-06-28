@@ -35,6 +35,13 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
+
+  // Увеличиваем ImageCache — декодированные тайлы карты остаются
+  // в оперативной памяти и при зуме показываются мгновенно
+  // (по умолчанию: 100 изображений / 100MB — слишком мало для карты)
+  PaintingBinding.instance.imageCache.maximumSize = 1000;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 300 << 20; // 300MB
+
   await CachedTileProviderManager.instance.init();
   
   if (Platform.isMacOS) {
