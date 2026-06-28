@@ -22,15 +22,28 @@ class BoilerHouseService {
   }
 
   Future<List<BoilerHouseResponse>> getAllBoilerHouses() async {
-    final response = await _dio.get('/boiler-houses/');
-    final boilerHouses = (response.data as List)
-        .map((e) => BoilerHouseResponse.fromJson(e))
-        .toList();
+    final allBhs = <BoilerHouseResponse>[];
+    int skip = 0;
+    const int limit = 500;
+    
+    while (true) {
+      final response = await _dio.get('/boiler-houses/', queryParameters: {
+        'skip': skip,
+        'limit': limit,
+      });
+      final batch = (response.data as List)
+          .map((e) => BoilerHouseResponse.fromJson(e))
+          .toList();
+      allBhs.addAll(batch);
+      
+      if (batch.length < limit) break;
+      skip += limit;
+    }
     
     // Cache to local DB
-    await _syncRepository.upsertBoilerHouses(boilerHouses);
+    await _syncRepository.upsertBoilerHouses(allBhs);
     
-    return boilerHouses;
+    return allBhs;
   }
 
   Future<BoilerHouseResponse> getBoilerHouse(int id) async {

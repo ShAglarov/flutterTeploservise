@@ -25,15 +25,29 @@ class LocationService {
   }
 
   Future<List<SavedLocationResponse>> getAllSavedLocations({bool forceRefresh = false}) async {
-    final response = await _dio.get('/locations/', queryParameters: {'force_refresh': forceRefresh});
-    final locations = (response.data as List)
-        .map((e) => SavedLocationResponse.fromJson(e))
-        .toList();
+    final allLocations = <SavedLocationResponse>[];
+    int skip = 0;
+    const int limit = 500;
+    
+    while (true) {
+      final response = await _dio.get('/locations/', queryParameters: {
+        'skip': skip,
+        'limit': limit,
+        if (forceRefresh) 'force_refresh': true,
+      });
+      final batch = (response.data as List)
+          .map((e) => SavedLocationResponse.fromJson(e))
+          .toList();
+      allLocations.addAll(batch);
+      
+      if (batch.length < limit) break; // Last page
+      skip += limit;
+    }
     
     // Cache to local DB
-    await _syncRepository.upsertSavedLocations(locations);
+    await _syncRepository.upsertSavedLocations(allLocations);
     
-    return locations;
+    return allLocations;
   }
 
   Future<List<SavedLocationResponse>> searchHouses({
