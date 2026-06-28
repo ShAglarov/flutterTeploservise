@@ -254,20 +254,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     options: MapOptions(
                       initialCenter: const LatLng(42.9849, 47.5047),
                       initialZoom: 13,
+                      maxZoom: 20,
+                      // Запрещаем поворот карты — случайный поворот ломает
+                      // загрузку тайлов (вся карта становится белой)
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                      ),
                       onTap: (_, __) => _onMapTap(),
                       onLongPress: _onMapLongPress,
                     ),
                     children: [
                       TileLayer(
-                        key: ValueKey(tileConfig.urlTemplate),
+                        // НЕ используем ValueKey(urlTemplate) — при смене темы
+                        // ключ меняется → Flutter уничтожает TileLayer целиком
+                        // → все тайлы из памяти пропадают и грузятся заново.
+                        // didUpdateWidget сам обработает смену URL корректно.
                         urlTemplate: tileConfig.urlTemplate,
                         subdomains: tileConfig.subdomains,
                         userAgentPackageName: 'com.example.teploservice',
                         tileProvider: CachedTileProviderManager.instance.tileProvider,
                         keepBuffer: 15,
                         panBuffer: 3,
-                        maxZoom: 18,
-                        // Показывать тайлы мгновенно (без мигающих квадратов)
+                        // CARTO тайлы доступны до zoom 20
+                        maxZoom: 20,
+                        // Если тайл не загрузился — удаляем его, чтобы не
+                        // показывать пустой белый квадрат навсегда
+                        evictErrorTileStrategy: EvictErrorTileStrategy.dispose,
+                        // Показывать тайлы мгновенно (без мигающей анимации)
                         tileDisplay: const TileDisplay.instantaneous(),
                         tileBuilder: tileConfig.needsDarkFilter 
                           ? _darkModeTileBuilder 
