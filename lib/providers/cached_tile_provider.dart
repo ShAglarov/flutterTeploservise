@@ -16,6 +16,10 @@ class CachedTileProviderManager {
   CacheStore? _store;
   bool _initialized = false;
 
+  /// Кэшированный экземпляр TileProvider — создаётся один раз
+  TileProvider? _cachedProvider;
+  TileProvider? _fallbackProvider;
+
   /// Must be called once at app startup (e.g., in main.dart).
   Future<void> init() async {
     if (_initialized) return;
@@ -26,21 +30,23 @@ class CachedTileProviderManager {
       hiveBoxName: 'map_tiles',
     );
     _initialized = true;
+    // Создаём один раз
+    _cachedProvider = CachedTileProvider(
+      store: _store!,
+      maxStale: const Duration(days: 365),
+      hitCacheOnErrorExcept: [401, 403],
+    );
   }
 
   /// Returns a [TileProvider] that caches tiles to disk.
   /// Falls back to the default network provider if not yet initialized.
+  /// ВАЖНО: возвращает один и тот же экземпляр — без этого FlutterMap
+  /// перезагружает все тайлы при каждом rebuild виджета.
   TileProvider get tileProvider {
-    if (!_initialized || _store == null) {
-      return NetworkTileProvider();
+    if (!_initialized || _cachedProvider == null) {
+      _fallbackProvider ??= NetworkTileProvider();
+      return _fallbackProvider!;
     }
-    return CachedTileProvider(
-      store: _store!,
-      // Tiles almost never change — keep for 1 year.
-      // ETag/Last-Modified headers ensure revalidation when online,
-      // so only truly updated tiles get re-downloaded.
-      maxStale: const Duration(days: 365),
-      hitCacheOnErrorExcept: [401, 403], // Serve from cache on network errors
-    );
+    return _cachedProvider!;
   }
 }

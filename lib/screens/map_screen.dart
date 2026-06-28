@@ -247,31 +247,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   _cachedBhIncidentIds = Set.of(mapData.boilerHouseIdsWithIncidents);
                   _cachedLocIncidentIds = Set.of(mapData.locationIdsWithIncidents);
                 }
-                return FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: const LatLng(42.9849, 47.5047),
-                    initialZoom: 13,
-                    onTap: (_, __) => _onMapTap(),
-                    onLongPress: _onMapLongPress,
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: tileConfig.urlTemplate,
-                      subdomains: tileConfig.subdomains,
-                      userAgentPackageName: 'com.example.teploservice',
-                      tileProvider: CachedTileProviderManager.instance.tileProvider,
-                      tileBuilder: tileConfig.needsDarkFilter 
-                        ? _darkModeTileBuilder 
-                        : (Theme.of(context).brightness == Brightness.light 
-                          ? _lightModeTileBuilder 
-                          : null),
+                return RepaintBoundary(
+                  child: FlutterMap(
+                    key: const ValueKey('main_map'),
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: const LatLng(42.9849, 47.5047),
+                      initialZoom: 13,
+                      onTap: (_, __) => _onMapTap(),
+                      onLongPress: _onMapLongPress,
                     ),
-                    PolylineLayer(polylines: _cachedPolylines),
-                    MarkerLayer(markers: _cachedMarkers),
-                    // User location markers
-                    MarkerLayer(markers: _buildUserMarkers(usersState)),
-                  ],
+                    children: [
+                      TileLayer(
+                        key: ValueKey(tileConfig.urlTemplate),
+                        urlTemplate: tileConfig.urlTemplate,
+                        subdomains: tileConfig.subdomains,
+                        userAgentPackageName: 'com.example.teploservice',
+                        tileProvider: CachedTileProviderManager.instance.tileProvider,
+                        keepBuffer: 8,
+                        panBuffer: 3,
+                        tileBuilder: tileConfig.needsDarkFilter 
+                          ? _darkModeTileBuilder 
+                          : (Theme.of(context).brightness == Brightness.light 
+                            ? _lightModeTileBuilder 
+                            : null),
+                      ),
+                      PolylineLayer(polylines: _cachedPolylines),
+                      MarkerLayer(markers: _cachedMarkers),
+                      // User location markers
+                      MarkerLayer(markers: _buildUserMarkers(usersState)),
+                    ],
+                  ),
                 );
               }),
             ),
