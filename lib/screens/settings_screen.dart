@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 import '../models/api_models.dart';
+import '../models/user_role.dart';
 import '../providers/auth_providers.dart';
 import '../providers/user_presence_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/map_tile_provider.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
 import 'action_log_list_screen.dart';
@@ -672,11 +675,7 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.add, color: AppTheme.primaryBlue, size: 28),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Создание пользователя скоро появится')),
-              );
-            },
+            onPressed: () => _showCreateUserDialog(context),
           ),
         ],
       ),
@@ -1084,6 +1083,193 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
       ),
     );
   }
+
+  // ═══════════════════════════════════════════════════
+  // Create User Dialog
+  // ═══════════════════════════════════════════════════
+
+  void _showCreateUserDialog(BuildContext context) {
+    final usernameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    final lastNameCtrl = TextEditingController();
+    final firstNameCtrl = TextEditingController();
+    final middleNameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final positionCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    UserRole selectedRole = UserRole.viewer;
+    bool isLoading = false;
+    String? errorMessage;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: Text('Новый пользователь', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (errorMessage != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.errorRed.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(errorMessage!, style: const TextStyle(color: AppTheme.errorRed, fontSize: 13)),
+                    ),
+                  _buildDialogField(usernameCtrl, 'Логин *', TextInputType.text, autocapitalize: false),
+                  _buildDialogField(emailCtrl, 'Email *', TextInputType.emailAddress, autocapitalize: false),
+                  _buildDialogField(passwordCtrl, 'Пароль *', TextInputType.visiblePassword, obscure: true),
+                  const SizedBox(height: 8),
+                  _buildDialogField(lastNameCtrl, 'Фамилия', TextInputType.name),
+                  _buildDialogField(firstNameCtrl, 'Имя', TextInputType.name),
+                  _buildDialogField(middleNameCtrl, 'Отчество', TextInputType.name),
+                  _buildDialogField(phoneCtrl, 'Телефон', TextInputType.phone),
+                  _buildDialogField(positionCtrl, 'Должность', TextInputType.text),
+                  _buildDialogField(notesCtrl, 'Заметки', TextInputType.multiline, maxLines: 2),
+                  const SizedBox(height: 8),
+                  // Role selector
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(40)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<UserRole>(
+                        value: selectedRole,
+                        isExpanded: true,
+                        dropdownColor: Theme.of(context).colorScheme.surface,
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
+                        items: UserRole.values.map((r) => DropdownMenuItem(
+                          value: r,
+                          child: Text(r.title),
+                        )).toList(),
+                        onChanged: (r) {
+                          if (r != null) setDialogState(() => selectedRole = r);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(ctx),
+                child: const Text('Отмена'),
+              ),
+              ElevatedButton(
+                onPressed: isLoading ? null : () async {
+                  final username = usernameCtrl.text.trim();
+                  final email = emailCtrl.text.trim();
+                  final password = passwordCtrl.text;
+
+                  if (username.isEmpty || email.isEmpty || password.isEmpty) {
+                    setDialogState(() => errorMessage = 'Логин, Email и Пароль обязательны');
+                    return;
+                  }
+                  if (password.length < 8) {
+                    setDialogState(() => errorMessage = 'Пароль должен содержать минимум 8 символов');
+                    return;
+                  }
+
+                  setDialogState(() { isLoading = true; errorMessage = null; });
+
+                  try {
+                    final userService = ref.read(userServiceProvider);
+                    await userService.registerUser(
+                      username: username,
+                      email: email,
+                      password: password,
+                      lastName: lastNameCtrl.text.trim(),
+                      firstName: firstNameCtrl.text.trim(),
+                      middleName: middleNameCtrl.text.trim(),
+                      phoneNumber: phoneCtrl.text.trim(),
+                      position: positionCtrl.text.trim(),
+                      notes: notesCtrl.text.trim(),
+                      role: selectedRole.serverValue,
+                    );
+
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    // Refresh the user list
+                    ref.read(usersWithPresenceProvider.notifier).refresh();
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Пользователь $username создан'),
+                          backgroundColor: AppTheme.successGreen,
+                        ),
+                      );
+                    }
+                  } on DioException catch (e) {
+                    final detail = e.response?.data is Map ? (e.response?.data['detail'] ?? e.message) : e.message;
+                    setDialogState(() {
+                      isLoading = false;
+                      errorMessage = detail?.toString() ?? 'Ошибка сервера';
+                    });
+                  } catch (e) {
+                    setDialogState(() {
+                      isLoading = false;
+                      errorMessage = e.toString();
+                    });
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                child: isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Создать', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDialogField(
+    TextEditingController controller,
+    String label,
+    TextInputType keyboardType, {
+    bool obscure = false,
+    bool autocapitalize = true,
+    int maxLines = 1,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscure,
+        maxLines: maxLines,
+        textCapitalization: autocapitalize ? TextCapitalization.words : TextCapitalization.none,
+        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(130), fontSize: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withAlpha(40)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppTheme.primaryBlue),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -1264,9 +1450,7 @@ class UserProfileScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildActionButton(context, Icons.edit, 'Редакт.', AppTheme.successGreen, () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Редактирование скоро появится')),
-                  );
+                  _showEditUserDialog(context, ref, user);
                 }),
                 _buildActionButton(
                   context,
@@ -1282,9 +1466,7 @@ class UserProfileScreen extends ConsumerWidget {
                         },
                 ),
                 _buildActionButton(context, Icons.vpn_key, 'Пароль', AppTheme.warningOrange, () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Сброс пароля скоро появится')),
-                  );
+                  _showChangePasswordDialog(context, ref, user);
                 }),
                 _buildActionButton(context, Icons.article_outlined, 'Журнал', Colors.purpleAccent, () {
                   Navigator.push(
@@ -1424,6 +1606,283 @@ class UserProfileScreen extends ConsumerWidget {
       color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
       indent: 16,
       endIndent: 16,
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  // Edit User Dialog
+  // ═══════════════════════════════════════════════════
+
+  static void _showEditUserDialog(BuildContext context, WidgetRef ref, APIUserResponse user) {
+    final usernameCtrl = TextEditingController(text: user.username);
+    final emailCtrl = TextEditingController(text: user.email);
+    final lastNameCtrl = TextEditingController(text: user.lastName ?? '');
+    final firstNameCtrl = TextEditingController(text: user.firstName ?? '');
+    final middleNameCtrl = TextEditingController(text: user.middleName ?? '');
+    final phoneCtrl = TextEditingController(text: user.phoneNumber ?? '');
+    final positionCtrl = TextEditingController(text: user.position ?? '');
+    final notesCtrl = TextEditingController(text: '');
+    UserRole selectedRole = user.role;
+    bool isLoading = false;
+    String? errorMessage;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          Widget buildField(
+            TextEditingController controller,
+            String label,
+            TextInputType keyboardType, {
+            bool autocapitalize = true,
+            int maxLines = 1,
+          }) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                controller: controller,
+                keyboardType: keyboardType,
+                maxLines: maxLines,
+                textCapitalization: autocapitalize ? TextCapitalization.words : TextCapitalization.none,
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
+                decoration: InputDecoration(
+                  labelText: label,
+                  labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(130), fontSize: 14),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withAlpha(40)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppTheme.primaryBlue),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: Text('Редактирование: ${user.username}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 16)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (errorMessage != null)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.errorRed.withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(errorMessage!, style: const TextStyle(color: AppTheme.errorRed, fontSize: 13)),
+                    ),
+                  buildField(usernameCtrl, 'Логин', TextInputType.text, autocapitalize: false),
+                  buildField(emailCtrl, 'Email', TextInputType.emailAddress, autocapitalize: false),
+                  buildField(lastNameCtrl, 'Фамилия', TextInputType.name),
+                  buildField(firstNameCtrl, 'Имя', TextInputType.name),
+                  buildField(middleNameCtrl, 'Отчество', TextInputType.name),
+                  buildField(phoneCtrl, 'Телефон', TextInputType.phone),
+                  buildField(positionCtrl, 'Должность', TextInputType.text),
+                  buildField(notesCtrl, 'Заметки', TextInputType.multiline, maxLines: 2),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(40)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<UserRole>(
+                        value: selectedRole,
+                        isExpanded: true,
+                        dropdownColor: Theme.of(context).colorScheme.surface,
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
+                        items: UserRole.values.map((r) => DropdownMenuItem(
+                          value: r,
+                          child: Text(r.title),
+                        )).toList(),
+                        onChanged: (r) {
+                          if (r != null) setDialogState(() => selectedRole = r);
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(ctx),
+                child: const Text('Отмена'),
+              ),
+              ElevatedButton(
+                onPressed: isLoading ? null : () async {
+                  setDialogState(() { isLoading = true; errorMessage = null; });
+
+                  try {
+                    final userService = ref.read(userServiceProvider);
+                    await userService.updateUserByAdmin(
+                      userId: user.id,
+                      username: usernameCtrl.text.trim() != user.username ? usernameCtrl.text.trim() : null,
+                      email: emailCtrl.text.trim() != user.email ? emailCtrl.text.trim() : null,
+                      lastName: lastNameCtrl.text.trim(),
+                      firstName: firstNameCtrl.text.trim(),
+                      middleName: middleNameCtrl.text.trim(),
+                      phoneNumber: phoneCtrl.text.trim(),
+                      position: positionCtrl.text.trim(),
+                      notes: notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : null,
+                      role: selectedRole != user.role ? selectedRole.serverValue : null,
+                    );
+
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    ref.read(usersWithPresenceProvider.notifier).refresh();
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Пользователь ${usernameCtrl.text.trim()} обновлён'),
+                          backgroundColor: AppTheme.successGreen,
+                        ),
+                      );
+                    }
+                  } on DioException catch (e) {
+                    final detail = e.response?.data is Map ? (e.response?.data['detail'] ?? e.message) : e.message;
+                    setDialogState(() {
+                      isLoading = false;
+                      errorMessage = detail?.toString() ?? 'Ошибка сервера';
+                    });
+                  } catch (e) {
+                    setDialogState(() {
+                      isLoading = false;
+                      errorMessage = e.toString();
+                    });
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+                child: isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Сохранить', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  // Change Password Dialog
+  // ═══════════════════════════════════════════════════
+
+  static void _showChangePasswordDialog(BuildContext context, WidgetRef ref, APIUserResponse user) {
+    final passwordCtrl = TextEditingController();
+    bool isLoading = false;
+    String? errorMessage;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            title: Text('Сменить пароль: ${user.username}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 16)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (errorMessage != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorRed.withAlpha(20),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(errorMessage!, style: const TextStyle(color: AppTheme.errorRed, fontSize: 13)),
+                  ),
+                TextField(
+                  controller: passwordCtrl,
+                  obscureText: true,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
+                  decoration: InputDecoration(
+                    labelText: 'Новый пароль',
+                    labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(130), fontSize: 14),
+                    helperText: 'Минимум 8 символов, заглавная, строчная, цифра',
+                    helperStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(97), fontSize: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface.withAlpha(40)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppTheme.primaryBlue),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(ctx),
+                child: const Text('Отмена'),
+              ),
+              ElevatedButton(
+                onPressed: isLoading ? null : () async {
+                  final password = passwordCtrl.text;
+                  if (password.length < 8) {
+                    setDialogState(() => errorMessage = 'Пароль должен содержать минимум 8 символов');
+                    return;
+                  }
+
+                  setDialogState(() { isLoading = true; errorMessage = null; });
+
+                  try {
+                    final userService = ref.read(userServiceProvider);
+                    await userService.changeUserPasswordByAdmin(
+                      userId: user.id,
+                      newPassword: password,
+                    );
+
+                    if (ctx.mounted) Navigator.pop(ctx);
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Пароль ${user.username} изменён'),
+                          backgroundColor: AppTheme.successGreen,
+                        ),
+                      );
+                    }
+                  } on DioException catch (e) {
+                    final detail = e.response?.data is Map ? (e.response?.data['detail'] ?? e.message) : e.message;
+                    setDialogState(() {
+                      isLoading = false;
+                      errorMessage = detail?.toString() ?? 'Ошибка сервера';
+                    });
+                  } catch (e) {
+                    setDialogState(() {
+                      isLoading = false;
+                      errorMessage = e.toString();
+                    });
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warningOrange),
+                child: isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Сменить', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
