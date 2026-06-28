@@ -424,9 +424,11 @@ class SyncRepository {
     final backendIds = locations.where((l) => l.id > 0).map((l) => l.id).toList();
     
     await _db.transaction(() async {
-      if (backendIds.isNotEmpty) {
+      // Батчим DELETE по 500 — SQLite лимит 999 переменных
+      for (var i = 0; i < backendIds.length; i += 500) {
+        final chunk = backendIds.sublist(i, (i + 500).clamp(0, backendIds.length));
         await (_db.delete(_db.savedLocations)
-          ..where((t) => t.backendId.isIn(backendIds)))
+          ..where((t) => t.backendId.isIn(chunk)))
           .go();
       }
 
