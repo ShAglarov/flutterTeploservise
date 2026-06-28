@@ -22,7 +22,7 @@ class IncidentDetailScreen extends ConsumerWidget {
     final incidentAsync = ref.watch(singleIncidentProvider(incidentId));
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('ИНЦИДЕНТ'),
         backgroundColor: Colors.transparent,
@@ -36,7 +36,7 @@ class IncidentDetailScreen extends ConsumerWidget {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             physics: const AlwaysScrollableScrollPhysics(),
-            child: incident == null ? const Center(child: Text('Инцидент не найден', style: TextStyle(color: Colors.white))) : Column(
+            child: incident == null ? Center(child: Text('Инцидент не найден', style: TextStyle(color: Theme.of(context).colorScheme.onSurface))) : Column(
               children: [
                 IncidentHeaderCard(
                   incident: incident,

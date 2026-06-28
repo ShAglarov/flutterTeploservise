@@ -47,12 +47,12 @@ class AffectedHousesCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       'Затронутые дома',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     if (onEdit != null)
@@ -75,28 +75,28 @@ class AffectedHousesCard extends StatelessWidget {
                       'Затронутых домов',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.6),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
                       ),
                     ),
                     Text(
                       '$count',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ],
                 ),
                 if (count > 0) ...[
                   const SizedBox(height: 12),
-                  Divider(color: Colors.white.withOpacity(0.1)),
+                  Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                   const SizedBox(height: 12),
                   Text(
                     'Дома:',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -105,10 +105,10 @@ class AffectedHousesCard extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 4.0),
                           child: Text(
                             '• ${d.savedLocation?.name ?? "ID: ${d.savedLocationId}"}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         ))
@@ -117,10 +117,10 @@ class AffectedHousesCard extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 4.0),
                           child: Text(
                             '• Дом ID $id',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         )),
@@ -130,15 +130,15 @@ class AffectedHousesCard extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: onShowAll,
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        side: BorderSide(color: Theme.of(context).colorScheme.onSurface.withAlpha(50)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Показать все дома',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       ),
                     ),
                   ),

@@ -142,12 +142,12 @@ class _IncidentPhotosCardState extends ConsumerState<IncidentPhotosCard> {
                 children: [
                   Icon(Icons.photo_library_outlined, color: Colors.blue.withOpacity(0.7), size: 20),
                   const SizedBox(width: 8),
-                  const Text(
+                  Text(
                     'Фотографии инцидента',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -272,7 +272,7 @@ class _IncidentPhotosCardState extends ConsumerState<IncidentPhotosCard> {
                                     color: Colors.black54,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                  child: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface, size: 16),
                                 ),
                               ),
                             ),

@@ -123,8 +123,8 @@ class IncidentHeaderCard extends ConsumerWidget {
                       ),
                       child: Text(
                         isActive ? 'АКТИВЕН' : 'РЕШЁН',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -133,7 +133,7 @@ class IncidentHeaderCard extends ConsumerWidget {
                     Text(
                       dateStr,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
                         fontSize: 12,
                       ),
                     ),
@@ -142,10 +142,10 @@ class IncidentHeaderCard extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text(
                   incident.title ?? 'Без названия',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -153,11 +153,11 @@ class IncidentHeaderCard extends ConsumerWidget {
                   incident.boilerHouse?.address ?? 'Адрес не указан',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Divider(color: Colors.white.withOpacity(0.1), height: 1),
+                Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25), height: 1),
                 const SizedBox(height: 16),
                 InkWell(
                   onTap: incident.assignedTo != null ? () => showUserProfile(incident.assignedTo) : null,
@@ -169,41 +169,41 @@ class IncidentHeaderCard extends ConsumerWidget {
                         CircleAvatar(
                           radius: 12,
                           backgroundColor: Colors.grey[800],
-                          child: const Icon(Icons.person, size: 16, color: Colors.white),
+                          child: Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurface),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             getUsername(incident.assignedTo),
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                           ),
                         ),
                         Text(
                           'Ответственный',
-                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Divider(color: Colors.white.withOpacity(0.1), height: 1),
+                Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25), height: 1),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.campaign, size: 20, color: Colors.white.withOpacity(0.6)),
+                    Icon(Icons.campaign, size: 20, color: Theme.of(context).colorScheme.onSurface.withAlpha(153)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         getNotificationTarget(),
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                       ),
                     ),
                   ],
                 ),
                 if (stoppedResources.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Divider(color: Colors.white.withOpacity(0.1), height: 1),
+                  Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25), height: 1),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -212,7 +212,7 @@ class IncidentHeaderCard extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           'Остановлено: $stoppedResources',
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14),
                         ),
                       ),
                     ],
@@ -225,11 +225,11 @@ class IncidentHeaderCard extends ConsumerWidget {
                       child: OutlinedButton(
                         onPressed: onEdit,
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                          side: BorderSide(color: Theme.of(context).colorScheme.onSurface.withAlpha(50)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        child: const Text('Редактировать', style: TextStyle(color: Colors.white)),
+                        child: Text('Редактировать', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -243,7 +243,7 @@ class IncidentHeaderCard extends ConsumerWidget {
                         ),
                         child: Text(
                           isActive ? 'Закрыть инцидент' : 'Открыть повторно',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),

@@ -37,12 +37,12 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'ЧАТ И ИСТОРИЯ',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 16),
@@ -75,12 +75,12 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
               Expanded(
                 child: TextField(
                   controller: _controller,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                   decoration: InputDecoration(
                     hintText: 'Написать сообщение...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide.none,
@@ -134,7 +134,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
                 _formatTime(comment.createdAt),
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(77),
                 ),
               ),
             ],
@@ -142,7 +142,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
           const SizedBox(height: 2),
           Text(
             comment.text,
-            style: const TextStyle(fontSize: 14, color: Colors.white),
+            style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),

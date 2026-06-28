@@ -20,12 +20,12 @@ class IncidentDescriptionCard extends StatelessWidget {
                 color: Colors.purple,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'ОПИСАНИЕ',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -33,9 +33,9 @@ class IncidentDescriptionCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             description != null && description!.isNotEmpty ? description! : 'Нет описания',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.4,
             ),
           ),

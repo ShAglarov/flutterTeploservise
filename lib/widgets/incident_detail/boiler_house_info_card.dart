@@ -33,20 +33,20 @@ class BoilerHouseInfoCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Информация о котельной',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildInfoRow('Котельная', boilerHouse?.address ?? '—'),
-                Divider(color: Colors.white.withOpacity(0.1)),
-                _buildInfoRow('Номер участка', boilerHouse?.siteNumber ?? '—'),
-                Divider(color: Colors.white.withOpacity(0.1)),
-                _buildInfoRow('Начальник участка', boilerHouse?.siteManager ?? '—'),
+                _buildInfoRow(context, 'Котельная', boilerHouse?.address ?? '—'),
+                Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
+                _buildInfoRow(context, 'Номер участка', boilerHouse?.siteNumber ?? '—'),
+                Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
+                _buildInfoRow(context, 'Начальник участка', boilerHouse?.siteManager ?? '—'),
               ],
             ),
           ),
@@ -55,7 +55,7 @@ class BoilerHouseInfoCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -65,17 +65,17 @@ class BoilerHouseInfoCard extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.6),
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
             ),
           ),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
