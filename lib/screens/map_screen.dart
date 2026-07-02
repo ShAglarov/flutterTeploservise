@@ -13,6 +13,7 @@ import 'profile_screen.dart';
 import 'settings_screen.dart';
 import 'management_company_list_screen.dart';
 import '../providers/connectivity_provider.dart';
+import '../providers/offline_edit_permission.dart';
 import '../providers/map_providers.dart';
 import '../providers/incident_providers.dart';
 import '../models/boiler_house_models.dart';
@@ -448,7 +449,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // The main trigger button (blue circular — person icon like iOS)
+        // Main trigger button
         GestureDetector(
           onTap: () {
             setState(() {
@@ -456,82 +457,122 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             });
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue,
+              gradient: _isMenuOpen
+                  ? const LinearGradient(colors: [Color(0xFFFF6B6B), Color(0xFFEE5A24)])
+                  : const LinearGradient(colors: [AppTheme.primaryBlue, Color(0xFF4A90D9)]),
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 8)],
+              boxShadow: [
+                BoxShadow(
+                  color: (_isMenuOpen ? const Color(0xFFFF6B6B) : AppTheme.primaryBlue).withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(
-              _isMenuOpen ? Icons.close : Icons.person_outline,
-              color: Theme.of(context).colorScheme.onSurface,
-              size: 24,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, animation) => RotationTransition(
+                turns: Tween(begin: 0.5, end: 1.0).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: Icon(
+                _isMenuOpen ? Icons.close_rounded : Icons.person_outline_rounded,
+                key: ValueKey(_isMenuOpen),
+                color: Colors.white,
+                size: 24,
+              ),
             ),
           ),
         ),
         
-        // Menu Items (dropdown like iOS)
+        // Menu dropdown
         AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          height: _isMenuOpen ? 280 : 0,
-          child: SingleChildScrollView(
-            physics: const NeverScrollableScrollPhysics(),
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 150),
-              opacity: _isMenuOpen ? 1.0 : 0.0,
-              child: Container(
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          height: _isMenuOpen ? null : 0,
+          clipBehavior: Clip.hardEdge,
+          decoration: const BoxDecoration(),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: _isMenuOpen ? 1.0 : 0.0,
+            child: Container(
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withOpacity(0.92),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildDropdownItem(Icons.person_outline, 'Профиль', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                      );
-                    }),
+                    _buildDropdownItem(
+                      Icons.person_rounded,
+                      'Профиль',
+                      const Color(0xFF6C5CE7),
+                      () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                      },
+                    ),
                     _buildDropdownDivider(),
-                    _buildDropdownItem(Icons.business, 'Управляющие\nкомпании', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ManagementCompanyListScreen()),
-                      );
-                    }),
+                    _buildDropdownItem(
+                      Icons.business_rounded,
+                      'Управляющие компании',
+                      const Color(0xFF00B894),
+                      () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementCompanyListScreen()));
+                      },
+                    ),
                     _buildDropdownDivider(),
-                    _buildDropdownItem(Icons.ios_share, 'Экспорт', () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Экспорт скоро появится')),
-                      );
-                    }, hasChevron: true),
+                    _buildDropdownItem(
+                      Icons.ios_share_rounded,
+                      'Экспорт',
+                      const Color(0xFFFDAA1D),
+                      () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Экспорт скоро появится')),
+                        );
+                      },
+                      trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.onSurface.withAlpha(60), size: 20),
+                    ),
                     _buildDropdownDivider(),
-                    _buildDropdownItem(Icons.search, 'Найти', () {
-                      if (_isSheetHidden) {
-                        _toggleSheet();
-                      }
-                    }),
+                    _buildDropdownItem(
+                      Icons.search_rounded,
+                      'Найти',
+                      const Color(0xFF0984E3),
+                      () {
+                        if (_isSheetHidden) _toggleSheet();
+                      },
+                    ),
                     _buildDropdownDivider(),
-                    _buildDropdownItem(Icons.settings_outlined, 'Настройки', () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                      );
-                    }),
+                    _buildDropdownItem(
+                      Icons.settings_rounded,
+                      'Настройки',
+                      const Color(0xFF636E72),
+                      () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -542,28 +583,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildDropdownItem(IconData icon, String label, VoidCallback onTap, {bool hasChevron = false}) {
-    return InkWell(
-      onTap: () {
-        setState(() => _isMenuOpen = false);
-        onTap();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.onSurface.withAlpha(180), size: 22),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.w400),
-            ),
-            if (hasChevron) ...[
+  Widget _buildDropdownItem(IconData icon, String label, Color accentColor, VoidCallback onTap, {Widget? trailing}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() => _isMenuOpen = false);
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(12),
+        splashColor: accentColor.withOpacity(0.1),
+        highlightColor: accentColor.withOpacity(0.05),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: accentColor, size: 19),
+              ),
               const SizedBox(width: 12),
-              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing,
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -572,9 +636,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget _buildDropdownDivider() {
     return Divider(
       height: 1,
-      color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
-      indent: 16,
-      endIndent: 16,
+      thickness: 0.5,
+      color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
+      indent: 60,
+      endIndent: 14,
     );
   }
 
@@ -2471,6 +2536,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _deleteBoilerHouse(BoilerHouseResponse bh) async {
+    final canWrite = ref.read(writeAccessProvider);
+    if (!canWrite) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
+      return;
+    }
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2619,6 +2689,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
 
     // 2. Выполняем удаление
+    final canWrite = ref.read(writeAccessProvider);
+    if (!canWrite) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
+      return;
+    }
     try {
       await ref.read(locationServiceProvider).deleteSavedLocation(loc.id);
       ref.invalidate(mapDataProvider);

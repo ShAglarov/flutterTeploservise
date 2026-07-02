@@ -6,6 +6,7 @@ import '../models/user_role.dart';
 import '../services/location_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
+import '../providers/offline_edit_permission.dart';
 import 'house_selection_dialog.dart';
 import 'management_company_selection_dialog.dart';
 
@@ -82,6 +83,19 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final canWrite = ref.read(writeAccessProvider);
+    if (!canWrite) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Нет интернета и у вас нет прав на редактирование без сети'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() => _isSaving = true);
 

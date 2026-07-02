@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import '../models/boiler_house_models.dart';
 import '../models/user_role.dart';
+import '../providers/connectivity_provider.dart';
+import '../providers/offline_edit_permission.dart';
+import '../repositories/sync_repository.dart';
 import '../services/boiler_house_service.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
@@ -52,36 +55,101 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final isOffline = ref.read(isOfflineProvider);
+    final canWrite = ref.read(writeAccessProvider);
+
+    if (!canWrite) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Нет интернета и у вас нет прав на редактирование без сети'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
       final isEditing = widget.initialBoilerHouse != null;
-      dynamic result;
 
-      if (isEditing) {
-        final update = BoilerHouseUpdate(
-          address: _addressController.text,
-          latitude: double.parse(_latController.text),
-          longitude: double.parse(_lngController.text),
-          siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
-          siteManager: _selectedSiteManager,
-          siteManagerId: _selectedSiteManagerId,
+      if (isOffline) {
+        // OFFLINE MODE: сохраняем в PendingChangesQueue
+        final payload = <String, dynamic>{
+          'name': _addressController.text,
+          'latitude': double.parse(_latController.text),
+          'longitude': double.parse(_lngController.text),
+          'site_number': _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
+          'site_manager': _selectedSiteManager,
+          'site_manager_id': _selectedSiteManagerId,
+        };
+
+        final syncRepo = ref.read(syncRepositoryProvider);
+        await syncRepo.enqueueChange(
+          entityType: 'boiler_house',
+          entityId: isEditing ? widget.initialBoilerHouse!.id : null,
+          actionType: isEditing ? 'update' : 'create',
+          payload: payload,
         );
-        result = await ref.read(boilerHouseServiceProvider).updateBoilerHouse(widget.initialBoilerHouse!.id, update);
+
+        // Также обновляем локальный кэш в Drift если это update
+        if (isEditing) {
+          final bh = widget.initialBoilerHouse!;
+          await syncRepo.upsertBoilerHouses([
+            BoilerHouseResponse(
+              id: bh.id,
+              address: _addressController.text,
+              latitude: double.parse(_latController.text),
+              longitude: double.parse(_lngController.text),
+              siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
+              siteManager: _selectedSiteManager,
+              siteManagerId: _selectedSiteManagerId,
+              boilerHouseUUID: bh.boilerHouseUUID,
+              createdAt: bh.createdAt,
+              updatedAt: DateTime.now().toIso8601String(),
+            ),
+          ]);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Сохранено локально. Синхронизация при восстановлении сети.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          Navigator.of(context).pop(widget.initialBoilerHouse);
+        }
       } else {
-        final boilerHouse = BoilerHouseCreate(
-          address: _addressController.text,
-          latitude: double.parse(_latController.text),
-          longitude: double.parse(_lngController.text),
-          siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
-          siteManager: _selectedSiteManager,
-          siteManagerId: _selectedSiteManagerId,
-        );
-        result = await ref.read(boilerHouseServiceProvider).createBoilerHouse(boilerHouse);
-      }
-      
-      if (mounted) {
-        Navigator.of(context).pop(result);
+        // ONLINE MODE: прямой API-вызов (как было)
+        dynamic result;
+        if (isEditing) {
+          final update = BoilerHouseUpdate(
+            address: _addressController.text,
+            latitude: double.parse(_latController.text),
+            longitude: double.parse(_lngController.text),
+            siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
+            siteManager: _selectedSiteManager,
+            siteManagerId: _selectedSiteManagerId,
+          );
+          result = await ref.read(boilerHouseServiceProvider).updateBoilerHouse(widget.initialBoilerHouse!.id, update);
+        } else {
+          final boilerHouse = BoilerHouseCreate(
+            address: _addressController.text,
+            latitude: double.parse(_latController.text),
+            longitude: double.parse(_lngController.text),
+            siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
+            siteManager: _selectedSiteManager,
+            siteManagerId: _selectedSiteManagerId,
+          );
+          result = await ref.read(boilerHouseServiceProvider).createBoilerHouse(boilerHouse);
+        }
+
+        if (mounted) {
+          Navigator.of(context).pop(result);
+        }
       }
     } catch (e) {
       if (mounted) {

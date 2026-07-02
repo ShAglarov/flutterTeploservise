@@ -21,6 +21,7 @@ AuthUser _$AuthUserFromJson(Map<String, dynamic> json) => AuthUser(
   lastLoginAt: json['lastLoginAt'] == null
       ? null
       : DateTime.parse(json['lastLoginAt'] as String),
+  canEditOffline: json['canEditOffline'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$AuthUserToJson(AuthUser instance) => <String, dynamic>{
@@ -32,4 +33,5 @@ Map<String, dynamic> _$AuthUserToJson(AuthUser instance) => <String, dynamic>{
   'passwordHash': instance.passwordHash,
   'createdAt': instance.createdAt?.toIso8601String(),
   'lastLoginAt': instance.lastLoginAt?.toIso8601String(),
+  'canEditOffline': instance.canEditOffline,
 };

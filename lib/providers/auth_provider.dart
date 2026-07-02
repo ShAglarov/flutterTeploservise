@@ -110,6 +110,7 @@ class Auth extends _$Auth {
       role: apiUser.role,
       createdAt: DateTime.tryParse(apiUser.createdAt),
       lastLoginAt: apiUser.lastLoginAt != null ? DateTime.tryParse(apiUser.lastLoginAt!) : null,
+      canEditOffline: apiUser.canEditOffline,
     );
   }
 }

@@ -19,6 +19,7 @@ class AuthUser {
   final String? passwordHash;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
+  final bool canEditOffline;
 
   AuthUser({
     required this.id,
@@ -29,6 +30,7 @@ class AuthUser {
     this.passwordHash,
     this.createdAt,
     this.lastLoginAt,
+    this.canEditOffline = false,
   });
 
   bool get isAdmin => role == UserRole.admin;

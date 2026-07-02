@@ -10,6 +10,7 @@ import '../widgets/incident_detail/incident_description_card.dart';
 import '../widgets/incident_detail/incident_chat_card.dart';
 import '../widgets/incident_detail/incident_activity_card.dart';
 import '../widgets/incident_detail/incident_photos_card.dart';
+import '../providers/offline_edit_permission.dart';
 import 'incident_form_screen.dart';
 
 class IncidentDetailScreen extends ConsumerWidget {
@@ -41,6 +42,15 @@ class IncidentDetailScreen extends ConsumerWidget {
                 IncidentHeaderCard(
                   incident: incident,
                   onStatusToggle: () async {
+                    final canWrite = ref.read(writeAccessProvider);
+                    if (!canWrite) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Нет интернета и у вас нет прав на редактирование без сети'), backgroundColor: Colors.red),
+                        );
+                      }
+                      return;
+                    }
                     final service = ref.read(incidentServiceProvider);
                     final isClosed = incident.status == IncidentStatus.resolved || incident.status == IncidentStatus.closed;
                     final newStatus = isClosed ? IncidentStatus.open : IncidentStatus.resolved;

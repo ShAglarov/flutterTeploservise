@@ -40,6 +40,8 @@ class APIUserResponse {
   @JsonKey(name: 'last_longitude')
   final double? lastLongitude;
   final String? notes;
+  @JsonKey(name: 'can_edit_offline')
+  final bool canEditOffline;
 
   APIUserResponse({
     required this.id,
@@ -62,6 +64,7 @@ class APIUserResponse {
     this.lastLatitude,
     this.lastLongitude,
     this.notes,
+    this.canEditOffline = false,
   });
 
   factory APIUserResponse.fromJson(Map<String, dynamic> json) => _$APIUserResponseFromJson(json);

@@ -12,6 +12,7 @@ import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../widgets/incident_filter_sheet.dart';
+import '../providers/offline_edit_permission.dart';
 
 class IncidentListScreen extends ConsumerStatefulWidget {
   const IncidentListScreen({super.key});
@@ -282,6 +283,11 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   }
 
   Future<void> _completeIncident(int id) async {
+    final canWrite = ref.read(writeAccessProvider);
+    if (!canWrite) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
+      return;
+    }
     try {
       final service = ref.read(incidentServiceProvider);
       await service.updateIncident(id, IncidentUpdate(status: IncidentStatus.resolved));
@@ -297,6 +303,11 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   }
 
   Future<void> _resumeIncident(int id) async {
+    final canWrite = ref.read(writeAccessProvider);
+    if (!canWrite) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
+      return;
+    }
     try {
       final service = ref.read(incidentServiceProvider);
       await service.updateIncident(id, IncidentUpdate(status: IncidentStatus.open));
@@ -312,6 +323,11 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   }
 
   Future<void> _deleteIncident(int id, String? title) async {
+    final canWrite = ref.read(writeAccessProvider);
+    if (!canWrite) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
+      return;
+    }
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) {

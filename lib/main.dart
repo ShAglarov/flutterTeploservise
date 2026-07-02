@@ -202,10 +202,10 @@ class _MyAppState extends ConsumerState<MyApp> {
           print('⚠️ [Main] Incident reconcile on reconnect failed: $e');
         }
         
-        // Invalidate map data AND incidents to force a full UI refresh after reconnect
+        // Drift watch streams are reactive — data from incrementalSync + getAllIncidents
+        // flows through automatically. No need to invalidate mapDataProvider (which would
+        // trigger a full _fetchInitialData() storm with 3 parallel API calls).
         ref.invalidate(allIncidentsProvider);
-        ref.invalidate(mapDataProvider);
-        ref.read(globalRefreshEventControllerProvider).add(null);
       });
 
       print('✅ [Main] Sync pipeline initialized');

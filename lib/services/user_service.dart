@@ -68,6 +68,7 @@ class UserService {
     String? role,
     bool? isActive,
     bool? isBlocked,
+    bool? canEditOffline,
   }) async {
     final body = <String, dynamic>{};
     if (username != null) body['username'] = username;
@@ -81,6 +82,7 @@ class UserService {
     if (role != null) body['role'] = role;
     if (isActive != null) body['is_active'] = isActive;
     if (isBlocked != null) body['is_blocked'] = isBlocked;
+    if (canEditOffline != null) body['can_edit_offline'] = canEditOffline;
 
     final response = await _dio.put('/users/$userId', data: body);
     return APIUserResponse.fromJson(response.data);

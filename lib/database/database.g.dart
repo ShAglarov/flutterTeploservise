@@ -1272,6 +1272,21 @@ class $AppUsersTable extends AppUsers
     requiredDuringInsert: false,
     defaultValue: const Constant(0.0),
   );
+  static const VerificationMeta _canEditOfflineMeta = const VerificationMeta(
+    'canEditOffline',
+  );
+  @override
+  late final GeneratedColumn<bool> canEditOffline = GeneratedColumn<bool>(
+    'can_edit_offline',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("can_edit_offline" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -1333,6 +1348,7 @@ class $AppUsersTable extends AppUsers
     verificationCode,
     lastLatitude,
     lastLongitude,
+    canEditOffline,
     id,
   ];
   @override
@@ -1697,6 +1713,15 @@ class $AppUsersTable extends AppUsers
         ),
       );
     }
+    if (data.containsKey('can_edit_offline')) {
+      context.handle(
+        _canEditOfflineMeta,
+        canEditOffline.isAcceptableOrUnknown(
+          data['can_edit_offline']!,
+          _canEditOfflineMeta,
+        ),
+      );
+    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
@@ -1893,6 +1918,10 @@ class $AppUsersTable extends AppUsers
         DriftSqlType.double,
         data['${effectivePrefix}last_longitude'],
       ),
+      canEditOffline: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}can_edit_offline'],
+      )!,
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -1953,6 +1982,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
   final String? verificationCode;
   final double? lastLatitude;
   final double? lastLongitude;
+  final bool canEditOffline;
   final int id;
   const AppUserDb({
     this.activeStatus,
@@ -2001,6 +2031,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     this.verificationCode,
     this.lastLatitude,
     this.lastLongitude,
+    required this.canEditOffline,
     required this.id,
   });
   @override
@@ -2122,6 +2153,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     if (!nullToAbsent || lastLongitude != null) {
       map['last_longitude'] = Variable<double>(lastLongitude);
     }
+    map['can_edit_offline'] = Variable<bool>(canEditOffline);
     map['id'] = Variable<int>(id);
     return map;
   }
@@ -2242,6 +2274,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       lastLongitude: lastLongitude == null && nullToAbsent
           ? const Value.absent()
           : Value(lastLongitude),
+      canEditOffline: Value(canEditOffline),
       id: Value(id),
     );
   }
@@ -2304,6 +2337,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       verificationCode: serializer.fromJson<String?>(json['verificationCode']),
       lastLatitude: serializer.fromJson<double?>(json['lastLatitude']),
       lastLongitude: serializer.fromJson<double?>(json['lastLongitude']),
+      canEditOffline: serializer.fromJson<bool>(json['canEditOffline']),
       id: serializer.fromJson<int>(json['id']),
     );
   }
@@ -2357,6 +2391,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       'verificationCode': serializer.toJson<String?>(verificationCode),
       'lastLatitude': serializer.toJson<double?>(lastLatitude),
       'lastLongitude': serializer.toJson<double?>(lastLongitude),
+      'canEditOffline': serializer.toJson<bool>(canEditOffline),
       'id': serializer.toJson<int>(id),
     };
   }
@@ -2408,6 +2443,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     Value<String?> verificationCode = const Value.absent(),
     Value<double?> lastLatitude = const Value.absent(),
     Value<double?> lastLongitude = const Value.absent(),
+    bool? canEditOffline,
     int? id,
   }) => AppUserDb(
     activeStatus: activeStatus.present ? activeStatus.value : this.activeStatus,
@@ -2472,6 +2508,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     lastLongitude: lastLongitude.present
         ? lastLongitude.value
         : this.lastLongitude,
+    canEditOffline: canEditOffline ?? this.canEditOffline,
     id: id ?? this.id,
   );
   AppUserDb copyWithCompanion(AppUsersCompanion data) {
@@ -2570,6 +2607,9 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
       lastLongitude: data.lastLongitude.present
           ? data.lastLongitude.value
           : this.lastLongitude,
+      canEditOffline: data.canEditOffline.present
+          ? data.canEditOffline.value
+          : this.canEditOffline,
       id: data.id.present ? data.id.value : this.id,
     );
   }
@@ -2623,6 +2663,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
           ..write('verificationCode: $verificationCode, ')
           ..write('lastLatitude: $lastLatitude, ')
           ..write('lastLongitude: $lastLongitude, ')
+          ..write('canEditOffline: $canEditOffline, ')
           ..write('id: $id')
           ..write(')'))
         .toString();
@@ -2676,6 +2717,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
     verificationCode,
     lastLatitude,
     lastLongitude,
+    canEditOffline,
     id,
   ]);
   @override
@@ -2728,6 +2770,7 @@ class AppUserDb extends DataClass implements Insertable<AppUserDb> {
           other.verificationCode == this.verificationCode &&
           other.lastLatitude == this.lastLatitude &&
           other.lastLongitude == this.lastLongitude &&
+          other.canEditOffline == this.canEditOffline &&
           other.id == this.id);
 }
 
@@ -2778,6 +2821,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
   final Value<String?> verificationCode;
   final Value<double?> lastLatitude;
   final Value<double?> lastLongitude;
+  final Value<bool> canEditOffline;
   final Value<int> id;
   const AppUsersCompanion({
     this.activeStatus = const Value.absent(),
@@ -2826,6 +2870,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     this.verificationCode = const Value.absent(),
     this.lastLatitude = const Value.absent(),
     this.lastLongitude = const Value.absent(),
+    this.canEditOffline = const Value.absent(),
     this.id = const Value.absent(),
   });
   AppUsersCompanion.insert({
@@ -2875,6 +2920,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     this.verificationCode = const Value.absent(),
     this.lastLatitude = const Value.absent(),
     this.lastLongitude = const Value.absent(),
+    this.canEditOffline = const Value.absent(),
     this.id = const Value.absent(),
   }) : passwordHash = Value(passwordHash);
   static Insertable<AppUserDb> custom({
@@ -2924,6 +2970,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     Expression<String>? verificationCode,
     Expression<double>? lastLatitude,
     Expression<double>? lastLongitude,
+    Expression<bool>? canEditOffline,
     Expression<int>? id,
   }) {
     return RawValuesInsertable({
@@ -2975,6 +3022,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
       if (verificationCode != null) 'verification_code': verificationCode,
       if (lastLatitude != null) 'last_latitude': lastLatitude,
       if (lastLongitude != null) 'last_longitude': lastLongitude,
+      if (canEditOffline != null) 'can_edit_offline': canEditOffline,
       if (id != null) 'id': id,
     });
   }
@@ -3026,6 +3074,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     Value<String?>? verificationCode,
     Value<double?>? lastLatitude,
     Value<double?>? lastLongitude,
+    Value<bool>? canEditOffline,
     Value<int>? id,
   }) {
     return AppUsersCompanion(
@@ -3075,6 +3124,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
       verificationCode: verificationCode ?? this.verificationCode,
       lastLatitude: lastLatitude ?? this.lastLatitude,
       lastLongitude: lastLongitude ?? this.lastLongitude,
+      canEditOffline: canEditOffline ?? this.canEditOffline,
       id: id ?? this.id,
     );
   }
@@ -3222,6 +3272,9 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
     if (lastLongitude.present) {
       map['last_longitude'] = Variable<double>(lastLongitude.value);
     }
+    if (canEditOffline.present) {
+      map['can_edit_offline'] = Variable<bool>(canEditOffline.value);
+    }
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
@@ -3277,6 +3330,7 @@ class AppUsersCompanion extends UpdateCompanion<AppUserDb> {
           ..write('verificationCode: $verificationCode, ')
           ..write('lastLatitude: $lastLatitude, ')
           ..write('lastLongitude: $lastLongitude, ')
+          ..write('canEditOffline: $canEditOffline, ')
           ..write('id: $id')
           ..write(')'))
         .toString();
@@ -11826,6 +11880,7 @@ typedef $$AppUsersTableCreateCompanionBuilder =
       Value<String?> verificationCode,
       Value<double?> lastLatitude,
       Value<double?> lastLongitude,
+      Value<bool> canEditOffline,
       Value<int> id,
     });
 typedef $$AppUsersTableUpdateCompanionBuilder =
@@ -11876,6 +11931,7 @@ typedef $$AppUsersTableUpdateCompanionBuilder =
       Value<String?> verificationCode,
       Value<double?> lastLatitude,
       Value<double?> lastLongitude,
+      Value<bool> canEditOffline,
       Value<int> id,
     });
 
@@ -12115,6 +12171,11 @@ class $$AppUsersTableFilterComposer
 
   ColumnFilters<double> get lastLongitude => $composableBuilder(
     column: $table.lastLongitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get canEditOffline => $composableBuilder(
+    column: $table.canEditOffline,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12363,6 +12424,11 @@ class $$AppUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get canEditOffline => $composableBuilder(
+    column: $table.canEditOffline,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -12564,6 +12630,11 @@ class $$AppUsersTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get canEditOffline => $composableBuilder(
+    column: $table.canEditOffline,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 }
@@ -12642,6 +12713,7 @@ class $$AppUsersTableTableManager
                 Value<String?> verificationCode = const Value.absent(),
                 Value<double?> lastLatitude = const Value.absent(),
                 Value<double?> lastLongitude = const Value.absent(),
+                Value<bool> canEditOffline = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => AppUsersCompanion(
                 activeStatus: activeStatus,
@@ -12690,6 +12762,7 @@ class $$AppUsersTableTableManager
                 verificationCode: verificationCode,
                 lastLatitude: lastLatitude,
                 lastLongitude: lastLongitude,
+                canEditOffline: canEditOffline,
                 id: id,
               ),
           createCompanionCallback:
@@ -12740,6 +12813,7 @@ class $$AppUsersTableTableManager
                 Value<String?> verificationCode = const Value.absent(),
                 Value<double?> lastLatitude = const Value.absent(),
                 Value<double?> lastLongitude = const Value.absent(),
+                Value<bool> canEditOffline = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => AppUsersCompanion.insert(
                 activeStatus: activeStatus,
@@ -12788,6 +12862,7 @@ class $$AppUsersTableTableManager
                 verificationCode: verificationCode,
                 lastLatitude: lastLatitude,
                 lastLongitude: lastLongitude,
+                canEditOffline: canEditOffline,
                 id: id,
               ),
           withReferenceMapper: (p0) => p0

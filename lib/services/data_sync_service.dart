@@ -60,6 +60,19 @@ class DataSyncService {
   // strictly in order, preventing database race conditions.
   Future<void> _processingQueue = Future.value();
 
+  // BATCH MODE: suppress per-action globalRefreshEvent during bulk sync
+  bool _batchMode = false;
+
+  /// Enter batch mode — suppresses individual UI refresh events.
+  /// Call exitBatchMode() when done to fire a single refresh.
+  void enterBatchMode() => _batchMode = true;
+
+  /// Exit batch mode — fires one globalRefreshEvent for all accumulated changes.
+  void exitBatchMode() {
+    _batchMode = false;
+    _ref.read(globalRefreshEventControllerProvider).add(null);
+  }
+
   DataSyncService(this._ref, this._syncRepo, this._realtimeService, this._deviceService);
 
   Future<void> start() async {
@@ -249,7 +262,7 @@ class DataSyncService {
         await _syncRepo.deleteIncident(id);
         // Force the UI list to invalidate because pure Drift row-deletions 
         // sometimes don't propagate flawlessly through the Riverpod debouncer cascade.
-        _ref.read(globalRefreshEventControllerProvider).add(null);
+        _fireRefreshIfNotBatch();
       }
       return;
     }
@@ -278,7 +291,7 @@ class DataSyncService {
       final id = _parseInt(entityId);
       if (id != null) {
         await _syncRepo.deleteBoilerHouse(id);
-        _ref.read(globalRefreshEventControllerProvider).add(null);
+        _fireRefreshIfNotBatch();
       }
       return;
     }
@@ -288,7 +301,7 @@ class DataSyncService {
         final normalized = _normalizeEntityKeys(entityData);
         final bh = BoilerHouseResponse.fromJson(normalized);
         await _syncRepo.upsertBoilerHouses([bh]);
-        _ref.read(globalRefreshEventControllerProvider).add(null);
+        _fireRefreshIfNotBatch();
         dev.log('✅ [DataSync] Upserted boiler_house id=${bh.id}', name: 'SYNC');
       } catch (e, stack) {
         dev.log('[DataSync] Failed to parse boiler_house entity_data: $e\n$stack', name: 'SYNC');
@@ -301,7 +314,7 @@ class DataSyncService {
       final id = _parseInt(entityId);
       if (id != null) {
         await _syncRepo.deleteSavedLocation(id);
-        _ref.read(globalRefreshEventControllerProvider).add(null);
+        _fireRefreshIfNotBatch();
       }
       return;
     }
@@ -311,7 +324,7 @@ class DataSyncService {
         final normalized = _normalizeEntityKeys(entityData);
         final loc = SavedLocationResponse.fromJson(normalized);
         await _syncRepo.upsertSavedLocations([loc]);
-        _ref.read(globalRefreshEventControllerProvider).add(null);
+        _fireRefreshIfNotBatch();
         dev.log('✅ [DataSync] Upserted saved_location id=${loc.id}', name: 'SYNC');
       } catch (e, stack) {
         dev.log('[DataSync] Failed to parse saved_location entity_data: $e\n$stack', name: 'SYNC');
@@ -344,7 +357,7 @@ class DataSyncService {
             dev.log('📸 [DataSync] Deleting incident_photo backendId=$id', name: 'SYNC');
             await _syncRepo.deleteIncidentPhoto(id);
             // Force UI refresh so the photo disappears immediately
-            _ref.read(globalRefreshEventControllerProvider).add(null);
+            _fireRefreshIfNotBatch();
             dev.log('📸 [DataSync] globalRefreshEvent fired after photo delete', name: 'SYNC');
             break;
           case 'saved_location_photo':
@@ -393,6 +406,14 @@ class DataSyncService {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Only fires globalRefreshEvent if we're NOT in batch mode.
+  /// In batch mode, exitBatchMode() fires it once at the end.
+  void _fireRefreshIfNotBatch() {
+    if (!_batchMode) {
+      _ref.read(globalRefreshEventControllerProvider).add(null);
+    }
+  }
 
   Future<void> _trackActionId(dynamic actionId) async {
     final id = _parseInt(actionId);

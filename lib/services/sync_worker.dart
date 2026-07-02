@@ -7,14 +7,22 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../database/database.dart';
 import '../repositories/sync_repository.dart';
 import '../main.dart';
+import '../models/boiler_house_models.dart';
+import '../models/location_models.dart';
+import '../models/management_company_models.dart';
+import 'boiler_house_service.dart';
 import 'incident_service.dart';
 import 'location_service.dart';
+import 'management_company_service.dart';
 import '../models/incident_models.dart';
 
 final syncWorkerProvider = Provider<SyncWorker>((ref) {
   final repository = ref.watch(syncRepositoryProvider);
   final incidentService = ref.watch(incidentServiceProvider);
-  return SyncWorker(repository, incidentService);
+  final boilerHouseService = ref.watch(boilerHouseServiceProvider);
+  final locationService = ref.watch(locationServiceProvider);
+  final mcService = ref.watch(managementCompanyServiceProvider);
+  return SyncWorker(repository, incidentService, boilerHouseService, locationService, mcService);
 });
 
 /// Background worker that processes the PendingChanges queue.
@@ -23,12 +31,15 @@ final syncWorkerProvider = Provider<SyncWorker>((ref) {
 class SyncWorker {
   final SyncRepository _repository;
   final IncidentService _incidentService;
+  final BoilerHouseService _boilerHouseService;
+  final LocationService _locationService;
+  final ManagementCompanyService _mcService;
   
   bool _isSyncing = false;
   Timer? _timer;
   StreamSubscription? _connectivitySub;
 
-  SyncWorker(this._repository, this._incidentService);
+  SyncWorker(this._repository, this._incidentService, this._boilerHouseService, this._locationService, this._mcService);
 
   void start() {
     print('🚀 [SyncWorker] Starting...');
@@ -91,8 +102,14 @@ class SyncWorker {
         case 'incident':
           await _processIncidentChange(change, payload);
           break;
+        case 'boiler_house':
+          await _processBoilerHouseChange(change, payload);
+          break;
         case 'saved_location':
-          // TODO: implement location sync
+          await _processSavedLocationChange(change, payload);
+          break;
+        case 'management_company':
+          await _processManagementCompanyChange(change, payload);
           break;
         default:
           throw Exception('Unsupported entity type: ${change.entityType}');
@@ -152,4 +169,73 @@ class SyncWorker {
         break;
     }
   }
+
+  Future<void> _processBoilerHouseChange(PendingChangeDb change, Map<String, dynamic> payload) async {
+    switch (change.actionType) {
+      case 'create':
+        final create = BoilerHouseCreate(
+          address: payload['name'] as String? ?? '',
+          latitude: (payload['latitude'] as num?)?.toDouble() ?? 0.0,
+          longitude: (payload['longitude'] as num?)?.toDouble() ?? 0.0,
+          siteNumber: payload['site_number'] as String?,
+          siteManager: payload['site_manager'] as String?,
+          siteManagerId: payload['site_manager_id'] as int?,
+        );
+        final result = await _boilerHouseService.createBoilerHouse(create);
+        print('🔗 [SyncWorker] Created boiler house: ${result.id}');
+        break;
+      case 'update':
+        if (change.entityId != null) {
+          final update = BoilerHouseUpdate(
+            address: payload['name'] as String?,
+            latitude: (payload['latitude'] as num?)?.toDouble(),
+            longitude: (payload['longitude'] as num?)?.toDouble(),
+            siteNumber: payload['site_number'] as String?,
+            siteManager: payload['site_manager'] as String?,
+            siteManagerId: payload['site_manager_id'] as int?,
+          );
+          await _boilerHouseService.updateBoilerHouse(change.entityId!, update);
+        }
+        break;
+      case 'delete':
+        if (change.entityId != null) {
+          await _boilerHouseService.deleteBoilerHouse(change.entityId!);
+        }
+        break;
+    }
+  }
+
+  Future<void> _processSavedLocationChange(PendingChangeDb change, Map<String, dynamic> payload) async {
+    switch (change.actionType) {
+      case 'update':
+        if (change.entityId != null) {
+          await _locationService.updateSavedLocation(
+            change.entityId!,
+            SavedLocationUpdate.fromJson(payload),
+          );
+        }
+        break;
+      case 'delete':
+        if (change.entityId != null) {
+          await _locationService.deleteSavedLocation(change.entityId!);
+        }
+        break;
+    }
+  }
+
+  Future<void> _processManagementCompanyChange(PendingChangeDb change, Map<String, dynamic> payload) async {
+    switch (change.actionType) {
+      case 'create':
+        final create = ManagementCompanyCreate.fromJson(payload);
+        await _mcService.createManagementCompany(create);
+        break;
+      case 'update':
+        if (change.entityId != null) {
+          final update = ManagementCompanyUpdate.fromJson(payload);
+          await _mcService.updateManagementCompany(change.entityId.toString(), update);
+        }
+        break;
+    }
+  }
 }
+

@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/incident_models.dart';
 import '../services/incident_service.dart';
+import '../providers/offline_edit_permission.dart';
 import 'incident_form_state.dart';
 export 'incident_form_state.dart';
 
@@ -116,6 +117,13 @@ class IncidentFormController extends _$IncidentFormController {
 
     if (state.affectedHouseIds.isEmpty) {
       state = state.copyWith(errorMessage: 'Выберите затронутые дома');
+      return false;
+    }
+
+    // Offline permission check
+    final canWrite = ref.read(writeAccessProvider);
+    if (!canWrite) {
+      state = state.copyWith(errorMessage: 'Нет интернета и у вас нет прав на редактирование без сети');
       return false;
     }
 

@@ -189,7 +189,7 @@ class SyncRepository {
         _db.savedLocations,
       },
     ).watch()
-      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 100)))
+      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 300), leading: true))
       .asyncMap((_) async {
         final rows = await query.get();
         final stopwatch = Stopwatch()..start();
@@ -405,7 +405,9 @@ class SyncRepository {
   }
 
   Stream<List<BoilerHouseResponse>> watchAllBoilerHouses() {
-    return _db.select(_db.boilerHouses).watch().map((rows) {
+    return _db.select(_db.boilerHouses).watch()
+      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 500), leading: true))
+      .map((rows) {
       return rows.map((dbBh) => _mapBoilerHouseToResponse(dbBh)).toList();
     });
   }
@@ -530,7 +532,9 @@ class SyncRepository {
       leftOuterJoin(_db.housePhotos, _db.housePhotos.houseId.equalsExp(_db.savedLocations.backendId)),
     ]);
 
-    return query.watch().map((rows) {
+    return query.watch()
+      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 500), leading: true))
+      .map((rows) {
       final Map<int, SavedLocationDb> locsMap = {};
       final Map<int, List<HousePhotoDb>> photosMap = {};
 

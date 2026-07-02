@@ -1602,6 +1602,13 @@ class UserProfileScreen extends ConsumerWidget {
                   _buildRowDivider(context),
                   _buildDataRow(context, 'Роль', user.role.title),
                   _buildRowDivider(context),
+                  _buildDataRow(
+                    context,
+                    'Offline-доступ',
+                    user.canEditOffline ? 'Включён' : 'Отключён',
+                    valueColor: user.canEditOffline ? AppTheme.successGreen : AppTheme.errorRed,
+                  ),
+                  _buildRowDivider(context),
                   _buildDataRow(context, 'Создан', _formatDate(user.createdAt)),
                   _buildRowDivider(context),
                   _buildDataRow(
@@ -1714,6 +1721,7 @@ class UserProfileScreen extends ConsumerWidget {
     final positionCtrl = TextEditingController(text: user.position ?? '');
     final notesCtrl = TextEditingController(text: '');
     UserRole selectedRole = user.role;
+    bool canEditOffline = user.canEditOffline;
     bool isLoading = false;
     String? errorMessage;
 
@@ -1804,6 +1812,48 @@ class UserProfileScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  // Offline-доступ Switch
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(40)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Offline-доступ',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                'Редактирование без интернета',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: canEditOffline,
+                          activeColor: AppTheme.primaryBlue,
+                          onChanged: (v) => setDialogState(() => canEditOffline = v),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1829,6 +1879,7 @@ class UserProfileScreen extends ConsumerWidget {
                       position: positionCtrl.text.trim(),
                       notes: notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : null,
                       role: selectedRole != user.role ? selectedRole.serverValue : null,
+                      canEditOffline: canEditOffline != user.canEditOffline ? canEditOffline : null,
                     );
 
                     if (ctx.mounted) Navigator.pop(ctx);

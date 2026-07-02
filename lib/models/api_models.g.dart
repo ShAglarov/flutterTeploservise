@@ -28,6 +28,7 @@ APIUserResponse _$APIUserResponseFromJson(Map<String, dynamic> json) =>
       lastLatitude: (json['last_latitude'] as num?)?.toDouble(),
       lastLongitude: (json['last_longitude'] as num?)?.toDouble(),
       notes: json['notes'] as String?,
+      canEditOffline: json['can_edit_offline'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$APIUserResponseToJson(APIUserResponse instance) =>
@@ -52,6 +53,7 @@ Map<String, dynamic> _$APIUserResponseToJson(APIUserResponse instance) =>
       'last_latitude': instance.lastLatitude,
       'last_longitude': instance.lastLongitude,
       'notes': instance.notes,
+      'can_edit_offline': instance.canEditOffline,
     };
 
 APILoginResponse _$APILoginResponseFromJson(Map<String, dynamic> json) =>

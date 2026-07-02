@@ -145,7 +145,17 @@ class MapData extends _$MapData {
     state = updater(state);
   }
 
+  bool _isFetching = false;
+  int _fetchRetryCount = 0;
+  static const _maxFetchRetries = 2;
+
   Future<void> _fetchInitialData() async {
+    if (_isFetching) {
+      print('⏭️ [MapData] _fetchInitialData already in progress, skipping');
+      return;
+    }
+    _isFetching = true;
+
     try {
       final syncRepo = ref.read(syncRepositoryProvider);
       await syncRepo.deduplicateSavedLocations();
@@ -159,9 +169,26 @@ class MapData extends _$MapData {
         locService.getAllSavedLocations(),
         incService.getAllIncidents(),
       ]);
+      _fetchRetryCount = 0; // Reset on success
       print('✅ [MapData] Initial data fetch complete');
     } catch (e) {
       print('⚠️ [MapData] Initial data fetch failed: $e');
+      _fetchRetryCount++;
+      if (_fetchRetryCount <= _maxFetchRetries) {
+        final delay = Duration(seconds: _fetchRetryCount * 5);
+        print('🔄 [MapData] Retry $_fetchRetryCount/$_maxFetchRetries in ${delay.inSeconds}s');
+        Future.delayed(delay, () {
+          _isFetching = false;
+          _fetchInitialData();
+        });
+        return; // Don't reset _isFetching yet
+      } else {
+        print('❌ [MapData] Max retries reached, giving up');
+      }
+    } finally {
+      if (_fetchRetryCount == 0 || _fetchRetryCount > _maxFetchRetries) {
+        _isFetching = false;
+      }
     }
   }
 }

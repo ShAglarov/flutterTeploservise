@@ -93,11 +93,17 @@ class SyncService {
 
         dev.log('[SyncService] Received ${actions.length} actions, hasMore=$hasMore, nextSyncId=$nextSyncId', name: 'SYNC');
 
-        for (final action in actions) {
-          if (action is Map<String, dynamic>) {
-            await _dataSyncService.processAction(action);
-            totalProcessed++;
+        // BATCH MODE: suppress per-action UI refreshes, fire once after all actions
+        _dataSyncService.enterBatchMode();
+        try {
+          for (final action in actions) {
+            if (action is Map<String, dynamic>) {
+              await _dataSyncService.processAction(action);
+              totalProcessed++;
+            }
           }
+        } finally {
+          _dataSyncService.exitBatchMode();
         }
 
         // Update cursor

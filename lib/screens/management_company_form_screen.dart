@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/management_company_models.dart';
+import '../providers/connectivity_provider.dart';
+import '../providers/offline_edit_permission.dart';
+import '../repositories/sync_repository.dart';
 import '../services/management_company_service.dart';
 import '../utils/app_theme.dart';
 
@@ -55,61 +58,87 @@ class _ManagementCompanyFormScreenState
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final isOffline = ref.read(isOfflineProvider);
+    final canWrite = ref.read(writeAccessProvider);
+
+    if (!canWrite) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Нет интернета и у вас нет прав на редактирование без сети'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
-      final service = ref.read(managementCompanyServiceProvider);
+      if (isOffline) {
+        // OFFLINE MODE: сохраняем в PendingChangesQueue
+        final payload = <String, dynamic>{
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+          'email': _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+          'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+          'director': _directorController.text.trim().isEmpty ? null : _directorController.text.trim(),
+          'notes': _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        };
 
-      if (_isEditing) {
-        final update = ManagementCompanyUpdate(
-          name: _nameController.text.trim(),
-          phone: _phoneController.text.trim().isEmpty
-              ? null
-              : _phoneController.text.trim(),
-          email: _emailController.text.trim().isEmpty
-              ? null
-              : _emailController.text.trim(),
-          address: _addressController.text.trim().isEmpty
-              ? null
-              : _addressController.text.trim(),
-          director: _directorController.text.trim().isEmpty
-              ? null
-              : _directorController.text.trim(),
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
+        final syncRepo = ref.read(syncRepositoryProvider);
+        await syncRepo.enqueueChange(
+          entityType: 'management_company',
+          entityId: _isEditing ? int.tryParse(widget.company!.id) : null,
+          actionType: _isEditing ? 'update' : 'create',
+          payload: payload,
         );
-        await service.updateManagementCompany(widget.company!.id, update);
+
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Сохранено локально. Синхронизация при восстановлении сети.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       } else {
-        final create = ManagementCompanyCreate(
-          name: _nameController.text.trim(),
-          phone: _phoneController.text.trim().isEmpty
-              ? null
-              : _phoneController.text.trim(),
-          email: _emailController.text.trim().isEmpty
-              ? null
-              : _emailController.text.trim(),
-          address: _addressController.text.trim().isEmpty
-              ? null
-              : _addressController.text.trim(),
-          director: _directorController.text.trim().isEmpty
-              ? null
-              : _directorController.text.trim(),
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-        );
-        await service.createManagementCompany(create);
-      }
+        // ONLINE MODE: прямой API-вызов
+        final service = ref.read(managementCompanyServiceProvider);
 
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isEditing ? 'УК обновлена' : 'УК создана'),
-            backgroundColor: AppTheme.successGreen,
-          ),
-        );
+        if (_isEditing) {
+          final update = ManagementCompanyUpdate(
+            name: _nameController.text.trim(),
+            phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+            email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+            address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+            director: _directorController.text.trim().isEmpty ? null : _directorController.text.trim(),
+            notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          );
+          await service.updateManagementCompany(widget.company!.id, update);
+        } else {
+          final create = ManagementCompanyCreate(
+            name: _nameController.text.trim(),
+            phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+            email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+            address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+            director: _directorController.text.trim().isEmpty ? null : _directorController.text.trim(),
+            notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          );
+          await service.createManagementCompany(create);
+        }
+
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_isEditing ? 'УК обновлена' : 'УК создана'),
+              backgroundColor: AppTheme.successGreen,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
