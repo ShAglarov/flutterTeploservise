@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/location_models.dart';
 import '../models/incident_models.dart';
@@ -106,7 +107,17 @@ class LocationService {
   }
 
   Future<void> deleteSavedLocation(int id) async {
-    await _dio.delete('/locations/$id');
+    try {
+      await _dio.delete('/locations/$id');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        // Дом уже удалён на сервере (например, другим пользователем).
+        // Всё равно чистим локальную БД ниже.
+        debugPrint('[LocationService] Location $id already deleted on server (404), cleaning local DB');
+      } else {
+        rethrow;
+      }
+    }
     // Remove from local DB so map UI updates immediately
     await _syncRepository.deleteSavedLocation(id);
   }

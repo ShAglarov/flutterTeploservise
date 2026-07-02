@@ -31,6 +31,7 @@ import '../widgets/house_incident_form_dialog.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../services/boiler_house_service.dart';
 import '../providers/user_presence_provider.dart';
+import '../repositories/sync_repository.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -2526,34 +2527,119 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _deleteLocation(SavedLocationResponse loc) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Удалить дом?'),
-        content: Text('Вы уверены, что хотите удалить дом ${loc.name}?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Удалить', style: TextStyle(color: Colors.redAccent)),
+    // 1. Проверяем, привязан ли дом к инцидентам
+    final syncRepo = ref.read(syncRepositoryProvider);
+    final linkedIncidents = await syncRepo.getIncidentsForLocation(loc.id);
+
+    if (linkedIncidents.isNotEmpty) {
+      // Показываем предупреждение с информацией об инцидентах
+      if (!mounted) return;
+      final action = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Дом привязан к инцидентам'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Дом «${loc.name}» привязан к ${linkedIncidents.length} инцидент${_incidentDeclension(linkedIncidents.length)}:',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                ...linkedIncidents.map((inc) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed
+                            ? Icons.check_circle_outline
+                            : Icons.warning_amber_rounded,
+                        size: 18,
+                        color: inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${inc.title ?? "#${inc.id}"} (${inc.status?.title ?? "?"})',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+                const SizedBox(height: 8),
+                Text(
+                  'Вы можете отсоединить дом от этих инцидентов и удалить его, либо отменить удаление.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
-    
-    if (confirm == true) {
-      try {
-        await ref.read(locationServiceProvider).deleteSavedLocation(loc.id);
-        ref.invalidate(mapDataProvider);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Дом удален')));
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
-        }
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'cancel'),
+              child: const Text('Отмена'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'detach_delete'),
+              child: const Text(
+                'Отсоединить и удалить',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (action != 'detach_delete') return;
+    } else {
+      // Обычный диалог подтверждения без инцидентов
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Удалить дом?'),
+          content: Text('Вы уверены, что хотите удалить дом ${loc.name}?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Удалить', style: TextStyle(color: Colors.redAccent)),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
+    // 2. Выполняем удаление
+    try {
+      await ref.read(locationServiceProvider).deleteSavedLocation(loc.id);
+      ref.invalidate(mapDataProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Дом удален')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка удаления: $e')));
       }
     }
+  }
+
+  /// Склонение слова «инцидент» для числительных
+  String _incidentDeclension(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 19) return 'ам';
+    if (mod10 == 1) return 'у';
+    if (mod10 >= 2 && mod10 <= 4) return 'ам';
+    return 'ам';
   }
 
   Future<void> _editLocation(SavedLocationResponse loc) async {

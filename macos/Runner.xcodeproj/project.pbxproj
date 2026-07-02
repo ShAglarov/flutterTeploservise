@@ -27,7 +27,7 @@
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
-		54B300ED76E5F271ED8AA572 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B28AB44C9FAA1163EE96B3C6 /* Pods_RunnerTests.framework */; };
+		4FBB653C2FF2A320000A7A38 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B28AB44C9FAA1163EE96B3C6 /* Pods_RunnerTests.framework */; };
 		90B7E15F15D987920D818E49 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED5A7D9179F6D4BBCFB4AE4E /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
 
@@ -95,7 +95,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				54B300ED76E5F271ED8AA572 /* Pods_RunnerTests.framework in Frameworks */,
+				4FBB653C2FF2A320000A7A38 /* Pods_RunnerTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -412,9 +412,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

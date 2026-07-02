@@ -644,7 +644,42 @@ class SyncRepository {
   }
 
   Future<void> deleteSavedLocation(int backendId) async {
+    // Сначала удаляем связи из affected_houses, чтобы не было FK constraint error
+    await (_db.delete(_db.affectedHouses)..where((t) => t.savedLocationId.equals(backendId))).go();
+    // Затем удаляем фото дома
+    await (_db.delete(_db.housePhotos)..where((t) => t.houseId.equals(backendId))).go();
+    // Теперь безопасно удаляем сам дом
     await (_db.delete(_db.savedLocations)..where((t) => t.backendId.equals(backendId))).go();
+  }
+
+  /// Возвращает список инцидентов, к которым привязан данный дом (location).
+  /// Используется для предупреждения пользователя перед удалением дома.
+  Future<List<IncidentResponse>> getIncidentsForLocation(int locationBackendId) async {
+    // 1. Найти все incident_id из affected_houses для данного savedLocationId
+    final affectedRows = await (_db.select(_db.affectedHouses)
+          ..where((t) => t.savedLocationId.equals(locationBackendId)))
+        .get();
+
+    if (affectedRows.isEmpty) return [];
+
+    final incidentIds = affectedRows.map((r) => r.incidentId).toSet().toList();
+
+    // 2. Загрузить инциденты с boiler house info
+    final rows = await (_db.select(_db.incidents).join([
+      leftOuterJoin(_db.boilerHouses, _db.boilerHouses.backendId.equalsExp(_db.incidents.boilerHouseId)),
+    ])..where(_db.incidents.backendId.isIn(incidentIds))).get();
+
+    // 3. Маппинг в IncidentResponse (упрощённый, без affected houses и фото)
+    return rows.map((row) {
+      final inc = row.readTable(_db.incidents);
+      final bh = row.readTableOrNull(_db.boilerHouses);
+      return _mapIncidentToResponse(inc, boilerHouse: bh, affectedHousesRows: [], photos: []);
+    }).toList();
+  }
+
+  /// Удаляет привязку дома от всех инцидентов (из таблицы affected_houses)
+  Future<void> detachLocationFromIncidents(int locationBackendId) async {
+    await (_db.delete(_db.affectedHouses)..where((t) => t.savedLocationId.equals(locationBackendId))).go();
   }
 
   Future<void> deleteIncidentPhoto(int backendId) async {
