@@ -6,6 +6,7 @@ import '../repositories/sync_repository.dart';
 import '../providers/auth_provider.dart';
 
 import '../services/user_service.dart';
+import '../models/user_role.dart';
 
 part 'incident_providers.g.dart';
 
@@ -158,7 +159,10 @@ final incidentViewModelsProvider = Provider<AsyncValue<List<IncidentViewModel>>>
     return incidents.map((inc) {
       String? boilerHouseDetail;
       if (inc.boilerHouse != null) {
-        boilerHouseDetail = 'Нач: ${inc.boilerHouse!.siteManager ?? "?"} | Участок: ${inc.boilerHouse!.siteNumber ?? "?"}';
+        final address = inc.boilerHouse!.address ?? 'Неизвестно';
+        final manager = inc.boilerHouse!.siteManager ?? '?';
+        final site = inc.boilerHouse!.siteNumber ?? '?';
+        boilerHouseDetail = '📍 Котельная: $address\nНач: $manager | Участок: $site';
       }
       return _createViewModel(inc, boilerHouseDetail, usersMap);
     }).toList();
@@ -205,13 +209,38 @@ IncidentViewModel _createViewModel(IncidentResponse inc, String? boilerHouseDeta
   if (inc.resourceHeatingStopped == 1) stopped.add('Отопление');
   final stoppedServicesText = stopped.isEmpty ? null : stopped.join(', ');
 
-  // 5. Broadcast Text
+  // 5. Broadcast Text — показываем конкретику, а не enum-имя
   String? broadcastText;
-  if (inc.notificationConfig != null) {
-    if (inc.notificationConfig!.type == AudienceType.broadcast) {
-      broadcastText = 'Все (Broadcast)';
-    } else {
-      broadcastText = 'Роли/Пользователи (${inc.notificationConfig!.type.name})';
+  final config = inc.notificationConfig;
+  if (config != null) {
+    if (config.type == AudienceType.broadcast) {
+      broadcastText = 'Всем пользователям';
+    } else if (config.type == AudienceType.roleBased) {
+      final roleIds = config.roleIds ?? [];
+      if (roleIds.isEmpty) {
+        broadcastText = '👥 По ролям';
+      } else if (roleIds.length == 1) {
+        final role = UserRole.fromAnyString(roleIds.first);
+        broadcastText = '👥 Роль: ${role.title}';
+      } else {
+        final titles = roleIds.map((r) => UserRole.fromAnyString(r).title).join(', ');
+        broadcastText = '👥 Роли: $titles';
+      }
+    } else if (config.type == AudienceType.userBased) {
+      final ids = config.userIds ?? [];
+      if (ids.isEmpty) {
+        broadcastText = '👤 По пользователям';
+      } else {
+        final names = ids.map((id) {
+          final user = usersMap[id];
+          return user?.formattedDisplayName ?? 'ID $id';
+        }).toList();
+        if (names.length == 1) {
+          broadcastText = '👤 ${names.first}';
+        } else {
+          broadcastText = '👤 ${names.join(', ')}';
+        }
+      }
     }
   }
 

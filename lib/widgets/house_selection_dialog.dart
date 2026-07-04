@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/location_models.dart';
 import '../services/location_service.dart';
+import '../database/database.dart';
+import '../utils/address_search_helper.dart';
 import '../utils/app_theme.dart';
 
 class HouseSelectionDialog extends ConsumerStatefulWidget {
@@ -24,6 +27,7 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
   final int _limit = 20;
   String _query = '';
   Timer? _debounce;
+  bool _isOfflineMode = false;
 
   @override
   void initState() {
@@ -42,7 +46,7 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
-      if (!_isMoreLoading && _hasMore) {
+      if (!_isMoreLoading && _hasMore && !_isOfflineMode) {
         _loadMore();
       }
     }
@@ -55,6 +59,7 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
         _skip = 0;
         _hasMore = true;
         _houses = [];
+        _isOfflineMode = false;
       });
     } else {
       setState(() => _isMoreLoading = true);
@@ -79,18 +84,99 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
         }
         _hasMore = results.length == _limit;
         _skip += results.length;
+        _isOfflineMode = false;
       });
     } catch (e) {
+      // OFFLINE FALLBACK: при сетевой ошибке ищем в локальной Drift БД
+      if (_isNetworkError(e)) {
+        await _loadFromLocalDb();
+      } else {
+        setState(() {
+          _isLoading = false;
+          _isMoreLoading = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ошибка загрузки: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  /// Offline fallback: поиск по локальной Drift БД с AddressSearchHelper
+  Future<void> _loadFromLocalDb() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final allLocal = await db.select(db.savedLocations).get();
+      
+      List<SavedLocationDb> filtered;
+      if (_query.isNotEmpty) {
+        // Нечёткий поиск через AddressSearchHelper
+        filtered = allLocal.where((loc) {
+          final name = loc.name ?? '';
+          final mc = loc.managementCompany ?? '';
+          
+          // Fuzzy по имени ИЛИ точный по УК
+          return AddressSearchHelper.fuzzyMatch(_query, name) ||
+                 mc.toLowerCase().contains(_query.toLowerCase());
+        }).toList();
+        
+        // Сортировка по релевантности
+        filtered.sort((a, b) {
+          final scoreA = AddressSearchHelper.matchScore(_query, a.name ?? '');
+          final scoreB = AddressSearchHelper.matchScore(_query, b.name ?? '');
+          return scoreB.compareTo(scoreA);
+        });
+      } else {
+        filtered = allLocal;
+      }
+
+      // Конвертируем Drift модели в API модели для совместимости с UI
+      final asApiModels = filtered.take(100).map((loc) => SavedLocationResponse(
+        id: loc.backendId ?? loc.id,
+        name: loc.name ?? '',
+        latitude: loc.latitude ?? 0.0,
+        longitude: loc.longitude ?? 0.0,
+        fiasHouseGuid: loc.fiasHouseGuid,
+        floors: loc.floors,
+        rooms: loc.rooms,
+        totalArea: loc.totalArea,
+        yearBuilt: loc.yearBuilt,
+        residentsCount: loc.residentsCount,
+        managementCompanyName: loc.managementCompany,
+        createdAt: loc.updatedAt?.toIso8601String() ?? '',
+      )).toList();
+
+      setState(() {
+        _houses = asApiModels;
+        _isLoading = false;
+        _isMoreLoading = false;
+        _hasMore = false; // Локальные данные — пагинация не нужна
+        _isOfflineMode = true;
+      });
+    } catch (dbError) {
       setState(() {
         _isLoading = false;
         _isMoreLoading = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка загрузки: $e')),
+          SnackBar(content: Text('Нет интернета и ошибка локальной БД: $dbError')),
         );
       }
     }
+  }
+
+  bool _isNetworkError(Object e) {
+    if (e is DioException) {
+      return e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.unknown;
+    }
+    return false;
   }
 
   Future<void> _loadMore() async {
@@ -124,6 +210,25 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
         child: Column(
           children: [
             _buildHeader(),
+            // Offline-индикатор
+            if (_isOfflineMode)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                color: Colors.orange.withAlpha(30),
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi_off, size: 16, color: Colors.orange.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Оффлайн — поиск по локальной базе',
+                        style: TextStyle(fontSize: 13, color: Colors.orange.shade700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             _buildSearchBar(),
             Expanded(
               child: _isLoading 

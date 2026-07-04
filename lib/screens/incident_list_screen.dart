@@ -227,7 +227,9 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           ),
           child: IncidentCard(
             title: inc.title ?? 'Инцидент #${inc.id}',
-            location: inc.boilerHouse?.address ?? 'Неизвестная локация',
+            location: inc.boilerHouse?.address != null
+                ? '📍 Котельная: ${inc.boilerHouse!.address}'
+                : 'Неизвестная локация',
             timestamp: vm.formattedTimestamp,
             statusText: inc.status == IncidentStatus.resolved ? 'ЗАВЕРШЁН' : 'АКТИВЕН',
             isStatusActive: inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed,
