@@ -290,7 +290,7 @@ class DataSyncService {
     if (actionType == 'delete') {
       final id = _parseInt(entityId);
       if (id != null) {
-        await _syncRepo.deleteBoilerHouse(id);
+        await _syncRepo.deleteBoilerHouseCascade(id);
         _fireRefreshIfNotBatch();
       }
       return;

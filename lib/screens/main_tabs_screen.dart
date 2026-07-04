@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/connectivity_provider.dart';
+import '../widgets/connectivity_banner.dart';
 import 'map_screen.dart';
 import 'incident_list_screen.dart';
 import '../utils/app_theme.dart';
@@ -23,25 +23,11 @@ class _MainTabsScreenState extends ConsumerState<MainTabsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isOffline = ref.watch(isOfflineProvider);
 
     return Scaffold(
       body: Column(
         children: [
-          if (isOffline)
-            Container(
-              color: Colors.red.withOpacity(0.9),
-              width: double.infinity,
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 4,
-                bottom: 4,
-              ),
-              child: const Text(
-                'Нет подключения к сети',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-            ),
+          const ConnectivityBanner(includeTopPadding: true),
           Expanded(
             child: IndexedStack(
               index: _currentIndex,

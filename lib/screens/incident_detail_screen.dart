@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../providers/incident_providers.dart';
 import '../models/incident_models.dart';
 import '../services/incident_service.dart';
+import '../repositories/sync_repository.dart';
 import '../widgets/incident_detail/incident_header_card.dart';
 import '../widgets/incident_detail/boiler_house_info_card.dart';
 import '../widgets/incident_detail/affected_houses_card.dart';
@@ -52,11 +54,48 @@ class IncidentDetailScreen extends ConsumerWidget {
                       return;
                     }
                     final service = ref.read(incidentServiceProvider);
+                    final syncRepo = ref.read(syncRepositoryProvider);
                     final isClosed = incident.status == IncidentStatus.resolved || incident.status == IncidentStatus.closed;
                     final newStatus = isClosed ? IncidentStatus.open : IncidentStatus.resolved;
 
                     try {
                       await service.updateIncident(incidentId, IncidentUpdate(id: incidentId, status: newStatus));
+                    } on DioException catch (e) {
+                      // Нет сети — сохраняем оффлайн для синхронизации позже
+                      if (e.type == DioExceptionType.connectionError ||
+                          e.type == DioExceptionType.connectionTimeout ||
+                          e.type == DioExceptionType.sendTimeout ||
+                          e.type == DioExceptionType.receiveTimeout ||
+                          e.type == DioExceptionType.unknown) {
+                        await syncRepo.saveIncidentOffline(
+                          update: IncidentUpdate(
+                            id: incidentId,
+                            status: newStatus,
+                            boilerHouseId: incident.boilerHouseId,
+                            title: incident.title,
+                            description: incident.description,
+                            severity: incident.severity,
+                            resourceHotWaterStopped: incident.resourceHotWaterStopped,
+                            resourceHeatingStopped: incident.resourceHeatingStopped,
+                            affectedHouseIds: incident.affectedHouseIds,
+                            assignedTo: incident.assignedTo,
+                            resolvedAt: newStatus == IncidentStatus.resolved
+                                ? DateTime.now().toIso8601String() : null,
+                          ),
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Сохранено оффлайн. Синхронизируется при подключении.'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка обновления статуса: $e')));
+                        }
+                      }
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка обновления статуса: $e')));

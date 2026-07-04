@@ -43,6 +43,9 @@ class BoilerHouseService {
     // Cache to local DB
     await _syncRepository.upsertBoilerHouses(allBhs);
     
+    // Remove local boiler houses that no longer exist on the server
+    await _syncRepository.reconcileBoilerHouses(allBhs.map((b) => b.id).toList());
+    
     return allBhs;
   }
 

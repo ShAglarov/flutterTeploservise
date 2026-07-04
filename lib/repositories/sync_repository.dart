@@ -643,8 +643,83 @@ class SyncRepository {
     dev.log('🗑️ [SyncRepo] Reconciled: removed ${toDelete.length} stale incidents', name: 'SYNC');
   }
 
+  /// Remove local boiler houses that no longer exist on the server.
+  /// Called after a full GET /boiler-houses/ refresh to reconcile stale data.
+  Future<void> reconcileBoilerHouses(List<int> serverIds) async {
+    if (serverIds.isEmpty) return;
+
+    final local = await _db.select(_db.boilerHouses).get();
+    final serverIdSet = serverIds.toSet();
+
+    final toDelete = local
+        .where((bh) => bh.backendId > 0 && !serverIdSet.contains(bh.backendId))
+        .map((bh) => bh.backendId)
+        .toList();
+
+    if (toDelete.isEmpty) return;
+
+    await _db.transaction(() async {
+      for (final id in toDelete) {
+        await deleteBoilerHouseCascade(id);
+      }
+    });
+
+    dev.log('🗑️ [SyncRepo] Reconciled: removed ${toDelete.length} stale boiler houses', name: 'SYNC');
+  }
+
+  /// Remove local saved locations that no longer exist on the server.
+  /// Called after a full GET /locations/ refresh to reconcile stale data.
+  Future<void> reconcileSavedLocations(List<int> serverIds) async {
+    if (serverIds.isEmpty) return;
+
+    final local = await _db.select(_db.savedLocations).get();
+    final serverIdSet = serverIds.toSet();
+
+    final toDelete = local
+        .where((loc) => (loc.backendId ?? 0) > 0 && !serverIdSet.contains(loc.backendId))
+        .map((loc) => loc.backendId!)
+        .toList();
+
+    if (toDelete.isEmpty) return;
+
+    await _db.transaction(() async {
+      for (final id in toDelete) {
+        await deleteSavedLocation(id);
+      }
+    });
+
+    dev.log('🗑️ [SyncRepo] Reconciled: removed ${toDelete.length} stale saved locations', name: 'SYNC');
+  }
+
   Future<void> deleteBoilerHouse(int backendId) async {
     await (_db.delete(_db.boilerHouses)..where((t) => t.backendId.equals(backendId))).go();
+  }
+
+  /// Каскадное удаление котельной: удаляет связанные дома, инциденты и саму котельную.
+  /// Зеркалит CASCADE delete на уровне PostgreSQL в бэкенде.
+  Future<void> deleteBoilerHouseCascade(int boilerHouseBackendId) async {
+    await _db.transaction(() async {
+      // 1. Найти и удалить все дома этой котельной
+      final locations = await (_db.select(_db.savedLocations)
+        ..where((t) => t.boilerHouseId.equals(boilerHouseBackendId))).get();
+      for (final loc in locations) {
+        final locId = loc.backendId ?? 0;
+        if (locId > 0) {
+          await deleteSavedLocation(locId);
+        }
+      }
+
+      // 2. Найти и удалить все инциденты этой котельной
+      final incidents = await (_db.select(_db.incidents)
+        ..where((t) => t.boilerHouseId.equals(boilerHouseBackendId))).get();
+      for (final inc in incidents) {
+        await deleteIncident(inc.backendId);
+      }
+
+      // 3. Удалить саму котельную
+      await deleteBoilerHouse(boilerHouseBackendId);
+    });
+    dev.log('🗑️ [SyncRepo] Cascade-deleted boiler house $boilerHouseBackendId with related data', name: 'SYNC');
   }
 
   Future<void> deleteSavedLocation(int backendId) async {

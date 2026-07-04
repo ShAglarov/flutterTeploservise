@@ -14,6 +14,7 @@ import 'settings_screen.dart';
 import 'management_company_list_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/offline_edit_permission.dart';
+import '../widgets/connectivity_banner.dart';
 import '../providers/map_providers.dart';
 import '../providers/incident_providers.dart';
 import '../models/boiler_house_models.dart';
@@ -227,7 +228,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget build(BuildContext context) {
     final mapData = ref.watch(filteredMapDataProvider);
     final sections = ref.watch(mapSectionsProvider);
-    final isOffline = ref.watch(isOfflineProvider);
+
 
     final isDark = ref.watch(isDarkModeProvider);
     final tileConfig = ref.watch(resolvedMapTileSourceProvider);
@@ -316,21 +317,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
 
           // Offline Banner
-          if (isOffline)
-            Positioned(
-              top: MediaQuery.of(context).padding.top,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: Colors.red.withOpacity(0.9),
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  'Нет подключения к сети',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: ConnectivityBanner(includeTopPadding: true),
+          ),
 
           // 2. Info Popup (shows on pin tap)
           if (_tappedItem != null && _tappedPosition != null)
@@ -1967,9 +1959,42 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
               Row(
                 children: [
-                  IconButton(
+                  PopupMenuButton<String>(
                     icon: Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.onSurface, size: 24),
-                    onPressed: () {},
+                    onSelected: (value) async {
+                      switch (value) {
+                        case 'edit':
+                          Navigator.pop(context);
+                          _editLocation(loc);
+                          break;
+                        case 'delete':
+                          Navigator.pop(context);
+                          _deleteLocation(loc);
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 20),
+                            SizedBox(width: 8),
+                            Text('Редактировать'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                            SizedBox(width: 8),
+                            Text('Удалить', style: TextStyle(color: Colors.redAccent)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   IconButton(
                     icon: Icon(Icons.warning_amber_rounded, color: Theme.of(context).colorScheme.onSurface, size: 24),

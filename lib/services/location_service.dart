@@ -48,6 +48,9 @@ class LocationService {
     // Cache to local DB
     await _syncRepository.upsertSavedLocations(allLocations);
     
+    // Remove local locations that no longer exist on the server
+    await _syncRepository.reconcileSavedLocations(allLocations.map((l) => l.id).toList());
+    
     return allLocations;
   }
 

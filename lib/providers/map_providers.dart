@@ -245,9 +245,14 @@ MapDataState filteredMapData(Ref ref) {
       return directMatch || houseMatch;
     }).toList();
 
+    // Собрать ID всех найденных котельных, чтобы включить их дома в результат
+    final matchedBhIds = boilerHouses.map((bh) => bh.id).toSet();
+
     locations = locations.where((loc) =>
       loc.name.toLowerCase().contains(query) ||
-      (loc.managementCompanyName?.toLowerCase().contains(query) ?? false)
+      (loc.managementCompanyName?.toLowerCase().contains(query) ?? false) ||
+      // Включаем дома, принадлежащие найденным котельным
+      (loc.boilerHouseId != null && matchedBhIds.contains(loc.boilerHouseId))
     ).toList();
   }
 
