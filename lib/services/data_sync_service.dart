@@ -280,6 +280,11 @@ class DataSyncService {
         
         final incident = IncidentResponse.fromJson(cleanData);
         await _syncRepo.upsertIncidents([incident]);
+        // КРИТИЧНО: Принудительный UI refresh после upsert инцидента.
+        // Без этого вызова Drift stream может не переэмитить данные из таблицы
+        // affectedHouses, и locationIdsWithIncidents в MapData не обновится —
+        // дом не окрасится красным до перезапуска приложения.
+        _fireRefreshIfNotBatch();
       } catch (e) {
         dev.log('[DataSync] Failed to parse incident entity_data: $e', name: 'SYNC');
       }
