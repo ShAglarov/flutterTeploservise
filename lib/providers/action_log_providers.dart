@@ -13,6 +13,7 @@ final actionLogListProvider = FutureProvider.autoDispose
     userId: filter.userId,
     entityType: filter.entityType,
     actionType: filter.actionType,
+    search: filter.search,
   );
 });
 
@@ -30,6 +31,7 @@ class ActionLogFilter {
   final int? userId;
   final String? entityType;
   final String? actionType;
+  final String? search;
 
   const ActionLogFilter({
     this.limit = 50,
@@ -37,6 +39,7 @@ class ActionLogFilter {
     this.userId,
     this.entityType,
     this.actionType,
+    this.search,
   });
 
   @override
@@ -48,7 +51,8 @@ class ActionLogFilter {
           offset == other.offset &&
           userId == other.userId &&
           entityType == other.entityType &&
-          actionType == other.actionType;
+          actionType == other.actionType &&
+          search == other.search;
 
   @override
   int get hashCode =>
@@ -56,5 +60,6 @@ class ActionLogFilter {
       offset.hashCode ^
       userId.hashCode ^
       entityType.hashCode ^
-      actionType.hashCode;
+      actionType.hashCode ^
+      search.hashCode;
 }

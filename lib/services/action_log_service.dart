@@ -20,6 +20,7 @@ class ActionLogService {
     int? userId,
     String? entityType,
     String? actionType,
+    String? search,
   }) async {
     final queryParams = <String, dynamic>{
       'limit': limit,
@@ -28,6 +29,7 @@ class ActionLogService {
     if (userId != null) queryParams['user_id'] = userId;
     if (entityType != null) queryParams['entity_type'] = entityType;
     if (actionType != null) queryParams['action_type'] = actionType;
+    if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
     final response = await _dio.get(
       '/action-logs/',

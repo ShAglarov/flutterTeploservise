@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/action_log_models.dart';
@@ -27,6 +28,9 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
   bool _isLoadingMore = false;
   bool _flushing = false;
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  String _searchQuery = '';
 
   static const List<_EntityOption> _entityOptions = [
     _EntityOption('Все', null),
@@ -57,6 +61,8 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -96,6 +102,7 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
         userId: _selectedUserId,
         entityType: _selectedEntityType,
         actionType: _selectedActionType,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
       );
 
   Future<void> _loadMore() async {
@@ -109,6 +116,7 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
         userId: _selectedUserId,
         entityType: _selectedEntityType,
         actionType: _selectedActionType,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
       );
       setState(() {
         _offset += _pageSize;
@@ -148,8 +156,59 @@ class _ActionLogListScreenState extends ConsumerState<ActionLogListScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: _buildFilterBar(usersAsync),
+          preferredSize: const Size.fromHeight(100),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Поиск по журналу...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              _searchDebounce?.cancel();
+                              setState(() => _searchQuery = '');
+                              _resetAndLoad();
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Theme.of(context).dividerColor),
+                    ),
+                  ),
+                  onChanged: (text) {
+                    _searchDebounce?.cancel();
+                    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+                      final trimmed = text.trim();
+                      if (trimmed != _searchQuery) {
+                        setState(() => _searchQuery = trimmed);
+                        _resetAndLoad();
+                      }
+                    });
+                  },
+                  onSubmitted: (text) {
+                    _searchDebounce?.cancel();
+                    final trimmed = text.trim();
+                    if (trimmed != _searchQuery) {
+                      setState(() => _searchQuery = trimmed);
+                      _resetAndLoad();
+                    }
+                  },
+                ),
+              ),
+              _buildFilterBar(usersAsync),
+            ],
+          ),
         ),
       ),
       body: logsAsync.when(
