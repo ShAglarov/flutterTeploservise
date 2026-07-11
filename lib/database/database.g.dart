@@ -7221,6 +7221,17 @@ class $IncidentsTable extends Incidents
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _detailsMeta = const VerificationMeta(
     'details',
   );
@@ -7365,6 +7376,17 @@ class $IncidentsTable extends Incidents
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _resolvedAtMeta = const VerificationMeta(
+    'resolvedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> resolvedAt = GeneratedColumn<DateTime>(
+    'resolved_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _startedAtMeta = const VerificationMeta(
     'startedAt',
   );
@@ -7394,6 +7416,20 @@ class $IncidentsTable extends Incidents
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _autoResolveOnFinishMeta =
+      const VerificationMeta('autoResolveOnFinish');
+  @override
+  late final GeneratedColumn<bool> autoResolveOnFinish = GeneratedColumn<bool>(
+    'auto_resolve_on_finish',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("auto_resolve_on_finish" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _boilerHouseIdMeta = const VerificationMeta(
     'boilerHouseId',
   );
@@ -7412,6 +7448,7 @@ class $IncidentsTable extends Incidents
   List<GeneratedColumn> get $columns => [
     backendId,
     assignedTo,
+    createdAt,
     details,
     finishedAt,
     incidentUUID,
@@ -7424,9 +7461,11 @@ class $IncidentsTable extends Incidents
     resourceHeatingStopped,
     resourceHotWaterStopped,
     severity,
+    resolvedAt,
     startedAt,
     status,
     type,
+    autoResolveOnFinish,
     boilerHouseId,
   ];
   @override
@@ -7451,6 +7490,12 @@ class $IncidentsTable extends Incidents
       context.handle(
         _assignedToMeta,
         assignedTo.isAcceptableOrUnknown(data['assigned_to']!, _assignedToMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
     if (data.containsKey('details')) {
@@ -7552,6 +7597,12 @@ class $IncidentsTable extends Incidents
         severity.isAcceptableOrUnknown(data['severity']!, _severityMeta),
       );
     }
+    if (data.containsKey('resolved_at')) {
+      context.handle(
+        _resolvedAtMeta,
+        resolvedAt.isAcceptableOrUnknown(data['resolved_at']!, _resolvedAtMeta),
+      );
+    }
     if (data.containsKey('started_at')) {
       context.handle(
         _startedAtMeta,
@@ -7568,6 +7619,15 @@ class $IncidentsTable extends Incidents
       context.handle(
         _typeMeta,
         type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    }
+    if (data.containsKey('auto_resolve_on_finish')) {
+      context.handle(
+        _autoResolveOnFinishMeta,
+        autoResolveOnFinish.isAcceptableOrUnknown(
+          data['auto_resolve_on_finish']!,
+          _autoResolveOnFinishMeta,
+        ),
       );
     }
     if (data.containsKey('boiler_house_id')) {
@@ -7595,6 +7655,10 @@ class $IncidentsTable extends Incidents
       assignedTo: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}assigned_to'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
       ),
       details: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -7644,6 +7708,10 @@ class $IncidentsTable extends Incidents
         DriftSqlType.int,
         data['${effectivePrefix}severity'],
       ),
+      resolvedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}resolved_at'],
+      ),
       startedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}started_at'],
@@ -7655,6 +7723,10 @@ class $IncidentsTable extends Incidents
       type: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}type'],
+      ),
+      autoResolveOnFinish: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}auto_resolve_on_finish'],
       ),
       boilerHouseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
@@ -7672,6 +7744,7 @@ class $IncidentsTable extends Incidents
 class IncidentDb extends DataClass implements Insertable<IncidentDb> {
   final int backendId;
   final int? assignedTo;
+  final DateTime? createdAt;
   final String? details;
   final DateTime? finishedAt;
   final String? incidentUUID;
@@ -7684,13 +7757,16 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
   final bool? resourceHeatingStopped;
   final bool? resourceHotWaterStopped;
   final int? severity;
+  final DateTime? resolvedAt;
   final DateTime? startedAt;
   final String? status;
   final String? type;
+  final bool? autoResolveOnFinish;
   final int? boilerHouseId;
   const IncidentDb({
     required this.backendId,
     this.assignedTo,
+    this.createdAt,
     this.details,
     this.finishedAt,
     this.incidentUUID,
@@ -7703,9 +7779,11 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     this.resourceHeatingStopped,
     this.resourceHotWaterStopped,
     this.severity,
+    this.resolvedAt,
     this.startedAt,
     this.status,
     this.type,
+    this.autoResolveOnFinish,
     this.boilerHouseId,
   });
   @override
@@ -7714,6 +7792,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     map['backend_id'] = Variable<int>(backendId);
     if (!nullToAbsent || assignedTo != null) {
       map['assigned_to'] = Variable<int>(assignedTo);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
     }
     if (!nullToAbsent || details != null) {
       map['details'] = Variable<String>(details);
@@ -7759,6 +7840,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     if (!nullToAbsent || severity != null) {
       map['severity'] = Variable<int>(severity);
     }
+    if (!nullToAbsent || resolvedAt != null) {
+      map['resolved_at'] = Variable<DateTime>(resolvedAt);
+    }
     if (!nullToAbsent || startedAt != null) {
       map['started_at'] = Variable<DateTime>(startedAt);
     }
@@ -7767,6 +7851,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     }
     if (!nullToAbsent || type != null) {
       map['type'] = Variable<String>(type);
+    }
+    if (!nullToAbsent || autoResolveOnFinish != null) {
+      map['auto_resolve_on_finish'] = Variable<bool>(autoResolveOnFinish);
     }
     if (!nullToAbsent || boilerHouseId != null) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId);
@@ -7780,6 +7867,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
       assignedTo: assignedTo == null && nullToAbsent
           ? const Value.absent()
           : Value(assignedTo),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
       details: details == null && nullToAbsent
           ? const Value.absent()
           : Value(details),
@@ -7818,6 +7908,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
       severity: severity == null && nullToAbsent
           ? const Value.absent()
           : Value(severity),
+      resolvedAt: resolvedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resolvedAt),
       startedAt: startedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(startedAt),
@@ -7825,6 +7918,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
           ? const Value.absent()
           : Value(status),
       type: type == null && nullToAbsent ? const Value.absent() : Value(type),
+      autoResolveOnFinish: autoResolveOnFinish == null && nullToAbsent
+          ? const Value.absent()
+          : Value(autoResolveOnFinish),
       boilerHouseId: boilerHouseId == null && nullToAbsent
           ? const Value.absent()
           : Value(boilerHouseId),
@@ -7839,6 +7935,7 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     return IncidentDb(
       backendId: serializer.fromJson<int>(json['backendId']),
       assignedTo: serializer.fromJson<int?>(json['assignedTo']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
       details: serializer.fromJson<String?>(json['details']),
       finishedAt: serializer.fromJson<DateTime?>(json['finishedAt']),
       incidentUUID: serializer.fromJson<String?>(json['incidentUUID']),
@@ -7863,9 +7960,13 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
         json['resourceHotWaterStopped'],
       ),
       severity: serializer.fromJson<int?>(json['severity']),
+      resolvedAt: serializer.fromJson<DateTime?>(json['resolvedAt']),
       startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
       status: serializer.fromJson<String?>(json['status']),
       type: serializer.fromJson<String?>(json['type']),
+      autoResolveOnFinish: serializer.fromJson<bool?>(
+        json['autoResolveOnFinish'],
+      ),
       boilerHouseId: serializer.fromJson<int?>(json['boilerHouseId']),
     );
   }
@@ -7875,6 +7976,7 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     return <String, dynamic>{
       'backendId': serializer.toJson<int>(backendId),
       'assignedTo': serializer.toJson<int?>(assignedTo),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
       'details': serializer.toJson<String?>(details),
       'finishedAt': serializer.toJson<DateTime?>(finishedAt),
       'incidentUUID': serializer.toJson<String?>(incidentUUID),
@@ -7897,9 +7999,11 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
         resourceHotWaterStopped,
       ),
       'severity': serializer.toJson<int?>(severity),
+      'resolvedAt': serializer.toJson<DateTime?>(resolvedAt),
       'startedAt': serializer.toJson<DateTime?>(startedAt),
       'status': serializer.toJson<String?>(status),
       'type': serializer.toJson<String?>(type),
+      'autoResolveOnFinish': serializer.toJson<bool?>(autoResolveOnFinish),
       'boilerHouseId': serializer.toJson<int?>(boilerHouseId),
     };
   }
@@ -7907,6 +8011,7 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
   IncidentDb copyWith({
     int? backendId,
     Value<int?> assignedTo = const Value.absent(),
+    Value<DateTime?> createdAt = const Value.absent(),
     Value<String?> details = const Value.absent(),
     Value<DateTime?> finishedAt = const Value.absent(),
     Value<String?> incidentUUID = const Value.absent(),
@@ -7919,13 +8024,16 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     Value<bool?> resourceHeatingStopped = const Value.absent(),
     Value<bool?> resourceHotWaterStopped = const Value.absent(),
     Value<int?> severity = const Value.absent(),
+    Value<DateTime?> resolvedAt = const Value.absent(),
     Value<DateTime?> startedAt = const Value.absent(),
     Value<String?> status = const Value.absent(),
     Value<String?> type = const Value.absent(),
+    Value<bool?> autoResolveOnFinish = const Value.absent(),
     Value<int?> boilerHouseId = const Value.absent(),
   }) => IncidentDb(
     backendId: backendId ?? this.backendId,
     assignedTo: assignedTo.present ? assignedTo.value : this.assignedTo,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
     details: details.present ? details.value : this.details,
     finishedAt: finishedAt.present ? finishedAt.value : this.finishedAt,
     incidentUUID: incidentUUID.present ? incidentUUID.value : this.incidentUUID,
@@ -7954,9 +8062,13 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
         ? resourceHotWaterStopped.value
         : this.resourceHotWaterStopped,
     severity: severity.present ? severity.value : this.severity,
+    resolvedAt: resolvedAt.present ? resolvedAt.value : this.resolvedAt,
     startedAt: startedAt.present ? startedAt.value : this.startedAt,
     status: status.present ? status.value : this.status,
     type: type.present ? type.value : this.type,
+    autoResolveOnFinish: autoResolveOnFinish.present
+        ? autoResolveOnFinish.value
+        : this.autoResolveOnFinish,
     boilerHouseId: boilerHouseId.present
         ? boilerHouseId.value
         : this.boilerHouseId,
@@ -7967,6 +8079,7 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
       assignedTo: data.assignedTo.present
           ? data.assignedTo.value
           : this.assignedTo,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       details: data.details.present ? data.details.value : this.details,
       finishedAt: data.finishedAt.present
           ? data.finishedAt.value
@@ -7999,9 +8112,15 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
           ? data.resourceHotWaterStopped.value
           : this.resourceHotWaterStopped,
       severity: data.severity.present ? data.severity.value : this.severity,
+      resolvedAt: data.resolvedAt.present
+          ? data.resolvedAt.value
+          : this.resolvedAt,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
       status: data.status.present ? data.status.value : this.status,
       type: data.type.present ? data.type.value : this.type,
+      autoResolveOnFinish: data.autoResolveOnFinish.present
+          ? data.autoResolveOnFinish.value
+          : this.autoResolveOnFinish,
       boilerHouseId: data.boilerHouseId.present
           ? data.boilerHouseId.value
           : this.boilerHouseId,
@@ -8013,6 +8132,7 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     return (StringBuffer('IncidentDb(')
           ..write('backendId: $backendId, ')
           ..write('assignedTo: $assignedTo, ')
+          ..write('createdAt: $createdAt, ')
           ..write('details: $details, ')
           ..write('finishedAt: $finishedAt, ')
           ..write('incidentUUID: $incidentUUID, ')
@@ -8025,18 +8145,21 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
           ..write('resourceHeatingStopped: $resourceHeatingStopped, ')
           ..write('resourceHotWaterStopped: $resourceHotWaterStopped, ')
           ..write('severity: $severity, ')
+          ..write('resolvedAt: $resolvedAt, ')
           ..write('startedAt: $startedAt, ')
           ..write('status: $status, ')
           ..write('type: $type, ')
+          ..write('autoResolveOnFinish: $autoResolveOnFinish, ')
           ..write('boilerHouseId: $boilerHouseId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     backendId,
     assignedTo,
+    createdAt,
     details,
     finishedAt,
     incidentUUID,
@@ -8049,17 +8172,20 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     resourceHeatingStopped,
     resourceHotWaterStopped,
     severity,
+    resolvedAt,
     startedAt,
     status,
     type,
+    autoResolveOnFinish,
     boilerHouseId,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is IncidentDb &&
           other.backendId == this.backendId &&
           other.assignedTo == this.assignedTo &&
+          other.createdAt == this.createdAt &&
           other.details == this.details &&
           other.finishedAt == this.finishedAt &&
           other.incidentUUID == this.incidentUUID &&
@@ -8072,15 +8198,18 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
           other.resourceHeatingStopped == this.resourceHeatingStopped &&
           other.resourceHotWaterStopped == this.resourceHotWaterStopped &&
           other.severity == this.severity &&
+          other.resolvedAt == this.resolvedAt &&
           other.startedAt == this.startedAt &&
           other.status == this.status &&
           other.type == this.type &&
+          other.autoResolveOnFinish == this.autoResolveOnFinish &&
           other.boilerHouseId == this.boilerHouseId);
 }
 
 class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
   final Value<int> backendId;
   final Value<int?> assignedTo;
+  final Value<DateTime?> createdAt;
   final Value<String?> details;
   final Value<DateTime?> finishedAt;
   final Value<String?> incidentUUID;
@@ -8093,13 +8222,16 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
   final Value<bool?> resourceHeatingStopped;
   final Value<bool?> resourceHotWaterStopped;
   final Value<int?> severity;
+  final Value<DateTime?> resolvedAt;
   final Value<DateTime?> startedAt;
   final Value<String?> status;
   final Value<String?> type;
+  final Value<bool?> autoResolveOnFinish;
   final Value<int?> boilerHouseId;
   const IncidentsCompanion({
     this.backendId = const Value.absent(),
     this.assignedTo = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.details = const Value.absent(),
     this.finishedAt = const Value.absent(),
     this.incidentUUID = const Value.absent(),
@@ -8112,14 +8244,17 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     this.resourceHeatingStopped = const Value.absent(),
     this.resourceHotWaterStopped = const Value.absent(),
     this.severity = const Value.absent(),
+    this.resolvedAt = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.status = const Value.absent(),
     this.type = const Value.absent(),
+    this.autoResolveOnFinish = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
   });
   IncidentsCompanion.insert({
     this.backendId = const Value.absent(),
     this.assignedTo = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.details = const Value.absent(),
     this.finishedAt = const Value.absent(),
     this.incidentUUID = const Value.absent(),
@@ -8132,14 +8267,17 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     this.resourceHeatingStopped = const Value.absent(),
     this.resourceHotWaterStopped = const Value.absent(),
     this.severity = const Value.absent(),
+    this.resolvedAt = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.status = const Value.absent(),
     this.type = const Value.absent(),
+    this.autoResolveOnFinish = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
   });
   static Insertable<IncidentDb> custom({
     Expression<int>? backendId,
     Expression<int>? assignedTo,
+    Expression<DateTime>? createdAt,
     Expression<String>? details,
     Expression<DateTime>? finishedAt,
     Expression<String>? incidentUUID,
@@ -8152,14 +8290,17 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     Expression<bool>? resourceHeatingStopped,
     Expression<bool>? resourceHotWaterStopped,
     Expression<int>? severity,
+    Expression<DateTime>? resolvedAt,
     Expression<DateTime>? startedAt,
     Expression<String>? status,
     Expression<String>? type,
+    Expression<bool>? autoResolveOnFinish,
     Expression<int>? boilerHouseId,
   }) {
     return RawValuesInsertable({
       if (backendId != null) 'backend_id': backendId,
       if (assignedTo != null) 'assigned_to': assignedTo,
+      if (createdAt != null) 'created_at': createdAt,
       if (details != null) 'details': details,
       if (finishedAt != null) 'finished_at': finishedAt,
       if (incidentUUID != null) 'incident_u_u_i_d': incidentUUID,
@@ -8178,9 +8319,12 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
       if (resourceHotWaterStopped != null)
         'resource_hot_water_stopped': resourceHotWaterStopped,
       if (severity != null) 'severity': severity,
+      if (resolvedAt != null) 'resolved_at': resolvedAt,
       if (startedAt != null) 'started_at': startedAt,
       if (status != null) 'status': status,
       if (type != null) 'type': type,
+      if (autoResolveOnFinish != null)
+        'auto_resolve_on_finish': autoResolveOnFinish,
       if (boilerHouseId != null) 'boiler_house_id': boilerHouseId,
     });
   }
@@ -8188,6 +8332,7 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
   IncidentsCompanion copyWith({
     Value<int>? backendId,
     Value<int?>? assignedTo,
+    Value<DateTime?>? createdAt,
     Value<String?>? details,
     Value<DateTime?>? finishedAt,
     Value<String?>? incidentUUID,
@@ -8200,14 +8345,17 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     Value<bool?>? resourceHeatingStopped,
     Value<bool?>? resourceHotWaterStopped,
     Value<int?>? severity,
+    Value<DateTime?>? resolvedAt,
     Value<DateTime?>? startedAt,
     Value<String?>? status,
     Value<String?>? type,
+    Value<bool?>? autoResolveOnFinish,
     Value<int?>? boilerHouseId,
   }) {
     return IncidentsCompanion(
       backendId: backendId ?? this.backendId,
       assignedTo: assignedTo ?? this.assignedTo,
+      createdAt: createdAt ?? this.createdAt,
       details: details ?? this.details,
       finishedAt: finishedAt ?? this.finishedAt,
       incidentUUID: incidentUUID ?? this.incidentUUID,
@@ -8225,9 +8373,11 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
       resourceHotWaterStopped:
           resourceHotWaterStopped ?? this.resourceHotWaterStopped,
       severity: severity ?? this.severity,
+      resolvedAt: resolvedAt ?? this.resolvedAt,
       startedAt: startedAt ?? this.startedAt,
       status: status ?? this.status,
       type: type ?? this.type,
+      autoResolveOnFinish: autoResolveOnFinish ?? this.autoResolveOnFinish,
       boilerHouseId: boilerHouseId ?? this.boilerHouseId,
     );
   }
@@ -8240,6 +8390,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     }
     if (assignedTo.present) {
       map['assigned_to'] = Variable<int>(assignedTo.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
     }
     if (details.present) {
       map['details'] = Variable<String>(details.value);
@@ -8289,6 +8442,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     if (severity.present) {
       map['severity'] = Variable<int>(severity.value);
     }
+    if (resolvedAt.present) {
+      map['resolved_at'] = Variable<DateTime>(resolvedAt.value);
+    }
     if (startedAt.present) {
       map['started_at'] = Variable<DateTime>(startedAt.value);
     }
@@ -8297,6 +8453,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
+    }
+    if (autoResolveOnFinish.present) {
+      map['auto_resolve_on_finish'] = Variable<bool>(autoResolveOnFinish.value);
     }
     if (boilerHouseId.present) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId.value);
@@ -8309,6 +8468,7 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     return (StringBuffer('IncidentsCompanion(')
           ..write('backendId: $backendId, ')
           ..write('assignedTo: $assignedTo, ')
+          ..write('createdAt: $createdAt, ')
           ..write('details: $details, ')
           ..write('finishedAt: $finishedAt, ')
           ..write('incidentUUID: $incidentUUID, ')
@@ -8321,9 +8481,11 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
           ..write('resourceHeatingStopped: $resourceHeatingStopped, ')
           ..write('resourceHotWaterStopped: $resourceHotWaterStopped, ')
           ..write('severity: $severity, ')
+          ..write('resolvedAt: $resolvedAt, ')
           ..write('startedAt: $startedAt, ')
           ..write('status: $status, ')
           ..write('type: $type, ')
+          ..write('autoResolveOnFinish: $autoResolveOnFinish, ')
           ..write('boilerHouseId: $boilerHouseId')
           ..write(')'))
         .toString();
@@ -15757,6 +15919,7 @@ typedef $$IncidentsTableCreateCompanionBuilder =
     IncidentsCompanion Function({
       Value<int> backendId,
       Value<int?> assignedTo,
+      Value<DateTime?> createdAt,
       Value<String?> details,
       Value<DateTime?> finishedAt,
       Value<String?> incidentUUID,
@@ -15769,15 +15932,18 @@ typedef $$IncidentsTableCreateCompanionBuilder =
       Value<bool?> resourceHeatingStopped,
       Value<bool?> resourceHotWaterStopped,
       Value<int?> severity,
+      Value<DateTime?> resolvedAt,
       Value<DateTime?> startedAt,
       Value<String?> status,
       Value<String?> type,
+      Value<bool?> autoResolveOnFinish,
       Value<int?> boilerHouseId,
     });
 typedef $$IncidentsTableUpdateCompanionBuilder =
     IncidentsCompanion Function({
       Value<int> backendId,
       Value<int?> assignedTo,
+      Value<DateTime?> createdAt,
       Value<String?> details,
       Value<DateTime?> finishedAt,
       Value<String?> incidentUUID,
@@ -15790,9 +15956,11 @@ typedef $$IncidentsTableUpdateCompanionBuilder =
       Value<bool?> resourceHeatingStopped,
       Value<bool?> resourceHotWaterStopped,
       Value<int?> severity,
+      Value<DateTime?> resolvedAt,
       Value<DateTime?> startedAt,
       Value<String?> status,
       Value<String?> type,
+      Value<bool?> autoResolveOnFinish,
       Value<int?> boilerHouseId,
     });
 
@@ -15913,6 +16081,11 @@ class $$IncidentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get details => $composableBuilder(
     column: $table.details,
     builder: (column) => ColumnFilters(column),
@@ -15973,6 +16146,11 @@ class $$IncidentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get resolvedAt => $composableBuilder(
+    column: $table.resolvedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get startedAt => $composableBuilder(
     column: $table.startedAt,
     builder: (column) => ColumnFilters(column),
@@ -15985,6 +16163,11 @@ class $$IncidentsTableFilterComposer
 
   ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get autoResolveOnFinish => $composableBuilder(
+    column: $table.autoResolveOnFinish,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16106,6 +16289,11 @@ class $$IncidentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get details => $composableBuilder(
     column: $table.details,
     builder: (column) => ColumnOrderings(column),
@@ -16166,6 +16354,11 @@ class $$IncidentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get resolvedAt => $composableBuilder(
+    column: $table.resolvedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get startedAt => $composableBuilder(
     column: $table.startedAt,
     builder: (column) => ColumnOrderings(column),
@@ -16178,6 +16371,11 @@ class $$IncidentsTableOrderingComposer
 
   ColumnOrderings<String> get type => $composableBuilder(
     column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get autoResolveOnFinish => $composableBuilder(
+    column: $table.autoResolveOnFinish,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -16221,6 +16419,9 @@ class $$IncidentsTableAnnotationComposer
     column: $table.assignedTo,
     builder: (column) => column,
   );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   GeneratedColumn<String> get details =>
       $composableBuilder(column: $table.details, builder: (column) => column);
@@ -16278,6 +16479,11 @@ class $$IncidentsTableAnnotationComposer
   GeneratedColumn<int> get severity =>
       $composableBuilder(column: $table.severity, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get resolvedAt => $composableBuilder(
+    column: $table.resolvedAt,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get startedAt =>
       $composableBuilder(column: $table.startedAt, builder: (column) => column);
 
@@ -16286,6 +16492,11 @@ class $$IncidentsTableAnnotationComposer
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<bool> get autoResolveOnFinish => $composableBuilder(
+    column: $table.autoResolveOnFinish,
+    builder: (column) => column,
+  );
 
   $$BoilerHousesTableAnnotationComposer get boilerHouseId {
     final $$BoilerHousesTableAnnotationComposer composer = $composerBuilder(
@@ -16421,6 +16632,7 @@ class $$IncidentsTableTableManager
               ({
                 Value<int> backendId = const Value.absent(),
                 Value<int?> assignedTo = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
                 Value<String?> details = const Value.absent(),
                 Value<DateTime?> finishedAt = const Value.absent(),
                 Value<String?> incidentUUID = const Value.absent(),
@@ -16433,13 +16645,16 @@ class $$IncidentsTableTableManager
                 Value<bool?> resourceHeatingStopped = const Value.absent(),
                 Value<bool?> resourceHotWaterStopped = const Value.absent(),
                 Value<int?> severity = const Value.absent(),
+                Value<DateTime?> resolvedAt = const Value.absent(),
                 Value<DateTime?> startedAt = const Value.absent(),
                 Value<String?> status = const Value.absent(),
                 Value<String?> type = const Value.absent(),
+                Value<bool?> autoResolveOnFinish = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
               }) => IncidentsCompanion(
                 backendId: backendId,
                 assignedTo: assignedTo,
+                createdAt: createdAt,
                 details: details,
                 finishedAt: finishedAt,
                 incidentUUID: incidentUUID,
@@ -16452,15 +16667,18 @@ class $$IncidentsTableTableManager
                 resourceHeatingStopped: resourceHeatingStopped,
                 resourceHotWaterStopped: resourceHotWaterStopped,
                 severity: severity,
+                resolvedAt: resolvedAt,
                 startedAt: startedAt,
                 status: status,
                 type: type,
+                autoResolveOnFinish: autoResolveOnFinish,
                 boilerHouseId: boilerHouseId,
               ),
           createCompanionCallback:
               ({
                 Value<int> backendId = const Value.absent(),
                 Value<int?> assignedTo = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
                 Value<String?> details = const Value.absent(),
                 Value<DateTime?> finishedAt = const Value.absent(),
                 Value<String?> incidentUUID = const Value.absent(),
@@ -16473,13 +16691,16 @@ class $$IncidentsTableTableManager
                 Value<bool?> resourceHeatingStopped = const Value.absent(),
                 Value<bool?> resourceHotWaterStopped = const Value.absent(),
                 Value<int?> severity = const Value.absent(),
+                Value<DateTime?> resolvedAt = const Value.absent(),
                 Value<DateTime?> startedAt = const Value.absent(),
                 Value<String?> status = const Value.absent(),
                 Value<String?> type = const Value.absent(),
+                Value<bool?> autoResolveOnFinish = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
               }) => IncidentsCompanion.insert(
                 backendId: backendId,
                 assignedTo: assignedTo,
+                createdAt: createdAt,
                 details: details,
                 finishedAt: finishedAt,
                 incidentUUID: incidentUUID,
@@ -16492,9 +16713,11 @@ class $$IncidentsTableTableManager
                 resourceHeatingStopped: resourceHeatingStopped,
                 resourceHotWaterStopped: resourceHotWaterStopped,
                 severity: severity,
+                resolvedAt: resolvedAt,
                 startedAt: startedAt,
                 status: status,
                 type: type,
+                autoResolveOnFinish: autoResolveOnFinish,
                 boilerHouseId: boilerHouseId,
               ),
           withReferenceMapper: (p0) => p0

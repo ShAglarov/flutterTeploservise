@@ -26,6 +26,7 @@ BoilerHouseResponse _$BoilerHouseResponseFromJson(Map<String, dynamic> json) =>
       photos: (json['photos'] as List<dynamic>?)
           ?.map((e) => PhotoInfo.fromJson(e as Map<String, dynamic>))
           .toList(),
+      totalBoilersCount: (json['total_boilers_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$BoilerHouseResponseToJson(
@@ -47,6 +48,7 @@ Map<String, dynamic> _$BoilerHouseResponseToJson(
   'boiler_house_u_u_i_d': instance.boilerHouseUUID,
   'incident_count': instance.incidentCount,
   'photos': instance.photos,
+  'total_boilers_count': instance.totalBoilersCount,
 };
 
 BoilerHouseCreate _$BoilerHouseCreateFromJson(Map<String, dynamic> json) =>
@@ -60,6 +62,7 @@ BoilerHouseCreate _$BoilerHouseCreateFromJson(Map<String, dynamic> json) =>
       siteManager: json['site_manager'] as String?,
       siteManagerId: (json['site_manager_id'] as num?)?.toInt(),
       boilerHouseUUID: json['boiler_house_u_u_i_d'] as String?,
+      totalBoilersCount: (json['total_boilers_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$BoilerHouseCreateToJson(BoilerHouseCreate instance) =>
@@ -73,6 +76,7 @@ Map<String, dynamic> _$BoilerHouseCreateToJson(BoilerHouseCreate instance) =>
       'site_manager': instance.siteManager,
       'site_manager_id': instance.siteManagerId,
       'boiler_house_u_u_i_d': instance.boilerHouseUUID,
+      'total_boilers_count': instance.totalBoilersCount,
     };
 
 BoilerHouseUpdate _$BoilerHouseUpdateFromJson(Map<String, dynamic> json) =>
@@ -85,6 +89,7 @@ BoilerHouseUpdate _$BoilerHouseUpdateFromJson(Map<String, dynamic> json) =>
       siteNumber: json['site_number'] as String?,
       siteManager: json['site_manager'] as String?,
       siteManagerId: (json['site_manager_id'] as num?)?.toInt(),
+      totalBoilersCount: (json['total_boilers_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$BoilerHouseUpdateToJson(BoilerHouseUpdate instance) =>
@@ -97,4 +102,5 @@ Map<String, dynamic> _$BoilerHouseUpdateToJson(BoilerHouseUpdate instance) =>
       'site_number': instance.siteNumber,
       'site_manager': instance.siteManager,
       'site_manager_id': instance.siteManagerId,
+      'total_boilers_count': instance.totalBoilersCount,
     };

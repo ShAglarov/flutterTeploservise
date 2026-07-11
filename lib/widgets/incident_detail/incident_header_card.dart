@@ -67,16 +67,24 @@ class IncidentHeaderCard extends ConsumerWidget {
       return "Всем";
     }
 
-    bool isActive = incident.status != IncidentStatus.resolved && incident.status != IncidentStatus.closed;
+    bool isScheduled = incident.isScheduledLocal;
+    bool isActive = !isScheduled && incident.status != IncidentStatus.resolved && incident.status != IncidentStatus.closed;
     
-    // Format date
+    // Цвет акцентной линии и бейджа: красный для активных, зелёный для завершённых, серый для запланированных
+    Color accentColor = isScheduled ? Colors.grey : (isActive ? Colors.red : Colors.green);
+    String statusLabel = isScheduled ? 'ЗАПЛАНИРОВАН' : (isActive ? 'АКТИВЕН' : 'РЕШЁН');
+    
+    // Format date — для запланированных показываем startedAt
     String dateStr = '';
-    if (incident.createdAt != null) {
+    String? rawDate = isScheduled ? (incident.startedAt ?? incident.createdAt) : incident.createdAt;
+    if (rawDate != null) {
       try {
-        final dt = DateTime.parse(incident.createdAt!).toLocal();
-        dateStr = DateFormat('dd.MM.yyyy HH:mm').format(dt);
+        final dt = DateTime.parse(rawDate).toLocal();
+        dateStr = isScheduled
+            ? 'Старт: ${DateFormat('dd.MM.yyyy HH:mm').format(dt)}'
+            : DateFormat('dd.MM.yyyy HH:mm').format(dt);
       } catch (_) {
-        dateStr = incident.createdAt!;
+        dateStr = rawDate;
       }
     }
 
@@ -99,7 +107,7 @@ class IncidentHeaderCard extends ConsumerWidget {
             width: 3,
             child: Container(
               decoration: BoxDecoration(
-                color: isActive ? Colors.red : Colors.green,
+                color: accentColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(8),
                   bottomLeft: Radius.circular(8),
@@ -118,11 +126,11 @@ class IncidentHeaderCard extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isActive ? Colors.red : Colors.green,
+                        color: accentColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        isActive ? 'АКТИВЕН' : 'РЕШЁН',
+                        statusLabel,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurface,
                           fontSize: 10,
@@ -235,14 +243,14 @@ class IncidentHeaderCard extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: onStatusToggle,
+                        onPressed: isScheduled ? null : onStatusToggle,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isActive ? Colors.red : Colors.blue,
+                          backgroundColor: isScheduled ? Colors.grey : (isActive ? Colors.red : Colors.blue),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          isActive ? 'Закрыть инцидент' : 'Открыть повторно',
+                          isScheduled ? 'Ожидает старта' : (isActive ? 'Закрыть инцидент' : 'Открыть повторно'),
                           style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
                         ),
                       ),

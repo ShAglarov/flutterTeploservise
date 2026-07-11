@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/incident_schedule_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/incident_providers.dart';
 import '../providers/map_providers.dart';
@@ -32,6 +33,9 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 0. Initialize schedule manager for auto-refresh on start/finish times
+    ref.watch(incidentScheduleManagerProvider);
+
     // 1. Listen for global refresh events from WebSocket (safely now that we're on AsyncValue)
     ref.listen(globalRefreshEventProvider, (_, __) {
       ref.invalidate(allIncidentsProvider);
@@ -231,13 +235,17 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
                 ? '📍 Котельная: ${inc.boilerHouse!.address}'
                 : 'Неизвестная локация',
             timestamp: vm.formattedTimestamp,
-            statusText: inc.status == IncidentStatus.resolved ? 'ЗАВЕРШЁН' : 'АКТИВЕН',
-            isStatusActive: inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed,
+            statusText: inc.isScheduledLocal
+                ? 'ЗАПЛАНИРОВАН'
+                : (inc.status == IncidentStatus.resolved ? 'ЗАВЕРШЁН' : 'АКТИВЕН'),
+            isStatusActive: !inc.isScheduledLocal && inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed,
+            statusColor: inc.isScheduledLocal ? Colors.grey : null,
             assigneeName: vm.assigneeName,
             affectedPopulationCount: vm.totalResidents,
             stoppedServicesText: vm.stoppedServicesText,
             broadcastText: vm.broadcastText,
             isUnsynced: inc.localPendingAck == true,
+            isOverdue: inc.isOverdue,
             boilerHouseDetail: vm.boilerHouseDetail,
             onTap: () {
               Navigator.push(

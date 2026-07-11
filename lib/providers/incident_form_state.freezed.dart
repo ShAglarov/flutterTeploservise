@@ -14,7 +14,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$IncidentFormState {
 
- int? get id; int? get boilerHouseId; String get title; String get description; IncidentStatus get status; String get severity; bool get stopHotWater; bool get stopHeating; Set<int> get affectedHouseIds; DateTime get createdAt; DateTime? get resolvedAt; int? get assignedTo; NotificationConfig? get notificationConfig; bool get isSaving; String? get errorMessage;
+ int? get id; int? get boilerHouseId; String get title; String get description; IncidentStatus get status; String get severity; bool get stopHotWater; bool get stopHeating; Set<int> get affectedHouseIds; DateTime get createdAt; DateTime? get resolvedAt;/// Время начала инцидента (может быть в будущем для запланированных)
+ DateTime? get startedAt;/// Время завершения инцидента (опционально)
+ DateTime? get finishedAt;/// Авто-завершение по окончании finishedAt
+ bool get autoResolveOnFinish; int? get assignedTo; NotificationConfig? get notificationConfig; bool get isSaving; String? get errorMessage;
 /// Create a copy of IncidentFormState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +28,16 @@ $IncidentFormStateCopyWith<IncidentFormState> get copyWith => _$IncidentFormStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is IncidentFormState&&(identical(other.id, id) || other.id == id)&&(identical(other.boilerHouseId, boilerHouseId) || other.boilerHouseId == boilerHouseId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.status, status) || other.status == status)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.stopHotWater, stopHotWater) || other.stopHotWater == stopHotWater)&&(identical(other.stopHeating, stopHeating) || other.stopHeating == stopHeating)&&const DeepCollectionEquality().equals(other.affectedHouseIds, affectedHouseIds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.notificationConfig, notificationConfig) || other.notificationConfig == notificationConfig)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is IncidentFormState&&(identical(other.id, id) || other.id == id)&&(identical(other.boilerHouseId, boilerHouseId) || other.boilerHouseId == boilerHouseId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.status, status) || other.status == status)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.stopHotWater, stopHotWater) || other.stopHotWater == stopHotWater)&&(identical(other.stopHeating, stopHeating) || other.stopHeating == stopHeating)&&const DeepCollectionEquality().equals(other.affectedHouseIds, affectedHouseIds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.finishedAt, finishedAt) || other.finishedAt == finishedAt)&&(identical(other.autoResolveOnFinish, autoResolveOnFinish) || other.autoResolveOnFinish == autoResolveOnFinish)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.notificationConfig, notificationConfig) || other.notificationConfig == notificationConfig)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,boilerHouseId,title,description,status,severity,stopHotWater,stopHeating,const DeepCollectionEquality().hash(affectedHouseIds),createdAt,resolvedAt,assignedTo,notificationConfig,isSaving,errorMessage);
+int get hashCode => Object.hash(runtimeType,id,boilerHouseId,title,description,status,severity,stopHotWater,stopHeating,const DeepCollectionEquality().hash(affectedHouseIds),createdAt,resolvedAt,startedAt,finishedAt,autoResolveOnFinish,assignedTo,notificationConfig,isSaving,errorMessage);
 
 @override
 String toString() {
-  return 'IncidentFormState(id: $id, boilerHouseId: $boilerHouseId, title: $title, description: $description, status: $status, severity: $severity, stopHotWater: $stopHotWater, stopHeating: $stopHeating, affectedHouseIds: $affectedHouseIds, createdAt: $createdAt, resolvedAt: $resolvedAt, assignedTo: $assignedTo, notificationConfig: $notificationConfig, isSaving: $isSaving, errorMessage: $errorMessage)';
+  return 'IncidentFormState(id: $id, boilerHouseId: $boilerHouseId, title: $title, description: $description, status: $status, severity: $severity, stopHotWater: $stopHotWater, stopHeating: $stopHeating, affectedHouseIds: $affectedHouseIds, createdAt: $createdAt, resolvedAt: $resolvedAt, startedAt: $startedAt, finishedAt: $finishedAt, autoResolveOnFinish: $autoResolveOnFinish, assignedTo: $assignedTo, notificationConfig: $notificationConfig, isSaving: $isSaving, errorMessage: $errorMessage)';
 }
 
 
@@ -45,7 +48,7 @@ abstract mixin class $IncidentFormStateCopyWith<$Res>  {
   factory $IncidentFormStateCopyWith(IncidentFormState value, $Res Function(IncidentFormState) _then) = _$IncidentFormStateCopyWithImpl;
 @useResult
 $Res call({
- int? id, int? boilerHouseId, String title, String description, IncidentStatus status, String severity, bool stopHotWater, bool stopHeating, Set<int> affectedHouseIds, DateTime createdAt, DateTime? resolvedAt, int? assignedTo, NotificationConfig? notificationConfig, bool isSaving, String? errorMessage
+ int? id, int? boilerHouseId, String title, String description, IncidentStatus status, String severity, bool stopHotWater, bool stopHeating, Set<int> affectedHouseIds, DateTime createdAt, DateTime? resolvedAt, DateTime? startedAt, DateTime? finishedAt, bool autoResolveOnFinish, int? assignedTo, NotificationConfig? notificationConfig, bool isSaving, String? errorMessage
 });
 
 
@@ -62,7 +65,7 @@ class _$IncidentFormStateCopyWithImpl<$Res>
 
 /// Create a copy of IncidentFormState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? boilerHouseId = freezed,Object? title = null,Object? description = null,Object? status = null,Object? severity = null,Object? stopHotWater = null,Object? stopHeating = null,Object? affectedHouseIds = null,Object? createdAt = null,Object? resolvedAt = freezed,Object? assignedTo = freezed,Object? notificationConfig = freezed,Object? isSaving = null,Object? errorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? boilerHouseId = freezed,Object? title = null,Object? description = null,Object? status = null,Object? severity = null,Object? stopHotWater = null,Object? stopHeating = null,Object? affectedHouseIds = null,Object? createdAt = null,Object? resolvedAt = freezed,Object? startedAt = freezed,Object? finishedAt = freezed,Object? autoResolveOnFinish = null,Object? assignedTo = freezed,Object? notificationConfig = freezed,Object? isSaving = null,Object? errorMessage = freezed,}) {
   return _then(_self.copyWith(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,boilerHouseId: freezed == boilerHouseId ? _self.boilerHouseId : boilerHouseId // ignore: cast_nullable_to_non_nullable
@@ -75,7 +78,10 @@ as bool,stopHeating: null == stopHeating ? _self.stopHeating : stopHeating // ig
 as bool,affectedHouseIds: null == affectedHouseIds ? _self.affectedHouseIds : affectedHouseIds // ignore: cast_nullable_to_non_nullable
 as Set<int>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,resolvedAt: freezed == resolvedAt ? _self.resolvedAt : resolvedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,assignedTo: freezed == assignedTo ? _self.assignedTo : assignedTo // ignore: cast_nullable_to_non_nullable
+as DateTime?,startedAt: freezed == startedAt ? _self.startedAt : startedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,finishedAt: freezed == finishedAt ? _self.finishedAt : finishedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,autoResolveOnFinish: null == autoResolveOnFinish ? _self.autoResolveOnFinish : autoResolveOnFinish // ignore: cast_nullable_to_non_nullable
+as bool,assignedTo: freezed == assignedTo ? _self.assignedTo : assignedTo // ignore: cast_nullable_to_non_nullable
 as int?,notificationConfig: freezed == notificationConfig ? _self.notificationConfig : notificationConfig // ignore: cast_nullable_to_non_nullable
 as NotificationConfig?,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
@@ -164,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int? id,  int? boilerHouseId,  String title,  String description,  IncidentStatus status,  String severity,  bool stopHotWater,  bool stopHeating,  Set<int> affectedHouseIds,  DateTime createdAt,  DateTime? resolvedAt,  int? assignedTo,  NotificationConfig? notificationConfig,  bool isSaving,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int? id,  int? boilerHouseId,  String title,  String description,  IncidentStatus status,  String severity,  bool stopHotWater,  bool stopHeating,  Set<int> affectedHouseIds,  DateTime createdAt,  DateTime? resolvedAt,  DateTime? startedAt,  DateTime? finishedAt,  bool autoResolveOnFinish,  int? assignedTo,  NotificationConfig? notificationConfig,  bool isSaving,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IncidentFormState() when $default != null:
-return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that.status,_that.severity,_that.stopHotWater,_that.stopHeating,_that.affectedHouseIds,_that.createdAt,_that.resolvedAt,_that.assignedTo,_that.notificationConfig,_that.isSaving,_that.errorMessage);case _:
+return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that.status,_that.severity,_that.stopHotWater,_that.stopHeating,_that.affectedHouseIds,_that.createdAt,_that.resolvedAt,_that.startedAt,_that.finishedAt,_that.autoResolveOnFinish,_that.assignedTo,_that.notificationConfig,_that.isSaving,_that.errorMessage);case _:
   return orElse();
 
 }
@@ -185,10 +191,10 @@ return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int? id,  int? boilerHouseId,  String title,  String description,  IncidentStatus status,  String severity,  bool stopHotWater,  bool stopHeating,  Set<int> affectedHouseIds,  DateTime createdAt,  DateTime? resolvedAt,  int? assignedTo,  NotificationConfig? notificationConfig,  bool isSaving,  String? errorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int? id,  int? boilerHouseId,  String title,  String description,  IncidentStatus status,  String severity,  bool stopHotWater,  bool stopHeating,  Set<int> affectedHouseIds,  DateTime createdAt,  DateTime? resolvedAt,  DateTime? startedAt,  DateTime? finishedAt,  bool autoResolveOnFinish,  int? assignedTo,  NotificationConfig? notificationConfig,  bool isSaving,  String? errorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _IncidentFormState():
-return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that.status,_that.severity,_that.stopHotWater,_that.stopHeating,_that.affectedHouseIds,_that.createdAt,_that.resolvedAt,_that.assignedTo,_that.notificationConfig,_that.isSaving,_that.errorMessage);case _:
+return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that.status,_that.severity,_that.stopHotWater,_that.stopHeating,_that.affectedHouseIds,_that.createdAt,_that.resolvedAt,_that.startedAt,_that.finishedAt,_that.autoResolveOnFinish,_that.assignedTo,_that.notificationConfig,_that.isSaving,_that.errorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +211,10 @@ return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int? id,  int? boilerHouseId,  String title,  String description,  IncidentStatus status,  String severity,  bool stopHotWater,  bool stopHeating,  Set<int> affectedHouseIds,  DateTime createdAt,  DateTime? resolvedAt,  int? assignedTo,  NotificationConfig? notificationConfig,  bool isSaving,  String? errorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int? id,  int? boilerHouseId,  String title,  String description,  IncidentStatus status,  String severity,  bool stopHotWater,  bool stopHeating,  Set<int> affectedHouseIds,  DateTime createdAt,  DateTime? resolvedAt,  DateTime? startedAt,  DateTime? finishedAt,  bool autoResolveOnFinish,  int? assignedTo,  NotificationConfig? notificationConfig,  bool isSaving,  String? errorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _IncidentFormState() when $default != null:
-return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that.status,_that.severity,_that.stopHotWater,_that.stopHeating,_that.affectedHouseIds,_that.createdAt,_that.resolvedAt,_that.assignedTo,_that.notificationConfig,_that.isSaving,_that.errorMessage);case _:
+return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that.status,_that.severity,_that.stopHotWater,_that.stopHeating,_that.affectedHouseIds,_that.createdAt,_that.resolvedAt,_that.startedAt,_that.finishedAt,_that.autoResolveOnFinish,_that.assignedTo,_that.notificationConfig,_that.isSaving,_that.errorMessage);case _:
   return null;
 
 }
@@ -220,7 +226,7 @@ return $default(_that.id,_that.boilerHouseId,_that.title,_that.description,_that
 
 
 class _IncidentFormState implements IncidentFormState {
-  const _IncidentFormState({required this.id, required this.boilerHouseId, this.title = '', this.description = '', this.status = IncidentStatus.open, this.severity = '1', this.stopHotWater = false, this.stopHeating = false, final  Set<int> affectedHouseIds = const {}, required this.createdAt, this.resolvedAt, this.assignedTo, this.notificationConfig, this.isSaving = false, this.errorMessage}): _affectedHouseIds = affectedHouseIds;
+  const _IncidentFormState({required this.id, required this.boilerHouseId, this.title = '', this.description = '', this.status = IncidentStatus.open, this.severity = '1', this.stopHotWater = false, this.stopHeating = false, final  Set<int> affectedHouseIds = const {}, required this.createdAt, this.resolvedAt, this.startedAt, this.finishedAt, this.autoResolveOnFinish = false, this.assignedTo, this.notificationConfig, this.isSaving = false, this.errorMessage}): _affectedHouseIds = affectedHouseIds;
   
 
 @override final  int? id;
@@ -240,6 +246,12 @@ class _IncidentFormState implements IncidentFormState {
 
 @override final  DateTime createdAt;
 @override final  DateTime? resolvedAt;
+/// Время начала инцидента (может быть в будущем для запланированных)
+@override final  DateTime? startedAt;
+/// Время завершения инцидента (опционально)
+@override final  DateTime? finishedAt;
+/// Авто-завершение по окончании finishedAt
+@override@JsonKey() final  bool autoResolveOnFinish;
 @override final  int? assignedTo;
 @override final  NotificationConfig? notificationConfig;
 @override@JsonKey() final  bool isSaving;
@@ -255,16 +267,16 @@ _$IncidentFormStateCopyWith<_IncidentFormState> get copyWith => __$IncidentFormS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IncidentFormState&&(identical(other.id, id) || other.id == id)&&(identical(other.boilerHouseId, boilerHouseId) || other.boilerHouseId == boilerHouseId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.status, status) || other.status == status)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.stopHotWater, stopHotWater) || other.stopHotWater == stopHotWater)&&(identical(other.stopHeating, stopHeating) || other.stopHeating == stopHeating)&&const DeepCollectionEquality().equals(other._affectedHouseIds, _affectedHouseIds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.notificationConfig, notificationConfig) || other.notificationConfig == notificationConfig)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IncidentFormState&&(identical(other.id, id) || other.id == id)&&(identical(other.boilerHouseId, boilerHouseId) || other.boilerHouseId == boilerHouseId)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.status, status) || other.status == status)&&(identical(other.severity, severity) || other.severity == severity)&&(identical(other.stopHotWater, stopHotWater) || other.stopHotWater == stopHotWater)&&(identical(other.stopHeating, stopHeating) || other.stopHeating == stopHeating)&&const DeepCollectionEquality().equals(other._affectedHouseIds, _affectedHouseIds)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.finishedAt, finishedAt) || other.finishedAt == finishedAt)&&(identical(other.autoResolveOnFinish, autoResolveOnFinish) || other.autoResolveOnFinish == autoResolveOnFinish)&&(identical(other.assignedTo, assignedTo) || other.assignedTo == assignedTo)&&(identical(other.notificationConfig, notificationConfig) || other.notificationConfig == notificationConfig)&&(identical(other.isSaving, isSaving) || other.isSaving == isSaving)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,boilerHouseId,title,description,status,severity,stopHotWater,stopHeating,const DeepCollectionEquality().hash(_affectedHouseIds),createdAt,resolvedAt,assignedTo,notificationConfig,isSaving,errorMessage);
+int get hashCode => Object.hash(runtimeType,id,boilerHouseId,title,description,status,severity,stopHotWater,stopHeating,const DeepCollectionEquality().hash(_affectedHouseIds),createdAt,resolvedAt,startedAt,finishedAt,autoResolveOnFinish,assignedTo,notificationConfig,isSaving,errorMessage);
 
 @override
 String toString() {
-  return 'IncidentFormState(id: $id, boilerHouseId: $boilerHouseId, title: $title, description: $description, status: $status, severity: $severity, stopHotWater: $stopHotWater, stopHeating: $stopHeating, affectedHouseIds: $affectedHouseIds, createdAt: $createdAt, resolvedAt: $resolvedAt, assignedTo: $assignedTo, notificationConfig: $notificationConfig, isSaving: $isSaving, errorMessage: $errorMessage)';
+  return 'IncidentFormState(id: $id, boilerHouseId: $boilerHouseId, title: $title, description: $description, status: $status, severity: $severity, stopHotWater: $stopHotWater, stopHeating: $stopHeating, affectedHouseIds: $affectedHouseIds, createdAt: $createdAt, resolvedAt: $resolvedAt, startedAt: $startedAt, finishedAt: $finishedAt, autoResolveOnFinish: $autoResolveOnFinish, assignedTo: $assignedTo, notificationConfig: $notificationConfig, isSaving: $isSaving, errorMessage: $errorMessage)';
 }
 
 
@@ -275,7 +287,7 @@ abstract mixin class _$IncidentFormStateCopyWith<$Res> implements $IncidentFormS
   factory _$IncidentFormStateCopyWith(_IncidentFormState value, $Res Function(_IncidentFormState) _then) = __$IncidentFormStateCopyWithImpl;
 @override @useResult
 $Res call({
- int? id, int? boilerHouseId, String title, String description, IncidentStatus status, String severity, bool stopHotWater, bool stopHeating, Set<int> affectedHouseIds, DateTime createdAt, DateTime? resolvedAt, int? assignedTo, NotificationConfig? notificationConfig, bool isSaving, String? errorMessage
+ int? id, int? boilerHouseId, String title, String description, IncidentStatus status, String severity, bool stopHotWater, bool stopHeating, Set<int> affectedHouseIds, DateTime createdAt, DateTime? resolvedAt, DateTime? startedAt, DateTime? finishedAt, bool autoResolveOnFinish, int? assignedTo, NotificationConfig? notificationConfig, bool isSaving, String? errorMessage
 });
 
 
@@ -292,7 +304,7 @@ class __$IncidentFormStateCopyWithImpl<$Res>
 
 /// Create a copy of IncidentFormState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? boilerHouseId = freezed,Object? title = null,Object? description = null,Object? status = null,Object? severity = null,Object? stopHotWater = null,Object? stopHeating = null,Object? affectedHouseIds = null,Object? createdAt = null,Object? resolvedAt = freezed,Object? assignedTo = freezed,Object? notificationConfig = freezed,Object? isSaving = null,Object? errorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? boilerHouseId = freezed,Object? title = null,Object? description = null,Object? status = null,Object? severity = null,Object? stopHotWater = null,Object? stopHeating = null,Object? affectedHouseIds = null,Object? createdAt = null,Object? resolvedAt = freezed,Object? startedAt = freezed,Object? finishedAt = freezed,Object? autoResolveOnFinish = null,Object? assignedTo = freezed,Object? notificationConfig = freezed,Object? isSaving = null,Object? errorMessage = freezed,}) {
   return _then(_IncidentFormState(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int?,boilerHouseId: freezed == boilerHouseId ? _self.boilerHouseId : boilerHouseId // ignore: cast_nullable_to_non_nullable
@@ -305,7 +317,10 @@ as bool,stopHeating: null == stopHeating ? _self.stopHeating : stopHeating // ig
 as bool,affectedHouseIds: null == affectedHouseIds ? _self._affectedHouseIds : affectedHouseIds // ignore: cast_nullable_to_non_nullable
 as Set<int>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,resolvedAt: freezed == resolvedAt ? _self.resolvedAt : resolvedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,assignedTo: freezed == assignedTo ? _self.assignedTo : assignedTo // ignore: cast_nullable_to_non_nullable
+as DateTime?,startedAt: freezed == startedAt ? _self.startedAt : startedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,finishedAt: freezed == finishedAt ? _self.finishedAt : finishedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,autoResolveOnFinish: null == autoResolveOnFinish ? _self.autoResolveOnFinish : autoResolveOnFinish // ignore: cast_nullable_to_non_nullable
+as bool,assignedTo: freezed == assignedTo ? _self.assignedTo : assignedTo // ignore: cast_nullable_to_non_nullable
 as int?,notificationConfig: freezed == notificationConfig ? _self.notificationConfig : notificationConfig // ignore: cast_nullable_to_non_nullable
 as NotificationConfig?,isSaving: null == isSaving ? _self.isSaving : isSaving // ignore: cast_nullable_to_non_nullable
 as bool,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable

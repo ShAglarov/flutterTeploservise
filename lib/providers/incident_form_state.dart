@@ -17,6 +17,12 @@ abstract class IncidentFormState with _$IncidentFormState {
     @Default({}) Set<int> affectedHouseIds,
     required DateTime createdAt,
     DateTime? resolvedAt,
+    /// Время начала инцидента (может быть в будущем для запланированных)
+    DateTime? startedAt,
+    /// Время завершения инцидента (опционально)
+    DateTime? finishedAt,
+    /// Авто-завершение по окончании finishedAt
+    @Default(false) bool autoResolveOnFinish,
     int? assignedTo,
     NotificationConfig? notificationConfig,
     @Default(false) bool isSaving,

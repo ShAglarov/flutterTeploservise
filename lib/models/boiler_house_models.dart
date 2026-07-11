@@ -21,6 +21,7 @@ class BoilerHouseResponse {
   final String? boilerHouseUUID;
   final int? incidentCount;
   final List<PhotoInfo>? photos;
+  final int? totalBoilersCount;
 
   BoilerHouseResponse({
     required this.id,
@@ -39,6 +40,7 @@ class BoilerHouseResponse {
     this.boilerHouseUUID,
     this.incidentCount,
     this.photos,
+    this.totalBoilersCount,
   });
 
   factory BoilerHouseResponse.fromJson(Map<String, dynamic> json) => _$BoilerHouseResponseFromJson(json);
@@ -56,6 +58,7 @@ class BoilerHouseCreate {
   final String? siteManager;
   final int? siteManagerId;
   final String? boilerHouseUUID;
+  final int? totalBoilersCount;
 
   BoilerHouseCreate({
     required this.address,
@@ -67,6 +70,7 @@ class BoilerHouseCreate {
     this.siteManager,
     this.siteManagerId,
     this.boilerHouseUUID,
+    this.totalBoilersCount,
   });
 
   factory BoilerHouseCreate.fromJson(Map<String, dynamic> json) => _$BoilerHouseCreateFromJson(json);
@@ -83,6 +87,7 @@ class BoilerHouseUpdate {
   final String? siteNumber;
   final String? siteManager;
   final int? siteManagerId;
+  final int? totalBoilersCount;
 
   BoilerHouseUpdate({
     this.address,
@@ -93,6 +98,7 @@ class BoilerHouseUpdate {
     this.siteNumber,
     this.siteManager,
     this.siteManagerId,
+    this.totalBoilersCount,
   });
 
   factory BoilerHouseUpdate.fromJson(Map<String, dynamic> json) => _$BoilerHouseUpdateFromJson(json);

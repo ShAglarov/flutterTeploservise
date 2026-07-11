@@ -198,6 +198,109 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         }
                       },
                     ),
+                    const SizedBox(height: 16),
+                    // ─── Время начала (startedAt) — может быть в будущем ───
+                    ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                      title: Text('Время начала', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
+                      subtitle: Text(
+                        state.startedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.startedAt!) : 'Сейчас',
+                        style: TextStyle(
+                          color: state.startedAt != null && state.startedAt!.isAfter(DateTime.now())
+                            ? Colors.orange
+                            : Theme.of(context).colorScheme.onSurface,
+                          fontWeight: state.startedAt != null && state.startedAt!.isAfter(DateTime.now())
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.play_arrow_rounded, color: Colors.orange, size: 20),
+                      onTap: () async {
+                        final initialDate = state.startedAt ?? DateTime.now();
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: initialDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null && mounted) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(initialDate),
+                          );
+                          if (time != null) {
+                            controller.updateStartedAt(DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                          }
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    // ─── Время завершения (finishedAt) — опционально ───
+                    ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                      title: Text('Время завершения', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
+                      subtitle: Text(
+                        state.finishedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.finishedAt!) : 'Не указано (бессрочный)',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (state.finishedAt != null)
+                            IconButton(
+                              icon: const Icon(Icons.clear, color: Colors.red, size: 18),
+                              onPressed: () => controller.updateFinishedAt(null),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.timer_off_outlined, color: Colors.blue, size: 20),
+                        ],
+                      ),
+                      onTap: () async {
+                        final initialDate = state.finishedAt ?? state.startedAt?.add(const Duration(hours: 1)) ?? DateTime.now().add(const Duration(hours: 1));
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: initialDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null && mounted) {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(initialDate),
+                          );
+                          if (time != null) {
+                            controller.updateFinishedAt(DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                          }
+                        }
+                      },
+                    ),
+                    // ─── Тумблер авто-завершения (показывается когда finishedAt задан) ───
+                    if (state.finishedAt != null) ...[
+                      const SizedBox(height: 16),
+                      SwitchListTile(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        title: Text('Авто-завершение по окончании', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
+                        subtitle: Text(
+                          state.autoResolveOnFinish 
+                            ? 'Инцидент автоматически завершится' 
+                            : 'Инцидент станет просроченным',
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12),
+                        ),
+                        secondary: Icon(
+                          Icons.check_circle_outline,
+                          color: state.autoResolveOnFinish ? Colors.green : Colors.grey,
+                          size: 20,
+                        ),
+                        value: state.autoResolveOnFinish,
+                        onChanged: (value) => controller.updateAutoResolveOnFinish(value),
+                        activeColor: Colors.green,
+                      ),
+                    ],
                     if (state.status == IncidentStatus.resolved || state.status == IncidentStatus.closed) ...[
                       const SizedBox(height: 16),
                       ListTile(

@@ -150,6 +150,7 @@ class HousePhotos extends Table {
 class Incidents extends Table {
   IntColumn get backendId => integer().withDefault(const Constant(0))();
   IntColumn get assignedTo => integer().nullable().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().nullable()();
   TextColumn get details => text().nullable()();
   DateTimeColumn get finishedAt => dateTime().nullable()();
   TextColumn get incidentUUID => text().nullable()();
@@ -162,9 +163,11 @@ class Incidents extends Table {
   BoolColumn get resourceHeatingStopped => boolean().nullable()();
   BoolColumn get resourceHotWaterStopped => boolean().nullable()();
   IntColumn get severity => integer().nullable().withDefault(const Constant(0))();
+  DateTimeColumn get resolvedAt => dateTime().nullable()();
   DateTimeColumn get startedAt => dateTime().nullable()();
   TextColumn get status => text().nullable()();
   TextColumn get type => text().nullable()();
+  BoolColumn get autoResolveOnFinish => boolean().nullable().withDefault(const Constant(false))();
   
   // Relationship
   IntColumn get boilerHouseId => integer().nullable().references(BoilerHouses, #backendId)();
@@ -345,7 +348,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

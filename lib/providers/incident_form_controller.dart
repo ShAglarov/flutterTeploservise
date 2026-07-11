@@ -28,6 +28,9 @@ class IncidentFormController extends _$IncidentFormController {
         affectedHouseIds: initialIncident.affectedHouseIds?.toSet() ?? {},
         createdAt: DateTime.tryParse(initialIncident.createdAt ?? '') ?? DateTime.now(),
         resolvedAt: DateTime.tryParse(initialIncident.resolvedAt ?? ''),
+        startedAt: DateTime.tryParse(initialIncident.startedAt ?? ''),
+        finishedAt: DateTime.tryParse(initialIncident.finishedAt ?? ''),
+        autoResolveOnFinish: initialIncident.autoResolveOnFinish,
         assignedTo: initialIncident.assignedTo,
         notificationConfig: initialIncident.notificationConfig,
       );
@@ -36,6 +39,7 @@ class IncidentFormController extends _$IncidentFormController {
       id: null,
       boilerHouseId: null,
       createdAt: DateTime.now(),
+      startedAt: DateTime.now(),
     );
   }
 
@@ -53,6 +57,9 @@ class IncidentFormController extends _$IncidentFormController {
   void updateBoilerHouse(int? id) => state = state.copyWith(boilerHouseId: id);
   void updateCreatedAt(DateTime time) => state = state.copyWith(createdAt: time);
   void updateResolvedAt(DateTime? time) => state = state.copyWith(resolvedAt: time);
+  void updateStartedAt(DateTime time) => state = state.copyWith(startedAt: time);
+  void updateFinishedAt(DateTime? time) => state = state.copyWith(finishedAt: time);
+  void updateAutoResolveOnFinish(bool value) => state = state.copyWith(autoResolveOnFinish: value);
   void updateAssignedTo(int? userId) {
     state = state.copyWith(assignedTo: userId);
     // If a user is assigned, automatically switch notification to "User Based" for that user
@@ -145,6 +152,8 @@ class IncidentFormController extends _$IncidentFormController {
           notificationConfig: state.notificationConfig,
           createdAt: state.createdAt.toIso8601String(),
           resolvedAt: state.resolvedAt?.toIso8601String(),
+          startedAt: (state.startedAt ?? state.createdAt).toIso8601String(),
+          finishedAt: state.finishedAt?.toIso8601String(),
         );
         await service.updateIncident(state.id!, update);
       } else {
@@ -161,6 +170,8 @@ class IncidentFormController extends _$IncidentFormController {
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
           createdAt: state.createdAt.toIso8601String(),
+          startedAt: (state.startedAt ?? state.createdAt).toIso8601String(),
+          finishedAt: state.finishedAt?.toIso8601String(),
         );
         await service.createIncident(create);
       }

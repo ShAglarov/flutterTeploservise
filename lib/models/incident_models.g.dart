@@ -91,6 +91,8 @@ BoilerHouseSummary _$BoilerHouseSummaryFromJson(Map<String, dynamic> json) =>
       hasActiveIncidents: (json['has_active_incidents'] as num).toInt(),
       siteNumber: json['site_number'] as String?,
       siteManager: json['site_manager'] as String?,
+      totalBoilersCount: (json['total_boilers_count'] as num?)?.toInt(),
+      boilerHouseColorStatus: json['boiler_house_color_status'] as String?,
     );
 
 Map<String, dynamic> _$BoilerHouseSummaryToJson(BoilerHouseSummary instance) =>
@@ -103,6 +105,8 @@ Map<String, dynamic> _$BoilerHouseSummaryToJson(BoilerHouseSummary instance) =>
       'has_active_incidents': instance.hasActiveIncidents,
       'site_number': instance.siteNumber,
       'site_manager': instance.siteManager,
+      'total_boilers_count': instance.totalBoilersCount,
+      'boiler_house_color_status': instance.boilerHouseColorStatus,
     };
 
 IncidentResponse _$IncidentResponseFromJson(Map<String, dynamic> json) =>
@@ -122,6 +126,9 @@ IncidentResponse _$IncidentResponseFromJson(Map<String, dynamic> json) =>
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
       resolvedAt: json['resolved_at'] as String?,
+      startedAt: json['started_at'] as String?,
+      finishedAt: json['finished_at'] as String?,
+      isScheduled: json['is_scheduled'] as bool? ?? false,
       localUUID: json['local_uuid'] as String?,
       localPendingAck: json['local_pending_ack'] as bool?,
       affectedHouseIds: (json['affected_house_ids'] as List<dynamic>?)
@@ -143,6 +150,11 @@ IncidentResponse _$IncidentResponseFromJson(Map<String, dynamic> json) =>
           : NotificationConfig.fromJson(
               json['notification_config'] as Map<String, dynamic>,
             ),
+      inactiveBoilerNumbers: (json['inactive_boiler_numbers'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList(),
+      supplyFullyStopped: json['supply_fully_stopped'] as bool?,
+      colorStatus: json['color_status'] as String?,
     );
 
 Map<String, dynamic> _$IncidentResponseToJson(IncidentResponse instance) =>
@@ -160,6 +172,9 @@ Map<String, dynamic> _$IncidentResponseToJson(IncidentResponse instance) =>
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,
       'resolved_at': instance.resolvedAt,
+      'started_at': instance.startedAt,
+      'finished_at': instance.finishedAt,
+      'is_scheduled': instance.isScheduled,
       'local_uuid': instance.localUUID,
       'local_pending_ack': instance.localPendingAck,
       'affected_house_ids': instance.affectedHouseIds,
@@ -167,6 +182,9 @@ Map<String, dynamic> _$IncidentResponseToJson(IncidentResponse instance) =>
       'boiler_house': instance.boilerHouse,
       'photos': instance.photos,
       'notification_config': instance.notificationConfig,
+      'inactive_boiler_numbers': instance.inactiveBoilerNumbers,
+      'supply_fully_stopped': instance.supplyFullyStopped,
+      'color_status': instance.colorStatus,
     };
 
 const _$IncidentStatusEnumMap = {
@@ -233,6 +251,12 @@ IncidentCreate _$IncidentCreateFromJson(Map<String, dynamic> json) =>
               json['notification_config'] as Map<String, dynamic>,
             ),
       createdAt: json['created_at'] as String?,
+      inactiveBoilerNumbers: (json['inactive_boiler_numbers'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList(),
+      supplyFullyStopped: json['supply_fully_stopped'] as bool?,
+      startedAt: json['started_at'] as String?,
+      finishedAt: json['finished_at'] as String?,
     );
 
 Map<String, dynamic> _$IncidentCreateToJson(IncidentCreate instance) =>
@@ -249,6 +273,10 @@ Map<String, dynamic> _$IncidentCreateToJson(IncidentCreate instance) =>
       'affected_house_details': instance.affectedHouseDetails,
       'notification_config': instance.notificationConfig,
       'created_at': instance.createdAt,
+      'inactive_boiler_numbers': instance.inactiveBoilerNumbers,
+      'supply_fully_stopped': instance.supplyFullyStopped,
+      'started_at': instance.startedAt,
+      'finished_at': instance.finishedAt,
     };
 
 IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
@@ -277,6 +305,12 @@ IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
             ),
       createdAt: json['created_at'] as String?,
       resolvedAt: json['resolved_at'] as String?,
+      inactiveBoilerNumbers: (json['inactive_boiler_numbers'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList(),
+      supplyFullyStopped: json['supply_fully_stopped'] as bool?,
+      startedAt: json['started_at'] as String?,
+      finishedAt: json['finished_at'] as String?,
     );
 
 Map<String, dynamic> _$IncidentUpdateToJson(IncidentUpdate instance) =>
@@ -295,6 +329,10 @@ Map<String, dynamic> _$IncidentUpdateToJson(IncidentUpdate instance) =>
       'notification_config': instance.notificationConfig,
       'created_at': instance.createdAt,
       'resolved_at': instance.resolvedAt,
+      'inactive_boiler_numbers': instance.inactiveBoilerNumbers,
+      'supply_fully_stopped': instance.supplyFullyStopped,
+      'started_at': instance.startedAt,
+      'finished_at': instance.finishedAt,
     };
 
 IncidentCommentAuthor _$IncidentCommentAuthorFromJson(

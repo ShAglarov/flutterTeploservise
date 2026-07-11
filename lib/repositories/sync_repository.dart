@@ -313,7 +313,10 @@ class SyncRepository {
           severity: Value(int.tryParse(isCreate ? (create.severity ?? '1') : (update!.severity ?? '1')) ?? 1),
           resourceHotWaterStopped: Value((isCreate ? create.resourceHotWaterStopped : update!.resourceHotWaterStopped) == 1),
           resourceHeatingStopped: Value((isCreate ? create.resourceHeatingStopped : update!.resourceHeatingStopped) == 1),
-          startedAt: Value(DateTime.now()),
+          createdAt: Value(DateTime.now()),
+          startedAt: Value(isCreate
+              ? (create.startedAt != null ? DateTime.parse(create.startedAt!) : DateTime.now())
+              : (update!.startedAt != null ? DateTime.parse(update!.startedAt!) : DateTime.now())),
           lastLocalEditAt: Value(DateTime.now()),
           assignedTo: Value(isCreate ? create.assignedTo : update!.assignedTo),
           localPendingAck: const Value(true),
@@ -811,9 +814,12 @@ class SyncRepository {
       severity: incident.severity?.toString() ?? '1',
       resourceHotWaterStopped: (incident.resourceHotWaterStopped == true) ? 1 : 0,
       resourceHeatingStopped: (incident.resourceHeatingStopped == true) ? 1 : 0,
-      createdAt: incident.startedAt?.toIso8601String(),
+      createdAt: incident.createdAt?.toIso8601String(),
       updatedAt: incident.lastServerUpdateAt?.toIso8601String(),
-      resolvedAt: incident.finishedAt?.toIso8601String(),
+      resolvedAt: incident.resolvedAt?.toIso8601String(),
+      startedAt: incident.startedAt?.toIso8601String(),
+      finishedAt: incident.finishedAt?.toIso8601String(),
+      autoResolveOnFinish: incident.autoResolveOnFinish ?? false,
       localUUID: incident.incidentUUID,
       localPendingAck: incident.localPendingAck,
       assignedTo: incident.assignedTo,
@@ -938,13 +944,17 @@ extension IncidentsCompanionExtension on $IncidentsTable {
       severity: Value(int.tryParse(incident.severity ?? '1') ?? 1),
       resourceHotWaterStopped: Value(incident.resourceHotWaterStopped == 1),
       resourceHeatingStopped: Value(incident.resourceHeatingStopped == 1),
-      startedAt: Value(incident.createdAt != null ? DateTime.parse(incident.createdAt!) : null),
+      createdAt: Value(incident.createdAt != null ? DateTime.parse(incident.createdAt!) : null),
+      startedAt: Value(incident.startedAt != null ? DateTime.parse(incident.startedAt!) : 
+                 (incident.createdAt != null ? DateTime.parse(incident.createdAt!) : null)),
       lastServerUpdateAt: Value(incident.updatedAt != null ? DateTime.parse(incident.updatedAt!) : null),
-      finishedAt: Value(incident.resolvedAt != null ? DateTime.parse(incident.resolvedAt!) : null),
+      finishedAt: Value(incident.finishedAt != null ? DateTime.parse(incident.finishedAt!) : null),
+      resolvedAt: Value(incident.resolvedAt != null ? DateTime.parse(incident.resolvedAt!) : null),
       assignedTo: Value(incident.assignedTo),
       notificationConfigType: Value(incident.notificationConfig?.type.name),
       notificationConfigRoleIds: Value(incident.notificationConfig?.roleIds?.join(',')),
       notificationConfigUserIds: Value(incident.notificationConfig?.userIds?.join(',')),
+      autoResolveOnFinish: Value(incident.autoResolveOnFinish),
     );
   }
 }

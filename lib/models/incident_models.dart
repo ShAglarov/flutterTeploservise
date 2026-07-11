@@ -144,6 +144,8 @@ class BoilerHouseSummary {
   final int hasActiveIncidents;
   final String? siteNumber;
   final String? siteManager;
+  final int? totalBoilersCount;
+  final String? boilerHouseColorStatus; // "normal", "partial", "full"
 
   BoilerHouseSummary({
     required this.id,
@@ -154,6 +156,8 @@ class BoilerHouseSummary {
     required this.hasActiveIncidents,
     this.siteNumber,
     this.siteManager,
+    this.totalBoilersCount,
+    this.boilerHouseColorStatus,
   });
 
   bool get hasActiveIncidentsBool => hasActiveIncidents > 0;
@@ -181,6 +185,12 @@ class IncidentResponse {
   final String? updatedAt;
   final String? resolvedAt;
   
+  // Поля для запланированных инцидентов
+  final String? startedAt;
+  final String? finishedAt;
+  @JsonKey(name: 'is_scheduled', defaultValue: false)
+  final bool isScheduled;
+  
   @JsonKey(name: 'local_uuid')
   final String? localUUID;
   
@@ -191,6 +201,15 @@ class IncidentResponse {
   final BoilerHouseSummary? boilerHouse;
   final List<PhotoInfo>? photos;
   final NotificationConfig? notificationConfig;
+  
+  // Поля для управления котлами
+  final List<int>? inactiveBoilerNumbers; // [1, 3] — номера неработающих котлов
+  final bool? supplyFullyStopped;          // тумблер "Не поступает полностью"
+  final String? colorStatus;               // "normal", "partial", "full"
+  
+  /// Клиентское поле: автоматически завершить инцидент по наступлении finishedAt
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  final bool autoResolveOnFinish;
 
   IncidentResponse({
     required this.id,
@@ -206,6 +225,9 @@ class IncidentResponse {
     this.createdAt,
     this.updatedAt,
     this.resolvedAt,
+    this.startedAt,
+    this.finishedAt,
+    this.isScheduled = false,
     this.localUUID,
     this.localPendingAck,
     this.affectedHouseIds,
@@ -213,7 +235,29 @@ class IncidentResponse {
     this.boilerHouse,
     this.photos,
     this.notificationConfig,
+    this.inactiveBoilerNumbers,
+    this.supplyFullyStopped,
+    this.colorStatus,
+    this.autoResolveOnFinish = false,
   });
+
+  /// Проверяет локально, запланирован ли инцидент (startedAt в будущем)
+  bool get isScheduledLocal {
+    if (isScheduled) return true;
+    if (startedAt == null) return false;
+    final parsed = DateTime.tryParse(startedAt!);
+    if (parsed == null) return false;
+    return parsed.isAfter(DateTime.now());
+  }
+
+  /// Проверяет, просрочен ли инцидент (finishedAt прошла, но статус не closed/resolved)
+  bool get isOverdue {
+    if (finishedAt == null) return false;
+    if (status == IncidentStatus.resolved || status == IncidentStatus.closed) return false;
+    final parsed = DateTime.tryParse(finishedAt!);
+    if (parsed == null) return false;
+    return parsed.isBefore(DateTime.now());
+  }
 
   factory IncidentResponse.fromJson(Map<String, dynamic> json) => _$IncidentResponseFromJson(json);
   Map<String, dynamic> toJson() => _$IncidentResponseToJson(this);
@@ -274,6 +318,10 @@ class IncidentCreate {
   @JsonKey(name: 'notification_config')
   final NotificationConfig? notificationConfig;
   final String? createdAt;
+  final List<int>? inactiveBoilerNumbers;
+  final bool? supplyFullyStopped;
+  final String? startedAt;
+  final String? finishedAt;
 
   IncidentCreate({
     required this.boilerHouseId,
@@ -288,6 +336,10 @@ class IncidentCreate {
     this.affectedHouseDetails,
     this.notificationConfig,
     this.createdAt,
+    this.inactiveBoilerNumbers,
+    this.supplyFullyStopped,
+    this.startedAt,
+    this.finishedAt,
   });
 
   factory IncidentCreate.fromJson(Map<String, dynamic> json) => _$IncidentCreateFromJson(json);
@@ -311,6 +363,10 @@ class IncidentUpdate {
   final NotificationConfig? notificationConfig;
   final String? createdAt;
   final String? resolvedAt;
+  final List<int>? inactiveBoilerNumbers;
+  final bool? supplyFullyStopped;
+  final String? startedAt;
+  final String? finishedAt;
 
   IncidentUpdate({
     this.id,
@@ -327,6 +383,10 @@ class IncidentUpdate {
     this.notificationConfig,
     this.createdAt,
     this.resolvedAt,
+    this.inactiveBoilerNumbers,
+    this.supplyFullyStopped,
+    this.startedAt,
+    this.finishedAt,
   });
 
   factory IncidentUpdate.fromJson(Map<String, dynamic> json) => _$IncidentUpdateFromJson(json);

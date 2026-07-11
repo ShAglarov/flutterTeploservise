@@ -99,7 +99,8 @@ class MapData extends _$MapData {
     final incSub = syncRepo.watchAllIncidents().listen((incidents) {
       final activeIncidents = incidents.where((inc) =>
         inc.status != IncidentStatus.resolved &&
-        inc.status != IncidentStatus.closed
+        inc.status != IncidentStatus.closed &&
+        !inc.isScheduledLocal
       ).toList();
 
       // Compute which boiler houses have active incidents

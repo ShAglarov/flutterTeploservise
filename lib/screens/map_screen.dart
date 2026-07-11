@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../services/incident_schedule_manager.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -226,6 +227,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Инициализируем менеджер расписания для автообновления пинов
+    ref.watch(incidentScheduleManagerProvider);
+
     final mapData = ref.watch(filteredMapDataProvider);
     final sections = ref.watch(mapSectionsProvider);
 
@@ -1064,7 +1068,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final activeIncidents = data.incidents.where((inc) => 
       inc.boilerHouseId == bh.id && 
       inc.status != IncidentStatus.resolved && 
-      inc.status != IncidentStatus.closed
+      inc.status != IncidentStatus.closed &&
+      !inc.isScheduledLocal
     ).toList();
     final incidentCount = activeIncidents.length;
     final linkedHouses = data.locations.where((loc) => loc.boilerHouseId == bh.id).toList();
@@ -1486,7 +1491,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final activeIncidents = data.incidents.where((inc) => 
       inc.boilerHouseId == bh.id && 
       inc.status != IncidentStatus.resolved && 
-      inc.status != IncidentStatus.closed
+      inc.status != IncidentStatus.closed &&
+      !inc.isScheduledLocal
     ).toList();
     
     final incidentCount = activeIncidents.length;
@@ -1815,7 +1821,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final activeIncidents = data.incidents.where((inc) => 
       inc.boilerHouseId == bh.id && 
       inc.status != IncidentStatus.resolved && 
-      inc.status != IncidentStatus.closed
+      inc.status != IncidentStatus.closed &&
+      !inc.isScheduledLocal
     ).toList();
     final incidentCount = activeIncidents.length;
     final houseCount = data.locations.where((loc) => loc.boilerHouseId == bh.id).length;
@@ -2228,7 +2235,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final activeIncidents = data.incidents.where((inc) => 
       inc.boilerHouseId == bh.id && 
       inc.status != IncidentStatus.resolved && 
-      inc.status != IncidentStatus.closed
+      inc.status != IncidentStatus.closed &&
+      !inc.isScheduledLocal
     ).toList();
     
     return Container(
