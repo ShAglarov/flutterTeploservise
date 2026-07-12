@@ -244,6 +244,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
                         : 'АКТИВЕН',
             isStatusActive: !inc.isScheduledLocal && !inc.isOverdue && inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed,
             statusColor: inc.isScheduledLocal ? Colors.grey : inc.isOverdue ? Colors.orange : null,
+            colorStatus: inc.colorStatus,
             assigneeName: vm.assigneeName,
             affectedPopulationCount: vm.totalResidents,
             stoppedServicesText: vm.stoppedServicesText,

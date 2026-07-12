@@ -10,6 +10,9 @@ class IncidentCard extends StatefulWidget {
   final String statusText;
   final bool isStatusActive;
   final Color? statusColor;  // Optional override for badge/accent color
+  /// colorStatus от сервера: "normal" | "partial" | "full"
+  /// Используется для цвета левой полоски и бейджа: partial=оранжевый, full=красный
+  final String? colorStatus;
   final String? assigneeName;
   final String? stoppedServicesText;
   final int affectedPopulationCount;
@@ -27,6 +30,7 @@ class IncidentCard extends StatefulWidget {
     required this.statusText,
     required this.isStatusActive,
     this.statusColor,
+    this.colorStatus,
     this.assigneeName,
     this.stoppedServicesText,
     required this.affectedPopulationCount,
@@ -145,7 +149,7 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
             children: [
               Container(
                 width: 4,
-                color: widget.statusColor ?? (widget.isStatusActive ? AppTheme.errorRed : AppTheme.successGreen),
+                color: _resolvedAccentColor(),
               ),
               Expanded(
                 child: Padding(
@@ -279,11 +283,27 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
     return cardWidget;
   }
 
+  /// Разрешаем цвет полоски/бейджа — идентично iOS логике окрашивания карточек:
+  ///   full    → красный (errorRed)
+  ///   partial → оранжевый (warningOrange)
+  ///   normal  → зелёный (successGreen) / цвет по статусу
+  Color _resolvedAccentColor() {
+    if (widget.statusColor != null) return widget.statusColor!;
+    if (widget.isStatusActive) {
+      return switch (widget.colorStatus) {
+        'full'    => AppTheme.errorRed,
+        'partial' => AppTheme.warningOrange,
+        _         => AppTheme.errorRed, // нет данных → красный (прежнее поведение)
+      };
+    }
+    return AppTheme.successGreen;
+  }
+
   Widget _buildStatusBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: widget.statusColor ?? (widget.isStatusActive ? AppTheme.errorRed : AppTheme.successGreen),
+        color: _resolvedAccentColor(),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

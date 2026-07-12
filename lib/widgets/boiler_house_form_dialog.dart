@@ -30,6 +30,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
   String? _selectedSiteManager;
   int? _selectedSiteManagerId;
   bool _isSaving = false;
+  int _totalBoilersCount = 1;
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
     _siteNumberController = TextEditingController(text: initial?.siteNumber ?? '');
     _selectedSiteManager = initial?.siteManager;
     _selectedSiteManagerId = initial?.siteManagerId;
+    _totalBoilersCount = initial?.totalBoilersCount ?? 1;
   }
 
   @override
@@ -84,6 +86,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
           'site_number': _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
           'site_manager': _selectedSiteManager,
           'site_manager_id': _selectedSiteManagerId,
+          'total_boilers_count': _totalBoilersCount,
         };
 
         final syncRepo = ref.read(syncRepositoryProvider);
@@ -109,6 +112,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
               boilerHouseUUID: bh.boilerHouseUUID,
               createdAt: bh.createdAt,
               updatedAt: DateTime.now().toIso8601String(),
+              totalBoilersCount: _totalBoilersCount,
             ),
           ]);
         }
@@ -133,6 +137,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
             siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
             siteManager: _selectedSiteManager,
             siteManagerId: _selectedSiteManagerId,
+            totalBoilersCount: _totalBoilersCount,
           );
           result = await ref.read(boilerHouseServiceProvider).updateBoilerHouse(widget.initialBoilerHouse!.id, update);
         } else {
@@ -143,6 +148,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
             siteNumber: _siteNumberController.text.isNotEmpty ? _siteNumberController.text : null,
             siteManager: _selectedSiteManager,
             siteManagerId: _selectedSiteManagerId,
+            totalBoilersCount: _totalBoilersCount,
           );
           result = await ref.read(boilerHouseServiceProvider).createBoilerHouse(boilerHouse);
         }
@@ -200,7 +206,8 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                       _buildDivider(),
                       _buildRow('Номер участка', controller: _siteNumberController, hint: 'Напр.: 1'),
                       _buildDivider(),
-
+                      _buildBoilersCountRow(),
+                      _buildDivider(),
                       _buildManagerDropdown(),
                     ],
                   ),
@@ -244,6 +251,69 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                 ),
                 child: const Text('Сохранить', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
+        ],
+      ),
+    );
+  }
+
+  /// Строка-stepper «Количество котлов» — идентично iOS EditBoilerHouseViewController
+  Widget _buildBoilersCountRow() {
+    final isMin = _totalBoilersCount <= 1;
+    final isMax = _totalBoilersCount >= 10;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Количество котлов',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(180),
+                fontSize: 16,
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              // Кнопка «−»
+              GestureDetector(
+                onTap: isMin ? null : () => setState(() => _totalBoilersCount--),
+                child: Icon(
+                  Icons.remove_circle,
+                  size: 28,
+                  color: isMin
+                      ? Theme.of(context).colorScheme.onSurface.withAlpha(60)
+                      : Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              // Значение
+              SizedBox(
+                width: 40,
+                child: Text(
+                  '$_totalBoilersCount',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              // Кнопка «+»
+              GestureDetector(
+                onTap: isMax ? null : () => setState(() => _totalBoilersCount++),
+                child: Icon(
+                  Icons.add_circle,
+                  size: 28,
+                  color: isMax
+                      ? Theme.of(context).colorScheme.onSurface.withAlpha(60)
+                      : Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
