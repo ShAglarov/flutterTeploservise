@@ -413,12 +413,14 @@ class SyncRepository {
             siteManager: Value(bh.siteManager),
             siteManagerId: Value(bh.siteManagerId),
             updatedAt: Value(bh.updatedAt != null ? DateTime.parse(bh.updatedAt!) : null),
+            totalBoilersCount: Value(bh.totalBoilersCount),
           ),
           mode: InsertMode.insertOrReplace,
         );
       }
     });
   }
+
 
   Stream<List<BoilerHouseResponse>> watchAllBoilerHouses() {
     return _db.select(_db.boilerHouses).watch()
@@ -810,6 +812,18 @@ class SyncRepository {
   // Mapping Helpers
   // ----------------------------------------------------------------------
 
+  /// Парсит JSON-строку "[1,3]" → [1, 3]. Возвращает null если строка null/пустая.
+  static List<int>? _parseInactiveBoilerNumbers(String? json) {
+    if (json == null || json.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is List) {
+        return decoded.map((e) => (e as num).toInt()).toList();
+      }
+    } catch (_) {}
+    return null;
+  }
+
   IncidentResponse _mapIncidentToResponse(
     IncidentDb incident, {
     BoilerHouseDb? boilerHouse,
@@ -863,8 +877,12 @@ class SyncRepository {
             userIds: incident.notificationConfigUserIds?.split(',').where((s) => s.isNotEmpty).map(int.parse).toList(),
           )
         : null,
+      inactiveBoilerNumbers: _parseInactiveBoilerNumbers(incident.inactiveBoilerNumbers),
+      supplyFullyStopped: incident.supplyFullyStopped,
+      colorStatus: incident.colorStatus,
     );
   }
+
 
   SavedLocationInfo _mapSavedLocationToInfo(SavedLocationDb h) {
     return SavedLocationInfo(
@@ -890,8 +908,10 @@ class SyncRepository {
       hasActiveIncidents: 0,
       siteNumber: bh.siteNumber,
       siteManager: bh.siteManager,
+      totalBoilersCount: bh.totalBoilersCount,
     );
   }
+
 
   BoilerHouseResponse _mapBoilerHouseToResponse(BoilerHouseDb bh) {
     return BoilerHouseResponse(
@@ -905,8 +925,10 @@ class SyncRepository {
       boilerHouseUUID: bh.boilerHouseUUID,
       createdAt: bh.updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
       updatedAt: bh.updatedAt?.toIso8601String(),
+      totalBoilersCount: bh.totalBoilersCount,
     );
   }
+
 
   SavedLocationResponse _mapLocationToResponse(SavedLocationDb loc, {List<HousePhotoDb>? photos}) {
     final baseUrlPrefix = AppConstants.baseUrl.split('/api/v1')[0];
@@ -988,9 +1010,13 @@ extension IncidentsCompanionExtension on $IncidentsTable {
       notificationConfigRoleIds: Value(incident.notificationConfig?.roleIds?.join(',')),
       notificationConfigUserIds: Value(incident.notificationConfig?.userIds?.join(',')),
       autoResolveOnFinish: Value(incident.autoResolveOnFinish),
+      inactiveBoilerNumbers: Value(jsonEncode(incident.inactiveBoilerNumbers ?? [])),
+      supplyFullyStopped: Value(incident.supplyFullyStopped ?? false),
+      colorStatus: Value(incident.colorStatus),
     );
   }
 }
+
 
 class _DebounceStreamTransformer<T> extends StreamTransformerBase<T, T> {
   final Duration duration;

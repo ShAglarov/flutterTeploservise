@@ -34,6 +34,8 @@ class IncidentFormController extends _$IncidentFormController {
         autoResolveOnFinish: initialIncident.autoResolveOnFinish,
         assignedTo: initialIncident.assignedTo,
         notificationConfig: initialIncident.notificationConfig,
+        inactiveBoilers: initialIncident.inactiveBoilerNumbers?.toSet() ?? {},
+        supplyFullyStopped: initialIncident.supplyFullyStopped ?? false,
       );
     }
     return IncidentFormState(
@@ -112,6 +114,26 @@ class IncidentFormController extends _$IncidentFormController {
     state = state.copyWith(affectedHouseIds: newSet);
   }
 
+  /// Переключает состояние котла (работает / не работает)
+  void toggleBoiler(int boilerNumber) {
+    final newSet = Set<int>.from(state.inactiveBoilers);
+    if (newSet.contains(boilerNumber)) {
+      newSet.remove(boilerNumber);
+    } else {
+      newSet.add(boilerNumber);
+    }
+    state = state.copyWith(inactiveBoilers: newSet);
+  }
+
+  /// Устанавливает тумблер "Не поступает полностью".
+  /// При включении — сбрасываем чипы котлов (тумблер имеет приоритет).
+  void updateSupplyFullyStopped(bool value) {
+    state = state.copyWith(
+      supplyFullyStopped: value,
+      inactiveBoilers: value ? {} : state.inactiveBoilers,
+    );
+  }
+
   Future<bool> save() async {
     if (state.boilerHouseId == null || state.title.isEmpty) {
       state = state.copyWith(errorMessage: 'Заполните обязательные поля');
@@ -156,7 +178,10 @@ class IncidentFormController extends _$IncidentFormController {
           startedAt: (state.startedAt ?? state.createdAt).toUtc().toIso8601String(),
           finishedAt: state.finishedAt?.toUtc().toIso8601String(),
           autoResolveOnFinish: state.autoResolveOnFinish,
+          inactiveBoilerNumbers: state.inactiveBoilers.isEmpty ? null : state.inactiveBoilers.toList(),
+          supplyFullyStopped: state.supplyFullyStopped,
         );
+
         await service.updateIncident(state.id!, update);
       } else {
         final create = IncidentCreate(
@@ -175,7 +200,10 @@ class IncidentFormController extends _$IncidentFormController {
           startedAt: (state.startedAt ?? state.createdAt).toUtc().toIso8601String(),
           finishedAt: state.finishedAt?.toUtc().toIso8601String(),
           autoResolveOnFinish: state.autoResolveOnFinish,
+          inactiveBoilerNumbers: state.inactiveBoilers.isEmpty ? null : state.inactiveBoilers.toList(),
+          supplyFullyStopped: state.supplyFullyStopped,
         );
+
         await service.createIncident(create);
       }
       state = state.copyWith(isSaving: false);

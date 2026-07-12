@@ -20,6 +20,12 @@ class MapDataState {
   final Set<int> boilerHouseIdsWithIncidents;
   /// Location IDs that are affected by at least one active incident.
   final Set<int> locationIdsWithIncidents;
+  /// Цветовой статус котельной: "normal" / "partial" / "full"
+  /// Приоритет: full > partial > normal
+  final Map<int, String> boilerHouseColorStatuses;
+  /// Цветовой статус каждого дома: "normal" / "partial" / "full"
+  /// Идентично iOS HouseAnnotation — по инцидентам, которые затрагивают конкретный дом
+  final Map<int, String> locationColorStatuses;
   final bool isLoading;
   final String? error;
 
@@ -29,6 +35,8 @@ class MapDataState {
     this.incidents = const [],
     this.boilerHouseIdsWithIncidents = const {},
     this.locationIdsWithIncidents = const {},
+    this.boilerHouseColorStatuses = const {},
+    this.locationColorStatuses = const {},
     this.isLoading = false,
     this.error,
   });
@@ -39,6 +47,8 @@ class MapDataState {
     List<IncidentResponse>? incidents,
     Set<int>? boilerHouseIdsWithIncidents,
     Set<int>? locationIdsWithIncidents,
+    Map<int, String>? boilerHouseColorStatuses,
+    Map<int, String>? locationColorStatuses,
     bool? isLoading,
     Object? error = _sentinel,
   }) {
@@ -48,11 +58,24 @@ class MapDataState {
       incidents: incidents ?? this.incidents,
       boilerHouseIdsWithIncidents: boilerHouseIdsWithIncidents ?? this.boilerHouseIdsWithIncidents,
       locationIdsWithIncidents: locationIdsWithIncidents ?? this.locationIdsWithIncidents,
+      boilerHouseColorStatuses: boilerHouseColorStatuses ?? this.boilerHouseColorStatuses,
+      locationColorStatuses: locationColorStatuses ?? this.locationColorStatuses,
       isLoading: isLoading ?? this.isLoading,
       error: error == _sentinel ? this.error : (error as String?),
     );
   }
+
+  /// Цвет пина для конкретной котельной
+  String colorStatusForBoilerHouse(int bhId) {
+    return boilerHouseColorStatuses[bhId] ?? 'normal';
+  }
+
+  /// Цвет пина дома — по инцидентам, затрагивающим его конкретно (iOS-паритет)
+  String colorStatusForLocation(int locationId) {
+    return locationColorStatuses[locationId] ?? 'normal';
+  }
 }
+
 
 class MapFilterState {
   final String? selectedSection;
@@ -119,15 +142,41 @@ class MapData extends _$MapData {
         }
       }
 
+      // Вычисляем цветовой статус каждой котельной (приоритет: full > partial > normal)
+      final colorStatuses = <int, String>{};
+      for (final inc in activeIncidents) {
+        final bhId = inc.boilerHouseId;
+        if (bhId == null) continue;
+        final incStatus = _computeIncidentColorStatus(inc);
+        final current = colorStatuses[bhId] ?? 'normal';
+        colorStatuses[bhId] = _maxColorStatus(current, incStatus);
+      }
+
+      // Вычисляем цвет каждого дома — идентично iOS HouseAnnotation.updateStatus():
+      // цвет дома = наихудший статус инцидентов, которые его затрагивают (affectedHouseIds)
+      final locColorStatuses = <int, String>{};
+      for (final inc in activeIncidents) {
+        final incStatus = _computeIncidentColorStatus(inc);
+        if (incStatus == 'normal') continue;
+        for (final locId in (inc.affectedHouseIds ?? [])) {
+          final current = locColorStatuses[locId] ?? 'normal';
+          locColorStatuses[locId] = _maxColorStatus(current, incStatus);
+        }
+      }
+
       _applyBatchUpdate((s) => s.copyWith(
         incidents: incidents,
         boilerHouseIdsWithIncidents: bhIds,
         locationIdsWithIncidents: locIds,
+        boilerHouseColorStatuses: colorStatuses,
+        locationColorStatuses: locColorStatuses,
         isLoading: false,
       ));
+
     }, onError: (e) {
       state = state.copyWith(error: e.toString(), isLoading: false);
     });
+
     
     ref.onDispose(() {
       bhSub.cancel();
@@ -191,6 +240,44 @@ class MapData extends _$MapData {
         _isFetching = false;
       }
     }
+  }
+
+  /// Вычисляет colorStatus инцидента — ИДЕНТИЧНО iOS Incident.colorStatus computed property.
+  ///
+  /// iOS логика (Database/Incident.swift):
+  ///   supplyFullyStopped             → "full"
+  ///   hotWater && heating stopped    → "full"   (ОБА ресурса)
+  ///   colorStatus == "full" (сервер) → "full"   (все котлы нерабочие)
+  ///   colorStatus == "partial"       → "partial" (часть котлов)
+  ///   hotWater || heating stopped    → "partial" (ОДИН ресурс)
+  ///   нет деталей                   → "partial" (iOS default)
+  static String _computeIncidentColorStatus(IncidentResponse inc) {
+    // 1. supplyFullyStopped — наивысший приоритет
+    if (inc.supplyFullyStopped == true) return 'full';
+
+    final hotWaterStopped = inc.resourceHotWaterStopped == 1;
+    final heatingStopped  = inc.resourceHeatingStopped == 1;
+
+    // 2. ОБА ресурса остановлены → full (iOS: if resourceHotWaterStopped && resourceHeatingStopped)
+    if (hotWaterStopped && heatingStopped) return 'full';
+
+    // 3. Сервер посчитал full — значит все котлы нерабочие
+    if (inc.colorStatus == 'full') return 'full';
+
+    // 4. Сервер посчитал partial — часть котлов нерабочая
+    if (inc.colorStatus == 'partial') return 'partial';
+
+    // 5. ОДИН ресурс остановлен → partial (iOS: if resourceHotWaterStopped || resourceHeatingStopped)
+    if (hotWaterStopped || heatingStopped) return 'partial';
+
+    // 6. Нет деталей — iOS возвращает "partial" по умолчанию
+    return 'partial';
+  }
+
+  /// Возвращает статус с максимальным приоритетом (full > partial > normal)
+  static String _maxColorStatus(String a, String b) {
+    const priority = {'normal': 0, 'partial': 1, 'full': 2};
+    return (priority[a] ?? 0) >= (priority[b] ?? 0) ? a : b;
   }
 }
 

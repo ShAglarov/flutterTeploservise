@@ -99,6 +99,8 @@ class BoilerHouses extends Table {
   IntColumn get siteManagerId => integer().nullable().withDefault(const Constant(0))();
   TextColumn get siteNumber => text().nullable()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
+  // Количество котлов у котельной (для секции котлов в форме инцидента)
+  IntColumn get totalBoilersCount => integer().nullable().withDefault(const Constant(1))();
 
   @override
   Set<Column> get primaryKey => {backendId};
@@ -168,6 +170,12 @@ class Incidents extends Table {
   TextColumn get status => text().nullable()();
   TextColumn get type => text().nullable()();
   BoolColumn get autoResolveOnFinish => boolean().nullable().withDefault(const Constant(false))();
+  // Управление котлами: JSON-список неработающих котлов, напр. "[1,3]"
+  TextColumn get inactiveBoilerNumbers => text().nullable()();
+  // Тумблер «Теплоноситель не поступает полностью»
+  BoolColumn get supplyFullyStopped => boolean().nullable().withDefault(const Constant(false))();
+  // Вычисленный цветовой статус: "normal" | "partial" | "full"
+  TextColumn get colorStatus => text().nullable()();
   
   // Relationship
   IntColumn get boilerHouseId => integer().nullable().references(BoilerHouses, #backendId)();
@@ -348,7 +356,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

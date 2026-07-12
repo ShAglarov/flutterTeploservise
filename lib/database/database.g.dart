@@ -3444,6 +3444,18 @@ class $BoilerHousesTable extends BoilerHouses
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _totalBoilersCountMeta = const VerificationMeta(
+    'totalBoilersCount',
+  );
+  @override
+  late final GeneratedColumn<int> totalBoilersCount = GeneratedColumn<int>(
+    'total_boilers_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     backendId,
@@ -3455,6 +3467,7 @@ class $BoilerHousesTable extends BoilerHouses
     siteManagerId,
     siteNumber,
     updatedAt,
+    totalBoilersCount,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3531,6 +3544,15 @@ class $BoilerHousesTable extends BoilerHouses
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('total_boilers_count')) {
+      context.handle(
+        _totalBoilersCountMeta,
+        totalBoilersCount.isAcceptableOrUnknown(
+          data['total_boilers_count']!,
+          _totalBoilersCountMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3576,6 +3598,10 @@ class $BoilerHousesTable extends BoilerHouses
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       ),
+      totalBoilersCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_boilers_count'],
+      ),
     );
   }
 
@@ -3595,6 +3621,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
   final int? siteManagerId;
   final String? siteNumber;
   final DateTime? updatedAt;
+  final int? totalBoilersCount;
   const BoilerHouseDb({
     required this.backendId,
     this.boilerHouseUUID,
@@ -3605,6 +3632,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     this.siteManagerId,
     this.siteNumber,
     this.updatedAt,
+    this.totalBoilersCount,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3634,6 +3662,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
     }
+    if (!nullToAbsent || totalBoilersCount != null) {
+      map['total_boilers_count'] = Variable<int>(totalBoilersCount);
+    }
     return map;
   }
 
@@ -3662,6 +3693,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      totalBoilersCount: totalBoilersCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalBoilersCount),
     );
   }
 
@@ -3680,6 +3714,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
       siteManagerId: serializer.fromJson<int?>(json['siteManagerId']),
       siteNumber: serializer.fromJson<String?>(json['siteNumber']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      totalBoilersCount: serializer.fromJson<int?>(json['totalBoilersCount']),
     );
   }
   @override
@@ -3695,6 +3730,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
       'siteManagerId': serializer.toJson<int?>(siteManagerId),
       'siteNumber': serializer.toJson<String?>(siteNumber),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'totalBoilersCount': serializer.toJson<int?>(totalBoilersCount),
     };
   }
 
@@ -3708,6 +3744,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     Value<int?> siteManagerId = const Value.absent(),
     Value<String?> siteNumber = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
+    Value<int?> totalBoilersCount = const Value.absent(),
   }) => BoilerHouseDb(
     backendId: backendId ?? this.backendId,
     boilerHouseUUID: boilerHouseUUID.present
@@ -3722,6 +3759,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
         : this.siteManagerId,
     siteNumber: siteNumber.present ? siteNumber.value : this.siteNumber,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    totalBoilersCount: totalBoilersCount.present
+        ? totalBoilersCount.value
+        : this.totalBoilersCount,
   );
   BoilerHouseDb copyWithCompanion(BoilerHousesCompanion data) {
     return BoilerHouseDb(
@@ -3742,6 +3782,9 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
           ? data.siteNumber.value
           : this.siteNumber,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      totalBoilersCount: data.totalBoilersCount.present
+          ? data.totalBoilersCount.value
+          : this.totalBoilersCount,
     );
   }
 
@@ -3756,7 +3799,8 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
           ..write('siteManager: $siteManager, ')
           ..write('siteManagerId: $siteManagerId, ')
           ..write('siteNumber: $siteNumber, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('totalBoilersCount: $totalBoilersCount')
           ..write(')'))
         .toString();
   }
@@ -3772,6 +3816,7 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
     siteManagerId,
     siteNumber,
     updatedAt,
+    totalBoilersCount,
   );
   @override
   bool operator ==(Object other) =>
@@ -3785,7 +3830,8 @@ class BoilerHouseDb extends DataClass implements Insertable<BoilerHouseDb> {
           other.siteManager == this.siteManager &&
           other.siteManagerId == this.siteManagerId &&
           other.siteNumber == this.siteNumber &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.totalBoilersCount == this.totalBoilersCount);
 }
 
 class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
@@ -3798,6 +3844,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
   final Value<int?> siteManagerId;
   final Value<String?> siteNumber;
   final Value<DateTime?> updatedAt;
+  final Value<int?> totalBoilersCount;
   const BoilerHousesCompanion({
     this.backendId = const Value.absent(),
     this.boilerHouseUUID = const Value.absent(),
@@ -3808,6 +3855,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     this.siteManagerId = const Value.absent(),
     this.siteNumber = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.totalBoilersCount = const Value.absent(),
   });
   BoilerHousesCompanion.insert({
     this.backendId = const Value.absent(),
@@ -3819,6 +3867,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     this.siteManagerId = const Value.absent(),
     this.siteNumber = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.totalBoilersCount = const Value.absent(),
   });
   static Insertable<BoilerHouseDb> custom({
     Expression<int>? backendId,
@@ -3830,6 +3879,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     Expression<int>? siteManagerId,
     Expression<String>? siteNumber,
     Expression<DateTime>? updatedAt,
+    Expression<int>? totalBoilersCount,
   }) {
     return RawValuesInsertable({
       if (backendId != null) 'backend_id': backendId,
@@ -3841,6 +3891,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
       if (siteManagerId != null) 'site_manager_id': siteManagerId,
       if (siteNumber != null) 'site_number': siteNumber,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (totalBoilersCount != null) 'total_boilers_count': totalBoilersCount,
     });
   }
 
@@ -3854,6 +3905,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     Value<int?>? siteManagerId,
     Value<String?>? siteNumber,
     Value<DateTime?>? updatedAt,
+    Value<int?>? totalBoilersCount,
   }) {
     return BoilerHousesCompanion(
       backendId: backendId ?? this.backendId,
@@ -3865,6 +3917,7 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
       siteManagerId: siteManagerId ?? this.siteManagerId,
       siteNumber: siteNumber ?? this.siteNumber,
       updatedAt: updatedAt ?? this.updatedAt,
+      totalBoilersCount: totalBoilersCount ?? this.totalBoilersCount,
     );
   }
 
@@ -3898,6 +3951,9 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (totalBoilersCount.present) {
+      map['total_boilers_count'] = Variable<int>(totalBoilersCount.value);
+    }
     return map;
   }
 
@@ -3912,7 +3968,8 @@ class BoilerHousesCompanion extends UpdateCompanion<BoilerHouseDb> {
           ..write('siteManager: $siteManager, ')
           ..write('siteManagerId: $siteManagerId, ')
           ..write('siteNumber: $siteNumber, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('totalBoilersCount: $totalBoilersCount')
           ..write(')'))
         .toString();
   }
@@ -7430,6 +7487,42 @@ class $IncidentsTable extends Incidents
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _inactiveBoilerNumbersMeta =
+      const VerificationMeta('inactiveBoilerNumbers');
+  @override
+  late final GeneratedColumn<String> inactiveBoilerNumbers =
+      GeneratedColumn<String>(
+        'inactive_boiler_numbers',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _supplyFullyStoppedMeta =
+      const VerificationMeta('supplyFullyStopped');
+  @override
+  late final GeneratedColumn<bool> supplyFullyStopped = GeneratedColumn<bool>(
+    'supply_fully_stopped',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("supply_fully_stopped" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _colorStatusMeta = const VerificationMeta(
+    'colorStatus',
+  );
+  @override
+  late final GeneratedColumn<String> colorStatus = GeneratedColumn<String>(
+    'color_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _boilerHouseIdMeta = const VerificationMeta(
     'boilerHouseId',
   );
@@ -7466,6 +7559,9 @@ class $IncidentsTable extends Incidents
     status,
     type,
     autoResolveOnFinish,
+    inactiveBoilerNumbers,
+    supplyFullyStopped,
+    colorStatus,
     boilerHouseId,
   ];
   @override
@@ -7630,6 +7726,33 @@ class $IncidentsTable extends Incidents
         ),
       );
     }
+    if (data.containsKey('inactive_boiler_numbers')) {
+      context.handle(
+        _inactiveBoilerNumbersMeta,
+        inactiveBoilerNumbers.isAcceptableOrUnknown(
+          data['inactive_boiler_numbers']!,
+          _inactiveBoilerNumbersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supply_fully_stopped')) {
+      context.handle(
+        _supplyFullyStoppedMeta,
+        supplyFullyStopped.isAcceptableOrUnknown(
+          data['supply_fully_stopped']!,
+          _supplyFullyStoppedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('color_status')) {
+      context.handle(
+        _colorStatusMeta,
+        colorStatus.isAcceptableOrUnknown(
+          data['color_status']!,
+          _colorStatusMeta,
+        ),
+      );
+    }
     if (data.containsKey('boiler_house_id')) {
       context.handle(
         _boilerHouseIdMeta,
@@ -7728,6 +7851,18 @@ class $IncidentsTable extends Incidents
         DriftSqlType.bool,
         data['${effectivePrefix}auto_resolve_on_finish'],
       ),
+      inactiveBoilerNumbers: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}inactive_boiler_numbers'],
+      ),
+      supplyFullyStopped: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}supply_fully_stopped'],
+      ),
+      colorStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_status'],
+      ),
       boilerHouseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}boiler_house_id'],
@@ -7762,6 +7897,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
   final String? status;
   final String? type;
   final bool? autoResolveOnFinish;
+  final String? inactiveBoilerNumbers;
+  final bool? supplyFullyStopped;
+  final String? colorStatus;
   final int? boilerHouseId;
   const IncidentDb({
     required this.backendId,
@@ -7784,6 +7922,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     this.status,
     this.type,
     this.autoResolveOnFinish,
+    this.inactiveBoilerNumbers,
+    this.supplyFullyStopped,
+    this.colorStatus,
     this.boilerHouseId,
   });
   @override
@@ -7855,6 +7996,15 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     if (!nullToAbsent || autoResolveOnFinish != null) {
       map['auto_resolve_on_finish'] = Variable<bool>(autoResolveOnFinish);
     }
+    if (!nullToAbsent || inactiveBoilerNumbers != null) {
+      map['inactive_boiler_numbers'] = Variable<String>(inactiveBoilerNumbers);
+    }
+    if (!nullToAbsent || supplyFullyStopped != null) {
+      map['supply_fully_stopped'] = Variable<bool>(supplyFullyStopped);
+    }
+    if (!nullToAbsent || colorStatus != null) {
+      map['color_status'] = Variable<String>(colorStatus);
+    }
     if (!nullToAbsent || boilerHouseId != null) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId);
     }
@@ -7921,6 +8071,15 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
       autoResolveOnFinish: autoResolveOnFinish == null && nullToAbsent
           ? const Value.absent()
           : Value(autoResolveOnFinish),
+      inactiveBoilerNumbers: inactiveBoilerNumbers == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inactiveBoilerNumbers),
+      supplyFullyStopped: supplyFullyStopped == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supplyFullyStopped),
+      colorStatus: colorStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colorStatus),
       boilerHouseId: boilerHouseId == null && nullToAbsent
           ? const Value.absent()
           : Value(boilerHouseId),
@@ -7967,6 +8126,13 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
       autoResolveOnFinish: serializer.fromJson<bool?>(
         json['autoResolveOnFinish'],
       ),
+      inactiveBoilerNumbers: serializer.fromJson<String?>(
+        json['inactiveBoilerNumbers'],
+      ),
+      supplyFullyStopped: serializer.fromJson<bool?>(
+        json['supplyFullyStopped'],
+      ),
+      colorStatus: serializer.fromJson<String?>(json['colorStatus']),
       boilerHouseId: serializer.fromJson<int?>(json['boilerHouseId']),
     );
   }
@@ -8004,6 +8170,11 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
       'status': serializer.toJson<String?>(status),
       'type': serializer.toJson<String?>(type),
       'autoResolveOnFinish': serializer.toJson<bool?>(autoResolveOnFinish),
+      'inactiveBoilerNumbers': serializer.toJson<String?>(
+        inactiveBoilerNumbers,
+      ),
+      'supplyFullyStopped': serializer.toJson<bool?>(supplyFullyStopped),
+      'colorStatus': serializer.toJson<String?>(colorStatus),
       'boilerHouseId': serializer.toJson<int?>(boilerHouseId),
     };
   }
@@ -8029,6 +8200,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     Value<String?> status = const Value.absent(),
     Value<String?> type = const Value.absent(),
     Value<bool?> autoResolveOnFinish = const Value.absent(),
+    Value<String?> inactiveBoilerNumbers = const Value.absent(),
+    Value<bool?> supplyFullyStopped = const Value.absent(),
+    Value<String?> colorStatus = const Value.absent(),
     Value<int?> boilerHouseId = const Value.absent(),
   }) => IncidentDb(
     backendId: backendId ?? this.backendId,
@@ -8069,6 +8243,13 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     autoResolveOnFinish: autoResolveOnFinish.present
         ? autoResolveOnFinish.value
         : this.autoResolveOnFinish,
+    inactiveBoilerNumbers: inactiveBoilerNumbers.present
+        ? inactiveBoilerNumbers.value
+        : this.inactiveBoilerNumbers,
+    supplyFullyStopped: supplyFullyStopped.present
+        ? supplyFullyStopped.value
+        : this.supplyFullyStopped,
+    colorStatus: colorStatus.present ? colorStatus.value : this.colorStatus,
     boilerHouseId: boilerHouseId.present
         ? boilerHouseId.value
         : this.boilerHouseId,
@@ -8121,6 +8302,15 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
       autoResolveOnFinish: data.autoResolveOnFinish.present
           ? data.autoResolveOnFinish.value
           : this.autoResolveOnFinish,
+      inactiveBoilerNumbers: data.inactiveBoilerNumbers.present
+          ? data.inactiveBoilerNumbers.value
+          : this.inactiveBoilerNumbers,
+      supplyFullyStopped: data.supplyFullyStopped.present
+          ? data.supplyFullyStopped.value
+          : this.supplyFullyStopped,
+      colorStatus: data.colorStatus.present
+          ? data.colorStatus.value
+          : this.colorStatus,
       boilerHouseId: data.boilerHouseId.present
           ? data.boilerHouseId.value
           : this.boilerHouseId,
@@ -8150,6 +8340,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
           ..write('status: $status, ')
           ..write('type: $type, ')
           ..write('autoResolveOnFinish: $autoResolveOnFinish, ')
+          ..write('inactiveBoilerNumbers: $inactiveBoilerNumbers, ')
+          ..write('supplyFullyStopped: $supplyFullyStopped, ')
+          ..write('colorStatus: $colorStatus, ')
           ..write('boilerHouseId: $boilerHouseId')
           ..write(')'))
         .toString();
@@ -8177,6 +8370,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
     status,
     type,
     autoResolveOnFinish,
+    inactiveBoilerNumbers,
+    supplyFullyStopped,
+    colorStatus,
     boilerHouseId,
   ]);
   @override
@@ -8203,6 +8399,9 @@ class IncidentDb extends DataClass implements Insertable<IncidentDb> {
           other.status == this.status &&
           other.type == this.type &&
           other.autoResolveOnFinish == this.autoResolveOnFinish &&
+          other.inactiveBoilerNumbers == this.inactiveBoilerNumbers &&
+          other.supplyFullyStopped == this.supplyFullyStopped &&
+          other.colorStatus == this.colorStatus &&
           other.boilerHouseId == this.boilerHouseId);
 }
 
@@ -8227,6 +8426,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
   final Value<String?> status;
   final Value<String?> type;
   final Value<bool?> autoResolveOnFinish;
+  final Value<String?> inactiveBoilerNumbers;
+  final Value<bool?> supplyFullyStopped;
+  final Value<String?> colorStatus;
   final Value<int?> boilerHouseId;
   const IncidentsCompanion({
     this.backendId = const Value.absent(),
@@ -8249,6 +8451,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     this.status = const Value.absent(),
     this.type = const Value.absent(),
     this.autoResolveOnFinish = const Value.absent(),
+    this.inactiveBoilerNumbers = const Value.absent(),
+    this.supplyFullyStopped = const Value.absent(),
+    this.colorStatus = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
   });
   IncidentsCompanion.insert({
@@ -8272,6 +8477,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     this.status = const Value.absent(),
     this.type = const Value.absent(),
     this.autoResolveOnFinish = const Value.absent(),
+    this.inactiveBoilerNumbers = const Value.absent(),
+    this.supplyFullyStopped = const Value.absent(),
+    this.colorStatus = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
   });
   static Insertable<IncidentDb> custom({
@@ -8295,6 +8503,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     Expression<String>? status,
     Expression<String>? type,
     Expression<bool>? autoResolveOnFinish,
+    Expression<String>? inactiveBoilerNumbers,
+    Expression<bool>? supplyFullyStopped,
+    Expression<String>? colorStatus,
     Expression<int>? boilerHouseId,
   }) {
     return RawValuesInsertable({
@@ -8325,6 +8536,11 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
       if (type != null) 'type': type,
       if (autoResolveOnFinish != null)
         'auto_resolve_on_finish': autoResolveOnFinish,
+      if (inactiveBoilerNumbers != null)
+        'inactive_boiler_numbers': inactiveBoilerNumbers,
+      if (supplyFullyStopped != null)
+        'supply_fully_stopped': supplyFullyStopped,
+      if (colorStatus != null) 'color_status': colorStatus,
       if (boilerHouseId != null) 'boiler_house_id': boilerHouseId,
     });
   }
@@ -8350,6 +8566,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     Value<String?>? status,
     Value<String?>? type,
     Value<bool?>? autoResolveOnFinish,
+    Value<String?>? inactiveBoilerNumbers,
+    Value<bool?>? supplyFullyStopped,
+    Value<String?>? colorStatus,
     Value<int?>? boilerHouseId,
   }) {
     return IncidentsCompanion(
@@ -8378,6 +8597,10 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
       status: status ?? this.status,
       type: type ?? this.type,
       autoResolveOnFinish: autoResolveOnFinish ?? this.autoResolveOnFinish,
+      inactiveBoilerNumbers:
+          inactiveBoilerNumbers ?? this.inactiveBoilerNumbers,
+      supplyFullyStopped: supplyFullyStopped ?? this.supplyFullyStopped,
+      colorStatus: colorStatus ?? this.colorStatus,
       boilerHouseId: boilerHouseId ?? this.boilerHouseId,
     );
   }
@@ -8457,6 +8680,17 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
     if (autoResolveOnFinish.present) {
       map['auto_resolve_on_finish'] = Variable<bool>(autoResolveOnFinish.value);
     }
+    if (inactiveBoilerNumbers.present) {
+      map['inactive_boiler_numbers'] = Variable<String>(
+        inactiveBoilerNumbers.value,
+      );
+    }
+    if (supplyFullyStopped.present) {
+      map['supply_fully_stopped'] = Variable<bool>(supplyFullyStopped.value);
+    }
+    if (colorStatus.present) {
+      map['color_status'] = Variable<String>(colorStatus.value);
+    }
     if (boilerHouseId.present) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId.value);
     }
@@ -8486,6 +8720,9 @@ class IncidentsCompanion extends UpdateCompanion<IncidentDb> {
           ..write('status: $status, ')
           ..write('type: $type, ')
           ..write('autoResolveOnFinish: $autoResolveOnFinish, ')
+          ..write('inactiveBoilerNumbers: $inactiveBoilerNumbers, ')
+          ..write('supplyFullyStopped: $supplyFullyStopped, ')
+          ..write('colorStatus: $colorStatus, ')
           ..write('boilerHouseId: $boilerHouseId')
           ..write(')'))
         .toString();
@@ -13060,6 +13297,7 @@ typedef $$BoilerHousesTableCreateCompanionBuilder =
       Value<int?> siteManagerId,
       Value<String?> siteNumber,
       Value<DateTime?> updatedAt,
+      Value<int?> totalBoilersCount,
     });
 typedef $$BoilerHousesTableUpdateCompanionBuilder =
     BoilerHousesCompanion Function({
@@ -13072,6 +13310,7 @@ typedef $$BoilerHousesTableUpdateCompanionBuilder =
       Value<int?> siteManagerId,
       Value<String?> siteNumber,
       Value<DateTime?> updatedAt,
+      Value<int?> totalBoilersCount,
     });
 
 final class $$BoilerHousesTableReferences
@@ -13197,6 +13436,11 @@ class $$BoilerHousesTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalBoilersCount => $composableBuilder(
+    column: $table.totalBoilersCount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13329,6 +13573,11 @@ class $$BoilerHousesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get totalBoilersCount => $composableBuilder(
+    column: $table.totalBoilersCount,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$BoilerHousesTableAnnotationComposer
@@ -13374,6 +13623,11 @@ class $$BoilerHousesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get totalBoilersCount => $composableBuilder(
+    column: $table.totalBoilersCount,
+    builder: (column) => column,
+  );
 
   Expression<T> boilerPhotosRefs<T extends Object>(
     Expression<T> Function($$BoilerPhotosTableAnnotationComposer a) f,
@@ -13492,6 +13746,7 @@ class $$BoilerHousesTableTableManager
                 Value<int?> siteManagerId = const Value.absent(),
                 Value<String?> siteNumber = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<int?> totalBoilersCount = const Value.absent(),
               }) => BoilerHousesCompanion(
                 backendId: backendId,
                 boilerHouseUUID: boilerHouseUUID,
@@ -13502,6 +13757,7 @@ class $$BoilerHousesTableTableManager
                 siteManagerId: siteManagerId,
                 siteNumber: siteNumber,
                 updatedAt: updatedAt,
+                totalBoilersCount: totalBoilersCount,
               ),
           createCompanionCallback:
               ({
@@ -13514,6 +13770,7 @@ class $$BoilerHousesTableTableManager
                 Value<int?> siteManagerId = const Value.absent(),
                 Value<String?> siteNumber = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<int?> totalBoilersCount = const Value.absent(),
               }) => BoilerHousesCompanion.insert(
                 backendId: backendId,
                 boilerHouseUUID: boilerHouseUUID,
@@ -13524,6 +13781,7 @@ class $$BoilerHousesTableTableManager
                 siteManagerId: siteManagerId,
                 siteNumber: siteNumber,
                 updatedAt: updatedAt,
+                totalBoilersCount: totalBoilersCount,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -15937,6 +16195,9 @@ typedef $$IncidentsTableCreateCompanionBuilder =
       Value<String?> status,
       Value<String?> type,
       Value<bool?> autoResolveOnFinish,
+      Value<String?> inactiveBoilerNumbers,
+      Value<bool?> supplyFullyStopped,
+      Value<String?> colorStatus,
       Value<int?> boilerHouseId,
     });
 typedef $$IncidentsTableUpdateCompanionBuilder =
@@ -15961,6 +16222,9 @@ typedef $$IncidentsTableUpdateCompanionBuilder =
       Value<String?> status,
       Value<String?> type,
       Value<bool?> autoResolveOnFinish,
+      Value<String?> inactiveBoilerNumbers,
+      Value<bool?> supplyFullyStopped,
+      Value<String?> colorStatus,
       Value<int?> boilerHouseId,
     });
 
@@ -16168,6 +16432,21 @@ class $$IncidentsTableFilterComposer
 
   ColumnFilters<bool> get autoResolveOnFinish => $composableBuilder(
     column: $table.autoResolveOnFinish,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get inactiveBoilerNumbers => $composableBuilder(
+    column: $table.inactiveBoilerNumbers,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get supplyFullyStopped => $composableBuilder(
+    column: $table.supplyFullyStopped,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorStatus => $composableBuilder(
+    column: $table.colorStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16379,6 +16658,21 @@ class $$IncidentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get inactiveBoilerNumbers => $composableBuilder(
+    column: $table.inactiveBoilerNumbers,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get supplyFullyStopped => $composableBuilder(
+    column: $table.supplyFullyStopped,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorStatus => $composableBuilder(
+    column: $table.colorStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$BoilerHousesTableOrderingComposer get boilerHouseId {
     final $$BoilerHousesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -16495,6 +16789,21 @@ class $$IncidentsTableAnnotationComposer
 
   GeneratedColumn<bool> get autoResolveOnFinish => $composableBuilder(
     column: $table.autoResolveOnFinish,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get inactiveBoilerNumbers => $composableBuilder(
+    column: $table.inactiveBoilerNumbers,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get supplyFullyStopped => $composableBuilder(
+    column: $table.supplyFullyStopped,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colorStatus => $composableBuilder(
+    column: $table.colorStatus,
     builder: (column) => column,
   );
 
@@ -16650,6 +16959,9 @@ class $$IncidentsTableTableManager
                 Value<String?> status = const Value.absent(),
                 Value<String?> type = const Value.absent(),
                 Value<bool?> autoResolveOnFinish = const Value.absent(),
+                Value<String?> inactiveBoilerNumbers = const Value.absent(),
+                Value<bool?> supplyFullyStopped = const Value.absent(),
+                Value<String?> colorStatus = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
               }) => IncidentsCompanion(
                 backendId: backendId,
@@ -16672,6 +16984,9 @@ class $$IncidentsTableTableManager
                 status: status,
                 type: type,
                 autoResolveOnFinish: autoResolveOnFinish,
+                inactiveBoilerNumbers: inactiveBoilerNumbers,
+                supplyFullyStopped: supplyFullyStopped,
+                colorStatus: colorStatus,
                 boilerHouseId: boilerHouseId,
               ),
           createCompanionCallback:
@@ -16696,6 +17011,9 @@ class $$IncidentsTableTableManager
                 Value<String?> status = const Value.absent(),
                 Value<String?> type = const Value.absent(),
                 Value<bool?> autoResolveOnFinish = const Value.absent(),
+                Value<String?> inactiveBoilerNumbers = const Value.absent(),
+                Value<bool?> supplyFullyStopped = const Value.absent(),
+                Value<String?> colorStatus = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
               }) => IncidentsCompanion.insert(
                 backendId: backendId,
@@ -16718,6 +17036,9 @@ class $$IncidentsTableTableManager
                 status: status,
                 type: type,
                 autoResolveOnFinish: autoResolveOnFinish,
+                inactiveBoilerNumbers: inactiveBoilerNumbers,
+                supplyFullyStopped: supplyFullyStopped,
+                colorStatus: colorStatus,
                 boilerHouseId: boilerHouseId,
               ),
           withReferenceMapper: (p0) => p0

@@ -27,5 +27,10 @@ abstract class IncidentFormState with _$IncidentFormState {
     NotificationConfig? notificationConfig,
     @Default(false) bool isSaving,
     String? errorMessage,
+    /// Номера неработающих котлов (напр. {1, 3})
+    @Default({}) Set<int> inactiveBoilers,
+    /// Тумблер "Теплоноситель не поступает полностью" — форсирует статус КРАСНЫЙ
+    @Default(false) bool supplyFullyStopped,
   }) = _IncidentFormState;
 }
+

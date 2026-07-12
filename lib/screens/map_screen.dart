@@ -75,11 +75,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   int _cachedLocCount = -1;
   Set<int> _cachedBhIncidentIds = {};
   Set<int> _cachedLocIncidentIds = {};
+  /// Отслеживаем цветовые статусы котельных (включаем в условие needsRebuild)
+  Map<int, String> _cachedBhColorStatuses = {};
+  /// Отслеживаем цветовые статусы домов per-location (iOS-паритет)
+  Map<int, String> _cachedLocColorStatuses = {};
 
   /// Value-based set equality check
   bool _setsEqual(Set<int> a, Set<int> b) {
     if (a.length != b.length) return false;
     return a.containsAll(b);
+  }
+
+  /// Value-based map equality check (для сравнения colorStatuses)
+  bool _mapsEqual(Map<int, String> a, Map<int, String> b) {
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (a[key] != b[key]) return false;
+    }
+    return true;
   }
 
   void _onBoilerHouseMarkerTap(BoilerHouseResponse bh) {
@@ -257,7 +270,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     _cachedBhCount != mapData.boilerHouses.length ||
                     _cachedLocCount != mapData.locations.length ||
                     !_setsEqual(_cachedBhIncidentIds, mapData.boilerHouseIdsWithIncidents) ||
-                    !_setsEqual(_cachedLocIncidentIds, mapData.locationIdsWithIncidents);
+                    !_setsEqual(_cachedLocIncidentIds, mapData.locationIdsWithIncidents) ||
+                    !_mapsEqual(_cachedBhColorStatuses, mapData.boilerHouseColorStatuses) ||
+                    !_mapsEqual(_cachedLocColorStatuses, mapData.locationColorStatuses);
                 if (needsRebuild) {
                   _cachedMarkers = _buildMarkers(mapData);
                   _cachedPolylines = _buildPolylines(mapData);
@@ -267,6 +282,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   _cachedLocCount = mapData.locations.length;
                   _cachedBhIncidentIds = Set.of(mapData.boilerHouseIdsWithIncidents);
                   _cachedLocIncidentIds = Set.of(mapData.locationIdsWithIncidents);
+                  _cachedBhColorStatuses = Map.of(mapData.boilerHouseColorStatuses);
+                  _cachedLocColorStatuses = Map.of(mapData.locationColorStatuses);
                 }
                 return RepaintBoundary(
                   child: FlutterMap(
@@ -966,6 +983,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // Pin Color Helpers — три уровня индикации
+  // --------------------------------------------------------------------------
+
+  /// Возвращает цвет пина по colorStatus: normal=синий, partial=оранжевый, full=красный
+  Color _pinColorFromStatus(String status) {
+    return switch (status) {
+      'full'    => const Color(0xFFE53935), // насыщенный красный
+      'partial' => const Color(0xFFFB8C00), // насыщенный оранжевый
+      _         => AppTheme.primaryBlue,    // стандартный синий (нет инцидента)
+    };
+  }
+
+  // --------------------------------------------------------------------------
   // Markers
   // --------------------------------------------------------------------------
   List<Marker> _buildMarkers(MapDataState data) {
@@ -975,7 +1006,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (_selectedBoilerHouse != null && bh.id != _selectedBoilerHouse!.id) continue;
       
       if (bh.latitude == 0 && bh.longitude == 0) continue;
-      final hasIncident = data.boilerHouseIdsWithIncidents.contains(bh.id);
+      final colorStatus = data.colorStatusForBoilerHouse(bh.id);
       final isSelected = _tappedItem is BoilerHouseResponse && (_tappedItem as BoilerHouseResponse).id == bh.id;
       markers.add(Marker(
         key: ValueKey('bh_${bh.id}'),
@@ -989,7 +1020,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               decoration: BoxDecoration(
-                color: hasIncident ? AppTheme.errorRed : AppTheme.primaryBlue,
+                color: _pinColorFromStatus(colorStatus),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isSelected ? Colors.yellow : Colors.white,
@@ -1004,6 +1035,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ),
       ));
+
     }
 
     for (final loc in data.locations) {
@@ -1013,6 +1045,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (_selectedBoilerHouse != null && loc.boilerHouseId != _selectedBoilerHouse!.id) continue;
 
       if (loc.latitude == 0 && loc.longitude == 0) continue;
+      final locColorStatus = data.colorStatusForLocation(loc.id);
       final isSelected = _tappedItem is SavedLocationResponse && (_tappedItem as SavedLocationResponse).id == loc.id;
       markers.add(Marker(
         key: ValueKey('loc_${loc.id}'),
@@ -1026,9 +1059,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               decoration: BoxDecoration(
-                color: data.locationIdsWithIncidents.contains(loc.id)
-                    ? AppTheme.errorRed
-                    : AppTheme.successGreen,
+                // Цвет дома — идентично iOS HouseAnnotation (per-location)
+                color: locColorStatus == 'normal'
+                    ? AppTheme.successGreen
+                    : _pinColorFromStatus(locColorStatus),
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isSelected ? Colors.yellow : Colors.white,

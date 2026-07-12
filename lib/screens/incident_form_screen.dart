@@ -370,6 +370,11 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
               
               const SizedBox(height: 16),
               
+              // --- СОСТОЯНИЕ КОТЛОВ ---
+              _buildBoilerSection(context, state, controller, mapData),
+              
+              const SizedBox(height: 16),
+
               _buildSection(
                 title: 'УВЕДОМЛЕНИЯ ПРИ ПУБЛИКАЦИИ',
                 child: Column(
@@ -432,6 +437,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                 ),
               ),
 
+
               const SizedBox(height: 16),
               
               _buildSection(
@@ -473,6 +479,185 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
       ],
     );
   }
+
+  /// Секция "СОСТОЯНИЕ КОТЛОВ": чипы котлов + тумблер + статус-индикатор
+  Widget _buildBoilerSection(
+    BuildContext context,
+    IncidentFormState state,
+    IncidentFormController controller,
+    MapDataState mapData,
+  ) {
+    // Находим количество котлов у выбранной котельной
+    final selectedBh = state.boilerHouseId != null
+        ? mapData.boilerHouses.where((b) => b.id == state.boilerHouseId).firstOrNull
+        : null;
+    final totalBoilers = selectedBh?.totalBoilersCount ?? 1;
+
+    return _buildSection(
+      title: 'СОСТОЯНИЕ КОТЛОВ',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Чипы котлов — показываем только если котлов больше одного
+          if (totalBoilers > 1) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                'Котлы (выберите неработающие):',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: List.generate(totalBoilers, (index) {
+                final boilerNumber = index + 1;
+                final isInactive = state.inactiveBoilers.contains(boilerNumber);
+                return FilterChip(
+                  label: Text('Котёл $boilerNumber'),
+                  selected: isInactive,
+                  selectedColor: Colors.red.shade900.withAlpha(80),
+                  checkmarkColor: Colors.red.shade300,
+                  labelStyle: TextStyle(
+                    color: isInactive
+                        ? Colors.red.shade300
+                        : Theme.of(context).colorScheme.onSurface,
+                    fontSize: 13,
+                    fontWeight: isInactive ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                  side: BorderSide(
+                    color: isInactive
+                        ? Colors.red.shade700
+                        : Theme.of(context).colorScheme.onSurface.withAlpha(40),
+                  ),
+                  // При включённом тумблере — чипы дизаблед
+                  onSelected: state.supplyFullyStopped
+                      ? null
+                      : (_) => controller.toggleBoiler(boilerNumber),
+                );
+              }),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Тумблер "Не поступает полностью" — всегда виден
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Не поступает полностью',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: Text(
+              'Теплоноситель не поступает ни в один дом',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
+                fontSize: 12,
+              ),
+            ),
+            secondary: Icon(
+              Icons.power_off_rounded,
+              color: state.supplyFullyStopped ? Colors.red : Colors.grey,
+              size: 20,
+            ),
+            value: state.supplyFullyStopped,
+            onChanged: controller.updateSupplyFullyStopped,
+            activeColor: Colors.red,
+          ),
+
+          // Статус-индикатор — обновляется в реальном времени
+          const SizedBox(height: 12),
+          _buildBoilerStatusIndicator(context, state, totalBoilers),
+        ],
+      ),
+    );
+  }
+
+  /// Цветной статус-индикатор в нижней части секции
+  Widget _buildBoilerStatusIndicator(
+    BuildContext context,
+    IncidentFormState state,
+    int totalBoilers,
+  ) {
+    final Color bgColor;
+    final Color textColor;
+    final String emoji;
+    final String statusText;
+    final String subText;
+
+    if (state.supplyFullyStopped) {
+      bgColor = Colors.red.withAlpha(30);
+      textColor = Colors.red.shade300;
+      emoji = '🔴';
+      statusText = 'Полная остановка';
+      subText = 'Теплоноситель не поступает ни в один дом';
+    } else if (state.inactiveBoilers.isEmpty) {
+      bgColor = Colors.green.withAlpha(25);
+      textColor = Colors.green.shade400;
+      emoji = '🟢';
+      statusText = 'Все котлы работают';
+      subText = 'Тепло/ГВС поступает в полном объёме';
+    } else if (state.inactiveBoilers.length >= totalBoilers) {
+      bgColor = Colors.red.withAlpha(30);
+      textColor = Colors.red.shade300;
+      emoji = '🔴';
+      statusText = 'Полная остановка';
+      subText = 'Все ${totalBoilers} котлов не работают';
+    } else {
+      bgColor = Colors.orange.withAlpha(30);
+      textColor = Colors.orange.shade300;
+      emoji = '🟠';
+      statusText = 'Частичная остановка';
+      subText = 'Не работает ${state.inactiveBoilers.length} из $totalBoilers котлов';
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: textColor.withAlpha(80)),
+      ),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  subText,
+                  style: TextStyle(
+                    color: textColor.withAlpha(180),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
