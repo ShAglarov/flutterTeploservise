@@ -140,8 +140,11 @@ class IncidentFormController extends _$IncidentFormController {
       return false;
     }
 
-    if (!state.stopHotWater && !state.stopHeating) {
-      state = state.copyWith(errorMessage: 'Выберите хотя бы одну проблему');
+    // Проблема указана если: остановлен ГВС/отопление, ИЛИ есть неработающие котлы, ИЛИ полная остановка
+    final hasStoppedResource = state.stopHotWater || state.stopHeating;
+    final hasBoilerIssue = state.inactiveBoilers.isNotEmpty || state.supplyFullyStopped;
+    if (!hasStoppedResource && !hasBoilerIssue) {
+      state = state.copyWith(errorMessage: 'Выберите хотя бы одну проблему: остановите ГВС/отопление или отметьте неработающий котёл');
       return false;
     }
 

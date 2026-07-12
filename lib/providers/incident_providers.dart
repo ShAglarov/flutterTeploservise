@@ -138,6 +138,14 @@ class IncidentViewModel {
   final String formattedTimestamp;
   final String? stoppedServicesText;
   final String? broadcastText;
+  final String? boilersInfoText; // Информация о неработающих котлах (текст)
+  /// Номера неработающих котлов для чипов в карточке
+  final List<int> inactiveBoilerNumbers;
+  /// Общее кол-во котлов в котельной для отрисовки чипов
+  final int totalBoilersCount;
+  final bool supplyFullyStopped;
+  /// Локально вычисленный цвет инцидента ("normal" | "partial" | "full")
+  final String resolvedColorStatus;
 
   IncidentViewModel({
     required this.raw,
@@ -147,6 +155,11 @@ class IncidentViewModel {
     required this.formattedTimestamp,
     this.stoppedServicesText,
     this.broadcastText,
+    this.boilersInfoText,
+    this.inactiveBoilerNumbers = const [],
+    this.totalBoilersCount = 0,
+    this.supplyFullyStopped = false,
+    required this.resolvedColorStatus,
   });
 }
 
@@ -264,6 +277,29 @@ IncidentViewModel _createViewModel(IncidentResponse inc, String? boilerHouseDeta
     }
   }
 
+  // 6. Информация о неработающих котлах
+  String? boilersInfoText;
+  if (inc.supplyFullyStopped == true) {
+    boilersInfoText = '🔴 Подача полностью прекращена';
+  } else if (inc.inactiveBoilerNumbers != null && inc.inactiveBoilerNumbers!.isNotEmpty) {
+    final inactive = List<int>.from(inc.inactiveBoilerNumbers!)..sort();
+    final numsText = inactive.map((n) => '№$n').join(', ');
+    final total = inc.boilerHouse?.totalBoilersCount;
+    if (total != null && total > 0) {
+      boilersInfoText = '⚠️ Котлы $numsText из $total — не работают';
+    } else {
+      boilersInfoText = '⚠️ Котлы $numsText — не работают';
+    }
+  }
+
+  // 7. Локально вычисленный colorStatus — идентично map_providers._computeIncidentColorStatus
+  final resolvedColorStatus = _computeColorStatus(inc);
+
+  // 8. Номера неработающих котлов (отсортированные)
+  final inactiveBoilerNums = inc.inactiveBoilerNumbers != null
+      ? (List<int>.from(inc.inactiveBoilerNumbers!)..sort())
+      : const <int>[];
+
   return IncidentViewModel(
     raw: inc,
     boilerHouseDetail: boilerHouseDetail,
@@ -272,7 +308,40 @@ IncidentViewModel _createViewModel(IncidentResponse inc, String? boilerHouseDeta
     formattedTimestamp: formattedTimestamp,
     stoppedServicesText: stoppedServicesText,
     broadcastText: broadcastText,
+    boilersInfoText: boilersInfoText,
+    inactiveBoilerNumbers: inactiveBoilerNums,
+    totalBoilersCount: inc.boilerHouse?.totalBoilersCount ?? 0,
+    supplyFullyStopped: inc.supplyFullyStopped ?? false,
+    resolvedColorStatus: resolvedColorStatus,
   );
+}
+
+/// Та же логика что в map_providers._computeIncidentColorStatus
+/// Гарантирует правильный цвет в карточке даже если сервер не прислал colorStatus
+String _computeColorStatus(IncidentResponse inc) {
+  // 1. supplyFullyStopped — наивысший приоритет
+  if (inc.supplyFullyStopped == true) return 'full';
+
+  final hotWaterStopped = inc.resourceHotWaterStopped == 1;
+  final heatingStopped = inc.resourceHeatingStopped == 1;
+
+  // 2. ОБА ресурса остановлены → full
+  if (hotWaterStopped && heatingStopped) return 'full';
+
+  // 3. Сервер посчитал full — значит все котлы нерабочие
+  if (inc.colorStatus == 'full') return 'full';
+
+  // 4. Сервер посчитал partial — часть котлов нерабочая
+  if (inc.colorStatus == 'partial') return 'partial';
+
+  // 5. Есть неработающие котлы → partial
+  if (inc.inactiveBoilerNumbers != null && inc.inactiveBoilerNumbers!.isNotEmpty) return 'partial';
+
+  // 6. ОДИН ресурс остановлен → partial
+  if (hotWaterStopped || heatingStopped) return 'partial';
+
+  // 7. Нет деталей — full (полное отключение по умолчанию для активных инцидентов)
+  return 'full';
 }
 
 final filteredIncidentsProvider = Provider<AsyncValue<List<IncidentResponse>>>((ref) {

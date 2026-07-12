@@ -18,8 +18,12 @@ class IncidentCard extends StatefulWidget {
   final int affectedPopulationCount;
   final String? boilerHouseDetail;
   final String? broadcastText;
+  final String? boilersInfoText; // fallback текст
+  final List<int> inactiveBoilerNumbers;
+  final int totalBoilersCount;
+  final bool supplyFullyStopped;
   final bool isUnsynced;
-  final bool isOverdue; // finishedAt прошла, но инцидент ещё активен
+  final bool isOverdue;
   final VoidCallback? onTap;
 
   const IncidentCard({
@@ -36,6 +40,10 @@ class IncidentCard extends StatefulWidget {
     required this.affectedPopulationCount,
     this.boilerHouseDetail,
     this.broadcastText,
+    this.boilersInfoText,
+    this.inactiveBoilerNumbers = const [],
+    this.totalBoilersCount = 0,
+    this.supplyFullyStopped = false,
     this.isUnsynced = false,
     this.isOverdue = false,
     this.onTap,
@@ -229,6 +237,8 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                           text: 'Остановлено: ${widget.stoppedServicesText}',
                         ),
                       ],
+                      // ─── ЧИПЫ КОТЛОВ ───
+                      _buildBoilerChipsRow(context),
                       if (widget.affectedPopulationCount > 0) ...[
                                               Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                         _buildActionRow(
@@ -338,6 +348,118 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBoilerChipsRow(BuildContext context) {
+    // Показываем только если есть данные о котлах
+    if (widget.totalBoilersCount <= 0 &&
+        !widget.supplyFullyStopped &&
+        widget.inactiveBoilerNumbers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.settings_suggest,
+                size: 20,
+                color: widget.supplyFullyStopped
+                    ? AppTheme.errorRed
+                    : widget.inactiveBoilerNumbers.isNotEmpty
+                        ? AppTheme.warningOrange
+                        : Theme.of(context).colorScheme.onSurface.withAlpha(140),
+              ),
+              const SizedBox(width: 12),
+              // Чипы котлов
+              Expanded(
+                child: _buildBoilerChips(context),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBoilerChips(BuildContext context) {
+    // Полная остановка — один красный бейдж
+    if (widget.supplyFullyStopped) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppTheme.errorRed.withAlpha(30),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.errorRed.withAlpha(120)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cancel_outlined, size: 13, color: AppTheme.errorRed),
+            const SizedBox(width: 5),
+            Text(
+              'Подача прекращена',
+              style: TextStyle(color: AppTheme.errorRed, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Нет данных о котлах но есть неработающие
+    if (widget.totalBoilersCount <= 0 && widget.inactiveBoilerNumbers.isNotEmpty) {
+      return Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: widget.inactiveBoilerNumbers.map((n) => _boilerChip(context, n, inactive: true)).toList(),
+      );
+    }
+
+    // Рисуем все котлы 1..totalBoilersCount
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: List.generate(widget.totalBoilersCount, (i) {
+        final number = i + 1;
+        final isInactive = widget.inactiveBoilerNumbers.contains(number);
+        return _boilerChip(context, number, inactive: isInactive);
+      }),
+    );
+  }
+
+  Widget _boilerChip(BuildContext context, int number, {required bool inactive}) {
+    final bgColor = inactive
+        ? AppTheme.errorRed.withAlpha(30)
+        : Colors.green.shade900.withAlpha(50);
+    final borderColor = inactive
+        ? AppTheme.errorRed.withAlpha(180)
+        : Colors.green.shade700;
+    final textColor = inactive
+        ? AppTheme.errorRed
+        : Colors.green.shade400;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Text(
+        'К$number',
+        style: TextStyle(
+          color: textColor,
+          fontSize: 11,
+          fontWeight: inactive ? FontWeight.w700 : FontWeight.w500,
+        ),
       ),
     );
   }

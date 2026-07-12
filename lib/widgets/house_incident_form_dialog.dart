@@ -5,6 +5,7 @@ import '../models/incident_models.dart';
 import '../models/location_models.dart';
 import '../models/user_role.dart';
 import '../providers/incident_form_controller.dart';
+import '../providers/map_providers.dart';
 import '../services/user_service.dart';
 import '../utils/app_theme.dart';
 import 'package:image_picker/image_picker.dart';
@@ -265,10 +266,20 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                             _buildDivider(),
                             _buildToggleRow('Остановить отопление', Icons.local_fire_department, Colors.red, state.stopHeating, controller.updateStopHeating),
                             _buildDivider(),
-                            _buildRow('Затронутые дома', 'выбрано: ${state.affectedHouseIds.length}', icon: Icons.business),
+                            _buildRow(
+                              'Затронутые дома',
+                              'выбрано: ${state.affectedHouseIds.length}',
+                              icon: Icons.business,
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                              onTap: () => _showHouseSelector(context, ref, state, controller),
+                            ),
                           ],
                         ),
                       ),
+
+                      const SizedBox(height: 16),
+                      // ─── СОСТОЯНИЕ КОТЛОВ ───
+                      _buildBoilerSection(context, state, controller),
                       
                       const SizedBox(height: 16),
                       _buildSectionTitle('Назначение и уведомления'),
@@ -709,6 +720,282 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                               }
                               controller.updateNotificationRoles(selectedRoles.toList());
                             },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ─── СЕКЦИЯ СОСТОЯНИЯ КОТЛОВ (идентично iOS) ──────────────
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildBoilerSection(
+    BuildContext context,
+    IncidentFormState state,
+    IncidentFormController controller,
+  ) {
+    final mapData = ref.watch(mapDataProvider);
+    final selectedBh = state.boilerHouseId != null
+        ? mapData.boilerHouses.where((b) => b.id == state.boilerHouseId).firstOrNull
+        : null;
+    final totalBoilers = selectedBh?.totalBoilersCount ?? 0;
+
+    if (totalBoilers == 0) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('Состояние котлов'),
+        _buildContainer(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Чипы котлов ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(totalBoilers, (index) {
+                    final boilerNumber = index + 1;
+                    final isInactive = state.inactiveBoilers.contains(boilerNumber);
+                    final isDisabled = state.supplyFullyStopped;
+                    return GestureDetector(
+                      onTap: isDisabled
+                          ? null
+                          : () => controller.toggleBoiler(boilerNumber),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeInOut,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDisabled
+                              ? Colors.white.withAlpha(10)
+                              : isInactive
+                                  ? Colors.red.shade900.withAlpha(60)
+                                  : Colors.green.shade900.withAlpha(60),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDisabled
+                                ? Colors.white.withAlpha(30)
+                                : isInactive
+                                    ? Colors.red.shade600
+                                    : Colors.green.shade600,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          'Котёл $boilerNumber',
+                          style: TextStyle(
+                            color: isDisabled
+                                ? Colors.white38
+                                : isInactive
+                                    ? Colors.red.shade300
+                                    : Colors.green.shade400,
+                            fontSize: 13,
+                            fontWeight: isInactive ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+
+              _buildDivider(),
+
+              // ── Тумблер «Услуги поступают» (инверсный) ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      state.supplyFullyStopped
+                          ? Icons.cancel_outlined
+                          : Icons.check_circle_outline,
+                      color: state.supplyFullyStopped ? Colors.red : Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Услуги поступают',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15),
+                    ),
+                    const Spacer(),
+                    Switch(
+                      value: !state.supplyFullyStopped,
+                      onChanged: (value) => controller.updateSupplyFullyStopped(!value),
+                      activeColor: Colors.white,
+                      activeTrackColor: Colors.green,
+                      inactiveThumbColor: Colors.red.shade400,
+                      inactiveTrackColor: Colors.red.shade900.withAlpha(100),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Статус-индикатор ──
+              _buildBoilerStatusBanner(state, totalBoilers),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBoilerStatusBanner(IncidentFormState state, int totalBoilers) {
+    if (totalBoilers == 0) return const SizedBox.shrink();
+
+    final Color bgColor;
+    final Color textColor;
+    final String emoji;
+    final String statusText;
+    final String subText;
+
+    if (state.supplyFullyStopped) {
+      bgColor = Colors.red.withAlpha(30);
+      textColor = Colors.red.shade300;
+      emoji = '🔴';
+      statusText = 'Полная остановка';
+      subText = 'Подача полностью прекращена';
+    } else if (state.inactiveBoilers.isEmpty) {
+      bgColor = Colors.green.withAlpha(25);
+      textColor = Colors.green.shade400;
+      emoji = '🟢';
+      statusText = 'Все котлы работают';
+      subText = 'Подача в штатном режиме';
+    } else if (state.inactiveBoilers.length >= totalBoilers) {
+      bgColor = Colors.red.withAlpha(30);
+      textColor = Colors.red.shade300;
+      emoji = '🔴';
+      statusText = 'Полная остановка';
+      subText = 'Все $totalBoilers котлов не работают';
+    } else {
+      bgColor = Colors.orange.withAlpha(30);
+      textColor = Colors.orange.shade300;
+      emoji = '🟠';
+      statusText = 'Частичная остановка';
+      subText = '${state.inactiveBoilers.length} из $totalBoilers котлов не работает';
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: textColor.withAlpha(80)),
+      ),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(statusText, style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 13)),
+                Text(subText, style: TextStyle(color: textColor.withAlpha(180), fontSize: 11)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ─── ВЫБОР ЗАТРОНУТЫХ ДОМОВ ───────────────────────────────
+  // ═══════════════════════════════════════════════════════════
+
+  void _showHouseSelector(
+    BuildContext context,
+    WidgetRef ref,
+    IncidentFormState state,
+    IncidentFormController controller,
+  ) {
+    final mapData = ref.read(mapDataProvider);
+    final relevantHouses = mapData.locations
+        .where((loc) => loc.boilerHouseId == state.boilerHouseId)
+        .toList();
+
+    if (relevantHouses.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Нет домов привязанных к этой котельной')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, modalRef, child) {
+            final modalState = modalRef.watch(incidentFormControllerProvider(null));
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.7,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'ЗАТРОНУТЫЕ ДОМА',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              controller.toggleAllHouses(
+                                relevantHouses.map((h) => h.id).toList(),
+                              );
+                            },
+                            child: Text(
+                              relevantHouses.every((h) => modalState.affectedHouseIds.contains(h.id))
+                                  ? 'Снять все'
+                                  : 'Выбрать все',
+                              style: const TextStyle(color: Colors.blue),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: relevantHouses.length,
+                        itemBuilder: (context, index) {
+                          final house = relevantHouses[index];
+                          final isSelected = modalState.affectedHouseIds.contains(house.id);
+                          return CheckboxListTile(
+                            title: Text(
+                              house.name,
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                            ),
+                            value: isSelected,
+                            onChanged: (_) => controller.toggleHouse(house.id),
                           );
                         },
                       ),

@@ -226,6 +226,52 @@ class IncidentHeaderCard extends ConsumerWidget {
                     ],
                   ),
                 ],
+                // Информация о неработающих котлах
+                Builder(builder: (context) {
+                  String? boilersInfo;
+                  if (incident.supplyFullyStopped == true) {
+                    boilersInfo = '🔴 Подача полностью прекращена';
+                  } else if (incident.inactiveBoilerNumbers != null && incident.inactiveBoilerNumbers!.isNotEmpty) {
+                    final inactive = List<int>.from(incident.inactiveBoilerNumbers!)..sort();
+                    final numsText = inactive.map((n) => '№$n').join(', ');
+                    final total = incident.boilerHouse?.totalBoilersCount;
+                    if (total != null && total > 0) {
+                      boilersInfo = '⚠️ Котлы $numsText из $total — не работают';
+                    } else {
+                      boilersInfo = '⚠️ Котлы $numsText — не работают';
+                    }
+                  }
+                  if (boilersInfo == null) return const SizedBox.shrink();
+                  final isFullStop = boilersInfo.startsWith('🔴');
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25), height: 1),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.settings_suggest,
+                            size: 20,
+                            color: isFullStop ? Colors.red : Colors.orange,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              boilersInfo,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
                 const SizedBox(height: 16),
                 Row(
                   children: [

@@ -21,6 +21,8 @@ class IncidentFormScreen extends ConsumerStatefulWidget {
 
 class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  /// Временное кол-во котлов если у котельной totalBoilersCount не задан
+  int _localBoilerCount = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +97,11 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           child: Text(bh.address, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                         );
                       }).toList(),
-                      onChanged: controller.updateBoilerHouse,
+                      onChanged: (v) {
+                        controller.updateBoilerHouse(v);
+                        // Сбрасываем локальный счётчик котлов при смене котельной
+                        setState(() => _localBoilerCount = 1);
+                      },
                       validator: (v) => v == null ? 'Выберите котельную' : null,
                     ),
                     const SizedBox(height: 16),
@@ -487,93 +493,204 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
     IncidentFormController controller,
     MapDataState mapData,
   ) {
-    // Находим количество котлов у выбранной котельной
+    // Ищем котельную по всему списку (независимо от фильтров)
     final selectedBh = state.boilerHouseId != null
         ? mapData.boilerHouses.where((b) => b.id == state.boilerHouseId).firstOrNull
         : null;
-    final totalBoilers = selectedBh?.totalBoilersCount ?? 1;
+    // Если totalBoilersCount не задан в БД — используем локальный стейт формы
+    final serverBoilerCount = selectedBh?.totalBoilersCount;
+    final totalBoilers = (serverBoilerCount != null && serverBoilerCount > 0)
+        ? serverBoilerCount
+        : (state.boilerHouseId != null ? _localBoilerCount : 0);
+    final boilerHouseNotSelected = state.boilerHouseId == null;
+    final noBoilersConfigured = false; // всегда показываем чипы если котельная выбрана
+    final usingLocalCount = serverBoilerCount == null || serverBoilerCount == 0;
 
     return _buildSection(
       title: 'СОСТОЯНИЕ КОТЛОВ',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Чипы котлов — показываем только если котлов больше одного
-          if (totalBoilers > 1) ...[
+          // ── Placeholder: котельная не выбрана ──
+          if (boilerHouseNotSelected) ...[
             Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Theme.of(context).colorScheme.onSurface.withAlpha(100)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Сначала выберите котельную выше',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]
+
+          // ── Чипы котлов (всегда если котельная выбрана) ──
+          else ...[
+            // Предупреждение + ручной счётчик если totalBoilersCount не задан
+            if (usingLocalCount) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withAlpha(20),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withAlpha(60)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 15, color: Colors.orange.shade400),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Кол-во котлов не задано в котельной. Укажите вручную:',
+                        style: TextStyle(color: Colors.orange.shade300, fontSize: 11),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Уменьшить
+                    GestureDetector(
+                      onTap: _localBoilerCount > 1
+                          ? () => setState(() => _localBoilerCount--)
+                          : null,
+                      child: Container(
+                        width: 28, height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(Icons.remove, size: 16,
+                          color: _localBoilerCount > 1 ? Colors.white : Colors.white38),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        '$_localBoilerCount',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                    // Увеличить
+                    GestureDetector(
+                      onTap: _localBoilerCount < 20
+                          ? () => setState(() => _localBoilerCount++)
+                          : null,
+                      child: Container(
+                        width: 28, height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(20),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(Icons.add, size: 16,
+                          color: _localBoilerCount < 20 ? Colors.white : Colors.white38),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10.0),
               child: Text(
-                'Котлы (выберите неработающие):',
+                'Нажмите на котёл чтобы отметить его как неработающий:',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(153),
+                  color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
                   fontSize: 12,
                 ),
               ),
             ),
             Wrap(
               spacing: 8,
-              runSpacing: 4,
+              runSpacing: 8,
               children: List.generate(totalBoilers, (index) {
                 final boilerNumber = index + 1;
                 final isInactive = state.inactiveBoilers.contains(boilerNumber);
-                return FilterChip(
-                  label: Text('Котёл $boilerNumber'),
-                  selected: isInactive,
-                  selectedColor: Colors.red.shade900.withAlpha(80),
-                  checkmarkColor: Colors.red.shade300,
-                  labelStyle: TextStyle(
-                    color: isInactive
-                        ? Colors.red.shade300
-                        : Theme.of(context).colorScheme.onSurface,
-                    fontSize: 13,
-                    fontWeight: isInactive ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.onSurface.withAlpha(13),
-                  side: BorderSide(
-                    color: isInactive
-                        ? Colors.red.shade700
-                        : Theme.of(context).colorScheme.onSurface.withAlpha(40),
-                  ),
-                  // При включённом тумблере — чипы дизаблед
-                  onSelected: state.supplyFullyStopped
+                final isDisabled = state.supplyFullyStopped;
+                return GestureDetector(
+                  onTap: isDisabled
                       ? null
-                      : (_) => controller.toggleBoiler(boilerNumber),
+                      : () => controller.toggleBoiler(boilerNumber),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeInOut,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isDisabled
+                          ? Theme.of(context).colorScheme.onSurface.withAlpha(10)
+                          : isInactive
+                              ? Colors.red.shade900.withAlpha(60)
+                              : Colors.green.shade900.withAlpha(60),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isDisabled
+                            ? Theme.of(context).colorScheme.onSurface.withAlpha(30)
+                            : isInactive
+                                ? Colors.red.shade600
+                                : Colors.green.shade600,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Text(
+                      'Котёл $boilerNumber',
+                      style: TextStyle(
+                        color: isDisabled
+                            ? Theme.of(context).colorScheme.onSurface.withAlpha(80)
+                            : isInactive
+                                ? Colors.red.shade300
+                                : Colors.green.shade400,
+                        fontSize: 13,
+                        fontWeight: isInactive ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 );
               }),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
           ],
 
-          // Тумблер "Не поступает полностью" — всегда виден
+          // ── Тумблер "Услуги поступают" (инверсный — как на iOS) ──
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              'Не поступает полностью',
+              'Услуги поступают',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),
             subtitle: Text(
-              'Теплоноситель не поступает ни в один дом',
+              state.supplyFullyStopped
+                  ? 'Теплоноситель полностью прекращён'
+                  : 'Подача в штатном / частичном режиме',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
                 fontSize: 12,
               ),
             ),
             secondary: Icon(
-              Icons.power_off_rounded,
-              color: state.supplyFullyStopped ? Colors.red : Colors.grey,
-              size: 20,
+              state.supplyFullyStopped
+                  ? Icons.cancel_outlined
+                  : Icons.check_circle_outline,
+              color: state.supplyFullyStopped ? Colors.red : Colors.green,
+              size: 22,
             ),
-            value: state.supplyFullyStopped,
-            onChanged: controller.updateSupplyFullyStopped,
-            activeColor: Colors.red,
+            // Инверсия: тумблер ВКЛ = услуги поступают = supplyFullyStopped = false
+            value: !state.supplyFullyStopped,
+            onChanged: (value) => controller.updateSupplyFullyStopped(!value),
+            activeColor: Colors.green,
+            inactiveThumbColor: Colors.red.shade400,
+            inactiveTrackColor: Colors.red.shade900.withAlpha(100),
           ),
 
-          // Статус-индикатор — обновляется в реальном времени
-          const SizedBox(height: 12),
+          // ── Статус-индикатор ──
+          const SizedBox(height: 8),
           _buildBoilerStatusIndicator(context, state, totalBoilers),
         ],
       ),
@@ -586,6 +703,8 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
     IncidentFormState state,
     int totalBoilers,
   ) {
+    if (totalBoilers == 0) return const SizedBox.shrink();
+
     final Color bgColor;
     final Color textColor;
     final String emoji;
@@ -597,25 +716,25 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
       textColor = Colors.red.shade300;
       emoji = '🔴';
       statusText = 'Полная остановка';
-      subText = 'Теплоноситель не поступает ни в один дом';
+      subText = 'Подача полностью прекращена';
     } else if (state.inactiveBoilers.isEmpty) {
       bgColor = Colors.green.withAlpha(25);
       textColor = Colors.green.shade400;
       emoji = '🟢';
       statusText = 'Все котлы работают';
-      subText = 'Тепло/ГВС поступает в полном объёме';
-    } else if (state.inactiveBoilers.length >= totalBoilers) {
+      subText = 'Подача в штатном режиме';
+    } else if (totalBoilers > 0 && state.inactiveBoilers.length >= totalBoilers) {
       bgColor = Colors.red.withAlpha(30);
       textColor = Colors.red.shade300;
       emoji = '🔴';
       statusText = 'Полная остановка';
-      subText = 'Все ${totalBoilers} котлов не работают';
+      subText = 'Все $totalBoilers котлов не работают';
     } else {
       bgColor = Colors.orange.withAlpha(30);
       textColor = Colors.orange.shade300;
       emoji = '🟠';
       statusText = 'Частичная остановка';
-      subText = 'Не работает ${state.inactiveBoilers.length} из $totalBoilers котлов';
+      subText = '${state.inactiveBoilers.length} из $totalBoilers котлов не работает';
     }
 
     return AnimatedContainer(
