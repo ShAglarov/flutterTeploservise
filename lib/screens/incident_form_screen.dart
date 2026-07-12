@@ -611,38 +611,31 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
               children: List.generate(totalBoilers, (index) {
                 final boilerNumber = index + 1;
                 final isInactive = state.inactiveBoilers.contains(boilerNumber);
-                final isDisabled = state.supplyFullyStopped;
+                // Чипы ВСЕГДА кликабельны — пользователь может снять котёл с нерабочего
+                // даже когда supplyFullyStopped=true (автоустановлен при всех нерабочих)
                 return GestureDetector(
-                  onTap: isDisabled
-                      ? null
-                      : () => controller.toggleBoiler(boilerNumber),
+                  onTap: () => controller.toggleBoiler(boilerNumber, totalBoilers: totalBoilers),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     curve: Curves.easeInOut,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isDisabled
-                          ? Theme.of(context).colorScheme.onSurface.withAlpha(10)
-                          : isInactive
-                              ? Colors.red.shade900.withAlpha(60)
-                              : Colors.green.shade900.withAlpha(60),
+                      color: isInactive
+                          ? Colors.red.shade900.withAlpha(60)
+                          : Colors.green.shade900.withAlpha(60),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isDisabled
-                            ? Theme.of(context).colorScheme.onSurface.withAlpha(30)
-                            : isInactive
-                                ? Colors.red.shade600
-                                : Colors.green.shade600,
+                        color: isInactive
+                            ? Colors.red.shade600
+                            : Colors.green.shade600,
                         width: 1.5,
                       ),
                     ),
                     child: Text(
                       'Котёл $boilerNumber',
                       style: TextStyle(
-                        color: isDisabled
-                            ? Theme.of(context).colorScheme.onSurface.withAlpha(80)
-                            : isInactive
-                                ? Colors.red.shade300
+                        color: isInactive
+                            ? Colors.red.shade300
                                 : Colors.green.shade400,
                         fontSize: 13,
                         fontWeight: isInactive ? FontWeight.w700 : FontWeight.w500,
@@ -683,7 +676,9 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
             ),
             // Инверсия: тумблер ВКЛ = услуги поступают = supplyFullyStopped = false
             value: !state.supplyFullyStopped,
-            onChanged: (value) => controller.updateSupplyFullyStopped(!value),
+            onChanged: (state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0)
+                ? null
+                : (value) => controller.updateSupplyFullyStopped(!value, totalBoilers: totalBoilers),
             activeColor: Colors.green,
             inactiveThumbColor: Colors.red.shade400,
             inactiveTrackColor: Colors.red.shade900.withAlpha(100),

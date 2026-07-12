@@ -353,116 +353,133 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
   }
 
   Widget _buildBoilerChipsRow(BuildContext context) {
-    // Показываем только если есть данные о котлах
     if (widget.totalBoilersCount <= 0 &&
         !widget.supplyFullyStopped &&
         widget.inactiveBoilerNumbers.isEmpty) {
       return const SizedBox.shrink();
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final total = widget.totalBoilersCount;
+    final inactive = widget.inactiveBoilerNumbers;
+    final servicesOk = !widget.supplyFullyStopped;
+
+    String? bannerTitle;
+    String? bannerSubtitle;
+    Color bannerColor = AppTheme.warningOrange;
+
+    if (widget.supplyFullyStopped) {
+      bannerTitle = 'Полная остановка';
+      bannerSubtitle = 'Подача полностью прекращена';
+      bannerColor = AppTheme.errorRed;
+    } else if (inactive.isNotEmpty) {
+      bannerTitle = 'Частичная остановка';
+      final totalStr = total > 0 ? ' из $total' : '';
+      bannerSubtitle = 'С${inactive.length}$totalStr котл${_boilerWord(inactive.length)} не работает';
+      bannerColor = AppTheme.warningOrange;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.settings_suggest,
-                size: 20,
-                color: widget.supplyFullyStopped
-                    ? AppTheme.errorRed
-                    : widget.inactiveBoilerNumbers.isNotEmpty
-                        ? AppTheme.warningOrange
-                        : Theme.of(context).colorScheme.onSurface.withAlpha(140),
-              ),
-              const SizedBox(width: 12),
-              // Чипы котлов
-              Expanded(
-                child: _buildBoilerChips(context),
-              ),
-            ],
+        const SizedBox(height: 12),
+        Text(
+          'Состояние котлов',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           ),
         ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: total > 0
+              ? List.generate(total, (i) => _boilerChip(context, i + 1, inactive: widget.supplyFullyStopped || inactive.contains(i + 1)))
+              : inactive.map((n) => _boilerChip(context, n, inactive: true)).toList(),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Icon(
+              servicesOk ? Icons.check_circle : Icons.cancel,
+              size: 20,
+              color: servicesOk ? Colors.green.shade400 : AppTheme.errorRed,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              servicesOk ? 'Услуги поступают' : 'Услуги прекращены',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: servicesOk ? Theme.of(context).colorScheme.onSurface : AppTheme.errorRed,
+              ),
+            ),
+          ],
+        ),
+        if (bannerTitle != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark ? bannerColor.withAlpha(40) : bannerColor.withAlpha(20),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Icon(Icons.circle, size: 10, color: bannerColor),
+                  const SizedBox(width: 8),
+                  Text(bannerTitle, style: TextStyle(color: bannerColor, fontSize: 14, fontWeight: FontWeight.w700)),
+                ]),
+                if (bannerSubtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 18),
+                    child: Text(bannerSubtitle, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
       ],
     );
   }
 
-  Widget _buildBoilerChips(BuildContext context) {
-    // Полная остановка — один красный бейдж
-    if (widget.supplyFullyStopped) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppTheme.errorRed.withAlpha(30),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.errorRed.withAlpha(120)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.cancel_outlined, size: 13, color: AppTheme.errorRed),
-            const SizedBox(width: 5),
-            Text(
-              'Подача прекращена',
-              style: TextStyle(color: AppTheme.errorRed, fontSize: 12, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Нет данных о котлах но есть неработающие
-    if (widget.totalBoilersCount <= 0 && widget.inactiveBoilerNumbers.isNotEmpty) {
-      return Wrap(
-        spacing: 6,
-        runSpacing: 4,
-        children: widget.inactiveBoilerNumbers.map((n) => _boilerChip(context, n, inactive: true)).toList(),
-      );
-    }
-
-    // Рисуем все котлы 1..totalBoilersCount
-    return Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      children: List.generate(widget.totalBoilersCount, (i) {
-        final number = i + 1;
-        final isInactive = widget.inactiveBoilerNumbers.contains(number);
-        return _boilerChip(context, number, inactive: isInactive);
-      }),
-    );
+  String _boilerWord(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 19) return 'ов';
+    if (mod10 == 1) return '';
+    if (mod10 >= 2 && mod10 <= 4) return 'а';
+    return 'ов';
   }
 
   Widget _boilerChip(BuildContext context, int number, {required bool inactive}) {
-    final bgColor = inactive
-        ? AppTheme.errorRed.withAlpha(30)
-        : Colors.green.shade900.withAlpha(50);
-    final borderColor = inactive
-        ? AppTheme.errorRed.withAlpha(180)
-        : Colors.green.shade700;
-    final textColor = inactive
-        ? AppTheme.errorRed
-        : Colors.green.shade400;
+    final bgColor = inactive ? AppTheme.errorRed.withAlpha(30) : Colors.green.shade900.withAlpha(50);
+    final borderColor = inactive ? AppTheme.errorRed.withAlpha(200) : Colors.green.shade700;
+    final textColor = inactive ? AppTheme.errorRed : Colors.green.shade400;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor, width: 1.5),
       ),
       child: Text(
-        'К$number',
-        style: TextStyle(
-          color: textColor,
-          fontSize: 11,
-          fontWeight: inactive ? FontWeight.w700 : FontWeight.w500,
-        ),
+        'Котёл $number',
+        style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
   }
+
 
   Widget _buildActionRow(
     BuildContext context, {

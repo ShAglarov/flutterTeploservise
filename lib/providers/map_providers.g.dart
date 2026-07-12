@@ -40,7 +40,7 @@ final class MapDataProvider extends $NotifierProvider<MapData, MapDataState> {
   }
 }
 
-String _$mapDataHash() => r'8a2bd1cefaa9d75a4aeba43f7a3316dd1702b3bc';
+String _$mapDataHash() => r'2225795a822000543715570c2637db2503a0d558';
 
 abstract class _$MapData extends $Notifier<MapDataState> {
   MapDataState build();

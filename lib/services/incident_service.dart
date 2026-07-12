@@ -53,9 +53,11 @@ class IncidentService {
   }
 
   Future<IncidentResponse> updateIncident(int id, IncidentUpdate update) async {
+    final jsonPayload = update.toJson();
+    debugPrint('📤 [IncidentService] PUT /incidents/$id payload: $jsonPayload');
     final response = await _dio.put(
       '/incidents/$id',
-      data: update.toJson(),
+      data: jsonPayload,
     );
     final incident = IncidentResponse.fromJson(response.data);
     await _syncRepository.upsertIncidents([incident]);

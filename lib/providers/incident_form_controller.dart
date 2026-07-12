@@ -114,20 +114,35 @@ class IncidentFormController extends _$IncidentFormController {
     state = state.copyWith(affectedHouseIds: newSet);
   }
 
-  /// Переключает состояние котла (работает / не работает)
-  void toggleBoiler(int boilerNumber) {
+  /// Переключает состояние котла (работает / не работает).
+  /// [totalBoilers] — общее кол-во котлов котельной.
+  /// Если ВСЕ котлы стали нерабочими → автоматически supplyFullyStopped = true.
+  void toggleBoiler(int boilerNumber, {int totalBoilers = 0}) {
     final newSet = Set<int>.from(state.inactiveBoilers);
+    bool newSupplyFullyStopped = state.supplyFullyStopped;
     if (newSet.contains(boilerNumber)) {
+      // Котёл восстановлен → снимаем полную остановку автоматически
       newSet.remove(boilerNumber);
+      newSupplyFullyStopped = false;
     } else {
       newSet.add(boilerNumber);
     }
-    state = state.copyWith(inactiveBoilers: newSet);
+    // Если все котлы стали нерабочими — автоматически включить supplyFullyStopped
+    if (totalBoilers > 0 && newSet.length >= totalBoilers) {
+      newSupplyFullyStopped = true;
+    }
+    state = state.copyWith(
+      inactiveBoilers: newSet,
+      supplyFullyStopped: newSupplyFullyStopped,
+    );
   }
 
   /// Устанавливает тумблер "Не поступает полностью".
   /// При включении — сбрасываем чипы котлов (тумблер имеет приоритет).
-  void updateSupplyFullyStopped(bool value) {
+  /// Нельзя выключить тумблер вручную если все котлы нерабочие.
+  void updateSupplyFullyStopped(bool value, {int totalBoilers = 0}) {
+    final allInactive = totalBoilers > 0 && state.inactiveBoilers.length >= totalBoilers;
+    if (!value && allInactive) return; // заблокировано
     state = state.copyWith(
       supplyFullyStopped: value,
       inactiveBoilers: value ? {} : state.inactiveBoilers,

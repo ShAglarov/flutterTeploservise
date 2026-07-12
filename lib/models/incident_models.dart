@@ -349,7 +349,7 @@ class IncidentCreate {
   Map<String, dynamic> toJson() => _$IncidentCreateToJson(this);
 }
 
-@JsonSerializable(fieldRename: FieldRename.snake)
+@JsonSerializable(fieldRename: FieldRename.snake, includeIfNull: false)
 class IncidentUpdate {
   final int? id;
   final int? boilerHouseId;

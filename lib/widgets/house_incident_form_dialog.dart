@@ -768,37 +768,29 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                   children: List.generate(totalBoilers, (index) {
                     final boilerNumber = index + 1;
                     final isInactive = state.inactiveBoilers.contains(boilerNumber);
-                    final isDisabled = state.supplyFullyStopped;
+                    // Чипы ВСЕГДА кликабельны
                     return GestureDetector(
-                      onTap: isDisabled
-                          ? null
-                          : () => controller.toggleBoiler(boilerNumber),
+                      onTap: () => controller.toggleBoiler(boilerNumber, totalBoilers: totalBoilers),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         curve: Curves.easeInOut,
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isDisabled
-                              ? Colors.white.withAlpha(10)
-                              : isInactive
-                                  ? Colors.red.shade900.withAlpha(60)
-                                  : Colors.green.shade900.withAlpha(60),
+                          color: isInactive
+                              ? Colors.red.shade900.withAlpha(60)
+                              : Colors.green.shade900.withAlpha(60),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isDisabled
-                                ? Colors.white.withAlpha(30)
-                                : isInactive
-                                    ? Colors.red.shade600
-                                    : Colors.green.shade600,
+                            color: isInactive
+                                ? Colors.red.shade600
+                                : Colors.green.shade600,
                             width: 1.5,
                           ),
                         ),
                         child: Text(
                           'Котёл $boilerNumber',
                           style: TextStyle(
-                            color: isDisabled
-                                ? Colors.white38
-                                : isInactive
+                            color: isInactive
                                     ? Colors.red.shade300
                                     : Colors.green.shade400,
                             fontSize: 13,
@@ -833,7 +825,9 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                     const Spacer(),
                     Switch(
                       value: !state.supplyFullyStopped,
-                      onChanged: (value) => controller.updateSupplyFullyStopped(!value),
+                      onChanged: (state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0)
+                          ? null
+                          : (value) => controller.updateSupplyFullyStopped(!value, totalBoilers: totalBoilers),
                       activeColor: Colors.white,
                       activeTrackColor: Colors.green,
                       inactiveThumbColor: Colors.red.shade400,
