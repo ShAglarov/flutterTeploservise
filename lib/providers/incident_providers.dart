@@ -189,18 +189,38 @@ IncidentViewModel _createViewModel(IncidentResponse inc, String? boilerHouseDeta
     }
   }
 
-  // 3. Timestamp
-  final startDt = inc.createdAt != null && inc.createdAt!.isNotEmpty ? DateTime.tryParse(inc.createdAt!)?.toLocal() : null;
-  final startStr = startDt != null ? '${startDt.day.toString().padLeft(2, '0')}.${startDt.month.toString().padLeft(2, '0')}.${startDt.year} ${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}' : inc.createdAt ?? '';
+  // 3. Timestamp — используем startedAt для начала, createdAt как fallback
+  final startRaw = inc.startedAt ?? inc.createdAt;
+  final startDt = startRaw != null && startRaw.isNotEmpty ? DateTime.tryParse(startRaw)?.toLocal() : null;
+  final startStr = startDt != null ? '${startDt.day.toString().padLeft(2, '0')}.${startDt.month.toString().padLeft(2, '0')}.${startDt.year} ${startDt.hour.toString().padLeft(2, '0')}:${startDt.minute.toString().padLeft(2, '0')}' : startRaw ?? '';
   
   String formattedTimestamp;
-  if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed) {
-    final endDtStr = inc.resolvedAt ?? inc.updatedAt;
+  if (inc.isScheduledLocal) {
+    // Запланированный инцидент — показываем время старта
+    if (inc.finishedAt != null) {
+      final endDt = DateTime.tryParse(inc.finishedAt!)?.toLocal();
+      final endStr = endDt != null ? '${endDt.day.toString().padLeft(2, '0')}.${endDt.month.toString().padLeft(2, '0')}.${endDt.year} ${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}' : '';
+      formattedTimestamp = 'Старт: $startStr → $endStr';
+    } else {
+      formattedTimestamp = 'Старт: $startStr';
+    }
+  } else if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed) {
+    final endDtStr = inc.resolvedAt ?? inc.finishedAt ?? inc.updatedAt;
     final endDt = endDtStr != null && endDtStr.isNotEmpty ? DateTime.tryParse(endDtStr)?.toLocal() : null;
     final endStr = endDt != null ? '${endDt.day.toString().padLeft(2, '0')}.${endDt.month.toString().padLeft(2, '0')}.${endDt.year} ${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}' : endDtStr ?? '';
     formattedTimestamp = 'с $startStr до $endStr';
+  } else if (inc.isOverdue) {
+    // Просроченный — показываем что время завершения прошло
+    final endDt = DateTime.tryParse(inc.finishedAt!)?.toLocal();
+    final endStr = endDt != null ? '${endDt.day.toString().padLeft(2, '0')}.${endDt.month.toString().padLeft(2, '0')}.${endDt.year} ${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}' : '';
+    formattedTimestamp = 'с $startStr (до $endStr)';
+  } else if (inc.finishedAt != null) {
+    // Активный с запланированным окончанием
+    final endDt = DateTime.tryParse(inc.finishedAt!)?.toLocal();
+    final endStr = endDt != null ? '${endDt.day.toString().padLeft(2, '0')}.${endDt.month.toString().padLeft(2, '0')}.${endDt.year} ${endDt.hour.toString().padLeft(2, '0')}:${endDt.minute.toString().padLeft(2, '0')}' : '';
+    formattedTimestamp = 'с $startStr до $endStr';
   } else {
-    formattedTimestamp = 'с $startStr до по наст. время';
+    formattedTimestamp = 'с $startStr по наст. время';
   }
 
   // 4. Stopped Services

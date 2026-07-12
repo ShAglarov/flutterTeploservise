@@ -207,8 +207,7 @@ class IncidentResponse {
   final bool? supplyFullyStopped;          // тумблер "Не поступает полностью"
   final String? colorStatus;               // "normal", "partial", "full"
   
-  /// Клиентское поле: автоматически завершить инцидент по наступлении finishedAt
-  @JsonKey(includeFromJson: false, includeToJson: false)
+  /// Автоматически завершить инцидент по наступлении finishedAt
   final bool autoResolveOnFinish;
 
   IncidentResponse({
@@ -241,13 +240,15 @@ class IncidentResponse {
     this.autoResolveOnFinish = false,
   });
 
-  /// Проверяет локально, запланирован ли инцидент (startedAt в будущем)
+  /// Проверяет локально, запланирован ли инцидент (startedAt в будущем).
+  /// НЕ используем серверный isScheduled — он не обновляется при наступлении startedAt.
+  /// Аналогично iOS-версии: проверяем только по локальному времени.
   bool get isScheduledLocal {
-    if (isScheduled) return true;
+    if (status == IncidentStatus.resolved || status == IncidentStatus.closed) return false;
     if (startedAt == null) return false;
     final parsed = DateTime.tryParse(startedAt!);
     if (parsed == null) return false;
-    return parsed.isAfter(DateTime.now());
+    return parsed.toLocal().isAfter(DateTime.now());
   }
 
   /// Проверяет, просрочен ли инцидент (finishedAt прошла, но статус не closed/resolved)
@@ -256,7 +257,7 @@ class IncidentResponse {
     if (status == IncidentStatus.resolved || status == IncidentStatus.closed) return false;
     final parsed = DateTime.tryParse(finishedAt!);
     if (parsed == null) return false;
-    return parsed.isBefore(DateTime.now());
+    return parsed.toLocal().isBefore(DateTime.now());
   }
 
   factory IncidentResponse.fromJson(Map<String, dynamic> json) => _$IncidentResponseFromJson(json);
@@ -322,6 +323,7 @@ class IncidentCreate {
   final bool? supplyFullyStopped;
   final String? startedAt;
   final String? finishedAt;
+  final bool? autoResolveOnFinish;
 
   IncidentCreate({
     required this.boilerHouseId,
@@ -340,6 +342,7 @@ class IncidentCreate {
     this.supplyFullyStopped,
     this.startedAt,
     this.finishedAt,
+    this.autoResolveOnFinish,
   });
 
   factory IncidentCreate.fromJson(Map<String, dynamic> json) => _$IncidentCreateFromJson(json);
@@ -367,6 +370,7 @@ class IncidentUpdate {
   final bool? supplyFullyStopped;
   final String? startedAt;
   final String? finishedAt;
+  final bool? autoResolveOnFinish;
 
   IncidentUpdate({
     this.id,
@@ -387,6 +391,7 @@ class IncidentUpdate {
     this.supplyFullyStopped,
     this.startedAt,
     this.finishedAt,
+    this.autoResolveOnFinish,
   });
 
   factory IncidentUpdate.fromJson(Map<String, dynamic> json) => _$IncidentUpdateFromJson(json);

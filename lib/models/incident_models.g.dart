@@ -155,6 +155,7 @@ IncidentResponse _$IncidentResponseFromJson(Map<String, dynamic> json) =>
           .toList(),
       supplyFullyStopped: json['supply_fully_stopped'] as bool?,
       colorStatus: json['color_status'] as String?,
+      autoResolveOnFinish: json['auto_resolve_on_finish'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$IncidentResponseToJson(IncidentResponse instance) =>
@@ -185,6 +186,7 @@ Map<String, dynamic> _$IncidentResponseToJson(IncidentResponse instance) =>
       'inactive_boiler_numbers': instance.inactiveBoilerNumbers,
       'supply_fully_stopped': instance.supplyFullyStopped,
       'color_status': instance.colorStatus,
+      'auto_resolve_on_finish': instance.autoResolveOnFinish,
     };
 
 const _$IncidentStatusEnumMap = {
@@ -257,6 +259,7 @@ IncidentCreate _$IncidentCreateFromJson(Map<String, dynamic> json) =>
       supplyFullyStopped: json['supply_fully_stopped'] as bool?,
       startedAt: json['started_at'] as String?,
       finishedAt: json['finished_at'] as String?,
+      autoResolveOnFinish: json['auto_resolve_on_finish'] as bool?,
     );
 
 Map<String, dynamic> _$IncidentCreateToJson(IncidentCreate instance) =>
@@ -277,6 +280,7 @@ Map<String, dynamic> _$IncidentCreateToJson(IncidentCreate instance) =>
       'supply_fully_stopped': instance.supplyFullyStopped,
       'started_at': instance.startedAt,
       'finished_at': instance.finishedAt,
+      'auto_resolve_on_finish': instance.autoResolveOnFinish,
     };
 
 IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
@@ -311,6 +315,7 @@ IncidentUpdate _$IncidentUpdateFromJson(Map<String, dynamic> json) =>
       supplyFullyStopped: json['supply_fully_stopped'] as bool?,
       startedAt: json['started_at'] as String?,
       finishedAt: json['finished_at'] as String?,
+      autoResolveOnFinish: json['auto_resolve_on_finish'] as bool?,
     );
 
 Map<String, dynamic> _$IncidentUpdateToJson(IncidentUpdate instance) =>
@@ -333,6 +338,7 @@ Map<String, dynamic> _$IncidentUpdateToJson(IncidentUpdate instance) =>
       'supply_fully_stopped': instance.supplyFullyStopped,
       'started_at': instance.startedAt,
       'finished_at': instance.finishedAt,
+      'auto_resolve_on_finish': instance.autoResolveOnFinish,
     };
 
 IncidentCommentAuthor _$IncidentCommentAuthorFromJson(

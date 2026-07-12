@@ -158,35 +158,15 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                       _buildContainer(
                         child: Column(
                           children: [
+                            // ─── Начало (startedAt) — может быть в будущем для запланированных ───
                             _buildRow(
                               'Начало', 
-                              DateFormat('dd.MM.yyyy HH:mm').format(state.createdAt),
-                              icon: Icons.calendar_today,
+                              state.startedAt != null 
+                                ? DateFormat('dd.MM.yyyy HH:mm').format(state.startedAt!)
+                                : DateFormat('dd.MM.yyyy HH:mm').format(state.createdAt),
+                              icon: Icons.play_arrow_rounded,
                               onTap: () async {
-                                final date = await showDatePicker(
-                                  context: context,
-                                  initialDate: state.createdAt,
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                                );
-                                if (date != null && mounted) {
-                                  final time = await showTimePicker(
-                                    context: context,
-                                    initialTime: TimeOfDay.fromDateTime(state.createdAt),
-                                  );
-                                  if (time != null) {
-                                    controller.updateCreatedAt(DateTime(date.year, date.month, date.day, time.hour, time.minute));
-                                  }
-                                }
-                              },
-                            ),
-                            _buildDivider(),
-                            _buildRow(
-                              'Окончание', 
-                              state.resolvedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.resolvedAt!) : '—',
-                              icon: Icons.event_available,
-                              onTap: () async {
-                                final initialDate = state.resolvedAt ?? DateTime.now();
+                                final initialDate = state.startedAt ?? state.createdAt;
                                 final date = await showDatePicker(
                                   context: context,
                                   initialDate: initialDate,
@@ -199,10 +179,78 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                                     initialTime: TimeOfDay.fromDateTime(initialDate),
                                   );
                                   if (time != null) {
-                                    controller.updateResolvedAt(DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                                    controller.updateStartedAt(DateTime(date.year, date.month, date.day, time.hour, time.minute));
                                   }
                                 }
-                              }
+                              },
+                            ),
+                            _buildDivider(),
+                            // ─── Окончание (finishedAt) — опционально ───
+                            InkWell(
+                              onTap: () async {
+                                final initialDate = state.finishedAt ?? state.startedAt?.add(const Duration(hours: 1)) ?? DateTime.now().add(const Duration(hours: 1));
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: initialDate,
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                                );
+                                if (date != null && mounted) {
+                                  final time = await showTimePicker(
+                                    context: context,
+                                    initialTime: TimeOfDay.fromDateTime(initialDate),
+                                  );
+                                  if (time != null) {
+                                    controller.updateFinishedAt(DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                                  }
+                                }
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.stop_rounded, color: Theme.of(context).colorScheme.onSurface.withAlpha(140), size: 20),
+                                    const SizedBox(width: 12),
+                                    Text('Окончание', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 15)),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Text(
+                                        state.finishedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.finishedAt!) : '—',
+                                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 15),
+                                        textAlign: TextAlign.right,
+                                      ),
+                                    ),
+                                    if (state.finishedAt != null) ...[
+                                      const SizedBox(width: 4),
+                                      GestureDetector(
+                                        onTap: () => controller.updateFinishedAt(null),
+                                        child: const Icon(Icons.clear, color: Colors.red, size: 18),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                            _buildDivider(),
+                            // ─── Тумблер авто-завершения ───
+                            _buildToggleRow(
+                              state.autoResolveOnFinish 
+                                ? 'Авто-завершение' 
+                                : 'Станет просроченным',
+                              Icons.check_circle_outline, 
+                              state.autoResolveOnFinish ? Colors.green : Colors.grey, 
+                              state.autoResolveOnFinish, 
+                              (value) {
+                                // Если включают автозавершение и нет finishedAt — предлагаем задать
+                                if (value && state.finishedAt == null) {
+                                  controller.updateAutoResolveOnFinish(value);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Задайте "Окончание" для авто-завершения'), duration: Duration(seconds: 2)),
+                                  );
+                                } else {
+                                  controller.updateAutoResolveOnFinish(value);
+                                }
+                              },
                             ),
                           ],
                         ),

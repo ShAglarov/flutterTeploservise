@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import '../models/incident_models.dart';
 import '../services/incident_service.dart';
 import '../providers/offline_edit_permission.dart';
+import '../repositories/sync_repository.dart';
 import 'incident_form_state.dart';
 export 'incident_form_state.dart';
 
@@ -150,10 +151,11 @@ class IncidentFormController extends _$IncidentFormController {
           affectedHouseDetails: state.affectedHouseIds.map((id) => AffectedHouseCreate(savedLocationId: id)).toList(),
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
-          createdAt: state.createdAt.toIso8601String(),
-          resolvedAt: state.resolvedAt?.toIso8601String(),
-          startedAt: (state.startedAt ?? state.createdAt).toIso8601String(),
-          finishedAt: state.finishedAt?.toIso8601String(),
+          createdAt: state.createdAt.toUtc().toIso8601String(),
+          resolvedAt: state.resolvedAt?.toUtc().toIso8601String(),
+          startedAt: (state.startedAt ?? state.createdAt).toUtc().toIso8601String(),
+          finishedAt: state.finishedAt?.toUtc().toIso8601String(),
+          autoResolveOnFinish: state.autoResolveOnFinish,
         );
         await service.updateIncident(state.id!, update);
       } else {
@@ -169,9 +171,10 @@ class IncidentFormController extends _$IncidentFormController {
           affectedHouseDetails: state.affectedHouseIds.map((id) => AffectedHouseCreate(savedLocationId: id)).toList(),
           assignedTo: state.assignedTo,
           notificationConfig: state.notificationConfig,
-          createdAt: state.createdAt.toIso8601String(),
-          startedAt: (state.startedAt ?? state.createdAt).toIso8601String(),
-          finishedAt: state.finishedAt?.toIso8601String(),
+          createdAt: state.createdAt.toUtc().toIso8601String(),
+          startedAt: (state.startedAt ?? state.createdAt).toUtc().toIso8601String(),
+          finishedAt: state.finishedAt?.toUtc().toIso8601String(),
+          autoResolveOnFinish: state.autoResolveOnFinish,
         );
         await service.createIncident(create);
       }
@@ -186,6 +189,18 @@ class IncidentFormController extends _$IncidentFormController {
     } catch (e) {
       state = state.copyWith(isSaving: false, errorMessage: 'Ошибка сохранения: $e');
       return false;
+    }
+  }
+
+  /// Сохраняет autoResolveOnFinish в Drift БД после успешного сохранения на сервере.
+  /// Аналогично iOS: incident.setValue(autoResolveOnFinishCaptured, forKey: "autoResolveOnFinish")
+  Future<void> _saveAutoResolveLocally(int incidentId, bool autoResolve) async {
+    try {
+      final syncRepo = ref.read(syncRepositoryProvider);
+      await syncRepo.updateAutoResolveOnFinish(incidentId, autoResolve);
+    } catch (e) {
+      // Не критично — логируем и продолжаем
+      print('⚠️ [IncidentFormController] Failed to save autoResolveOnFinish locally: $e');
     }
   }
 }

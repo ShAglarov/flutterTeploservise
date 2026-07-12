@@ -57,12 +57,25 @@ class SyncRepository {
         }
       }
 
-      // 2. Batch insert/replace the incidents and their relations
+      // 2. Read existing autoResolveOnFinish values (client-only field, server doesn't return it)
+      // This matches iOS EntityMapper: preservedAutoResolve
+      final existingIncidents = await (_db.select(_db.incidents)
+            ..where((t) => t.backendId.isIn(incidentIds)))
+          .get();
+      final autoResolveMap = <int, bool>{};
+      for (final existing in existingIncidents) {
+        autoResolveMap[existing.backendId] = existing.autoResolveOnFinish ?? false;
+      }
+
+      // 3. Batch insert/replace the incidents and their relations
       await _db.batch((batch) {
         for (final incident in incidents) {
+          // Preserve autoResolveOnFinish from local DB (server doesn't return it)
+          final preservedAutoResolve = autoResolveMap[incident.id] ?? incident.autoResolveOnFinish;
           final companion = _db.incidents.insertCompanionFromResponse(incident).copyWith(
             localPendingAck: const Value(false),
             lastLocalEditAt: const Value(null),
+            autoResolveOnFinish: Value(preservedAutoResolve),
           );
           batch.insert(
             _db.incidents,
@@ -929,6 +942,26 @@ class SyncRepository {
         );
       }).toList(),
     );
+  }
+
+  /// Обновляет клиентское поле autoResolveOnFinish в локальной БД.
+  /// Аналогично iOS: incident.setValue(autoResolve, forKey: "autoResolveOnFinish")
+  Future<void> updateAutoResolveOnFinish(int incidentId, bool autoResolve) async {
+    await (_db.update(_db.incidents)
+          ..where((t) => t.backendId.equals(incidentId)))
+        .write(IncidentsCompanion(
+          autoResolveOnFinish: Value(autoResolve),
+        ));
+  }
+
+  /// "Трогает" запись в БД чтобы Drift стрим re-emit.
+  /// Используется ScheduleManager при переходе scheduled→active.
+  Future<void> touchIncidentForRefresh(int incidentId) async {
+    await (_db.update(_db.incidents)
+          ..where((t) => t.backendId.equals(incidentId)))
+        .write(IncidentsCompanion(
+          lastLocalEditAt: Value(DateTime.now()),
+        ));
   }
 }
 

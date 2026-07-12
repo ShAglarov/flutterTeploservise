@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/incident_models.dart';
 import '../providers/incident_providers.dart';
 import '../services/incident_service.dart';
+import '../repositories/sync_repository.dart';
 
 /// Менеджер расписания инцидентов — автоматически обновляет UI
 /// в момент наступления startedAt (запланированный → активный)
@@ -35,10 +36,10 @@ class IncidentScheduleManager {
       if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed) continue;
       final parsed = DateTime.tryParse(inc.startedAt!);
       if (parsed == null) continue;
-      final local = parsed.toLocal();
-      if (local.isAfter(now)) {
-        if (nextStart == null || local.isBefore(nextStart)) {
-          nextStart = local;
+      final localDt = parsed.toLocal();
+      if (localDt.isAfter(now)) {
+        if (nextStart == null || localDt.isBefore(nextStart)) {
+          nextStart = localDt;
         }
       }
     }
@@ -62,6 +63,8 @@ class IncidentScheduleManager {
     _startTimer = Timer(delay, () {
       debugPrint('🚨 [ScheduleManager] Таймер старта сработал! Инцидент стал АКТИВНЫМ.');
       _nextStartDate = null;
+      // Трогаем БД чтобы Drift stream re-emit (аналог iOS tableView.reloadData())
+      _touchIncidentsInDb();
       // Инвалидируем провайдер для перерисовки UI
       _ref.invalidate(allIncidentsProvider);
     });
@@ -78,10 +81,10 @@ class IncidentScheduleManager {
       if (inc.isScheduledLocal) continue; // Ещё не стартовал
       final parsed = DateTime.tryParse(inc.finishedAt!);
       if (parsed == null) continue;
-      final local = parsed.toLocal();
-      if (local.isAfter(now)) {
-        if (nextFinish == null || local.isBefore(nextFinish)) {
-          nextFinish = local;
+      final localDt = parsed.toLocal();
+      if (localDt.isAfter(now)) {
+        if (nextFinish == null || localDt.isBefore(nextFinish)) {
+          nextFinish = localDt;
         }
       }
     }
@@ -108,6 +111,8 @@ class IncidentScheduleManager {
       _nextFinishDate = null;
       // Авто-завершение для инцидентов с autoResolveOnFinish=true
       _performAutoResolveIfNeeded(_lastIncidents);
+      // Трогаем БД чтобы Drift stream re-emit
+      _touchIncidentsInDb();
       _ref.invalidate(allIncidentsProvider);
     });
   }
@@ -126,7 +131,7 @@ class IncidentScheduleManager {
         final update = IncidentUpdate(
           id: inc.id,
           status: IncidentStatus.closed,
-          resolvedAt: DateTime.now().toIso8601String(),
+          resolvedAt: DateTime.now().toUtc().toIso8601String(),
         );
         service.updateIncident(inc.id, update).then((_) {
           debugPrint('✅ [ScheduleManager] Инцидент ${inc.id} закрыт на сервере');
@@ -155,6 +160,20 @@ class IncidentScheduleManager {
   void dispose() {
     _cancelStartTimer();
     _cancelFinishTimer();
+  }
+
+  /// Трогает записи в БД чтобы Drift стрим re-emit и карта перерисовала пины.
+  /// Аналог iOS: tableView.reloadData() / NotificationCenter.post
+  void _touchIncidentsInDb() {
+    try {
+      final syncRepo = _ref.read(syncRepositoryProvider);
+      for (final inc in _lastIncidents) {
+        if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed) continue;
+        syncRepo.touchIncidentForRefresh(inc.id);
+      }
+    } catch (e) {
+      debugPrint('⚠️ [ScheduleManager] Failed to touch DB: $e');
+    }
   }
 }
 
