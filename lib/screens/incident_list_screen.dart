@@ -225,7 +225,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
                 label: 'Редакт.',
                 icon: Icons.edit,
                 color: Colors.orange,
-                onPressed: (_) => _editIncident(inc.id),
+                onPressed: (_) => _editIncident(inc),
               ),
             ],
           ),
@@ -387,23 +387,15 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     }
   }
 
-  void _editIncident(int id) async {
-    try {
-      final service = ref.read(incidentServiceProvider);
-      final incident = await service.getIncident(id);
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => IncidentFormScreen(initialIncident: incident),
-          ),
-        ).then((_) => ref.invalidate(allIncidentsProvider));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Ошибка загрузки инцидента: $e')));
-      }
-    }
+  void _editIncident(IncidentResponse incident) {
+    // Используем уже загруженный из локальной БД объект — не делаем лишний GET к серверу,
+    // чтобы supplyFullyStopped/inactiveBoilerNumbers не затирались серверными null.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => IncidentFormScreen(initialIncident: incident),
+      ),
+    ).then((_) => ref.invalidate(allIncidentsProvider));
   }
 
 }

@@ -676,7 +676,8 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
             ),
             // Инверсия: тумблер ВКЛ = услуги поступают = supplyFullyStopped = false
             value: !state.supplyFullyStopped,
-            onChanged: (state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0)
+            // Тумблер заблокирован если: все котлы нерабочие ИЛИ хотя бы один ресурс остановлен
+            onChanged: ((state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0) || state.stopHotWater || state.stopHeating)
                 ? null
                 : (value) => controller.updateSupplyFullyStopped(!value, totalBoilers: totalBoilers),
             activeColor: Colors.green,

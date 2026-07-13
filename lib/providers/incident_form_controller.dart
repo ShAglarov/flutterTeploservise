@@ -55,8 +55,40 @@ class IncidentFormController extends _$IncidentFormController {
     );
   }
   void updateSeverity(String value) => state = state.copyWith(severity: value);
-  void updateStopHotWater(bool value) => state = state.copyWith(stopHotWater: value);
-  void updateStopHeating(bool value) => state = state.copyWith(stopHeating: value);
+  void updateStopHotWater(bool value) {
+    if (value) {
+      // При включении остановки ГВС — автоматически устанавливаем supplyFullyStopped = true
+      state = state.copyWith(
+        stopHotWater: true,
+        supplyFullyStopped: true,
+        inactiveBoilers: {},
+      );
+    } else {
+      // При снятии остановки ГВС: если отопление тоже не остановлено — восстанавливаем подачу
+      final shouldRestore = !state.stopHeating && state.inactiveBoilers.isEmpty;
+      state = state.copyWith(
+        stopHotWater: false,
+        supplyFullyStopped: shouldRestore ? false : state.supplyFullyStopped,
+      );
+    }
+  }
+  void updateStopHeating(bool value) {
+    if (value) {
+      // При включении остановки отопления — автоматически устанавливаем supplyFullyStopped = true
+      state = state.copyWith(
+        stopHeating: true,
+        supplyFullyStopped: true,
+        inactiveBoilers: {},
+      );
+    } else {
+      // При снятии остановки отопления: если ГВС тоже не остановлено — восстанавливаем подачу
+      final shouldRestore = !state.stopHotWater && state.inactiveBoilers.isEmpty;
+      state = state.copyWith(
+        stopHeating: false,
+        supplyFullyStopped: shouldRestore ? false : state.supplyFullyStopped,
+      );
+    }
+  }
   void updateBoilerHouse(int? id) => state = state.copyWith(boilerHouseId: id);
   void updateCreatedAt(DateTime time) => state = state.copyWith(createdAt: time);
   void updateResolvedAt(DateTime? time) => state = state.copyWith(resolvedAt: time);
@@ -139,10 +171,11 @@ class IncidentFormController extends _$IncidentFormController {
 
   /// Устанавливает тумблер "Не поступает полностью".
   /// При включении — сбрасываем чипы котлов (тумблер имеет приоритет).
-  /// Нельзя выключить тумблер вручную если все котлы нерабочие.
+  /// Нельзя выключить тумблер вручную если все котлы нерабочие или ресурс остановлен.
   void updateSupplyFullyStopped(bool value, {int totalBoilers = 0}) {
     final allInactive = totalBoilers > 0 && state.inactiveBoilers.length >= totalBoilers;
-    if (!value && allInactive) return; // заблокировано
+    if (!value && allInactive) return; // заблокировано: все котлы нерабочие
+    if (!value && (state.stopHotWater || state.stopHeating)) return; // заблокировано: ресурс остановлен
     state = state.copyWith(
       supplyFullyStopped: value,
       inactiveBoilers: value ? {} : state.inactiveBoilers,
