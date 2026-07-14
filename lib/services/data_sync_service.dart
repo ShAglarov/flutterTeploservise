@@ -397,6 +397,10 @@ class DataSyncService {
           );
           await _syncRepo.upsertIncidentPhotos(parentId, [photo]);
           dev.log('[DataSync] Upserted incident_photo id=$photoId for incident=$parentId', name: 'SYNC');
+          // КРИТИЧНО: Принудительный UI refresh чтобы фото немедленно появилось у других пользователей.
+          // Drift stream на incidentPhotos таблице должен срабатывать автоматически,
+          // но explicit refresh гарантирует что дебаунсер не задержит обновление.
+          _fireRefreshIfNotBatch();
         } else if (entityType == 'saved_location_photo') {
           dev.log('[DataSync] saved_location_photo create/update - handled via location sync', name: 'SYNC');
         } else if (entityType == 'boiler_house_photo') {

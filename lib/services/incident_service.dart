@@ -117,9 +117,24 @@ class IncidentService {
       debugPrint('[Service] Upload response: ${response.statusCode} - ${response.data}');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // 1. Немедленно вставляем фото из ответа сервера в локальную БД
+        //    чтобы UI загрузчика обновился сразу через Drift stream.
         final photoInfo = PhotoInfo.fromJson(response.data);
         await _syncRepository.upsertIncidentPhotos(incidentId, [photoInfo]);
-        debugPrint('[Service] Local DB updated with new photo');
+        debugPrint('[Service] Local DB updated with new photo (id=${photoInfo.id})');
+
+        // 2. Дополнительно: перечитываем весь инцидент с бэкенда, чтобы
+        //    получить актуальный список photos со всеми полями (url, thumbnail).
+        //    Это гарантирует синхронизацию локальной БД с committed-состоянием сервера.
+        try {
+          final incidentResponse = await _dio.get('/incidents/$incidentId');
+          final fullIncident = IncidentResponse.fromJson(incidentResponse.data);
+          await _syncRepository.upsertIncidents([fullIncident]);
+          debugPrint('[Service] Full incident re-fetched and synced (photos=${fullIncident.photos?.length ?? 0})');
+        } catch (fetchError) {
+          // Не критично — фото уже вставлено на шаге 1
+          debugPrint('[Service] Failed to re-fetch incident after photo upload: $fetchError');
+        }
       }
     } catch (e, stack) {
       debugPrint('[Service] Upload error: $e\n$stack');
