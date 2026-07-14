@@ -52,7 +52,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
       child: Container(
         width: 500, // Matching other dialog widths
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -131,7 +131,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                               'Тип',
                               state.title.isEmpty ? 'Инцидент' : state.title,
                               icon: Icons.list,
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                              trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
                               onTap: () => _showTypeSelector(context, state, controller),
                             ),
                             _buildDivider(),
@@ -270,7 +270,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                               'Затронутые дома',
                               'выбрано: ${state.affectedHouseIds.length}',
                               icon: Icons.business,
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                              trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
                               onTap: () => _showHouseSelector(context, ref, state, controller),
                             ),
                           ],
@@ -337,7 +337,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                                 'Выбрать получателей',
                                 'выбрано: ${state.notificationConfig?.userIds?.length ?? 0}',
                                 icon: Icons.group_add,
-                                trailing: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                                trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
                                 onTap: () => _showUserSelector(context, ref, state, controller),
                               ),
                             ],
@@ -347,7 +347,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                                 'Выбрать роли',
                                 'выбрано: ${state.notificationConfig?.roleIds?.length ?? 0}',
                                 icon: Icons.admin_panel_settings,
-                                trailing: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                                trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
                                 onTap: () => _showRoleSelector(context, ref, state, controller),
                               ),
                             ],
@@ -389,7 +389,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
       child: Text(
         title,
         style: TextStyle(
-          color: Colors.white.withOpacity(0.7),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -450,9 +450,9 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.white,
+            activeColor: Theme.of(context).colorScheme.surface,
             activeTrackColor: Colors.blue,
-            inactiveTrackColor: Colors.white.withOpacity(0.2),
+            inactiveTrackColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
           ),
         ],
       ),
@@ -483,7 +483,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                 items: items,
                 onChanged: onChanged,
                 dropdownColor: Theme.of(context).colorScheme.surface,
-                icon: const Icon(Icons.chevron_right, color: Colors.white30, size: 20),
+                icon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
                 style: const TextStyle(fontSize: 15),
               ),
             ),
@@ -548,7 +548,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                     return ListTile(
                       title: Text(
                         type,
-                        style: TextStyle(color: isSelected ? AppTheme.primaryBlue : Colors.white),
+                        style: TextStyle(color: isSelected ? AppTheme.primaryBlue : Theme.of(context).colorScheme.onSurface),
                         textAlign: TextAlign.center,
                       ),
                       onTap: () {
@@ -828,7 +828,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                       onChanged: (state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0)
                           ? null
                           : (value) => controller.updateSupplyFullyStopped(!value, totalBoilers: totalBoilers),
-                      activeColor: Colors.white,
+                      activeColor: Theme.of(context).colorScheme.surface,
                       activeTrackColor: Colors.green,
                       inactiveThumbColor: Colors.red.shade400,
                       inactiveTrackColor: Colors.red.shade900.withAlpha(100),

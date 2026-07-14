@@ -148,7 +148,7 @@ class IncidentDetailScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Ошибка загрузки: $err', style: const TextStyle(color: Colors.white)),
+              Text('Ошибка загрузки: $err', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => ref.refresh(singleIncidentProvider(incidentId)),

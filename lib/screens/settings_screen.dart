@@ -1001,8 +1001,8 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                   alignment: Alignment.center,
                   child: Text(
                     _getInitials(user),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
+                    style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1472,8 +1472,8 @@ class UserProfileScreen extends ConsumerWidget {
               alignment: Alignment.center,
               child: Text(
                 _getInitials(),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),

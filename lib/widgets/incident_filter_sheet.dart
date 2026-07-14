@@ -96,7 +96,7 @@ class IncidentFilterSheet extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Divider(color: Colors.black12),
+          Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(30)),
           
           // Resources Toggles
            Padding(

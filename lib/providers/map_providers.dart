@@ -355,13 +355,51 @@ MapDataState filteredMapData(Ref ref) {
     locations = locations.where((loc) => dataState.locationIdsWithIncidents.contains(loc.id)).toList();
   }
 
-  // 4. Sort by Incidents (Boiler houses with incidents first, then by address)
+  // 4. Sort — идентично iOS applyStandardSorting:
+  //    1) котельные с активными инцидентами — наверху
+  //    2) среди инцидентных: самые новые инциденты первыми
+  //    3) по названию (locale-aware)
+  //    4) по id как tie-breaker
+  final activeIncidents = dataState.incidents.where((inc) =>
+    inc.status != IncidentStatus.resolved &&
+    inc.status != IncidentStatus.closed &&
+    !inc.isScheduledLocal
+  ).toList();
+
+  // Вычисляем дату самого свежего инцидента для каждой котельной
+  final mostRecentDate = <int, DateTime>{};
+  for (final inc in activeIncidents) {
+    if (inc.boilerHouseId == null) continue;
+    final raw = inc.startedAt ?? inc.createdAt; // плановые имеют startedAt, обычные — createdAt
+    if (raw == null) continue;
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) continue;
+    final current = mostRecentDate[inc.boilerHouseId!];
+    if (current == null || dt.isAfter(current)) {
+      mostRecentDate[inc.boilerHouseId!] = dt;
+    }
+  }
+
   boilerHouses.sort((a, b) {
     final aHas = dataState.boilerHouseIdsWithIncidents.contains(a.id);
     final bHas = dataState.boilerHouseIdsWithIncidents.contains(b.id);
-    if (aHas && !bHas) return -1;
-    if (!aHas && bHas) return 1;
-    return a.address.compareTo(b.address);
+
+    // 1. Инцидентные котельные — наверху
+    if (aHas != bHas) return aHas ? -1 : 1;
+
+    // 2. Среди инцидентных: самый свежий инцидент первым (desc)
+    if (aHas && bHas) {
+      final tA = mostRecentDate[a.id] ?? DateTime(1970);
+      final tB = mostRecentDate[b.id] ?? DateTime(1970);
+      if (tA != tB) return tB.compareTo(tA); // desc
+    }
+
+    // 3. Локализованное сравнение по названию (кириллица)
+    final cmp = a.address.toLowerCase().compareTo(b.address.toLowerCase());
+    if (cmp != 0) return cmp;
+
+    // 4. Tie-breaker по id
+    return a.id.compareTo(b.id);
   });
 
   return dataState.copyWith(boilerHouses: boilerHouses, locations: locations);

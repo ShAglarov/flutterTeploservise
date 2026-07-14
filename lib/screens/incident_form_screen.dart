@@ -32,7 +32,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
     final usersAsync = ref.watch(usersProvider);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.initialIncident == null ? 'НОВЫЙ ИНЦИДЕНТ' : 'РЕДАКТИРОВАНИЕ'),
         backgroundColor: Colors.transparent,
@@ -559,21 +559,21 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       onTap: _localBoilerCount > 1
                           ? () => setState(() => _localBoilerCount--)
                           : null,
-                      child: Container(
-                        width: 28, height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(20),
-                          borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          width: 28, height: 28,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(Icons.remove, size: 16,
+                            color: _localBoilerCount > 1 ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withAlpha(97)),
                         ),
-                        child: Icon(Icons.remove, size: 16,
-                          color: _localBoilerCount > 1 ? Colors.white : Colors.white38),
-                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Text(
                         '$_localBoilerCount',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                     // Увеличить
@@ -581,15 +581,15 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       onTap: _localBoilerCount < 20
                           ? () => setState(() => _localBoilerCount++)
                           : null,
-                      child: Container(
-                        width: 28, height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(20),
-                          borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          width: 28, height: 28,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(Icons.add, size: 16,
+                            color: _localBoilerCount < 20 ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface.withAlpha(97)),
                         ),
-                        child: Icon(Icons.add, size: 16,
-                          color: _localBoilerCount < 20 ? Colors.white : Colors.white38),
-                      ),
                     ),
                   ],
                 ),
