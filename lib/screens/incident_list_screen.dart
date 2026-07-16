@@ -329,7 +329,10 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     }
     try {
       final service = ref.read(incidentServiceProvider);
-      await service.updateIncident(id, IncidentUpdate(status: IncidentStatus.open));
+      // КРИТИЧНО: Используем resumeIncident вместо updateIncident,
+      // чтобы отправить finishedAt=null и autoResolveOnFinish=false.
+      // Иначе сервер сохранит старый finishedAt и инцидент снова закроется.
+      await service.resumeIncident(id);
       ref.invalidate(allIncidentsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Инцидент возобновлен')));

@@ -397,7 +397,7 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
           spacing: 8,
           runSpacing: 8,
           children: total > 0
-              ? List.generate(total, (i) => _boilerChip(context, i + 1, inactive: inactive.contains(i + 1)))
+              ? List.generate(total, (i) => _boilerChip(context, i + 1, inactive: widget.supplyFullyStopped || inactive.contains(i + 1)))
               : inactive.map((n) => _boilerChip(context, n, inactive: true)).toList(),
         ),
         const SizedBox(height: 12),

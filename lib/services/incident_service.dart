@@ -64,6 +64,28 @@ class IncidentService {
     return incident;
   }
 
+  /// Возобновить инцидент: статус→open, startedAt→сейчас,
+  /// finishedAt→null (явно), autoResolveOnFinish→false.
+  /// КРИТИЧНО: Используем ручной payload вместо IncidentUpdate.toJson(),
+  /// потому что includeIfNull:false в генерированном коде пропустит
+  /// finished_at=null, и сервер сохранит старое значение.
+  Future<IncidentResponse> resumeIncident(int id) async {
+    final payload = <String, dynamic>{
+      'status': 'open',
+      'started_at': DateTime.now().toUtc().toIso8601String(),
+      'finished_at': null, // Явно null — сервер должен очистить старое значение
+      'auto_resolve_on_finish': false,
+    };
+    debugPrint('📤 [IncidentService] PUT /incidents/$id RESUME payload: $payload');
+    final response = await _dio.put(
+      '/incidents/$id',
+      data: payload,
+    );
+    final incident = IncidentResponse.fromJson(response.data);
+    await _syncRepository.upsertIncidents([incident]);
+    return incident;
+  }
+
   Future<void> deleteIncident(int id) async {
     try {
       await _dio.delete('/incidents/$id');

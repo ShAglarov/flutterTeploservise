@@ -59,7 +59,13 @@ class IncidentDetailScreen extends ConsumerWidget {
                     final newStatus = isClosed ? IncidentStatus.open : IncidentStatus.resolved;
 
                     try {
-                      await service.updateIncident(incidentId, IncidentUpdate(id: incidentId, status: newStatus));
+                      if (isClosed) {
+                        // КРИТИЧНО: При возобновлении используем resumeIncident,
+                        // чтобы отправить finishedAt=null и autoResolveOnFinish=false.
+                        await service.resumeIncident(incidentId);
+                      } else {
+                        await service.updateIncident(incidentId, IncidentUpdate(id: incidentId, status: newStatus));
+                      }
                     } on DioException catch (e) {
                       // Нет сети — сохраняем оффлайн для синхронизации позже
                       if (e.type == DioExceptionType.connectionError ||
@@ -79,6 +85,8 @@ class IncidentDetailScreen extends ConsumerWidget {
                             resourceHeatingStopped: incident.resourceHeatingStopped,
                             affectedHouseIds: incident.affectedHouseIds,
                             assignedTo: incident.assignedTo,
+                            startedAt: isClosed ? DateTime.now().toUtc().toIso8601String() : null,
+                            autoResolveOnFinish: isClosed ? false : null,
                             resolvedAt: newStatus == IncidentStatus.resolved
                                 ? DateTime.now().toIso8601String() : null,
                           ),
