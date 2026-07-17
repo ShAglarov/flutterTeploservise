@@ -57,25 +57,16 @@ class SyncRepository {
         }
       }
 
-      // 2. Read existing autoResolveOnFinish values (client-only field, server doesn't return it)
-      // This matches iOS EntityMapper: preservedAutoResolve
-      final existingIncidents = await (_db.select(_db.incidents)
-            ..where((t) => t.backendId.isIn(incidentIds)))
-          .get();
-      final autoResolveMap = <int, bool>{};
-      for (final existing in existingIncidents) {
-        autoResolveMap[existing.backendId] = existing.autoResolveOnFinish ?? false;
-      }
-
-      // 3. Batch insert/replace the incidents and their relations
+      // 2. Batch insert/replace the incidents and their relations
       await _db.batch((batch) {
         for (final incident in incidents) {
-          // Preserve autoResolveOnFinish from local DB (server doesn't return it)
-          final preservedAutoResolve = autoResolveMap[incident.id] ?? incident.autoResolveOnFinish;
+          // ИСПРАВЛЕНО: Используем значение autoResolveOnFinish от сервера напрямую.
+          // Сервер теперь корректно возвращает auto_resolve_on_finish в ответе,
+          // поэтому старая логика "сохранить локальное значение" больше не нужна.
           final companion = _db.incidents.insertCompanionFromResponse(incident).copyWith(
             localPendingAck: const Value(false),
             lastLocalEditAt: const Value(null),
-            autoResolveOnFinish: Value(preservedAutoResolve),
+            autoResolveOnFinish: Value(incident.autoResolveOnFinish),
           );
           batch.insert(
             _db.incidents,

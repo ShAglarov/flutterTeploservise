@@ -16,6 +16,10 @@ class IncidentScheduleManager {
   DateTime? _nextFinishDate;
   final Ref _ref;
   List<IncidentResponse> _lastIncidents = [];
+  
+  /// Множество ID инцидентов, для которых уже отправлен запрос на авто-закрытие.
+  /// Предотвращает повторные запросы при каждом updateSchedule.
+  final Set<int> _autoResolvedIds = {};
 
   IncidentScheduleManager(this._ref);
 
@@ -24,6 +28,10 @@ class IncidentScheduleManager {
     _lastIncidents = incidents;
     _updateStartSchedule(incidents);
     _updateFinishSchedule(incidents);
+    // КРИТИЧНО: Всегда проверяем просроченные инциденты при каждом обновлении,
+    // а не только когда таймер срабатывает. Это гарантирует авто-закрытие
+    // даже если приложение было свёрнуто или менеджер пересоздан.
+    _performAutoResolveIfNeeded(incidents);
   }
 
   /// Находит ближайший startedAt в будущем и ставит таймер
@@ -91,8 +99,6 @@ class IncidentScheduleManager {
 
     if (nextFinish == null) {
       _cancelFinishTimer();
-      // Проверяем уже просроченные с autoResolve — возможно нужно закрыть
-      _performAutoResolveIfNeeded(incidents);
       return;
     }
 
@@ -122,8 +128,12 @@ class IncidentScheduleManager {
     for (final inc in incidents) {
       if (!inc.isOverdue) continue;
       if (!inc.autoResolveOnFinish) continue;
+      // Не отправляем повторный запрос для уже обработанных
+      if (_autoResolvedIds.contains(inc.id)) continue;
+      _autoResolvedIds.add(inc.id);
       
-      debugPrint('✅ [ScheduleManager] Авто-завершение инцидента "${inc.title}" (id=${inc.id})');
+      debugPrint('✅ [ScheduleManager] Авто-завершение инцидента "${inc.title}" (id=${inc.id}, '
+          'finishedAt=${inc.finishedAt}, autoResolve=${inc.autoResolveOnFinish})');
       
       // Отправляем PATCH на сервер для закрытия
       try {
@@ -138,9 +148,12 @@ class IncidentScheduleManager {
           _ref.invalidate(allIncidentsProvider);
         }).catchError((e) {
           debugPrint('❌ [ScheduleManager] Ошибка закрытия инцидента ${inc.id}: $e');
+          // Убираем из обработанных, чтобы повторить при следующем updateSchedule
+          _autoResolvedIds.remove(inc.id);
         });
       } catch (e) {
         debugPrint('❌ [ScheduleManager] Ошибка при авто-завершении: $e');
+        _autoResolvedIds.remove(inc.id);
       }
     }
   }
@@ -179,6 +192,7 @@ class IncidentScheduleManager {
 
 /// Riverpod-провайдер для IncidentScheduleManager (keepAlive)
 final incidentScheduleManagerProvider = Provider<IncidentScheduleManager>((ref) {
+  ref.keepAlive();  // КРИТИЧНО: Не убивать при навигации между экранами
   final manager = IncidentScheduleManager(ref);
 
   // Подписываемся на поток инцидентов и обновляем таймеры
