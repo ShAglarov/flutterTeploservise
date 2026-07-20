@@ -80,66 +80,109 @@ class AppTheme {
 
   // ── Light Theme ──
   static ThemeData get lightTheme {
+    // Slightly warmer/darker background so cards & fields stand out
+    const scaffoldBg = Color(0xFFEBEBF0);  // was #F2F2F7 — теперь чуть темнее
+    const surfaceColor = Color(0xFFFFFFFF); // карточки остаются белыми
+    const fieldFill = Color(0xFFF7F7FA);    // поля ввода — чуть серее белого
+    const borderColor = Color(0xFFCACACF);  // видимые бордеры полей
+    const labelColor = Color(0xFF1C1C1E);   // основной текст
+    const secondaryLabel = Color(0xFF3C3C43);
+    const tertiaryLabel = Color(0xFF8E8E93);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: primaryBlueLight,
-      scaffoldBackgroundColor: lightBackground,
+      scaffoldBackgroundColor: scaffoldBg,
       colorScheme: const ColorScheme.light(
         primary: primaryBlueLight,
         secondary: primaryBlueLight,
-        surface: secondaryLightBackground,
+        surface: surfaceColor,
+        surfaceContainerHighest: fieldFill,
         error: errorRedLight,
-        onSurface: Color(0xFF1C1C1E), // Soft black for better readability
+        onSurface: labelColor,
+        outline: borderColor,
       ),
       dividerTheme: DividerThemeData(
         color: Colors.black.withAlpha(20),
         thickness: 0.5,
       ),
       cardTheme: CardThemeData(
-        color: secondaryLightBackground,
-        elevation: 1,
-        shadowColor: Colors.black.withAlpha(25),
+        color: surfaceColor,
+        elevation: 0,
+        shadowColor: Colors.black.withAlpha(15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cardCornerRadius),
           side: const BorderSide(
-            color: Color(0xFFD1D1D6), // iOS separator color
+            color: Color(0xFFD8D8DC),
             width: 0.5,
           ),
         ),
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       ),
+      // Глобальная тема полей ввода — все InputDecoration наследуют
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: fieldFill,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: borderColor, width: 0.8),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: borderColor, width: 0.8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryBlueLight, width: 1.5),
+        ),
+        labelStyle: const TextStyle(color: tertiaryLabel, fontSize: 14),
+        hintStyle: const TextStyle(color: tertiaryLabel, fontSize: 15),
+        floatingLabelStyle: const TextStyle(color: primaryBlueLight),
+      ),
+      // Dropdown / Popup menus
+      dropdownMenuTheme: DropdownMenuThemeData(
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: fieldFill,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: borderColor, width: 0.8),
+          ),
+        ),
+      ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: secondaryLightBackground,
+        backgroundColor: surfaceColor,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: lightBackground,
+      appBarTheme: AppBarTheme(
+        backgroundColor: scaffoldBg,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
-          color: Color(0xFF1C1C1E),
+        titleTextStyle: const TextStyle(
+          color: labelColor,
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
-        iconTheme: IconThemeData(color: Color(0xFF1C1C1E)),
+        iconTheme: const IconThemeData(color: labelColor),
       ),
       textTheme: const TextTheme(
         headlineMedium: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1C1C1E),
+          color: labelColor,
         ),
         bodyMedium: TextStyle(
           fontSize: 15,
-          color: Color(0xFF3C3C43), // secondaryLabel
+          color: secondaryLabel,
         ),
         labelSmall: TextStyle(
           fontSize: 13,
-          color: Color(0xFF8E8E93), // tertiaryLabel
+          color: tertiaryLabel,
         ),
       ),
     );

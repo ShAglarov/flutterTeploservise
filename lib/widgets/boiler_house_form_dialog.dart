@@ -230,12 +230,16 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
             icon: Icons.close,
             onTap: () => Navigator.pop(context),
           ),
-          Text(
-            widget.initialBoilerHouse != null ? 'Редактировать котельную' : 'Новая котельная',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              widget.initialBoilerHouse != null ? 'Редактировать котельную' : 'Новая котельная',
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           _isSaving 

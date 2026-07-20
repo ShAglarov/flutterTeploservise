@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/api_models.dart';
 import '../models/user_role.dart';
 import '../providers/auth_providers.dart';
@@ -16,6 +17,7 @@ import '../services/location_service.dart';
 import '../services/incident_service.dart';
 import '../services/user_service.dart';
 import '../services/avatar_cache_service.dart';
+import '../services/base_api_service.dart';
 import '../repositories/sync_repository.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
@@ -1414,6 +1416,77 @@ class UserProfileScreen extends ConsumerWidget {
     });
   }
 
+  Future<void> _pickAndUploadAvatar(BuildContext context, WidgetRef ref) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    try {
+      final dio = ref.read(dioProvider);
+      final userService = UserService(dio);
+      await userService.uploadAvatar(user.id, File(picked.path));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Аватар обновлён')),
+        );
+        // Refresh users list
+        ref.invalidate(usersProvider);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка загрузки: $e')),
+        );
+      }
+    }
+  }
+
+  void _showFullscreenAvatar(BuildContext context) {
+    if (user.avatarUrl == null || user.avatarUrl!.isEmpty) return;
+    final fullUrl = AvatarCacheService.buildAvatarUrl(user.avatarUrl!);
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black87,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Center(
+                  child: Hero(
+                    tag: 'admin_avatar_${user.id}',
+                    child: CachedNetworkImage(
+                      imageUrl: fullUrl,
+                      fit: BoxFit.contain,
+                      placeholder: (ctx, url) => const CircularProgressIndicator(color: Colors.white),
+                      errorWidget: (ctx, url, err) => const Icon(Icons.error, color: Colors.white, size: 48),
+                    ),
+                  ),
+                ),
+              ),
+              floatingActionButton: FloatingActionButton(
+                mini: true,
+                backgroundColor: Colors.white24,
+                onPressed: () => Navigator.pop(context),
+                child: const Icon(Icons.close, color: Colors.white),
+              ),
+              floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Подписываемся на presence — UI перестраивается при смене онлайн/оффлайн
@@ -1454,12 +1527,38 @@ class UserProfileScreen extends ConsumerWidget {
           children: [
             const SizedBox(height: 16),
 
-            // Avatar
-            UserAvatarWidget(
-              avatarUrl: user.avatarUrl,
-              displayName: _getFullName(),
-              userId: user.id,
-              radius: 40,
+            // Avatar with camera button
+            Stack(
+              children: [
+                GestureDetector(
+                  onTap: () => _showFullscreenAvatar(context),
+                  child: Hero(
+                    tag: 'admin_avatar_${user.id}',
+                    child: UserAvatarWidget(
+                      avatarUrl: user.avatarUrl,
+                      displayName: _getFullName(),
+                      userId: user.id,
+                      radius: 40,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: () => _pickAndUploadAvatar(context, ref),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                      ),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 

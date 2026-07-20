@@ -237,7 +237,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                             _buildToggleRow(
                               state.autoResolveOnFinish 
                                 ? 'Авто-завершение' 
-                                : 'Станет просроченным',
+                                : 'Авто-завершение',
                               Icons.check_circle_outline, 
                               state.autoResolveOnFinish ? Colors.green : Colors.grey, 
                               state.autoResolveOnFinish, 

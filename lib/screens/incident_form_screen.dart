@@ -89,12 +89,13 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
                       value: state.boilerHouseId,
+                      isExpanded: true,
                       dropdownColor: Theme.of(context).colorScheme.surface,
                       decoration: _inputDecoration('Котельная'),
                       items: mapData.boilerHouses.map((bh) {
                         return DropdownMenuItem(
                           value: bh.id,
-                          child: Text(bh.address, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
+                          child: Text(bh.address, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                         );
                       }).toList(),
                       onChanged: (v) {
@@ -110,6 +111,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         Expanded(
                           child: DropdownButtonFormField<IncidentStatus>(
                             value: state.status,
+                            isExpanded: true,
                             dropdownColor: Theme.of(context).colorScheme.surface,
                             decoration: _inputDecoration('Статус'),
                             items: IncidentStatus.values.map((s) {
@@ -127,6 +129,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: state.severity,
+                            isExpanded: true,
                             dropdownColor: Theme.of(context).colorScheme.surface,
                             decoration: _inputDecoration('Серьезность'),
                             items: ['1', '2', '3'].map((s) {
@@ -156,17 +159,18 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       data: (users) {
                         return DropdownButtonFormField<int>(
                           value: state.assignedTo,
+                          isExpanded: true,
                           dropdownColor: Theme.of(context).colorScheme.surface,
                           decoration: _inputDecoration('Ответственный'),
                           items: [
                             DropdownMenuItem<int>(
                               value: null,
-                              child: Text('Не назначен', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 14)),
+                              child: Text('Не назначен', overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 14)),
                             ),
                             ...users.map((u) {
                               return DropdownMenuItem<int>(
                                 value: u.id,
-                                child: Text(u.formattedDisplayName, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
+                                child: Text(u.formattedDisplayName, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                               );
                             }),
                           ],
@@ -182,7 +186,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     const SizedBox(height: 16),
                     ListTile(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       title: Text('Время создания', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
                       subtitle: Text(DateFormat('dd.MM.yyyy HH:mm').format(state.createdAt), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       trailing: const Icon(Icons.calendar_today, color: Colors.blue, size: 20),
@@ -208,7 +212,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     // ─── Время начала (startedAt) — может быть в будущем ───
                     ListTile(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       title: Text('Время начала', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
                       subtitle: Text(
                         state.startedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.startedAt!) : 'Сейчас',
@@ -245,7 +249,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     // ─── Время завершения (finishedAt) — опционально ───
                     ListTile(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                       title: Text('Время завершения', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
                       subtitle: Text(
                         state.finishedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.finishedAt!) : 'Не указано (бессрочный)',
@@ -289,12 +293,12 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       const SizedBox(height: 16),
                       SwitchListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         title: Text('Авто-завершение по окончании', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
                         subtitle: Text(
                           state.autoResolveOnFinish 
                             ? 'Инцидент автоматически завершится' 
-                            : 'Инцидент станет просроченным',
+                            : 'Авто-завершение',
                           style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12),
                         ),
                         secondary: Icon(
@@ -311,7 +315,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       const SizedBox(height: 16),
                       ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         title: Text('Время решения', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12)),
                         subtitle: Text(
                           state.resolvedAt != null ? DateFormat('dd.MM.yyyy HH:mm').format(state.resolvedAt!) : 'Не указано',
@@ -387,6 +391,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                   children: [
                     DropdownButtonFormField<AudienceType>(
                       value: state.notificationConfig?.type ?? AudienceType.broadcast,
+                      isExpanded: true,
                       dropdownColor: Theme.of(context).colorScheme.surface,
                       decoration: _inputDecoration('Кому отправить уведомление'),
                       items: [
@@ -415,7 +420,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       const SizedBox(height: 16),
                       ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         title: Text('Выбрать получателей', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                         subtitle: Text(
                           'Выбрано: ${state.notificationConfig?.userIds?.length ?? 0}',
@@ -429,7 +434,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       const SizedBox(height: 16),
                       ListTile(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        tileColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+                        tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         title: Text('Выбрать роли', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                         subtitle: Text(
                           'Выбрано: ${state.notificationConfig?.roleIds?.length ?? 0}',
@@ -775,16 +780,25 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
 
 
   InputDecoration _inputDecoration(String label) {
+    final cs = Theme.of(context).colorScheme;
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128)),
+      labelStyle: TextStyle(color: cs.onSurface.withAlpha(128)),
       filled: true,
-      fillColor: Theme.of(context).colorScheme.onSurface.withAlpha(13),
+      fillColor: cs.surfaceContainerHighest,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: cs.outline, width: 0.8),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: cs.outline, width: 0.8),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: cs.primary, width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     );
   }
 
