@@ -9059,6 +9059,17 @@ class $IncidentCommentsTable extends IncidentComments
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _authorAvatarUrlMeta = const VerificationMeta(
+    'authorAvatarUrl',
+  );
+  @override
+  late final GeneratedColumn<String> authorAvatarUrl = GeneratedColumn<String>(
+    'author_avatar_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _incidentIdMeta = const VerificationMeta(
     'incidentId',
   );
@@ -9083,6 +9094,7 @@ class $IncidentCommentsTable extends IncidentComments
     userId,
     authorName,
     authorPosition,
+    authorAvatarUrl,
     incidentId,
   ];
   @override
@@ -9157,6 +9169,15 @@ class $IncidentCommentsTable extends IncidentComments
         ),
       );
     }
+    if (data.containsKey('author_avatar_url')) {
+      context.handle(
+        _authorAvatarUrlMeta,
+        authorAvatarUrl.isAcceptableOrUnknown(
+          data['author_avatar_url']!,
+          _authorAvatarUrlMeta,
+        ),
+      );
+    }
     if (data.containsKey('incident_id')) {
       context.handle(
         _incidentIdMeta,
@@ -9204,6 +9225,10 @@ class $IncidentCommentsTable extends IncidentComments
         DriftSqlType.string,
         data['${effectivePrefix}author_position'],
       ),
+      authorAvatarUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_avatar_url'],
+      ),
       incidentId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}incident_id'],
@@ -9227,6 +9252,7 @@ class IncidentCommentDb extends DataClass
   final int? userId;
   final String? authorName;
   final String? authorPosition;
+  final String? authorAvatarUrl;
   final int? incidentId;
   const IncidentCommentDb({
     required this.backendId,
@@ -9237,6 +9263,7 @@ class IncidentCommentDb extends DataClass
     this.userId,
     this.authorName,
     this.authorPosition,
+    this.authorAvatarUrl,
     this.incidentId,
   });
   @override
@@ -9255,6 +9282,9 @@ class IncidentCommentDb extends DataClass
     }
     if (!nullToAbsent || authorPosition != null) {
       map['author_position'] = Variable<String>(authorPosition);
+    }
+    if (!nullToAbsent || authorAvatarUrl != null) {
+      map['author_avatar_url'] = Variable<String>(authorAvatarUrl);
     }
     if (!nullToAbsent || incidentId != null) {
       map['incident_id'] = Variable<int>(incidentId);
@@ -9278,6 +9308,9 @@ class IncidentCommentDb extends DataClass
       authorPosition: authorPosition == null && nullToAbsent
           ? const Value.absent()
           : Value(authorPosition),
+      authorAvatarUrl: authorAvatarUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorAvatarUrl),
       incidentId: incidentId == null && nullToAbsent
           ? const Value.absent()
           : Value(incidentId),
@@ -9298,6 +9331,7 @@ class IncidentCommentDb extends DataClass
       userId: serializer.fromJson<int?>(json['userId']),
       authorName: serializer.fromJson<String?>(json['authorName']),
       authorPosition: serializer.fromJson<String?>(json['authorPosition']),
+      authorAvatarUrl: serializer.fromJson<String?>(json['authorAvatarUrl']),
       incidentId: serializer.fromJson<int?>(json['incidentId']),
     );
   }
@@ -9313,6 +9347,7 @@ class IncidentCommentDb extends DataClass
       'userId': serializer.toJson<int?>(userId),
       'authorName': serializer.toJson<String?>(authorName),
       'authorPosition': serializer.toJson<String?>(authorPosition),
+      'authorAvatarUrl': serializer.toJson<String?>(authorAvatarUrl),
       'incidentId': serializer.toJson<int?>(incidentId),
     };
   }
@@ -9326,6 +9361,7 @@ class IncidentCommentDb extends DataClass
     Value<int?> userId = const Value.absent(),
     Value<String?> authorName = const Value.absent(),
     Value<String?> authorPosition = const Value.absent(),
+    Value<String?> authorAvatarUrl = const Value.absent(),
     Value<int?> incidentId = const Value.absent(),
   }) => IncidentCommentDb(
     backendId: backendId ?? this.backendId,
@@ -9338,6 +9374,9 @@ class IncidentCommentDb extends DataClass
     authorPosition: authorPosition.present
         ? authorPosition.value
         : this.authorPosition,
+    authorAvatarUrl: authorAvatarUrl.present
+        ? authorAvatarUrl.value
+        : this.authorAvatarUrl,
     incidentId: incidentId.present ? incidentId.value : this.incidentId,
   );
   IncidentCommentDb copyWithCompanion(IncidentCommentsCompanion data) {
@@ -9358,6 +9397,9 @@ class IncidentCommentDb extends DataClass
       authorPosition: data.authorPosition.present
           ? data.authorPosition.value
           : this.authorPosition,
+      authorAvatarUrl: data.authorAvatarUrl.present
+          ? data.authorAvatarUrl.value
+          : this.authorAvatarUrl,
       incidentId: data.incidentId.present
           ? data.incidentId.value
           : this.incidentId,
@@ -9375,6 +9417,7 @@ class IncidentCommentDb extends DataClass
           ..write('userId: $userId, ')
           ..write('authorName: $authorName, ')
           ..write('authorPosition: $authorPosition, ')
+          ..write('authorAvatarUrl: $authorAvatarUrl, ')
           ..write('incidentId: $incidentId')
           ..write(')'))
         .toString();
@@ -9390,6 +9433,7 @@ class IncidentCommentDb extends DataClass
     userId,
     authorName,
     authorPosition,
+    authorAvatarUrl,
     incidentId,
   );
   @override
@@ -9404,6 +9448,7 @@ class IncidentCommentDb extends DataClass
           other.userId == this.userId &&
           other.authorName == this.authorName &&
           other.authorPosition == this.authorPosition &&
+          other.authorAvatarUrl == this.authorAvatarUrl &&
           other.incidentId == this.incidentId);
 }
 
@@ -9416,6 +9461,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
   final Value<int?> userId;
   final Value<String?> authorName;
   final Value<String?> authorPosition;
+  final Value<String?> authorAvatarUrl;
   final Value<int?> incidentId;
   const IncidentCommentsCompanion({
     this.backendId = const Value.absent(),
@@ -9426,6 +9472,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     this.userId = const Value.absent(),
     this.authorName = const Value.absent(),
     this.authorPosition = const Value.absent(),
+    this.authorAvatarUrl = const Value.absent(),
     this.incidentId = const Value.absent(),
   });
   IncidentCommentsCompanion.insert({
@@ -9437,6 +9484,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     this.userId = const Value.absent(),
     this.authorName = const Value.absent(),
     this.authorPosition = const Value.absent(),
+    this.authorAvatarUrl = const Value.absent(),
     this.incidentId = const Value.absent(),
   }) : createdAt = Value(createdAt),
        id = Value(id),
@@ -9450,6 +9498,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     Expression<int>? userId,
     Expression<String>? authorName,
     Expression<String>? authorPosition,
+    Expression<String>? authorAvatarUrl,
     Expression<int>? incidentId,
   }) {
     return RawValuesInsertable({
@@ -9461,6 +9510,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
       if (userId != null) 'user_id': userId,
       if (authorName != null) 'author_name': authorName,
       if (authorPosition != null) 'author_position': authorPosition,
+      if (authorAvatarUrl != null) 'author_avatar_url': authorAvatarUrl,
       if (incidentId != null) 'incident_id': incidentId,
     });
   }
@@ -9474,6 +9524,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     Value<int?>? userId,
     Value<String?>? authorName,
     Value<String?>? authorPosition,
+    Value<String?>? authorAvatarUrl,
     Value<int?>? incidentId,
   }) {
     return IncidentCommentsCompanion(
@@ -9485,6 +9536,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
       userId: userId ?? this.userId,
       authorName: authorName ?? this.authorName,
       authorPosition: authorPosition ?? this.authorPosition,
+      authorAvatarUrl: authorAvatarUrl ?? this.authorAvatarUrl,
       incidentId: incidentId ?? this.incidentId,
     );
   }
@@ -9516,6 +9568,9 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
     if (authorPosition.present) {
       map['author_position'] = Variable<String>(authorPosition.value);
     }
+    if (authorAvatarUrl.present) {
+      map['author_avatar_url'] = Variable<String>(authorAvatarUrl.value);
+    }
     if (incidentId.present) {
       map['incident_id'] = Variable<int>(incidentId.value);
     }
@@ -9533,6 +9588,7 @@ class IncidentCommentsCompanion extends UpdateCompanion<IncidentCommentDb> {
           ..write('userId: $userId, ')
           ..write('authorName: $authorName, ')
           ..write('authorPosition: $authorPosition, ')
+          ..write('authorAvatarUrl: $authorAvatarUrl, ')
           ..write('incidentId: $incidentId')
           ..write(')'))
         .toString();
@@ -17565,6 +17621,7 @@ typedef $$IncidentCommentsTableCreateCompanionBuilder =
       Value<int?> userId,
       Value<String?> authorName,
       Value<String?> authorPosition,
+      Value<String?> authorAvatarUrl,
       Value<int?> incidentId,
     });
 typedef $$IncidentCommentsTableUpdateCompanionBuilder =
@@ -17577,6 +17634,7 @@ typedef $$IncidentCommentsTableUpdateCompanionBuilder =
       Value<int?> userId,
       Value<String?> authorName,
       Value<String?> authorPosition,
+      Value<String?> authorAvatarUrl,
       Value<int?> incidentId,
     });
 
@@ -17665,6 +17723,11 @@ class $$IncidentCommentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get authorAvatarUrl => $composableBuilder(
+    column: $table.authorAvatarUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$IncidentsTableFilterComposer get incidentId {
     final $$IncidentsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -17738,6 +17801,11 @@ class $$IncidentCommentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get authorAvatarUrl => $composableBuilder(
+    column: $table.authorAvatarUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$IncidentsTableOrderingComposer get incidentId {
     final $$IncidentsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -17803,6 +17871,11 @@ class $$IncidentCommentsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get authorAvatarUrl => $composableBuilder(
+    column: $table.authorAvatarUrl,
+    builder: (column) => column,
+  );
+
   $$IncidentsTableAnnotationComposer get incidentId {
     final $$IncidentsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -17865,6 +17938,7 @@ class $$IncidentCommentsTableTableManager
                 Value<int?> userId = const Value.absent(),
                 Value<String?> authorName = const Value.absent(),
                 Value<String?> authorPosition = const Value.absent(),
+                Value<String?> authorAvatarUrl = const Value.absent(),
                 Value<int?> incidentId = const Value.absent(),
               }) => IncidentCommentsCompanion(
                 backendId: backendId,
@@ -17875,6 +17949,7 @@ class $$IncidentCommentsTableTableManager
                 userId: userId,
                 authorName: authorName,
                 authorPosition: authorPosition,
+                authorAvatarUrl: authorAvatarUrl,
                 incidentId: incidentId,
               ),
           createCompanionCallback:
@@ -17887,6 +17962,7 @@ class $$IncidentCommentsTableTableManager
                 Value<int?> userId = const Value.absent(),
                 Value<String?> authorName = const Value.absent(),
                 Value<String?> authorPosition = const Value.absent(),
+                Value<String?> authorAvatarUrl = const Value.absent(),
                 Value<int?> incidentId = const Value.absent(),
               }) => IncidentCommentsCompanion.insert(
                 backendId: backendId,
@@ -17897,6 +17973,7 @@ class $$IncidentCommentsTableTableManager
                 userId: userId,
                 authorName: authorName,
                 authorPosition: authorPosition,
+                authorAvatarUrl: authorAvatarUrl,
                 incidentId: incidentId,
               ),
           withReferenceMapper: (p0) => p0

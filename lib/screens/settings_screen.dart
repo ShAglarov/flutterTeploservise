@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/api_models.dart';
 import '../models/user_role.dart';
 import '../providers/auth_providers.dart';
@@ -13,9 +15,11 @@ import '../services/boiler_house_service.dart';
 import '../services/location_service.dart';
 import '../services/incident_service.dart';
 import '../services/user_service.dart';
+import '../services/avatar_cache_service.dart';
 import '../repositories/sync_repository.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
+import '../widgets/user_avatar_widget.dart';
 import 'action_log_list_screen.dart';
 import 'profile_screen.dart';
 
@@ -991,22 +995,11 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             // Avatar with online indicator
             Stack(
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: _getAvatarColor(user),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    _getInitials(user),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                UserAvatarWidget(
+                  avatarUrl: user.avatarUrl,
+                  displayName: _getFullName(user),
+                  userId: user.id,
+                  radius: 22,
                 ),
                 // Online indicator dot
                 if (isOnline)
@@ -1462,22 +1455,11 @@ class UserProfileScreen extends ConsumerWidget {
             const SizedBox(height: 16),
 
             // Avatar
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: _getAvatarColor(),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _getInitials(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            UserAvatarWidget(
+              avatarUrl: user.avatarUrl,
+              displayName: _getFullName(),
+              userId: user.id,
+              radius: 40,
             ),
             const SizedBox(height: 16),
 

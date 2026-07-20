@@ -410,6 +410,8 @@ class IncidentCommentAuthor {
   final String? lastName;
   @JsonKey(name: 'middle_name')
   final String? middleName;
+  @JsonKey(name: 'avatar_url')
+  final String? avatarUrl;
 
   IncidentCommentAuthor({
     required this.id,
@@ -417,6 +419,7 @@ class IncidentCommentAuthor {
     this.firstName,
     this.lastName,
     this.middleName,
+    this.avatarUrl,
   });
 
   String get formattedDisplayName {

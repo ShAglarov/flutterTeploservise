@@ -5,6 +5,7 @@ import '../../providers/activity_providers.dart';
 import '../../models/activity_models.dart';
 import '../../services/user_service.dart';
 import '../base_card.dart';
+import '../user_avatar_widget.dart';
 
 class IncidentActivityCard extends ConsumerWidget {
   final int incidentId;
@@ -60,15 +61,22 @@ class IncidentActivityCard extends ConsumerWidget {
     );
   }
   Widget _buildActivityItem(BuildContext context, IncidentActivity activity, Map<int, dynamic> usersMap) {
+    // Получаем avatarUrl из usersMap по userId
+    final activityUserId = activity.userId;
+    String? avatarUrl;
+    if (activityUserId != null && usersMap.containsKey(activityUserId)) {
+      avatarUrl = usersMap[activityUserId]?.avatarUrl;
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
+          UserAvatarWidget(
+            avatarUrl: avatarUrl,
+            displayName: activity.userName,
+            userId: activityUserId,
             radius: 14,
-            backgroundColor: Theme.of(context).colorScheme.onSurface.withAlpha(25),
-            child: Icon(Icons.person, size: 16, color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
           ),
           const SizedBox(width: 12),
           Expanded(

@@ -208,6 +208,7 @@ class IncidentComments extends Table {
   IntColumn get userId => integer().nullable().withDefault(const Constant(0))();
   TextColumn get authorName => text().nullable()();
   TextColumn get authorPosition => text().nullable()();
+  TextColumn get authorAvatarUrl => text().nullable()();
   
   // Relationship
   IntColumn get incidentId => integer().nullable().references(Incidents, #backendId)();
@@ -356,7 +357,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

@@ -42,6 +42,8 @@ class APIUserResponse {
   final String? notes;
   @JsonKey(name: 'can_edit_offline')
   final bool canEditOffline;
+  @JsonKey(name: 'avatar_url')
+  final String? avatarUrl;
 
   APIUserResponse({
     required this.id,
@@ -65,6 +67,7 @@ class APIUserResponse {
     this.lastLongitude,
     this.notes,
     this.canEditOffline = false,
+    this.avatarUrl,
   });
 
   factory APIUserResponse.fromJson(Map<String, dynamic> json) => _$APIUserResponseFromJson(json);

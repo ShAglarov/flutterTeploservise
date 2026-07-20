@@ -126,7 +126,8 @@ class SyncRepository {
             isSystemMessage: Value(comment.isSystemMessage),
             userId: Value(comment.userId),
             authorName: Value(comment.author?.fullName),
-            authorPosition: Value(null), // Position not currently in IncidentCommentAuthor
+            authorPosition: Value(null),
+            authorAvatarUrl: Value(comment.author?.avatarUrl),
             id: comment.id.toString(),
           ),
           mode: InsertMode.insertOrReplace,
@@ -151,6 +152,7 @@ class SyncRepository {
           author: IncidentCommentAuthor(
             id: row.userId ?? 0,
             fullName: row.authorName,
+            avatarUrl: row.authorAvatarUrl,
           ),
           isSystemMessage: row.isSystemMessage,
         );

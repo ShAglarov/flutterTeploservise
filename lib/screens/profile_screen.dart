@@ -2,11 +2,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/api_models.dart';
 import '../providers/auth_providers.dart';
 import '../services/auth_service.dart';
 import '../services/device_id_service.dart';
+import '../services/user_service.dart';
+import '../services/avatar_cache_service.dart';
 import '../utils/app_theme.dart';
+import '../widgets/user_avatar_widget.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -81,6 +86,105 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (confirmed == true && mounted) {
       await ref.read(authProvider.notifier).logout();
       if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Future<void> _showFullscreenAvatar(APIUserResponse user) async {
+    if (user.avatarUrl == null || user.avatarUrl!.isEmpty) {
+      // Нет аватарки — сразу открываем пикер
+      _pickAndUploadAvatar(user);
+      return;
+    }
+    
+    final fullUrl = AvatarCacheService.buildAvatarUrl(user.avatarUrl!);
+    
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black87,
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return FadeTransition(
+            opacity: animation,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Center(
+                  child: Hero(
+                    tag: 'avatar_${user.id}',
+                    child: CachedNetworkImage(
+                      imageUrl: fullUrl,
+                      fit: BoxFit.contain,
+                      placeholder: (ctx, url) => const CircularProgressIndicator(color: Colors.white),
+                      errorWidget: (ctx, url, err) => const Icon(Icons.error, color: Colors.white, size: 48),
+                    ),
+                  ),
+                ),
+              ),
+              floatingActionButton: FloatingActionButton(
+                mini: true,
+                backgroundColor: Colors.white24,
+                onPressed: () => Navigator.pop(context),
+                child: const Icon(Icons.close, color: Colors.white),
+              ),
+              floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadAvatar(APIUserResponse user) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    try {
+      final userService = ref.read(userServiceProvider);
+      final avatarService = ref.read(avatarCacheServiceProvider);
+
+      // Инвалидируем старый кеш
+      if (user.avatarUrl != null) {
+        await avatarService.invalidateAvatar(user.avatarUrl!);
+      }
+
+      final updatedUser = await userService.uploadAvatar(
+        user.id,
+        File(picked.path),
+      );
+
+      // Инвалидируем новый URL тоже (чтобы перезагрузить)
+      if (updatedUser.avatarUrl != null) {
+        await avatarService.invalidateAvatar(updatedUser.avatarUrl!);
+      }
+
+      if (mounted) {
+        setState(() {
+          _user = updatedUser;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Аватар обновлён'),
+            backgroundColor: AppTheme.successGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка загрузки аватара: $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
     }
   }
 
@@ -162,6 +266,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
+
+          // ======== Аватар ========
+          Center(
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: () => _showFullscreenAvatar(user),
+                  child: Hero(
+                    tag: 'avatar_${user.id}',
+                    child: UserAvatarWidget(
+                      avatarUrl: user.avatarUrl,
+                      displayName: _buildFIO(user).isNotEmpty ? _buildFIO(user) : user.username,
+                      userId: user.id,
+                      radius: 40,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: () => _pickAndUploadAvatar(user),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
+                      ),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // ======== Учетная запись ========
           _buildSectionHeader('Учетная запись'),

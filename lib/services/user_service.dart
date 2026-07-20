@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/api_models.dart';
@@ -19,6 +20,28 @@ class UserService {
         .map((e) => APIUserResponse.fromJson(e))
         .toList();
     return users;
+  }
+
+  /// Загрузка аватарки пользователя (POST /users/{id}/avatar)
+  Future<APIUserResponse> uploadAvatar(int userId, File imageFile) async {
+    final fileName = imageFile.path.split('/').last;
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        imageFile.path,
+        filename: fileName,
+      ),
+    });
+    final response = await _dio.post(
+      '/users/$userId/avatar',
+      data: formData,
+    );
+    return APIUserResponse.fromJson(response.data);
+  }
+
+  /// Удаление аватарки пользователя (DELETE /users/{id}/avatar)
+  Future<APIUserResponse> deleteAvatar(int userId) async {
+    final response = await _dio.delete('/users/$userId/avatar');
+    return APIUserResponse.fromJson(response.data);
   }
 
   /// Регистрация нового пользователя (POST /auth/register)

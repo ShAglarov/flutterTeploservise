@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/chat_providers.dart';
 import '../../models/incident_models.dart';
+import '../../services/user_service.dart';
 import '../base_card.dart';
+import '../user_avatar_widget.dart';
+import '../user_profile_sheet.dart';
 
 class IncidentChatCard extends ConsumerStatefulWidget {
   final int incidentId;
@@ -113,36 +116,67 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
     ref.read(incidentChatProvider(widget.incidentId).notifier).sendComment(text);
   }
 
+  void _openUserProfile(IncidentComment comment) {
+    if (comment.author == null) return;
+    final usersMap = ref.read(usersMapProvider).value ?? {};
+    final user = usersMap[comment.userId];
+    if (user != null) {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => UserProfileSheet(user: user),
+      );
+    }
+  }
+
   Widget _buildCommentItem(IncidentComment comment) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                comment.author?.formattedDisplayName ?? 'Система',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _formatTime(comment.createdAt),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurface.withAlpha(77),
-                ),
-              ),
-            ],
+          UserAvatarWidget(
+            avatarUrl: comment.author?.avatarUrl,
+            displayName: comment.author?.formattedDisplayName,
+            userId: comment.userId,
+            radius: 14,
+            onTap: () => _openUserProfile(comment),
           ),
-          const SizedBox(height: 2),
-          Text(
-            comment.text,
-            style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        comment.author?.formattedDisplayName ?? 'Система',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _formatTime(comment.createdAt),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(77),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  comment.text,
+                  style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
+                ),
+              ],
+            ),
           ),
         ],
       ),

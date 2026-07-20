@@ -349,6 +349,7 @@ IncidentCommentAuthor _$IncidentCommentAuthorFromJson(
   firstName: json['first_name'] as String?,
   lastName: json['last_name'] as String?,
   middleName: json['middle_name'] as String?,
+  avatarUrl: json['avatar_url'] as String?,
 );
 
 Map<String, dynamic> _$IncidentCommentAuthorToJson(
@@ -359,6 +360,7 @@ Map<String, dynamic> _$IncidentCommentAuthorToJson(
   'first_name': instance.firstName,
   'last_name': instance.lastName,
   'middle_name': instance.middleName,
+  'avatar_url': instance.avatarUrl,
 };
 
 IncidentComment _$IncidentCommentFromJson(Map<String, dynamic> json) =>
