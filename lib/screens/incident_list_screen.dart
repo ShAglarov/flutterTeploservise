@@ -14,6 +14,7 @@ import 'incident_form_screen.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../widgets/incident_filter_sheet.dart';
 import '../providers/offline_edit_permission.dart';
+import '../services/chat_read_service.dart';
 
 class IncidentListScreen extends ConsumerStatefulWidget {
   const IncidentListScreen({super.key});
@@ -24,6 +25,15 @@ class IncidentListScreen extends ConsumerStatefulWidget {
 
 class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Загружаем счётчики непрочитанных при открытии экрана
+    Future.microtask(() {
+      ref.read(unreadCountsProvider.notifier).fetchAll();
+    });
+  }
 
   @override
   void dispose() {
@@ -256,6 +266,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
             isUnsynced: inc.localPendingAck == true,
             isOverdue: inc.isOverdue,
             boilerHouseDetail: vm.boilerHouseDetail,
+            unreadChatCount: ref.watch(unreadCountsProvider)[inc.id] ?? 0,
             onTap: () {
               Navigator.push(
                 context,

@@ -13,16 +13,31 @@ import '../widgets/incident_detail/incident_chat_card.dart';
 import '../widgets/incident_detail/incident_activity_card.dart';
 import '../widgets/incident_detail/incident_photos_card.dart';
 import '../providers/offline_edit_permission.dart';
+import '../services/chat_read_service.dart';
 import 'incident_form_screen.dart';
 
-class IncidentDetailScreen extends ConsumerWidget {
+class IncidentDetailScreen extends ConsumerStatefulWidget {
   final int incidentId;
 
   const IncidentDetailScreen({super.key, required this.incidentId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final incidentAsync = ref.watch(singleIncidentProvider(incidentId));
+  ConsumerState<IncidentDetailScreen> createState() => _IncidentDetailScreenState();
+}
+
+class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Помечаем чат как прочитанный когда пользователь открыл детали инцидента
+    Future.microtask(() {
+      ref.read(unreadCountsProvider.notifier).markAsRead(widget.incidentId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final incidentAsync = ref.watch(singleIncidentProvider(widget.incidentId));
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -34,7 +49,7 @@ class IncidentDetailScreen extends ConsumerWidget {
       body: incidentAsync.when(
         data: (incident) => RefreshIndicator(
           onRefresh: () async {
-            // ref.refresh(singleIncidentProvider(incidentId).future) is not applicable to Stream anymore
+            // ref.refresh(singleIncidentProvider(widget.incidentId).future) is not applicable to Stream anymore
           },
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -62,9 +77,9 @@ class IncidentDetailScreen extends ConsumerWidget {
                       if (isClosed) {
                         // КРИТИЧНО: При возобновлении используем resumeIncident,
                         // чтобы отправить finishedAt=null и autoResolveOnFinish=false.
-                        await service.resumeIncident(incidentId);
+                        await service.resumeIncident(widget.incidentId);
                       } else {
-                        await service.updateIncident(incidentId, IncidentUpdate(id: incidentId, status: newStatus));
+                        await service.updateIncident(widget.incidentId, IncidentUpdate(id: widget.incidentId, status: newStatus));
                       }
                     } on DioException catch (e) {
                       // Нет сети — сохраняем оффлайн для синхронизации позже
@@ -75,7 +90,7 @@ class IncidentDetailScreen extends ConsumerWidget {
                           e.type == DioExceptionType.unknown) {
                         await syncRepo.saveIncidentOffline(
                           update: IncidentUpdate(
-                            id: incidentId,
+                            id: widget.incidentId,
                             status: newStatus,
                             boilerHouseId: incident.boilerHouseId,
                             title: incident.title,
@@ -138,14 +153,14 @@ class IncidentDetailScreen extends ConsumerWidget {
                   IncidentDescriptionCard(description: incident.description!),
                   const SizedBox(height: 16),
                 ],
-                IncidentChatCard(incidentId: incidentId),
+                IncidentChatCard(incidentId: widget.incidentId),
                 const SizedBox(height: 16),
                 IncidentPhotosCard(
-                  incidentId: incidentId,
+                  incidentId: widget.incidentId,
                   photos: incident.photos ?? [],
                 ),
                 const SizedBox(height: 16),
-                IncidentActivityCard(incidentId: incidentId),
+                IncidentActivityCard(incidentId: widget.incidentId),
                 const SizedBox(height: 32), // Bottom padding
               ],
             ),
@@ -159,7 +174,7 @@ class IncidentDetailScreen extends ConsumerWidget {
               Text('Ошибка загрузки: $err', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref.refresh(singleIncidentProvider(incidentId)),
+                onPressed: () => ref.refresh(singleIncidentProvider(widget.incidentId)),
                 child: const Text('Повторить'),
               ),
             ],

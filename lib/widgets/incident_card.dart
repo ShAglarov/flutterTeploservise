@@ -24,6 +24,7 @@ class IncidentCard extends StatefulWidget {
   final bool supplyFullyStopped;
   final bool isUnsynced;
   final bool isOverdue;
+  final int unreadChatCount;
   final VoidCallback? onTap;
 
   const IncidentCard({
@@ -46,6 +47,7 @@ class IncidentCard extends StatefulWidget {
     this.supplyFullyStopped = false,
     this.isUnsynced = false,
     this.isOverdue = false,
+    this.unreadChatCount = 0,
     this.onTap,
   });
 
@@ -185,6 +187,32 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                             ),
                           ),
                           const SizedBox(width: 8),
+                          // Бейдж непрочитанных сообщений
+                          if (widget.unreadChatCount > 0) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.chat_bubble, size: 10, color: Colors.white),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '${widget.unreadChatCount}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
                           Flexible(
                             child: Text(
                               widget.timestamp,
