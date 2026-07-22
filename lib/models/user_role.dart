@@ -5,6 +5,10 @@ enum UserRole {
   admin,
   @JsonValue('manager')
   manager,
+  @JsonValue('dispatcher')
+  dispatcher,
+  @JsonValue('office_worker')
+  officeWorker,
   @JsonValue('operator')
   operatorUser,
   @JsonValue('guest')
@@ -22,6 +26,8 @@ enum UserRole {
     return switch (this) {
       UserRole.admin => 'ADMIN',
       UserRole.manager => 'SITE_MANAGER',
+      UserRole.dispatcher => 'DISPATCHER',
+      UserRole.officeWorker => 'OFFICE_WORKER',
       UserRole.operatorUser => 'OPERATOR',
       UserRole.guest => 'GUEST',
       UserRole.viewer => 'OBSERVER',
@@ -34,6 +40,8 @@ enum UserRole {
     return switch (this) {
       UserRole.admin => 'Администратор',
       UserRole.manager => 'Начальник участка',
+      UserRole.dispatcher => 'Диспетчер',
+      UserRole.officeWorker => 'Офисный сотрудник',
       UserRole.operatorUser => 'Оператор',
       UserRole.guest => 'Гость',
       UserRole.viewer => 'Наблюдатель',
@@ -44,6 +52,8 @@ enum UserRole {
     return switch (this) {
       UserRole.admin => 'crown_fill',
       UserRole.manager => 'person_2_fill',
+      UserRole.dispatcher => 'antenna_radiowaves_left_and_right',
+      UserRole.officeWorker => 'doc_text_fill',
       UserRole.operatorUser => 'person_crop_circle_badge_exclamationmark',
       UserRole.guest => 'person_crop_circle_badge_questionmark',
       UserRole.viewer => 'eye',
@@ -52,8 +62,8 @@ enum UserRole {
 
   bool get canEditData {
     return switch (this) {
-      UserRole.admin || UserRole.manager || UserRole.operatorUser => true,
-      UserRole.guest || UserRole.viewer => false,
+      UserRole.admin || UserRole.manager || UserRole.operatorUser || UserRole.dispatcher => true,
+      UserRole.guest || UserRole.viewer || UserRole.officeWorker => false,
     };
   }
 
@@ -88,6 +98,8 @@ enum UserRole {
     return switch (normalized) {
       'admin' || 'administrator' || 'superadmin' || 'root' => UserRole.admin,
       'manager' || 'lead' || 'supervisor' || 'site_manager' => UserRole.manager,
+      'dispatcher' || 'dispatch' => UserRole.dispatcher,
+      'office_worker' || 'officeworker' || 'office' => UserRole.officeWorker,
       'operator' || 'operator_user' || 'staff' => UserRole.operatorUser,
       'guest' || 'visitor' => UserRole.guest,
       'viewer' || 'observer' => UserRole.viewer,

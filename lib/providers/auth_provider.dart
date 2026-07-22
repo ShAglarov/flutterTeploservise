@@ -8,6 +8,8 @@ import '../models/user_role.dart';
 import '../services/auth_service.dart';
 import '../services/secure_storage_service.dart';
 import '../services/event_service.dart';
+import '../services/permission_service.dart';
+import '../services/realtime_service.dart';
 import '../database/database.dart';
 
 part 'auth_provider.g.dart';
@@ -41,6 +43,7 @@ class Auth extends _$Auth {
   late final EventService _eventService;
   late final AppDatabase _db;
   StreamSubscription? _eventSubscription;
+  StreamSubscription? _permissionWsSub;
 
   @override
   AuthState build() {
@@ -50,12 +53,14 @@ class Auth extends _$Auth {
     _db = ref.watch(databaseProvider);
 
     _subscribeToEvents();
+    _subscribeToPermissionUpdates();
     
     // Use a microtask to initialize to avoid updating state during build
     Future.microtask(() => _initialize());
 
     ref.onDispose(() {
       _eventSubscription?.cancel();
+      _permissionWsSub?.cancel();
     });
 
     return AuthState.loading();
@@ -83,6 +88,8 @@ class Auth extends _$Auth {
       // КРИТИЧНО: Кэшируем пользователя в локальную БД для offline-режима
       await _cacheUserLocally(authUser);
       state = AuthState.authenticated(authUser);
+      // Загружаем права доступа после успешной инициализации
+      _loadPermissions();
     } catch (e) {
       // ИСПРАВЛЕНИЕ: При сетевой ошибке восстанавливаем пользователя из локальной БД
       // Это позволяет показывать оранжевый баннер "сохраняются локально" вместо красного
@@ -106,6 +113,8 @@ class Auth extends _$Auth {
       // Кэшируем пользователя в локальную БД для offline-режима
       await _cacheUserLocally(authUser);
       state = AuthState.authenticated(authUser);
+      // Загружаем права после логина
+      _loadPermissions();
     } catch (e) {
       state = AuthState.unauthenticated(error: e.toString());
     }
@@ -113,11 +122,41 @@ class Auth extends _$Auth {
 
   Future<void> logout() async {
     await _authService.logout();
+    // Очищаем права при логауте
+    ref.read(permissionStateProvider.notifier).clear();
     state = AuthState.unauthenticated();
   }
 
   void forceLogout() {
+    ref.read(permissionStateProvider.notifier).clear();
     state = AuthState.unauthenticated();
+  }
+
+  /// Подписка на WebSocket permission_update
+  void _subscribeToPermissionUpdates() {
+    _permissionWsSub?.cancel();
+    try {
+      final realtime = ref.read(realtimeServiceProvider);
+      _permissionWsSub = realtime.onPermissionUpdate.listen((payload) {
+        final changes = (payload['changes'] as Map<String, dynamic>?)
+            ?.map((k, v) => MapEntry(k, v == true)) ?? {};
+        final full = (payload['full_permissions'] as Map<String, dynamic>?)
+            ?.map((k, v) => MapEntry(k, v == true));
+        final version = payload['version'] as int? ?? 0;
+
+        ref.read(permissionStateProvider.notifier).applyDelta(changes, full, version);
+        print('🔐 [Auth] Permission delta applied (v$version, ${changes.length} changes)');
+      });
+    } catch (_) {
+      // RealtimeService может быть недоступен
+    }
+  }
+
+  /// Загружает права с сервера.
+  void _loadPermissions() {
+    Future.microtask(() {
+      ref.read(permissionStateProvider.notifier).loadFromServer();
+    });
   }
 
   /// Проверяет, является ли ошибка сетевой (DioException)

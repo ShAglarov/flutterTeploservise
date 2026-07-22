@@ -37,6 +37,10 @@ class RealtimeService {
   Stream<String> get onForceLogout => _forceLogoutController.stream;
   bool _forceLoggedOut = false;
 
+  /// Stream that emits when server sends permission_update.
+  final _permissionUpdateController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get onPermissionUpdate => _permissionUpdateController.stream;
+
   /// Connection state (true = connected)
   final _connectionStateController = StreamController<bool>.broadcast();
   Stream<bool> get connectionState => _connectionStateController.stream;
@@ -177,6 +181,13 @@ class RealtimeService {
         // ADDED: Handle server JSON pong (response to native pings, if any)
         if (decoded['type'] == 'pong') {
           _lastPongReceived = DateTime.now();
+          return;
+        }
+        // ADDED: Handle permission_update from admin
+        if (decoded['type'] == 'permission_update') {
+          dev.log('RealtimeService: 🔐 permission_update received', name: 'WS');
+          final payload = decoded['payload'] as Map<String, dynamic>? ?? decoded['data'] as Map<String, dynamic>? ?? {};
+          _permissionUpdateController.add(payload);
           return;
         }
         _messageController.add(decoded);
@@ -324,6 +335,7 @@ class RealtimeService {
     _messageController.close();
     _reconnectController.close();
     _forceLogoutController.close();
+    _permissionUpdateController.close();
     _connectionStateController.close();
   }
 }

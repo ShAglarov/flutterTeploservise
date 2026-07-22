@@ -23,6 +23,7 @@ import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
 import '../widgets/user_avatar_widget.dart';
 import 'action_log_list_screen.dart';
+import 'permission_editor_screen.dart';
 import 'profile_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -1647,6 +1648,17 @@ class UserProfileScreen extends ConsumerWidget {
               children: [
                 _buildActionButton(context, Icons.swap_horiz, 'Передать\nучастки', Colors.deepOrangeAccent, () {
                   _showReassignDialog(context, ref);
+                }),
+                _buildActionButton(context, Icons.tune, 'Права\nдоступа', Colors.blueAccent, () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PermissionEditorScreen(
+                        userId: user.id,
+                        userName: _getFullName(),
+                      ),
+                    ),
+                  );
                 }),
               ],
             ),
