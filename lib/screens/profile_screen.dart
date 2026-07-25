@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/api_models.dart';
+import '../models/permission_key.dart';
 import '../providers/auth_providers.dart';
 import '../services/auth_service.dart';
 import '../services/device_id_service.dart';
 import '../services/user_service.dart';
 import '../services/avatar_cache_service.dart';
+import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
 import '../widgets/user_avatar_widget.dart';
 
@@ -330,14 +332,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           // ======== Ваши права и доступ ========
           _buildSectionHeader('Ваши права и доступ'),
           const SizedBox(height: 8),
-          _buildCard([
-            _buildPermissionRow('Редактирование данных', role.canEditData),
-            _buildPermissionRow('Удаление данных', role.canDeleteData),
-            _buildPermissionRow('Управление пользователями', role.canManageUsers),
-            _buildPermissionRow('Просмотр инцидентов', role.canViewIncidents),
-            _buildPermissionRow(
-                'Создание котельных', role.canEditData),
-          ]),
+          Builder(builder: (context) {
+            final perms = ref.watch(permissionStateProvider);
+            return _buildCard([
+              _buildPermissionRow('Просмотр инцидентов', perms.hasPermission(PermissionKey.incidentRead)),
+              _buildPermissionRow('Создание инцидентов', perms.hasPermission(PermissionKey.incidentCreate)),
+              _buildPermissionRow('Редактирование инцидентов', perms.hasPermission(PermissionKey.incidentUpdate)),
+              _buildPermissionRow('Удаление инцидентов', perms.hasPermission(PermissionKey.incidentDelete)),
+              _buildPermissionRow('Создание котельных', perms.hasPermission(PermissionKey.boilerHouseCreate)),
+              _buildPermissionRow('Управление пользователями', perms.hasPermission(PermissionKey.userManagePermissions)),
+            ]);
+          }),
 
           const SizedBox(height: 40),
 

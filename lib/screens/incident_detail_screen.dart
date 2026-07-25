@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../providers/incident_providers.dart';
 import '../models/incident_models.dart';
+import '../models/permission_key.dart';
 import '../services/incident_service.dart';
+import '../services/permission_service.dart';
 import '../repositories/sync_repository.dart';
 import '../widgets/incident_detail/incident_header_card.dart';
 import '../widgets/incident_detail/boiler_house_info_card.dart';
@@ -59,6 +61,14 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
                 IncidentHeaderCard(
                   incident: incident,
                   onStatusToggle: () async {
+                    if (!ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate)) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Нет прав на редактирование инцидентов'), backgroundColor: Colors.red),
+                        );
+                      }
+                      return;
+                    }
                     final canWrite = ref.read(writeAccessProvider);
                     if (!canWrite) {
                       if (context.mounted) {
@@ -126,6 +136,12 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
                     }
                   },
                   onEdit: () {
+                    if (!ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Нет прав на редактирование инцидентов'), backgroundColor: Colors.red),
+                      );
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(

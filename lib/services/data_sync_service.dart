@@ -137,7 +137,11 @@ class DataSyncService {
     }
 
     // ADDED: Hard deduplication for identical updates within 5s
-    if (actionType == 'update' && entityData != null) {
+    // НЕ дедуплицируем photo-related entities: они редкие и критически важны для sync.
+    // Без этого исключения фото, добавленное на одном устройстве, может не появиться
+    // на другом, если entity_data инцидента (включая photos[]) хешируется одинаково.
+    final _photoEntityTypes = const {'incident_photo', 'saved_location_photo', 'boiler_house_photo'};
+    if (actionType == 'update' && entityData != null && !_photoEntityTypes.contains(entityType)) {
       final cacheKey = '${entityType}_${entityIdRaw}';
       final dataHash = jsonEncode(entityData);
       final now = DateTime.now();

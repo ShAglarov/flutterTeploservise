@@ -7,8 +7,10 @@ import '../widgets/incident_card.dart';
 import '../utils/app_theme.dart';
 import '../models/incident_models.dart';
 import '../models/boiler_house_models.dart';
+import '../models/permission_key.dart';
 import '../services/incident_service.dart';
 import '../services/user_service.dart';
+import '../services/permission_service.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -106,18 +108,20 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const IncidentFormScreen(),
-            ),
-          ).then((_) => ref.invalidate(allIncidentsProvider));
-        },
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: ref.watch(permissionStateProvider).hasPermission(PermissionKey.incidentCreate)
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const IncidentFormScreen(),
+                  ),
+                ).then((_) => ref.invalidate(allIncidentsProvider));
+              },
+              backgroundColor: Colors.blue,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 
@@ -159,12 +163,6 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       child: Row(
         children: [
           _FilterChip(
-            label: 'Все',
-            isSelected: ref.watch(incidentFilterProvider).quickFilter == IncidentQuickFilter.all,
-            onSelected: () => ref.read(incidentFilterProvider.notifier).setQuickFilter(IncidentQuickFilter.all),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
             label: 'Активные',
             isSelected: ref.watch(incidentFilterProvider).quickFilter == IncidentQuickFilter.active,
             onSelected: () => ref.read(incidentFilterProvider.notifier).setQuickFilter(IncidentQuickFilter.active),
@@ -174,6 +172,12 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
             label: 'Мои',
             isSelected: ref.watch(incidentFilterProvider).quickFilter == IncidentQuickFilter.assignedToMe,
             onSelected: () => ref.read(incidentFilterProvider.notifier).setQuickFilter(IncidentQuickFilter.assignedToMe),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Все',
+            isSelected: ref.watch(incidentFilterProvider).quickFilter == IncidentQuickFilter.all,
+            onSelected: () => ref.read(incidentFilterProvider.notifier).setQuickFilter(IncidentQuickFilter.all),
           ),
         ],
       ),
@@ -211,32 +215,36 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
             motion: const ScrollMotion(),
             extentRatio: 0.65, // Adjust based on 3 buttons width
             children: [
-              if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed)
+              if (ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate)) ...[
+                if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed)
+                  _buildCustomSlidableAction(
+                    label: 'Возобновить',
+                    icon: Icons.refresh,
+                    color: Colors.orange,
+                    onPressed: (_) => _resumeIncident(inc.id),
+                  )
+                else
+                  _buildCustomSlidableAction(
+                    label: 'Завершить',
+                    icon: Icons.check_circle_outline,
+                    color: Colors.green,
+                    onPressed: (_) => _completeIncident(inc.id),
+                  ),
+              ],
+              if (ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentDelete))
                 _buildCustomSlidableAction(
-                  label: 'Возобновить',
-                  icon: Icons.refresh,
-                  color: Colors.orange,
-                  onPressed: (_) => _resumeIncident(inc.id),
-                )
-              else
-                _buildCustomSlidableAction(
-                  label: 'Завершить',
-                  icon: Icons.check_circle_outline,
-                  color: Colors.green,
-                  onPressed: (_) => _completeIncident(inc.id),
+                  label: 'Удалить',
+                  icon: Icons.delete_outline,
+                  color: Colors.redAccent,
+                  onPressed: (_) => _deleteIncident(inc.id, inc.title),
                 ),
-              _buildCustomSlidableAction(
-                label: 'Удалить',
-                icon: Icons.delete_outline,
-                color: Colors.redAccent,
-                onPressed: (_) => _deleteIncident(inc.id, inc.title),
-              ),
-              _buildCustomSlidableAction(
-                label: 'Редакт.',
-                icon: Icons.edit,
-                color: Colors.orange,
-                onPressed: (_) => _editIncident(inc),
-              ),
+              if (ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate))
+                _buildCustomSlidableAction(
+                  label: 'Редакт.',
+                  icon: Icons.edit,
+                  color: Colors.orange,
+                  onPressed: (_) => _editIncident(inc),
+                ),
             ],
           ),
           child: IncidentCard(
@@ -313,6 +321,10 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   }
 
   Future<void> _completeIncident(int id) async {
+    if (!ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет прав на редактирование инцидентов'), backgroundColor: Colors.red));
+      return;
+    }
     final canWrite = ref.read(writeAccessProvider);
     if (!canWrite) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
@@ -333,6 +345,10 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   }
 
   Future<void> _resumeIncident(int id) async {
+    if (!ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет прав на редактирование инцидентов'), backgroundColor: Colors.red));
+      return;
+    }
     final canWrite = ref.read(writeAccessProvider);
     if (!canWrite) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
@@ -356,6 +372,10 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   }
 
   Future<void> _deleteIncident(int id, String? title) async {
+    if (!ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentDelete)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет прав на удаление инцидентов'), backgroundColor: Colors.red));
+      return;
+    }
     final canWrite = ref.read(writeAccessProvider);
     if (!canWrite) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет интернета и нет прав на редактирование без сети'), backgroundColor: Colors.red));
@@ -402,8 +422,10 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
   }
 
   void _editIncident(IncidentResponse incident) {
-    // Используем уже загруженный из локальной БД объект — не делаем лишний GET к серверу,
-    // чтобы supplyFullyStopped/inactiveBoilerNumbers не затирались серверными null.
+    if (!ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет прав на редактирование инцидентов'), backgroundColor: Colors.red));
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(

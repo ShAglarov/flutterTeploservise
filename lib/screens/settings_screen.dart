@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/api_models.dart';
 import '../models/user_role.dart';
+import '../models/permission_key.dart';
 import '../providers/auth_providers.dart';
 import '../providers/user_presence_provider.dart';
 import '../providers/theme_provider.dart';
@@ -18,6 +19,7 @@ import '../services/incident_service.dart';
 import '../services/user_service.dart';
 import '../services/avatar_cache_service.dart';
 import '../services/base_api_service.dart';
+import '../services/permission_service.dart';
 import '../repositories/sync_repository.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
@@ -294,7 +296,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SizedBox(height: 24),
 
         // ═══════ Пользователи ═══════
-        if (_currentUser?.role.canManageUsers == true) ...[
+        if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userRead)) ...[
           _buildSectionHeader('Пользователи'),
           const SizedBox(height: 8),
           _buildCard([

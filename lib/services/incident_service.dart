@@ -4,18 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/incident_models.dart';
 import '../repositories/sync_repository.dart';
 import 'base_api_service.dart';
+import 'device_id_service.dart';
 
 final incidentServiceProvider = Provider<IncidentService>((ref) {
   final dio = ref.watch(dioProvider);
   final syncRepository = ref.watch(syncRepositoryProvider);
-  return IncidentService(dio, syncRepository);
+  final deviceIdService = ref.watch(deviceIdServiceProvider);
+  return IncidentService(dio, syncRepository, deviceIdService);
 });
 
 class IncidentService {
   final Dio _dio;
   final SyncRepository _syncRepository;
+  final DeviceIdService _deviceIdService;
 
-  IncidentService(this._dio, this._syncRepository);
+  IncidentService(this._dio, this._syncRepository, this._deviceIdService);
 
   Future<List<IncidentResponse>> getAllIncidents() async {
     final response = await _dio.get('/incidents/');
@@ -128,6 +131,7 @@ class IncidentService {
   Future<void> uploadIncidentPhoto(int incidentId, String filePath) async {
     debugPrint('[Service] Uploading photo for incident $incidentId from $filePath');
     try {
+      final deviceId = await _deviceIdService.getDeviceId();
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(filePath),
       });
@@ -135,6 +139,7 @@ class IncidentService {
       final response = await _dio.post(
         '/incidents/$incidentId/photos/',
         data: formData,
+        queryParameters: {'device_id': deviceId},
       );
       debugPrint('[Service] Upload response: ${response.statusCode} - ${response.data}');
       
@@ -166,8 +171,10 @@ class IncidentService {
 
   Future<void> deleteIncidentPhoto(int incidentId, int photoId) async {
     try {
+      final deviceId = await _deviceIdService.getDeviceId();
       await _dio.delete(
         '/incidents/$incidentId/photos/$photoId',
+        queryParameters: {'device_id': deviceId},
       );
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {

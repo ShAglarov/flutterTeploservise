@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/management_company_models.dart';
+import '../models/permission_key.dart';
 import '../providers/management_company_providers.dart';
 import '../services/management_company_service.dart';
+import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
 import 'management_company_detail_screen.dart';
 import 'management_company_form_screen.dart';
@@ -27,6 +29,14 @@ class _ManagementCompanyListScreenState
   }
 
   Future<void> _deleteCompany(ManagementCompanyResponse company) async {
+    if (!ref.read(permissionStateProvider).hasPermission(PermissionKey.managementCompanyDelete)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Нет прав на удаление управляющих компаний'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -116,11 +126,12 @@ class _ManagementCompanyListScreenState
                 TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600)),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
-            onPressed: _openCreateForm,
-            tooltip: 'Добавить УК',
-          ),
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.managementCompanyCreate))
+            IconButton(
+              icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
+              onPressed: _openCreateForm,
+              tooltip: 'Добавить УК',
+            ),
         ],
       ),
       body: Column(
@@ -347,29 +358,31 @@ class _ManagementCompanyListScreenState
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined,
-                              color: AppTheme.warningOrange, size: 18),
-                          SizedBox(width: 10),
-                          Text('Редактировать'),
-                        ],
+                    if (ref.read(permissionStateProvider).hasPermission(PermissionKey.managementCompanyUpdate))
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined,
+                                color: AppTheme.warningOrange, size: 18),
+                            SizedBox(width: 10),
+                            Text('Редактировать'),
+                          ],
+                        ),
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline,
-                              color: AppTheme.errorRed, size: 18),
-                          SizedBox(width: 10),
-                          Text('Удалить',
-                              style: TextStyle(color: AppTheme.errorRed)),
-                        ],
+                    if (ref.read(permissionStateProvider).hasPermission(PermissionKey.managementCompanyDelete))
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline,
+                                color: AppTheme.errorRed, size: 18),
+                            SizedBox(width: 10),
+                            Text('Удалить',
+                                style: TextStyle(color: AppTheme.errorRed)),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ],

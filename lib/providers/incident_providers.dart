@@ -4,13 +4,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/incident_models.dart';
 import '../repositories/sync_repository.dart';
 import '../providers/auth_provider.dart';
+import '../services/incident_service.dart';
 
 import '../services/user_service.dart';
 import '../models/user_role.dart';
 
 part 'incident_providers.g.dart';
 
-enum IncidentQuickFilter { all, active, assignedToMe }
+enum IncidentQuickFilter { active, assignedToMe, all }
 enum IncidentPeriod { allTime, today, thisWeek }
 
 class IncidentFilterState {
@@ -21,7 +22,7 @@ class IncidentFilterState {
   final bool? stoppedHeating;
 
   IncidentFilterState({
-    this.quickFilter = IncidentQuickFilter.all,
+    this.quickFilter = IncidentQuickFilter.active,
     this.period = IncidentPeriod.allTime,
     this.searchQuery = '',
     this.stoppedHotWater,
@@ -405,5 +406,18 @@ final filteredIncidentsProvider = Provider<AsyncValue<List<IncidentResponse>>>((
 @Riverpod(keepAlive: true)
 Stream<IncidentResponse?> singleIncident(Ref ref, int id) {
   final syncRepo = ref.watch(syncRepositoryProvider);
+
+  // КРИТИЧНО: Фоновый fetch с сервера для актуализации данных
+  // (например, после холодного старта или при долгом offline).
+  // Drift stream автоматически обновит UI после записи в локальную БД.
+  final incidentService = ref.watch(incidentServiceProvider);
+  Future.microtask(() async {
+    try {
+      await incidentService.getIncident(id);
+    } catch (_) {
+      // Не критично — локальные данные останутся
+    }
+  });
+
   return syncRepo.watchIncidentById(id);
 }

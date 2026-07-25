@@ -21,7 +21,9 @@ import '../providers/incident_providers.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
 import '../models/incident_models.dart';
+import '../models/permission_key.dart';
 import '../services/location_service.dart';
+import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../providers/map_tile_provider.dart';
@@ -180,8 +182,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Future<void> _onMapLongPress(TapPosition tapPosition, LatLng point) async {
+    final perms = ref.read(permissionStateProvider);
     if (_selectedBoilerHouse == null) {
       // Create Boiler House
+      if (!perms.hasPermission(PermissionKey.boilerHouseCreate)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Нет прав на создание котельных'), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
       final result = await showDialog<BoilerHouseResponse>(
         context: context,
         builder: (context) => BoilerHouseFormDialog(position: point),
@@ -197,6 +208,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       }
     } else {
       // Create House linked to selected Boiler House
+      if (!perms.hasPermission(PermissionKey.savedLocationCreate)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Нет прав на создание адресов'), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
       final result = await showDialog<SavedLocationResponse>(
         context: context,
         builder: (context) => HouseFormDialog(
@@ -356,17 +375,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTopButton(
-                    label: 'Журнал',
-                    icon: Icons.assignment_outlined,
-                    color: AppTheme.successGreen,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ActionLogListScreen()),
-                      );
-                    },
-                  ),
+                  if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.actionLogRead))
+                    _buildTopButton(
+                      label: 'Журнал',
+                      icon: Icons.assignment_outlined,
+                      color: AppTheme.successGreen,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ActionLogListScreen()),
+                        );
+                      },
+                    ),
                   const SizedBox(height: 12),
                   Builder(
                     builder: (context) {
@@ -534,7 +554,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                 ],
               ),
-              child: Padding(
+                child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -547,27 +567,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
                       },
                     ),
-                    _buildDropdownDivider(),
-                    _buildDropdownItem(
-                      Icons.business_rounded,
-                      'Управляющие компании',
-                      const Color(0xFF00B894),
-                      () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementCompanyListScreen()));
-                      },
-                    ),
-                    _buildDropdownDivider(),
-                    _buildDropdownItem(
-                      Icons.ios_share_rounded,
-                      'Экспорт',
-                      const Color(0xFFFDAA1D),
-                      () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Экспорт скоро появится')),
-                        );
-                      },
-                      trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.onSurface.withAlpha(60), size: 20),
-                    ),
+                    if (ref.read(permissionStateProvider).hasPermission(PermissionKey.managementCompanyRead)) ...[
+                      _buildDropdownDivider(),
+                      _buildDropdownItem(
+                        Icons.business_rounded,
+                        'Управляющие компании',
+                        const Color(0xFF00B894),
+                        () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagementCompanyListScreen()));
+                        },
+                      ),
+                    ],
+                    if (ref.read(permissionStateProvider).hasPermission(PermissionKey.dataExport)) ...[
+                      _buildDropdownDivider(),
+                      _buildDropdownItem(
+                        Icons.ios_share_rounded,
+                        'Экспорт',
+                        const Color(0xFFFDAA1D),
+                        () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Экспорт скоро появится')),
+                          );
+                        },
+                        trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.onSurface.withAlpha(60), size: 20),
+                      ),
+                    ],
                     _buildDropdownDivider(),
                     _buildDropdownItem(
                       Icons.search_rounded,
