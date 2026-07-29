@@ -101,8 +101,12 @@ const Object _sentinel = Object();
 
 @Riverpod(keepAlive: true)
 class MapData extends _$MapData {
+  bool _disposed = false;
+  Timer? _retryTimer;
+
   @override
   MapDataState build() {
+    _disposed = false;
     final syncRepo = ref.watch(syncRepositoryProvider);
     
     // 1. Subscribe to local DB streams for reactive updates
@@ -179,6 +183,8 @@ class MapData extends _$MapData {
 
     
     ref.onDispose(() {
+      _disposed = true;
+      _retryTimer?.cancel();
       bhSub.cancel();
       locSub.cancel();
       incSub.cancel();
@@ -204,6 +210,7 @@ class MapData extends _$MapData {
       print('⏭️ [MapData] _fetchInitialData already in progress, skipping');
       return;
     }
+    if (_disposed) return;
     _isFetching = true;
 
     try {
@@ -222,14 +229,16 @@ class MapData extends _$MapData {
       _fetchRetryCount = 0; // Reset on success
       print('✅ [MapData] Initial data fetch complete');
     } catch (e) {
+      if (_disposed) return; // Provider уничтожен (logout) — не ретраим
       print('⚠️ [MapData] Initial data fetch failed: $e');
       _fetchRetryCount++;
       if (_fetchRetryCount <= _maxFetchRetries) {
         final delay = Duration(seconds: _fetchRetryCount * 5);
         print('🔄 [MapData] Retry $_fetchRetryCount/$_maxFetchRetries in ${delay.inSeconds}s');
-        Future.delayed(delay, () {
+        _retryTimer?.cancel();
+        _retryTimer = Timer(delay, () {
           _isFetching = false;
-          _fetchInitialData();
+          if (!_disposed) _fetchInitialData();
         });
         return; // Don't reset _isFetching yet
       } else {

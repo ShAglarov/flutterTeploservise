@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math; // ADDED: for jitter
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -63,6 +64,9 @@ class RealtimeService {
   DateTime? _lastPongReceived;
   DateTime? _lastConnectedAt; // ADDED: track reconnect time to drop instant redeliveries
 
+  // GPS: Защита от параллельных запросов разрешений
+  Future<Position?>? _pendingGpsRequest;
+
   RealtimeService(this._storage, this._deviceService);
 
   Future<void> connect() async {
@@ -122,6 +126,11 @@ class RealtimeService {
       _lastConnectedAt = DateTime.now();
       _connectionStateController.add(true);
 
+      // КРИТИЧНО: Отправляем device info СРАЗУ при подключении.
+      // Не ждём первого ping от сервера — иначе при resume сессии
+      // (без вызова login()) device info никогда не попадёт на сервер.
+      _sendPongWithLocation();
+
       // ADDED: ANTI-DDOS — deferred backoff reset.
       // Only reset retry counter after 5s of proven stability.
       // If the server flaps, _retryCount stays elevated → 2s → 4s → 8s instead of 1s → 1s → DDoS.
@@ -137,6 +146,10 @@ class RealtimeService {
         dev.log('RealtimeService: Reconnected — firing onReconnect', name: 'WS');
         _reconnectController.add(null);
       }
+      
+      // КРИТИЧНО: Сразу после подключения отправляем device info + GPS.
+      // Не ждём серверного ping — гарантируем попадание device info на сервер.
+      _sendPongWithLocation();
     } catch (e) {
       dev.log('RealtimeService: Failed to connect: $e', name: 'WS');
       _isConnecting = false;
@@ -289,24 +302,106 @@ class RealtimeService {
     dev.log('RealtimeService: Server-ping watchdog started (check: 15s, timeout: 120s)', name: 'WS');
   }
 
-  // ADDED: Send pong with GPS coordinates
+  // ADDED: Send pong with GPS coordinates and device info
   void _sendPongWithLocation() {
+    _sendPongAsync();
+  }
+
+  /// Async implementation — async/await вместо .then()/.catchError()
+  /// чтобы ошибки не проглатывались молча.
+  Future<void> _sendPongAsync() async {
+    final Map<String, dynamic> pongData = {'type': 'pong'};
+
+    // 1. Device info — ВСЕГДА пытаемся получить
     try {
-      // Try to get last known position (non-blocking, cached)
-      Geolocator.getLastKnownPosition().then((position) {
-        final Map<String, dynamic> pongData = {'type': 'pong'};
-        if (position != null) {
-          pongData['latitude'] = position.latitude;
-          pongData['longitude'] = position.longitude;
-        }
-        _channel?.sink.add(jsonEncode(pongData));
-      }).catchError((_) {
-        // Fallback: send pong without GPS
-        _channel?.sink.add(jsonEncode({'type': 'pong'}));
-      });
-    } catch (_) {
-      _channel?.sink.add(jsonEncode({'type': 'pong'}));
+      final deviceInfo = await _deviceService.getDeviceInfo();
+      pongData['device_type'] = deviceInfo.deviceType;
+      pongData['device_os'] = deviceInfo.deviceOs;
+      pongData['device_model'] = deviceInfo.deviceModel;
+      pongData['device_model_id'] = deviceInfo.deviceModelId;
+    } catch (e) {
+      print('⚠️ [Pong] getDeviceInfo FAILED: $e');
+      // Отправляем pong без device info — но хотя бы не теряем pong
     }
+
+    // 2. GPS — отдельно, не ломает device info при ошибке
+    try {
+      final position = await _safeGetLastPosition();
+      if (position != null) {
+        pongData['latitude'] = position.latitude;
+        pongData['longitude'] = position.longitude;
+      }
+    } catch (e) {
+      print('⚠️ [Pong] GPS FAILED (non-critical): $e');
+    }
+
+    // 3. Отправляем
+    try {
+      _channel?.sink.add(jsonEncode(pongData));
+    } catch (e) {
+      print('⚠️ [Pong] WebSocket send FAILED: $e');
+    }
+  }
+
+  /// Безопасно получает позицию GPS.
+  /// Защита от параллельных вызовов — второй вызов ждёт первого.
+  Future<Position?> _safeGetLastPosition() async {
+    // Если уже идёт запрос GPS — ждём его результат
+    if (_pendingGpsRequest != null) {
+      return _pendingGpsRequest!;
+    }
+    _pendingGpsRequest = _doGetPosition();
+    try {
+      return await _pendingGpsRequest!;
+    } finally {
+      _pendingGpsRequest = null;
+    }
+  }
+
+  /// Внутренняя реализация получения GPS-координат.
+  Future<Position?> _doGetPosition() async {
+    try {
+      // Geolocator не поддерживает Windows/Linux
+      if (Platform.isWindows || Platform.isLinux) return null;
+      // На macOS Desktop (не "Designed for iPad") — пропускаем
+      if (Platform.isMacOS) return null;
+
+      // Проверяем разрешения (без requestPermission — не блокируем pong)
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        // Не запрашиваем разрешение в pong — это должно происходить
+        // на экране карты, где пользователь видит контекст.
+        return null;
+      }
+
+      // Сначала кэш — мгновенно
+      final cached = await Geolocator.getLastKnownPosition();
+      if (cached != null) return cached;
+
+      // Кэша нет — запрашиваем актуальную позицию с таймаутом
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      print('⚠️ [GPS] _doGetPosition error: $e');
+      return null;
+    }
+  }
+
+  /// Last Gasp: публичный метод для отправки финального pong с GPS и device info.
+  /// Вызывается при logout и при закрытии приложения (AppLifecycleState.detached).
+  /// Fire-and-forget — не ждёт ответа.
+  void sendLastPong() {
+    if (_channel == null || !_isConnected) {
+      dev.log('⚠️ [LastGasp] WebSocket не подключён — финальный pong не отправлен', name: 'WS');
+      return;
+    }
+    dev.log('🚨 [LastGasp] Отправляем финальный pong с GPS...', name: 'WS');
+    _sendPongWithLocation();
   }
 
   // ADDED: Active Client Heartbeat. Proactively sends a ping every 20s.

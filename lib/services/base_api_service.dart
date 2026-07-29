@@ -75,7 +75,7 @@ class AuthInterceptor extends Interceptor {
 
       // Don't refresh for the refresh endpoint itself (avoid infinite loop)
       if (err.requestOptions.path == AppConstants.refresh) {
-        await _storageService.clearAll();
+        await _storageService.clearAuthData();
         _eventService.fire(AppEvent.logout);
         return handler.next(err);
       }
@@ -105,7 +105,7 @@ class AuthInterceptor extends Interceptor {
         }
       } else {
         // Refresh failed — session is truly expired, log out
-        await _storageService.clearAll();
+        await _storageService.clearAuthData();
         _eventService.fire(AppEvent.logout);
         return handler.next(err);
       }

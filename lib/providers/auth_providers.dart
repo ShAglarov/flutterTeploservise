@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/auth_service.dart';
 import '../services/secure_storage_service.dart';
+import '../services/realtime_service.dart';
 
 part 'auth_providers.g.dart';
 
@@ -91,6 +92,17 @@ class Auth extends _$Auth {
   }
 
   Future<void> logout() async {
+    // >>> LAST GASP: Отправляем финальный pong с GPS ДО очистки токенов
+    try {
+      final realtimeService = ref.read(realtimeServiceProvider);
+      realtimeService.sendLastPong();
+      // Даём WebSocket 500мс на фактическую отправку фрейма
+      await Future.delayed(const Duration(milliseconds: 500));
+      realtimeService.disconnect();
+    } catch (_) {
+      // RealtimeService может быть не инициализирован — не критично
+    }
+    
     final authService = ref.read(authServiceProvider);
     await authService.logout();
     state = AuthState(status: AuthStatus.unauthenticated);

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_store.dart';
@@ -10,12 +11,15 @@ import 'package:path_provider/path_provider.dart';
 /// Tiles are stored on disk using Hive. HTTP cache headers from the tile
 /// server are respected (ETag / Last-Modified / max-age), so tiles are
 /// re-validated only when the server says they've changed.
+///
+/// При повреждении Hive-бокса кэш автоматически пересоздаётся.
 class CachedTileProviderManager {
   CachedTileProviderManager._();
   static final instance = CachedTileProviderManager._();
 
   CacheStore? _store;
   bool _initialized = false;
+  String? _cachePath;
 
   /// Кэшированный экземпляр TileProvider — создаётся один раз
   CachedTileProvider? _cachedProvider;
@@ -25,18 +29,49 @@ class CachedTileProviderManager {
   Future<void> init() async {
     if (_initialized) return;
     final dir = await getApplicationSupportDirectory();
-    final path = '${dir.path}/map_tile_cache';
-    _store = HiveCacheStore(
-      path,
-      hiveBoxName: 'map_tiles',
-    );
-    _initialized = true;
-    // Создаём один раз
-    _cachedProvider = CachedTileProvider(
-      store: _store!,
-      maxStale: const Duration(days: 365),
-      hitCacheOnErrorExcept: [401, 403],
-    );
+    _cachePath = '${dir.path}/map_tile_cache';
+
+    try {
+      _store = HiveCacheStore(
+        _cachePath!,
+        hiveBoxName: 'map_tiles',
+      );
+      _cachedProvider = CachedTileProvider(
+        store: _store!,
+        maxStale: const Duration(days: 365),
+        hitCacheOnErrorExcept: [401, 403],
+      );
+      _initialized = true;
+    } catch (e) {
+      // Hive box corrupted at init — удаляем и пересоздаём
+      print('⚠️ [TileCache] Hive init failed, clearing corrupted cache: $e');
+      await _clearAndReinit();
+    }
+  }
+
+  /// Удаляет повреждённый кэш и пересоздаёт.
+  Future<void> _clearAndReinit() async {
+    try {
+      final cacheDir = Directory(_cachePath!);
+      if (await cacheDir.exists()) {
+        await cacheDir.delete(recursive: true);
+      }
+      _store = HiveCacheStore(
+        _cachePath!,
+        hiveBoxName: 'map_tiles',
+      );
+      _cachedProvider = CachedTileProvider(
+        store: _store!,
+        maxStale: const Duration(days: 365),
+        hitCacheOnErrorExcept: [401, 403],
+      );
+      _initialized = true;
+      print('✅ [TileCache] Cache recreated successfully');
+    } catch (e) {
+      print('❌ [TileCache] Failed to recreate cache: $e');
+      // Fallback — используем NetworkTileProvider без кэша
+      _initialized = false;
+    }
   }
 
   /// Returns a [TileProvider] that caches tiles to disk.
@@ -61,8 +96,13 @@ class CachedTileProviderManager {
         url,
         options: Options(responseType: ResponseType.bytes),
       );
-    } catch (_) {
-      // Молча игнорируем ошибки предзагрузки
+    } catch (e) {
+      // HiveError при чтении — кэш повреждён
+      if (e.toString().contains('HiveError') || e.toString().contains('corrupted')) {
+        print('⚠️ [TileCache] Corrupted cache detected, clearing...');
+        _clearAndReinit(); // fire-and-forget
+      }
+      // Молча игнорируем остальные ошибки предзагрузки
     }
   }
 }

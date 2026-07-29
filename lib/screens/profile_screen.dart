@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/api_models.dart';
 import '../models/permission_key.dart';
 import '../providers/auth_providers.dart';
@@ -25,6 +27,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   APIUserResponse? _user;
   String? _deviceId;
+  DeviceInfoData? _deviceInfo;
+  Position? _lastPosition;
   bool _isLoading = true;
   String? _error;
 
@@ -42,14 +46,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final results = await Future.wait([
         authService.getCurrentUser(),
         deviceIdService.getDeviceId(),
+        deviceIdService.getDeviceInfo(),
       ]);
 
       if (mounted) {
         setState(() {
           _user = results[0] as APIUserResponse;
           _deviceId = results[1] as String;
+          _deviceInfo = results[2] as DeviceInfoData;
           _isLoading = false;
         });
+      }
+      
+      // Загружаем GPS-координаты отдельно (может потребовать разрешений)
+      try {
+        final position = await Geolocator.getLastKnownPosition();
+        if (mounted && position != null) {
+          setState(() => _lastPosition = position);
+        }
+      } catch (_) {
+        // GPS недоступен — не критично
       }
     } catch (e) {
       if (mounted) {
@@ -191,6 +207,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   String get _deviceName {
+    // Используем реальную модель из DeviceInfoData, если доступна
+    if (_deviceInfo != null) {
+      return '${_deviceInfo!.deviceModel} (${_deviceInfo!.deviceOs})';
+    }
+    // Fallback — generic имена
     if (Platform.isIOS) return 'iPhone';
     if (Platform.isAndroid) return 'Android';
     if (Platform.isMacOS) return 'macOS';
@@ -323,9 +344,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _buildSectionHeader('Устройство'),
           const SizedBox(height: 8),
           _buildCard([
-            _buildRow('Имя устройства', _deviceName),
+            _buildRow('Модель', _deviceName),
+            if (_deviceInfo != null)
+              _buildRow('Тип', _deviceInfo!.deviceType),
             _buildDeviceIdRow(),
           ]),
+
+          const SizedBox(height: 24),
+
+          // ======== Последнее местонахождение ========
+          if (_lastPosition != null) ...[
+            _buildSectionHeader('Последнее местонахождение'),
+            const SizedBox(height: 8),
+            _buildLocationCard(),
+          ],
 
           const SizedBox(height: 24),
 
@@ -499,6 +531,96 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  /// Карточка «Последнее местонахождение» — тап открывает 2ГИС
+  Widget _buildLocationCard() {
+    final pos = _lastPosition!;
+    final coordText = '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}';
+    final timeText = TimeOfDay.fromDateTime(pos.timestamp).format(context);
+
+    return GestureDetector(
+      onTap: () => _open2GIS(pos.latitude, pos.longitude),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            // 📍 Координаты + время
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.red, size: 18),
+                  const SizedBox(width: 8),
+                  Text(coordText,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('·', style: TextStyle(color: Colors.grey[400])),
+                  const SizedBox(width: 6),
+                  Text(timeText,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.map_outlined, size: 16, color: Colors.green[600]),
+                ],
+              ),
+            ),
+            Divider(height: 1, indent: 14, color: Colors.grey.withAlpha(40)),
+            // 📱 Устройство
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.phone_iphone, color: Colors.blue, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Устройство: ',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      _deviceInfo != null
+                          ? '${_deviceInfo!.deviceModel} (${_deviceInfo!.deviceOs})'
+                          : '—',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Открывает координаты в 2ГИС.
+  /// ВАЖНО: 2ГИС использует порядок "долгота, широта" в URL.
+  Future<void> _open2GIS(double latitude, double longitude) async {
+    // Deep link приложения 2ГИС
+    final deepLink = Uri.parse('dgis://2gis.ru/geo/$longitude,$latitude');
+    // Fallback на веб-версию
+    final webFallback = Uri.parse('https://2gis.ru/geo/$longitude,$latitude');
+
+    try {
+      final launched = await launchUrl(deepLink, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(webFallback, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {
+      // Если deep link не сработал — открываем веб
+      await launchUrl(webFallback, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildPermissionRow(String label, bool allowed) {

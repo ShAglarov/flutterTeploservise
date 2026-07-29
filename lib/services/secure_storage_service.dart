@@ -57,7 +57,18 @@ class SecureStorageService {
     return await _safeRead(AppConstants.refreshTokenKey);
   }
 
-  Future<void> clearAll() async {
+  /// Очищает только аутентификационные данные (токены).
+  /// КРИТИЧНО: НЕ удаляет device_unique_id — он должен переживать logout.
+  /// Раньше использовался clearAll() → deleteAll(), который стирал device_id
+  /// при каждом logout, генерируя новый UUID при следующем login.
+  Future<void> clearAuthData() async {
+    await deleteAccessToken();
+    await deleteRefreshToken();
+  }
+
+  /// Полная очистка хранилища (включая device_id).
+  /// Использовать ТОЛЬКО при полном сбросе данных приложения.
+  Future<void> clearEverything() async {
     try {
       await _storage.deleteAll();
     } on PlatformException catch (_) {

@@ -106,14 +106,35 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   bool _syncInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Start the background sync worker (outgoing pending changes)
     Future.microtask(() => ref.read(syncWorkerProvider).start());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      // LAST GASP: Приложение закрывается (свайп kill).
+      // WebSocket может ещё быть жив — пробуем отправить финальный pong.
+      try {
+        final realtimeService = ref.read(realtimeServiceProvider);
+        realtimeService.sendLastPong();
+      } catch (_) {
+        // Провайдер может быть уже disposed — не критично
+      }
+    }
   }
 
   /// Called once when the user is authenticated.
@@ -136,7 +157,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         
         // Очищаем сохраненные токены
         final storage = ref.read(secureStorageServiceProvider);
-        await storage.clearAll();
+        await storage.clearAuthData();
         
         // Отключаем WebSocket (уже сделано в RealtimeService, но для надёжности)
         realtimeService.disconnect();
