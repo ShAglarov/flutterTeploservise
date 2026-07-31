@@ -275,6 +275,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
             isOverdue: inc.isOverdue,
             boilerHouseDetail: vm.boilerHouseDetail,
             unreadChatCount: ref.watch(unreadCountsProvider)[inc.id] ?? 0,
+            incidentId: inc.id,
             onTap: () {
               Navigator.push(
                 context,

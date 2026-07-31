@@ -7,6 +7,8 @@ import '../base_card.dart';
 import '../user_avatar_widget.dart';
 import '../user_profile_sheet.dart';
 
+import '../../screens/incident_chat_screen.dart';
+
 class IncidentChatCard extends ConsumerStatefulWidget {
   final int incidentId;
 
@@ -40,13 +42,43 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ЧАТ И ИСТОРИЯ',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'ЧАТ И ИСТОРИЯ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => IncidentChatScreen(incidentId: widget.incidentId),
+                    ),
+                  );
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Открыть',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right, size: 18, color: Colors.blue),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Container(

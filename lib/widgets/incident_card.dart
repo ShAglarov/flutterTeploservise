@@ -25,6 +25,7 @@ class IncidentCard extends StatefulWidget {
   final bool isUnsynced;
   final bool isOverdue;
   final int unreadChatCount;
+  final int incidentId;
   final VoidCallback? onTap;
 
   const IncidentCard({
@@ -48,6 +49,7 @@ class IncidentCard extends StatefulWidget {
     this.isUnsynced = false,
     this.isOverdue = false,
     this.unreadChatCount = 0,
+    this.incidentId = 0,
     this.onTap,
   });
 
@@ -224,13 +226,33 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        widget.title,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          if (widget.incidentId > 0) ...[
+                            Text(
+                              '#${widget.incidentId}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              widget.title,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
