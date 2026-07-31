@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math; // ADDED: for jitter
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../utils/constants.dart';
@@ -68,6 +69,72 @@ class RealtimeService {
   Future<Position?>? _pendingGpsRequest;
 
   RealtimeService(this._storage, this._deviceService);
+
+  /// Force-disconnect and reconnect immediately.
+  /// Called from app lifecycle handler on resume from background/sleep.
+  /// Resets retry count to avoid exponential backoff after device sleep.
+  Future<void> reconnectNow() async {
+    dev.log('RealtimeService: 🔄 reconnectNow() — forcing immediate reconnect', name: 'WS');
+    
+    // Clean disconnect (cancels timers, nulls out channel)
+    _reconnectTimer?.cancel();
+    _stableConnectionTimer?.cancel();
+    _watchdogTimer?.cancel();
+    _heartbeatTimer?.cancel();
+    _subscription?.cancel();
+    try { _channel?.sink.close(); } catch (_) {}
+    _channel = null;
+    _subscription = null;
+    _isConnected = false;
+    _isConnecting = false; // Reset to allow connect()
+    _retryCount = 0; // Reset backoff — this is an intentional reconnect
+    _connectionStateController.add(false);
+
+    // Refresh token before reconnecting — after sleep, JWT is likely expired
+    await _refreshTokenIfNeeded();
+
+    // Connect immediately
+    await connect();
+  }
+
+  /// Attempts to refresh the access token via HTTP refresh endpoint.
+  /// Ensures the stored token is fresh before WS connect() reads it.
+  Future<void> _refreshTokenIfNeeded() async {
+    try {
+      final refreshToken = await _storage.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        dev.log('RealtimeService: No refresh token available, skipping token refresh', name: 'WS');
+        return;
+      }
+
+      final dio = Dio(BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
+
+      final response = await dio.post(
+        AppConstants.refresh,
+        data: {'refresh_token': refreshToken},
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final newAccessToken = response.data['access_token'] as String?;
+        final newRefreshToken = response.data['refresh_token'] as String?;
+
+        if (newAccessToken != null) {
+          await _storage.saveAccessToken(newAccessToken);
+        }
+        if (newRefreshToken != null) {
+          await _storage.saveRefreshToken(newRefreshToken);
+        }
+        dev.log('RealtimeService: ✅ Token refreshed before WS connect', name: 'WS');
+      }
+    } catch (e) {
+      dev.log('RealtimeService: ⚠️ Token refresh failed (will try connect with existing token): $e', name: 'WS');
+      // Non-fatal — we still try to connect with whatever token is stored
+    }
+  }
 
   Future<void> connect() async {
     if (_isConnecting || _channel != null) return;

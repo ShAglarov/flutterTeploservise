@@ -125,6 +125,46 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // Приложение уходит в фон / экран заблокирован.
+      // Отправляем финальный pong пока WebSocket ещё жив.
+      try {
+        final realtimeService = ref.read(realtimeServiceProvider);
+        realtimeService.sendLastPong();
+        debugPrint('📱 [Main] App paused — sent last pong');
+      } catch (_) {}
+    }
+
+    if (state == AppLifecycleState.resumed && _syncInitialized) {
+      // Приложение вернулось из фона / экран разблокирован.
+      // WebSocket скорее всего мёртв + JWT токен мог истечь.
+      // reconnectNow() обновит токен и переподключит WS.
+      debugPrint('📱 [Main] App resumed — forcing WebSocket reconnect');
+      Future.microtask(() async {
+        try {
+          final realtimeService = ref.read(realtimeServiceProvider);
+          await realtimeService.reconnectNow();
+
+          // Догоняем пропущенные данные через HTTP
+          final syncService = ref.read(syncServiceProvider);
+          await syncService.incrementalSync();
+
+          // Полный reconcile инцидентов
+          try {
+            final incidentService = ref.read(incidentServiceProvider);
+            await incidentService.getAllIncidents();
+            debugPrint('✅ [Main] Post-resume sync completed');
+          } catch (e) {
+            debugPrint('⚠️ [Main] Post-resume incident refresh failed: $e');
+          }
+
+          ref.invalidate(allIncidentsProvider);
+        } catch (e) {
+          debugPrint('⚠️ [Main] Post-resume reconnect failed: $e');
+        }
+      });
+    }
+
     if (state == AppLifecycleState.detached) {
       // LAST GASP: Приложение закрывается (свайп kill).
       // WebSocket может ещё быть жив — пробуем отправить финальный pong.
