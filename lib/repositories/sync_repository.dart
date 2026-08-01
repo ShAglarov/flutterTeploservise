@@ -35,9 +35,18 @@ class SyncRepository {
             ..where((t) => t.incidentId.isIn(incidentIds)))
           .go();
 
-      await (_db.delete(_db.incidentPhotos)
-            ..where((t) => t.incidentId.isIn(incidentIds)))
-          .go();
+      // КРИТИЧНО: Удаляем фото ТОЛЬКО для тех инцидентов, у которых photos != null.
+      // Если photos == null (например, WS incident update без photos), оставляем
+      // существующие фото нетронутыми — их обновляют отдельные incident_photo WS-события.
+      final incidentIdsWithPhotos = incidents
+          .where((i) => i.photos != null)
+          .map((i) => i.id)
+          .toList();
+      if (incidentIdsWithPhotos.isNotEmpty) {
+        await (_db.delete(_db.incidentPhotos)
+              ..where((t) => t.incidentId.isIn(incidentIdsWithPhotos)))
+            .go();
+      }
 
       // 1.5. Clean up temporary offline duplicate rows that have the same incidentUUID
       for (final incident in incidents) {

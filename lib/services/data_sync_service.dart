@@ -281,6 +281,11 @@ class DataSyncService {
         final cleanData = Map<String, dynamic>.from(entityData);
         cleanData.remove('boiler_house');
         cleanData.remove('affected_house_details');
+        // КРИТИЧНО: НЕ трогаем фото через incident update — фото обрабатываются
+        // отдельными WS-событиями incident_photo (create/delete).
+        // Если оставить photos в данных, upsertIncidents удалит ВСЕ фото
+        // и перевставит из WS entity_data, вызывая мерцание миниатюр в UI.
+        cleanData.remove('photos');
         
         final incident = IncidentResponse.fromJson(cleanData);
         await _syncRepo.upsertIncidents([incident]);
