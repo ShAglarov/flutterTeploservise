@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
@@ -182,6 +183,20 @@ class IncidentFormController extends _$IncidentFormController {
     );
   }
 
+  /// Добавить локальный путь к фото (до сохранения инцидента)
+  void addPhoto(String path) {
+    state = state.copyWith(pendingPhotoPaths: [...state.pendingPhotoPaths, path]);
+  }
+
+  /// Удалить фото из списка pending по индексу
+  void removePhoto(int index) {
+    final newList = List<String>.from(state.pendingPhotoPaths);
+    if (index >= 0 && index < newList.length) {
+      newList.removeAt(index);
+      state = state.copyWith(pendingPhotoPaths: newList);
+    }
+  }
+
   Future<bool> save() async {
     if (state.boilerHouseId == null || state.title.isEmpty) {
       state = state.copyWith(errorMessage: 'Заполните обязательные поля');
@@ -255,9 +270,22 @@ class IncidentFormController extends _$IncidentFormController {
           supplyFullyStopped: state.supplyFullyStopped,
         );
 
-        await service.createIncident(create);
+        final createdIncident = await service.createIncident(create);
+
+        // Загружаем pending фото после успешного создания инцидента
+        if (state.pendingPhotoPaths.isNotEmpty) {
+          for (final photoPath in state.pendingPhotoPaths) {
+            try {
+              await service.uploadIncidentPhoto(createdIncident.id, photoPath);
+              debugPrint('📸 [IncidentFormController] Uploaded photo: $photoPath for incident ${createdIncident.id}');
+            } catch (e) {
+              debugPrint('⚠️ [IncidentFormController] Failed to upload photo $photoPath: $e');
+              // Не прерываем — продолжаем загрузку остальных
+            }
+          }
+        }
       }
-      state = state.copyWith(isSaving: false);
+      state = state.copyWith(isSaving: false, pendingPhotoPaths: []);
       return true;
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;

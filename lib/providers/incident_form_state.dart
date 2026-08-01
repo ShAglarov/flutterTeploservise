@@ -31,6 +31,8 @@ abstract class IncidentFormState with _$IncidentFormState {
     @Default({}) Set<int> inactiveBoilers,
     /// Тумблер "Теплоноситель не поступает полностью" — форсирует статус КРАСНЫЙ
     @Default(false) bool supplyFullyStopped,
+    /// Локальные пути к фото, выбранным до сохранения инцидента
+    @Default([]) List<String> pendingPhotoPaths,
   }) = _IncidentFormState;
 }
 

@@ -1,3 +1,4 @@
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -372,6 +373,10 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           onChanged: controller.updateDescription,
                         ),
                       ),
+
+                      const SizedBox(height: 16),
+                      _buildSectionTitle('Фотографии'),
+                      _buildPhotosSection(state, controller),
                     ],
                   ),
                 ),
@@ -732,6 +737,151 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
         );
       },
     );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ─── СЕКЦИЯ ФОТОГРАФИЙ ────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════
+
+  Widget _buildPhotosSection(IncidentFormState state, IncidentFormController controller) {
+    return _buildContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Кнопка добавления фото
+          InkWell(
+            onTap: () => _pickPhoto(controller),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.add_a_photo, color: Colors.blue.withOpacity(0.7), size: 20),
+                  const SizedBox(width: 12),
+                  Text('Добавить фото', style: TextStyle(color: Colors.blue, fontSize: 15, fontWeight: FontWeight.w500)),
+                  const Spacer(),
+                  if (state.pendingPhotoPaths.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${state.pendingPhotoPaths.length}',
+                        style: const TextStyle(color: Colors.blue, fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withAlpha(97), size: 20),
+                ],
+              ),
+            ),
+          ),
+          // Превью выбранных фото
+          if (state.pendingPhotoPaths.isNotEmpty) ...[
+            _buildDivider(),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                itemCount: state.pendingPhotoPaths.length,
+                itemBuilder: (context, index) {
+                  final path = state.pendingPhotoPaths[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            io.File(path),
+                            width: 84,
+                            height: 84,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 84,
+                                height: 84,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[800],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.broken_image, color: Colors.grey, size: 32),
+                              );
+                            },
+                          ),
+                        ),
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: GestureDetector(
+                            onTap: () => controller.removePhoto(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, color: Colors.white, size: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickPhoto(IncidentFormController controller) async {
+    final picker = ImagePicker();
+    
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text('Галерея', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text('Камера', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final image = await picker.pickImage(
+        source: source,
+        imageQuality: 70,
+      );
+      if (image != null) {
+        controller.addPhoto(image.path);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка выбора фото: $e')),
+        );
+      }
+    }
   }
 
   // ═══════════════════════════════════════════════════════════

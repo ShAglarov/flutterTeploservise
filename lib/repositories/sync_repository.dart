@@ -851,9 +851,9 @@ class SyncRepository {
       )).toList(),
       boilerHouse: boilerHouse != null ? _mapBoilerHouseToSummary(boilerHouse) : null,
       photos: photos.map((p) {
-        final url = p.url ?? '';
-        final thumb = p.thumbnailUrl;
-        final fullUrl = url.startsWith('http') ? url : '$baseUrlPrefix$url';
+        final url = (p.url != null && p.url!.isNotEmpty) ? p.url! : '';
+        final thumb = (p.thumbnailUrl != null && p.thumbnailUrl!.isNotEmpty) ? p.thumbnailUrl : null;
+        final fullUrl = url.isEmpty ? '' : (url.startsWith('http') ? url : '$baseUrlPrefix$url');
         final fullThumb = (thumb != null && !thumb.startsWith('http')) ? '$baseUrlPrefix$thumb' : thumb;
         
         return PhotoInfo(
