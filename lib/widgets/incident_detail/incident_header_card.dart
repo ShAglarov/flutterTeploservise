@@ -153,7 +153,7 @@ class IncidentHeaderCard extends ConsumerWidget {
                   textBaseline: TextBaseline.alphabetic,
                   children: [
                     Text(
-                      '#${incident.id}',
+                      '№${incident.id}',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,

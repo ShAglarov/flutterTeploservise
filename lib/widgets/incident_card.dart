@@ -220,7 +220,7 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                               widget.timestamp,
                               style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12, fontWeight: FontWeight.w600),
                               textAlign: TextAlign.right,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
                           ),
                         ],
@@ -232,7 +232,7 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                         children: [
                           if (widget.incidentId > 0) ...[
                             Text(
-                              '#${widget.incidentId}',
+                              '№${widget.incidentId}',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,

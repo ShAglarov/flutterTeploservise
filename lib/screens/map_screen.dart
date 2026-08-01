@@ -2726,7 +2726,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${inc.title ?? "#${inc.id}"} (${inc.status?.title ?? "?"})',
+                          '${inc.title ?? "№${inc.id}"} (${inc.status?.title ?? "?"})',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),

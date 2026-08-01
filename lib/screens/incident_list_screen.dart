@@ -248,7 +248,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
             ],
           ),
           child: IncidentCard(
-            title: inc.title ?? 'Инцидент #${inc.id}',
+            title: inc.title ?? 'Инцидент №${inc.id}',
             location: inc.boilerHouse?.address != null
                 ? '📍 Котельная: ${inc.boilerHouse!.address}'
                 : 'Неизвестная локация',
@@ -389,7 +389,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           backgroundColor: Theme.of(context).colorScheme.surface,
           title: Text('Удаление инцидента', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
           content: Text(
-            'Вы уверены, что хотите удалить ${title ?? "#$id"}?',
+            'Вы уверены, что хотите удалить ${title ?? "№$id"}?',
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
           ),
           actions: [
