@@ -80,7 +80,7 @@ final class SingleIncidentProvider
   }) : super(
          retry: null,
          name: r'singleIncidentProvider',
-         isAutoDispose: false,
+         isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -118,7 +118,7 @@ final class SingleIncidentProvider
   }
 }
 
-String _$singleIncidentHash() => r'5067fdf0b934a70157353b4d2dac2b219f4efaaf';
+String _$singleIncidentHash() => r'924f83e7cd4e163072bde0106280c5d8ec2d32b2';
 
 final class SingleIncidentFamily extends $Family
     with $FunctionalFamilyOverride<Stream<IncidentResponse?>, int> {
@@ -128,7 +128,7 @@ final class SingleIncidentFamily extends $Family
         name: r'singleIncidentProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: false,
+        isAutoDispose: true,
       );
 
   SingleIncidentProvider call(int id) =>

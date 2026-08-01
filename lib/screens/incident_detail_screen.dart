@@ -35,6 +35,9 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
     Future.microtask(() {
       ref.read(unreadCountsProvider.notifier).markAsRead(widget.incidentId);
     });
+    // Принудительно перезагружаем данные инцидента с сервера
+    // при каждом открытии экрана (гарантирует актуальность фото и т.д.)
+    ref.invalidate(singleIncidentProvider(widget.incidentId));
   }
 
   @override
@@ -51,7 +54,11 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
       body: incidentAsync.when(
         data: (incident) => RefreshIndicator(
           onRefresh: () async {
-            // ref.refresh(singleIncidentProvider(widget.incidentId).future) is not applicable to Stream anymore
+            // Перезагрузить данные инцидента с сервера
+            try {
+              final service = ref.read(incidentServiceProvider);
+              await service.getIncident(widget.incidentId);
+            } catch (_) {}
           },
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),

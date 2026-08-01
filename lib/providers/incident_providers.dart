@@ -403,20 +403,33 @@ final filteredIncidentsProvider = Provider<AsyncValue<List<IncidentResponse>>>((
 
 
 
-@Riverpod(keepAlive: true)
+@riverpod
 Stream<IncidentResponse?> singleIncident(Ref ref, int id) {
   final syncRepo = ref.watch(syncRepositoryProvider);
-
-  // КРИТИЧНО: Фоновый fetch с сервера для актуализации данных
-  // (например, после холодного старта или при долгом offline).
-  // Drift stream автоматически обновит UI после записи в локальную БД.
   final incidentService = ref.watch(incidentServiceProvider);
+
+  // КРИТИЧНО: Фоновый fetch с сервера для актуализации данных.
+  // autoDispose (не keepAlive) — провайдер пересоздаётся при каждом
+  // открытии экрана деталей, гарантируя свежий fetch с сервера.
+  // Это решает проблему когда фото загружено с другого устройства
+  // пока это устройство было офлайн.
   Future.microtask(() async {
     try {
       await incidentService.getIncident(id);
     } catch (_) {
       // Не критично — локальные данные останутся
     }
+  });
+
+  // Подписка на globalRefreshEvent — при получении WebSocket-обновления
+  // (например, фото загружено другим устройством в реальном времени)
+  // перезагружаем данные инцидента с сервера.
+  ref.listen(globalRefreshEventProvider, (prev, next) {
+    Future.microtask(() async {
+      try {
+        await incidentService.getIncident(id);
+      } catch (_) {}
+    });
   });
 
   return syncRepo.watchIncidentById(id);
