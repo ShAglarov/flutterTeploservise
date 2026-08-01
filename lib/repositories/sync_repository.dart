@@ -272,7 +272,7 @@ class SyncRepository {
         _db.savedLocations,
       },
     ).watch()
-      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 100)))
+      .transform(_DebounceStreamTransformer(const Duration(milliseconds: 100), leading: true))
       .asyncMap((_) async {
         final rows = await incidentQuery.get();
         if (rows.isEmpty) return null;

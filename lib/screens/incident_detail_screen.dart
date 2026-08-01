@@ -35,9 +35,6 @@ class _IncidentDetailScreenState extends ConsumerState<IncidentDetailScreen> {
     Future.microtask(() {
       ref.read(unreadCountsProvider.notifier).markAsRead(widget.incidentId);
     });
-    // Принудительно перезагружаем данные инцидента с сервера
-    // при каждом открытии экрана (гарантирует актуальность фото и т.д.)
-    ref.invalidate(singleIncidentProvider(widget.incidentId));
   }
 
   @override

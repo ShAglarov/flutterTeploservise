@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/incident_models.dart';
 import '../../services/incident_service.dart';
-import '../../providers/incident_providers.dart';
 import '../../providers/offline_edit_permission.dart';
 import '../base_card.dart';
 import '../fullscreen_image_viewer.dart';
@@ -79,9 +78,6 @@ class _IncidentPhotosCardState extends ConsumerState<IncidentPhotosCard> {
       final service = ref.read(incidentServiceProvider);
       await service.uploadIncidentPhoto(widget.incidentId, image.path);
       debugPrint('[Photos] Upload successful');
-      
-      // Принудительно обновляем стрим инцидента, чтобы UI перестроился с новым фото
-      ref.invalidate(singleIncidentProvider(widget.incidentId));
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
