@@ -149,7 +149,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
   }
 
   void _openUserProfile(IncidentComment comment) {
-    if (comment.author == null) return;
+    if (comment.userId == null || comment.userId == 0) return;
     final usersMap = ref.read(usersMapProvider).value ?? {};
     final user = usersMap[comment.userId];
     if (user != null) {
@@ -169,7 +169,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
         children: [
           UserAvatarWidget(
             avatarUrl: comment.author?.avatarUrl,
-            displayName: comment.author?.formattedDisplayName,
+            displayName: comment.displayName,
             userId: comment.userId,
             radius: 14,
             onTap: () => _openUserProfile(comment),
@@ -183,7 +183,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
                   children: [
                     Expanded(
                       child: Text(
-                        comment.author?.formattedDisplayName ?? 'Система',
+                        comment.displayName,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,

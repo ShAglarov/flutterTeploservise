@@ -305,7 +305,7 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
                 onTap: () => _openUserProfile(comment),
                 child: UserAvatarWidget(
                   avatarUrl: comment.author?.avatarUrl,
-                  displayName: comment.author?.formattedDisplayName,
+                  displayName: comment.displayName,
                   userId: comment.userId,
                   radius: 16,
                 ),
@@ -340,7 +340,7 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2),
                       child: Text(
-                        comment.author?.formattedDisplayName ?? 'Система',
+                        comment.displayName,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -385,7 +385,7 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
   }
 
   void _openUserProfile(IncidentComment comment) {
-    if (comment.author == null) return;
+    if (comment.userId == null || comment.userId == 0) return;
     final usersMap = ref.read(usersMapProvider).value ?? {};
     final user = usersMap[comment.userId];
     if (user != null) {

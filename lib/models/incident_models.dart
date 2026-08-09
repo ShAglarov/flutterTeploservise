@@ -447,8 +447,10 @@ class IncidentComment {
   @JsonKey(name: 'created_at')
   final String createdAt;
   @JsonKey(name: 'user_id')
-  final int userId;
+  final int? userId;
   final IncidentCommentAuthor? author;
+  @JsonKey(name: 'sender_name')
+  final String? senderName;
   @JsonKey(name: 'is_system_message', defaultValue: false)
   final bool isSystemMessage;
 
@@ -457,10 +459,21 @@ class IncidentComment {
     required this.incidentId,
     required this.text,
     required this.createdAt,
-    required this.userId,
+    this.userId,
     this.author,
+    this.senderName,
     this.isSystemMessage = false,
   });
+
+  /// Display name: author.fullName → senderName → 'Unknown'
+  String get displayName {
+    if (author != null) return author!.formattedDisplayName;
+    if (senderName != null && senderName!.isNotEmpty) return senderName!;
+    return 'Unknown';
+  }
+
+  /// Whether this is a resident comment (no staff user_id)
+  bool get isResidentComment => userId == null || userId == 0;
 
   factory IncidentComment.fromJson(Map<String, dynamic> json) => _$IncidentCommentFromJson(json);
   Map<String, dynamic> toJson() => _$IncidentCommentToJson(this);

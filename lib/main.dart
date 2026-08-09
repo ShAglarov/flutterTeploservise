@@ -19,6 +19,7 @@ import 'services/sync_service.dart';
 import 'services/wns_push_service.dart';
 import 'services/incident_service.dart';
 import 'services/secure_storage_service.dart';
+import 'services/permission_service.dart';
 import 'providers/incident_providers.dart';
 import 'providers/map_providers.dart';
 
@@ -144,6 +145,10 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         try {
           final realtimeService = ref.read(realtimeServiceProvider);
           await realtimeService.reconnectNow();
+
+          // Обновляем права доступа при возврате из фона
+          // (администратор мог изменить права, пока приложение было свёрнуто)
+          ref.read(permissionStateProvider.notifier).loadFromServer();
 
           // Догоняем пропущенные данные через HTTP
           final syncService = ref.read(syncServiceProvider);
