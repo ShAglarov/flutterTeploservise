@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'secure_storage_service.dart';
@@ -83,22 +84,44 @@ class AuthInterceptor extends Interceptor {
       // Try silent refresh
       final refreshed = await _tryRefreshToken();
       if (refreshed) {
-        // Retry the original request with the new token
+        // Retry the original request with the NEW token
         try {
           final newToken = await _storageService.getAccessToken();
+          final deviceId = await _deviceIdService.getDeviceId();
           final opts = err.requestOptions;
-          opts.headers['Authorization'] = 'Bearer $newToken';
+          
+          print('🔄 [AuthInterceptor] Retrying ${opts.method} ${opts.path} with new token (${newToken?.substring(0, 20)}...)');
 
-          final dio = Dio(BaseOptions(
-            baseUrl: opts.baseUrl,
+          final retryDio = Dio(BaseOptions(
+            baseUrl: AppConstants.baseUrl,
             connectTimeout: opts.connectTimeout,
             receiveTimeout: opts.receiveTimeout,
           ));
-          final response = await dio.fetch(opts);
+          
+          // Собираем query parameters
+          final queryParams = Map<String, dynamic>.from(opts.queryParameters);
+          queryParams['device_id'] = deviceId;
+
+          final response = await retryDio.request(
+            opts.path,
+            data: opts.data,
+            queryParameters: queryParams,
+            options: Options(
+              method: opts.method,
+              headers: {
+                'Authorization': 'Bearer $newToken',
+                'X-Device-Id': deviceId,
+                'Content-Type': opts.contentType,
+              },
+            ),
+          );
           return handler.resolve(response);
         } catch (retryError) {
-          // Retry also failed — propagate the error
+          // Retry also failed — log detail for debugging
           if (retryError is DioException) {
+            final path = err.requestOptions.path;
+            final detail = retryError.response?.data;
+            print('❌ [AuthInterceptor] Retry STILL ${retryError.response?.statusCode} on $path — server says: $detail');
             return handler.next(retryError);
           }
           return handler.next(err);
@@ -131,8 +154,11 @@ class AuthInterceptor extends Interceptor {
         return false;
       }
 
+      final refreshUrl = AppConstants.baseUrl;
+      print('🔄 [AuthInterceptor] Refreshing at: $refreshUrl${AppConstants.refresh}');
+      
       final dio = Dio(BaseOptions(
-        baseUrl: AppConstants.baseUrl,
+        baseUrl: refreshUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
       ));
@@ -148,6 +174,19 @@ class AuthInterceptor extends Interceptor {
 
         if (newAccessToken != null) {
           await _storageService.saveAccessToken(newAccessToken);
+          // Декодируем payload для диагностики
+          try {
+            final parts = newAccessToken.split('.');
+            if (parts.length == 3) {
+              String payload = parts[1];
+              switch (payload.length % 4) {
+                case 2: payload += '=='; break;
+                case 3: payload += '='; break;
+              }
+              final decoded = String.fromCharCodes(base64Url.decode(payload));
+              print('🔑 [AuthInterceptor] New token payload: $decoded');
+            }
+          } catch (_) {}
         }
         if (newRefreshToken != null) {
           await _storageService.saveRefreshToken(newRefreshToken);
