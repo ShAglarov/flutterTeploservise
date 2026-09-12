@@ -5482,6 +5482,15 @@ class $SavedLocationsTable extends SavedLocations
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _tariffMeta = const VerificationMeta('tariff');
+  @override
+  late final GeneratedColumn<double> tariff = GeneratedColumn<double>(
+    'tariff',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _boilerHouseIdMeta = const VerificationMeta(
     'boilerHouseId',
   );
@@ -5544,6 +5553,7 @@ class $SavedLocationsTable extends SavedLocations
     updatedAt,
     yearBuilt,
     managementCompanyName,
+    tariff,
     boilerHouseId,
     managementCompanyRefId,
     id,
@@ -5698,6 +5708,12 @@ class $SavedLocationsTable extends SavedLocations
         ),
       );
     }
+    if (data.containsKey('tariff')) {
+      context.handle(
+        _tariffMeta,
+        tariff.isAcceptableOrUnknown(data['tariff']!, _tariffMeta),
+      );
+    }
     if (data.containsKey('boiler_house_id')) {
       context.handle(
         _boilerHouseIdMeta,
@@ -5804,6 +5820,10 @@ class $SavedLocationsTable extends SavedLocations
         DriftSqlType.string,
         data['${effectivePrefix}management_company_name'],
       ),
+      tariff: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}tariff'],
+      ),
       boilerHouseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}boiler_house_id'],
@@ -5845,6 +5865,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
   final DateTime? updatedAt;
   final int? yearBuilt;
   final String? managementCompanyName;
+  final double? tariff;
   final int? boilerHouseId;
   final String? managementCompanyRefId;
   final int id;
@@ -5868,6 +5889,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     this.updatedAt,
     this.yearBuilt,
     this.managementCompanyName,
+    this.tariff,
     this.boilerHouseId,
     this.managementCompanyRefId,
     required this.id,
@@ -5929,6 +5951,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     }
     if (!nullToAbsent || managementCompanyName != null) {
       map['management_company_name'] = Variable<String>(managementCompanyName);
+    }
+    if (!nullToAbsent || tariff != null) {
+      map['tariff'] = Variable<double>(tariff);
     }
     if (!nullToAbsent || boilerHouseId != null) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId);
@@ -5997,6 +6022,9 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       managementCompanyName: managementCompanyName == null && nullToAbsent
           ? const Value.absent()
           : Value(managementCompanyName),
+      tariff: tariff == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tariff),
       boilerHouseId: boilerHouseId == null && nullToAbsent
           ? const Value.absent()
           : Value(boilerHouseId),
@@ -6036,6 +6064,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       managementCompanyName: serializer.fromJson<String?>(
         json['managementCompanyName'],
       ),
+      tariff: serializer.fromJson<double?>(json['tariff']),
       boilerHouseId: serializer.fromJson<int?>(json['boilerHouseId']),
       managementCompanyRefId: serializer.fromJson<String?>(
         json['managementCompanyRefId'],
@@ -6068,6 +6097,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       'managementCompanyName': serializer.toJson<String?>(
         managementCompanyName,
       ),
+      'tariff': serializer.toJson<double?>(tariff),
       'boilerHouseId': serializer.toJson<int?>(boilerHouseId),
       'managementCompanyRefId': serializer.toJson<String?>(
         managementCompanyRefId,
@@ -6096,6 +6126,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     Value<DateTime?> updatedAt = const Value.absent(),
     Value<int?> yearBuilt = const Value.absent(),
     Value<String?> managementCompanyName = const Value.absent(),
+    Value<double?> tariff = const Value.absent(),
     Value<int?> boilerHouseId = const Value.absent(),
     Value<String?> managementCompanyRefId = const Value.absent(),
     int? id,
@@ -6131,6 +6162,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     managementCompanyName: managementCompanyName.present
         ? managementCompanyName.value
         : this.managementCompanyName,
+    tariff: tariff.present ? tariff.value : this.tariff,
     boilerHouseId: boilerHouseId.present
         ? boilerHouseId.value
         : this.boilerHouseId,
@@ -6176,6 +6208,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       managementCompanyName: data.managementCompanyName.present
           ? data.managementCompanyName.value
           : this.managementCompanyName,
+      tariff: data.tariff.present ? data.tariff.value : this.tariff,
       boilerHouseId: data.boilerHouseId.present
           ? data.boilerHouseId.value
           : this.boilerHouseId,
@@ -6208,6 +6241,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           ..write('updatedAt: $updatedAt, ')
           ..write('yearBuilt: $yearBuilt, ')
           ..write('managementCompanyName: $managementCompanyName, ')
+          ..write('tariff: $tariff, ')
           ..write('boilerHouseId: $boilerHouseId, ')
           ..write('managementCompanyRefId: $managementCompanyRefId, ')
           ..write('id: $id')
@@ -6236,6 +6270,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     updatedAt,
     yearBuilt,
     managementCompanyName,
+    tariff,
     boilerHouseId,
     managementCompanyRefId,
     id,
@@ -6263,6 +6298,7 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           other.updatedAt == this.updatedAt &&
           other.yearBuilt == this.yearBuilt &&
           other.managementCompanyName == this.managementCompanyName &&
+          other.tariff == this.tariff &&
           other.boilerHouseId == this.boilerHouseId &&
           other.managementCompanyRefId == this.managementCompanyRefId &&
           other.id == this.id);
@@ -6288,6 +6324,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
   final Value<DateTime?> updatedAt;
   final Value<int?> yearBuilt;
   final Value<String?> managementCompanyName;
+  final Value<double?> tariff;
   final Value<int?> boilerHouseId;
   final Value<String?> managementCompanyRefId;
   final Value<int> id;
@@ -6311,6 +6348,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.updatedAt = const Value.absent(),
     this.yearBuilt = const Value.absent(),
     this.managementCompanyName = const Value.absent(),
+    this.tariff = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
     this.managementCompanyRefId = const Value.absent(),
     this.id = const Value.absent(),
@@ -6335,6 +6373,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.updatedAt = const Value.absent(),
     this.yearBuilt = const Value.absent(),
     this.managementCompanyName = const Value.absent(),
+    this.tariff = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
     this.managementCompanyRefId = const Value.absent(),
     this.id = const Value.absent(),
@@ -6359,6 +6398,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Expression<DateTime>? updatedAt,
     Expression<int>? yearBuilt,
     Expression<String>? managementCompanyName,
+    Expression<double>? tariff,
     Expression<int>? boilerHouseId,
     Expression<String>? managementCompanyRefId,
     Expression<int>? id,
@@ -6384,6 +6424,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       if (yearBuilt != null) 'year_built': yearBuilt,
       if (managementCompanyName != null)
         'management_company_name': managementCompanyName,
+      if (tariff != null) 'tariff': tariff,
       if (boilerHouseId != null) 'boiler_house_id': boilerHouseId,
       if (managementCompanyRefId != null)
         'management_company_ref_id': managementCompanyRefId,
@@ -6411,6 +6452,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Value<DateTime?>? updatedAt,
     Value<int?>? yearBuilt,
     Value<String?>? managementCompanyName,
+    Value<double?>? tariff,
     Value<int?>? boilerHouseId,
     Value<String?>? managementCompanyRefId,
     Value<int>? id,
@@ -6436,6 +6478,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       yearBuilt: yearBuilt ?? this.yearBuilt,
       managementCompanyName:
           managementCompanyName ?? this.managementCompanyName,
+      tariff: tariff ?? this.tariff,
       boilerHouseId: boilerHouseId ?? this.boilerHouseId,
       managementCompanyRefId:
           managementCompanyRefId ?? this.managementCompanyRefId,
@@ -6505,6 +6548,9 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
         managementCompanyName.value,
       );
     }
+    if (tariff.present) {
+      map['tariff'] = Variable<double>(tariff.value);
+    }
     if (boilerHouseId.present) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId.value);
     }
@@ -6541,6 +6587,7 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
           ..write('updatedAt: $updatedAt, ')
           ..write('yearBuilt: $yearBuilt, ')
           ..write('managementCompanyName: $managementCompanyName, ')
+          ..write('tariff: $tariff, ')
           ..write('boilerHouseId: $boilerHouseId, ')
           ..write('managementCompanyRefId: $managementCompanyRefId, ')
           ..write('id: $id')
@@ -11906,6 +11953,2639 @@ class SyncMetadataCompanion extends UpdateCompanion<SyncMetadataDb> {
   }
 }
 
+class $PaymentDocumentsLocalTable extends PaymentDocumentsLocal
+    with TableInfo<$PaymentDocumentsLocalTable, PaymentDocumentDb> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PaymentDocumentsLocalTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _backendIdMeta = const VerificationMeta(
+    'backendId',
+  );
+  @override
+  late final GeneratedColumn<int> backendId = GeneratedColumn<int>(
+    'backend_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _accountIdMeta = const VerificationMeta(
+    'accountId',
+  );
+  @override
+  late final GeneratedColumn<int> accountId = GeneratedColumn<int>(
+    'account_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _periodDateMeta = const VerificationMeta(
+    'periodDate',
+  );
+  @override
+  late final GeneratedColumn<String> periodDate = GeneratedColumn<String>(
+    'period_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _debtHeatingStartMeta = const VerificationMeta(
+    'debtHeatingStart',
+  );
+  @override
+  late final GeneratedColumn<double> debtHeatingStart = GeneratedColumn<double>(
+    'debt_heating_start',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _chargedHeatingMeta = const VerificationMeta(
+    'chargedHeating',
+  );
+  @override
+  late final GeneratedColumn<double> chargedHeating = GeneratedColumn<double>(
+    'charged_heating',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _paidHeatingMeta = const VerificationMeta(
+    'paidHeating',
+  );
+  @override
+  late final GeneratedColumn<double> paidHeating = GeneratedColumn<double>(
+    'paid_heating',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _recalcHeatingMeta = const VerificationMeta(
+    'recalcHeating',
+  );
+  @override
+  late final GeneratedColumn<double> recalcHeating = GeneratedColumn<double>(
+    'recalc_heating',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _debtHeatingEndMeta = const VerificationMeta(
+    'debtHeatingEnd',
+  );
+  @override
+  late final GeneratedColumn<double> debtHeatingEnd = GeneratedColumn<double>(
+    'debt_heating_end',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _debtHotWaterStartMeta = const VerificationMeta(
+    'debtHotWaterStart',
+  );
+  @override
+  late final GeneratedColumn<double> debtHotWaterStart =
+      GeneratedColumn<double>(
+        'debt_hot_water_start',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _chargedHotWaterMeta = const VerificationMeta(
+    'chargedHotWater',
+  );
+  @override
+  late final GeneratedColumn<double> chargedHotWater = GeneratedColumn<double>(
+    'charged_hot_water',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _paidHotWaterMeta = const VerificationMeta(
+    'paidHotWater',
+  );
+  @override
+  late final GeneratedColumn<double> paidHotWater = GeneratedColumn<double>(
+    'paid_hot_water',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _recalcHotWaterMeta = const VerificationMeta(
+    'recalcHotWater',
+  );
+  @override
+  late final GeneratedColumn<double> recalcHotWater = GeneratedColumn<double>(
+    'recalc_hot_water',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _debtHotWaterEndMeta = const VerificationMeta(
+    'debtHotWaterEnd',
+  );
+  @override
+  late final GeneratedColumn<double> debtHotWaterEnd = GeneratedColumn<double>(
+    'debt_hot_water_end',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _debtMaintenanceStartMeta =
+      const VerificationMeta('debtMaintenanceStart');
+  @override
+  late final GeneratedColumn<double> debtMaintenanceStart =
+      GeneratedColumn<double>(
+        'debt_maintenance_start',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _chargedMaintenanceMeta =
+      const VerificationMeta('chargedMaintenance');
+  @override
+  late final GeneratedColumn<double> chargedMaintenance =
+      GeneratedColumn<double>(
+        'charged_maintenance',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _paidMaintenanceMeta = const VerificationMeta(
+    'paidMaintenance',
+  );
+  @override
+  late final GeneratedColumn<double> paidMaintenance = GeneratedColumn<double>(
+    'paid_maintenance',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _recalcMaintenanceMeta = const VerificationMeta(
+    'recalcMaintenance',
+  );
+  @override
+  late final GeneratedColumn<double> recalcMaintenance =
+      GeneratedColumn<double>(
+        'recalc_maintenance',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _debtMaintenanceEndMeta =
+      const VerificationMeta('debtMaintenanceEnd');
+  @override
+  late final GeneratedColumn<double> debtMaintenanceEnd =
+      GeneratedColumn<double>(
+        'debt_maintenance_end',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _debtWasteStartMeta = const VerificationMeta(
+    'debtWasteStart',
+  );
+  @override
+  late final GeneratedColumn<double> debtWasteStart = GeneratedColumn<double>(
+    'debt_waste_start',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _chargedWasteMeta = const VerificationMeta(
+    'chargedWaste',
+  );
+  @override
+  late final GeneratedColumn<double> chargedWaste = GeneratedColumn<double>(
+    'charged_waste',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _paidWasteMeta = const VerificationMeta(
+    'paidWaste',
+  );
+  @override
+  late final GeneratedColumn<double> paidWaste = GeneratedColumn<double>(
+    'paid_waste',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _recalcWasteMeta = const VerificationMeta(
+    'recalcWaste',
+  );
+  @override
+  late final GeneratedColumn<double> recalcWaste = GeneratedColumn<double>(
+    'recalc_waste',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _debtWasteEndMeta = const VerificationMeta(
+    'debtWasteEnd',
+  );
+  @override
+  late final GeneratedColumn<double> debtWasteEnd = GeneratedColumn<double>(
+    'debt_waste_end',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _debtOdnElectricityStartMeta =
+      const VerificationMeta('debtOdnElectricityStart');
+  @override
+  late final GeneratedColumn<double> debtOdnElectricityStart =
+      GeneratedColumn<double>(
+        'debt_odn_electricity_start',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _chargedOdnElectricityMeta =
+      const VerificationMeta('chargedOdnElectricity');
+  @override
+  late final GeneratedColumn<double> chargedOdnElectricity =
+      GeneratedColumn<double>(
+        'charged_odn_electricity',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _paidOdnElectricityMeta =
+      const VerificationMeta('paidOdnElectricity');
+  @override
+  late final GeneratedColumn<double> paidOdnElectricity =
+      GeneratedColumn<double>(
+        'paid_odn_electricity',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _recalcOdnElectricityMeta =
+      const VerificationMeta('recalcOdnElectricity');
+  @override
+  late final GeneratedColumn<double> recalcOdnElectricity =
+      GeneratedColumn<double>(
+        'recalc_odn_electricity',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _debtOdnElectricityEndMeta =
+      const VerificationMeta('debtOdnElectricityEnd');
+  @override
+  late final GeneratedColumn<double> debtOdnElectricityEnd =
+      GeneratedColumn<double>(
+        'debt_odn_electricity_end',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _debtOdnWaterStartMeta = const VerificationMeta(
+    'debtOdnWaterStart',
+  );
+  @override
+  late final GeneratedColumn<double> debtOdnWaterStart =
+      GeneratedColumn<double>(
+        'debt_odn_water_start',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _chargedOdnWaterMeta = const VerificationMeta(
+    'chargedOdnWater',
+  );
+  @override
+  late final GeneratedColumn<double> chargedOdnWater = GeneratedColumn<double>(
+    'charged_odn_water',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _paidOdnWaterMeta = const VerificationMeta(
+    'paidOdnWater',
+  );
+  @override
+  late final GeneratedColumn<double> paidOdnWater = GeneratedColumn<double>(
+    'paid_odn_water',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _recalcOdnWaterMeta = const VerificationMeta(
+    'recalcOdnWater',
+  );
+  @override
+  late final GeneratedColumn<double> recalcOdnWater = GeneratedColumn<double>(
+    'recalc_odn_water',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _debtOdnWaterEndMeta = const VerificationMeta(
+    'debtOdnWaterEnd',
+  );
+  @override
+  late final GeneratedColumn<double> debtOdnWaterEnd = GeneratedColumn<double>(
+    'debt_odn_water_end',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _t30Meta = const VerificationMeta('t30');
+  @override
+  late final GeneratedColumn<double> t30 = GeneratedColumn<double>(
+    't30',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _t31Meta = const VerificationMeta('t31');
+  @override
+  late final GeneratedColumn<double> t31 = GeneratedColumn<double>(
+    't31',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _residentsCountMeta = const VerificationMeta(
+    'residentsCount',
+  );
+  @override
+  late final GeneratedColumn<int> residentsCount = GeneratedColumn<int>(
+    'residents_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fsValueMeta = const VerificationMeta(
+    'fsValue',
+  );
+  @override
+  late final GeneratedColumn<double> fsValue = GeneratedColumn<double>(
+    'fs_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importSourceMeta = const VerificationMeta(
+    'importSource',
+  );
+  @override
+  late final GeneratedColumn<String> importSource = GeneratedColumn<String>(
+    'import_source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalDebtStartMeta = const VerificationMeta(
+    'totalDebtStart',
+  );
+  @override
+  late final GeneratedColumn<double> totalDebtStart = GeneratedColumn<double>(
+    'total_debt_start',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalDebtEndMeta = const VerificationMeta(
+    'totalDebtEnd',
+  );
+  @override
+  late final GeneratedColumn<double> totalDebtEnd = GeneratedColumn<double>(
+    'total_debt_end',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalChargedMeta = const VerificationMeta(
+    'totalCharged',
+  );
+  @override
+  late final GeneratedColumn<double> totalCharged = GeneratedColumn<double>(
+    'total_charged',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalPaidMeta = const VerificationMeta(
+    'totalPaid',
+  );
+  @override
+  late final GeneratedColumn<double> totalPaid = GeneratedColumn<double>(
+    'total_paid',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _accountNumberMeta = const VerificationMeta(
+    'accountNumber',
+  );
+  @override
+  late final GeneratedColumn<String> accountNumber = GeneratedColumn<String>(
+    'account_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fioMeta = const VerificationMeta('fio');
+  @override
+  late final GeneratedColumn<String> fio = GeneratedColumn<String>(
+    'fio',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _accountAddressMeta = const VerificationMeta(
+    'accountAddress',
+  );
+  @override
+  late final GeneratedColumn<String> accountAddress = GeneratedColumn<String>(
+    'account_address',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    backendId,
+    accountId,
+    periodDate,
+    debtHeatingStart,
+    chargedHeating,
+    paidHeating,
+    recalcHeating,
+    debtHeatingEnd,
+    debtHotWaterStart,
+    chargedHotWater,
+    paidHotWater,
+    recalcHotWater,
+    debtHotWaterEnd,
+    debtMaintenanceStart,
+    chargedMaintenance,
+    paidMaintenance,
+    recalcMaintenance,
+    debtMaintenanceEnd,
+    debtWasteStart,
+    chargedWaste,
+    paidWaste,
+    recalcWaste,
+    debtWasteEnd,
+    debtOdnElectricityStart,
+    chargedOdnElectricity,
+    paidOdnElectricity,
+    recalcOdnElectricity,
+    debtOdnElectricityEnd,
+    debtOdnWaterStart,
+    chargedOdnWater,
+    paidOdnWater,
+    recalcOdnWater,
+    debtOdnWaterEnd,
+    t30,
+    t31,
+    residentsCount,
+    fsValue,
+    importSource,
+    totalDebtStart,
+    totalDebtEnd,
+    totalCharged,
+    totalPaid,
+    accountNumber,
+    fio,
+    accountAddress,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'payment_documents_local';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PaymentDocumentDb> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('backend_id')) {
+      context.handle(
+        _backendIdMeta,
+        backendId.isAcceptableOrUnknown(data['backend_id']!, _backendIdMeta),
+      );
+    }
+    if (data.containsKey('account_id')) {
+      context.handle(
+        _accountIdMeta,
+        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
+      );
+    }
+    if (data.containsKey('period_date')) {
+      context.handle(
+        _periodDateMeta,
+        periodDate.isAcceptableOrUnknown(data['period_date']!, _periodDateMeta),
+      );
+    }
+    if (data.containsKey('debt_heating_start')) {
+      context.handle(
+        _debtHeatingStartMeta,
+        debtHeatingStart.isAcceptableOrUnknown(
+          data['debt_heating_start']!,
+          _debtHeatingStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('charged_heating')) {
+      context.handle(
+        _chargedHeatingMeta,
+        chargedHeating.isAcceptableOrUnknown(
+          data['charged_heating']!,
+          _chargedHeatingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('paid_heating')) {
+      context.handle(
+        _paidHeatingMeta,
+        paidHeating.isAcceptableOrUnknown(
+          data['paid_heating']!,
+          _paidHeatingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recalc_heating')) {
+      context.handle(
+        _recalcHeatingMeta,
+        recalcHeating.isAcceptableOrUnknown(
+          data['recalc_heating']!,
+          _recalcHeatingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_heating_end')) {
+      context.handle(
+        _debtHeatingEndMeta,
+        debtHeatingEnd.isAcceptableOrUnknown(
+          data['debt_heating_end']!,
+          _debtHeatingEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_hot_water_start')) {
+      context.handle(
+        _debtHotWaterStartMeta,
+        debtHotWaterStart.isAcceptableOrUnknown(
+          data['debt_hot_water_start']!,
+          _debtHotWaterStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('charged_hot_water')) {
+      context.handle(
+        _chargedHotWaterMeta,
+        chargedHotWater.isAcceptableOrUnknown(
+          data['charged_hot_water']!,
+          _chargedHotWaterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('paid_hot_water')) {
+      context.handle(
+        _paidHotWaterMeta,
+        paidHotWater.isAcceptableOrUnknown(
+          data['paid_hot_water']!,
+          _paidHotWaterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recalc_hot_water')) {
+      context.handle(
+        _recalcHotWaterMeta,
+        recalcHotWater.isAcceptableOrUnknown(
+          data['recalc_hot_water']!,
+          _recalcHotWaterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_hot_water_end')) {
+      context.handle(
+        _debtHotWaterEndMeta,
+        debtHotWaterEnd.isAcceptableOrUnknown(
+          data['debt_hot_water_end']!,
+          _debtHotWaterEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_maintenance_start')) {
+      context.handle(
+        _debtMaintenanceStartMeta,
+        debtMaintenanceStart.isAcceptableOrUnknown(
+          data['debt_maintenance_start']!,
+          _debtMaintenanceStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('charged_maintenance')) {
+      context.handle(
+        _chargedMaintenanceMeta,
+        chargedMaintenance.isAcceptableOrUnknown(
+          data['charged_maintenance']!,
+          _chargedMaintenanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('paid_maintenance')) {
+      context.handle(
+        _paidMaintenanceMeta,
+        paidMaintenance.isAcceptableOrUnknown(
+          data['paid_maintenance']!,
+          _paidMaintenanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recalc_maintenance')) {
+      context.handle(
+        _recalcMaintenanceMeta,
+        recalcMaintenance.isAcceptableOrUnknown(
+          data['recalc_maintenance']!,
+          _recalcMaintenanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_maintenance_end')) {
+      context.handle(
+        _debtMaintenanceEndMeta,
+        debtMaintenanceEnd.isAcceptableOrUnknown(
+          data['debt_maintenance_end']!,
+          _debtMaintenanceEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_waste_start')) {
+      context.handle(
+        _debtWasteStartMeta,
+        debtWasteStart.isAcceptableOrUnknown(
+          data['debt_waste_start']!,
+          _debtWasteStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('charged_waste')) {
+      context.handle(
+        _chargedWasteMeta,
+        chargedWaste.isAcceptableOrUnknown(
+          data['charged_waste']!,
+          _chargedWasteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('paid_waste')) {
+      context.handle(
+        _paidWasteMeta,
+        paidWaste.isAcceptableOrUnknown(data['paid_waste']!, _paidWasteMeta),
+      );
+    }
+    if (data.containsKey('recalc_waste')) {
+      context.handle(
+        _recalcWasteMeta,
+        recalcWaste.isAcceptableOrUnknown(
+          data['recalc_waste']!,
+          _recalcWasteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_waste_end')) {
+      context.handle(
+        _debtWasteEndMeta,
+        debtWasteEnd.isAcceptableOrUnknown(
+          data['debt_waste_end']!,
+          _debtWasteEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_odn_electricity_start')) {
+      context.handle(
+        _debtOdnElectricityStartMeta,
+        debtOdnElectricityStart.isAcceptableOrUnknown(
+          data['debt_odn_electricity_start']!,
+          _debtOdnElectricityStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('charged_odn_electricity')) {
+      context.handle(
+        _chargedOdnElectricityMeta,
+        chargedOdnElectricity.isAcceptableOrUnknown(
+          data['charged_odn_electricity']!,
+          _chargedOdnElectricityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('paid_odn_electricity')) {
+      context.handle(
+        _paidOdnElectricityMeta,
+        paidOdnElectricity.isAcceptableOrUnknown(
+          data['paid_odn_electricity']!,
+          _paidOdnElectricityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recalc_odn_electricity')) {
+      context.handle(
+        _recalcOdnElectricityMeta,
+        recalcOdnElectricity.isAcceptableOrUnknown(
+          data['recalc_odn_electricity']!,
+          _recalcOdnElectricityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_odn_electricity_end')) {
+      context.handle(
+        _debtOdnElectricityEndMeta,
+        debtOdnElectricityEnd.isAcceptableOrUnknown(
+          data['debt_odn_electricity_end']!,
+          _debtOdnElectricityEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_odn_water_start')) {
+      context.handle(
+        _debtOdnWaterStartMeta,
+        debtOdnWaterStart.isAcceptableOrUnknown(
+          data['debt_odn_water_start']!,
+          _debtOdnWaterStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('charged_odn_water')) {
+      context.handle(
+        _chargedOdnWaterMeta,
+        chargedOdnWater.isAcceptableOrUnknown(
+          data['charged_odn_water']!,
+          _chargedOdnWaterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('paid_odn_water')) {
+      context.handle(
+        _paidOdnWaterMeta,
+        paidOdnWater.isAcceptableOrUnknown(
+          data['paid_odn_water']!,
+          _paidOdnWaterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recalc_odn_water')) {
+      context.handle(
+        _recalcOdnWaterMeta,
+        recalcOdnWater.isAcceptableOrUnknown(
+          data['recalc_odn_water']!,
+          _recalcOdnWaterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('debt_odn_water_end')) {
+      context.handle(
+        _debtOdnWaterEndMeta,
+        debtOdnWaterEnd.isAcceptableOrUnknown(
+          data['debt_odn_water_end']!,
+          _debtOdnWaterEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('t30')) {
+      context.handle(
+        _t30Meta,
+        t30.isAcceptableOrUnknown(data['t30']!, _t30Meta),
+      );
+    }
+    if (data.containsKey('t31')) {
+      context.handle(
+        _t31Meta,
+        t31.isAcceptableOrUnknown(data['t31']!, _t31Meta),
+      );
+    }
+    if (data.containsKey('residents_count')) {
+      context.handle(
+        _residentsCountMeta,
+        residentsCount.isAcceptableOrUnknown(
+          data['residents_count']!,
+          _residentsCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fs_value')) {
+      context.handle(
+        _fsValueMeta,
+        fsValue.isAcceptableOrUnknown(data['fs_value']!, _fsValueMeta),
+      );
+    }
+    if (data.containsKey('import_source')) {
+      context.handle(
+        _importSourceMeta,
+        importSource.isAcceptableOrUnknown(
+          data['import_source']!,
+          _importSourceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_debt_start')) {
+      context.handle(
+        _totalDebtStartMeta,
+        totalDebtStart.isAcceptableOrUnknown(
+          data['total_debt_start']!,
+          _totalDebtStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_debt_end')) {
+      context.handle(
+        _totalDebtEndMeta,
+        totalDebtEnd.isAcceptableOrUnknown(
+          data['total_debt_end']!,
+          _totalDebtEndMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_charged')) {
+      context.handle(
+        _totalChargedMeta,
+        totalCharged.isAcceptableOrUnknown(
+          data['total_charged']!,
+          _totalChargedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_paid')) {
+      context.handle(
+        _totalPaidMeta,
+        totalPaid.isAcceptableOrUnknown(data['total_paid']!, _totalPaidMeta),
+      );
+    }
+    if (data.containsKey('account_number')) {
+      context.handle(
+        _accountNumberMeta,
+        accountNumber.isAcceptableOrUnknown(
+          data['account_number']!,
+          _accountNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fio')) {
+      context.handle(
+        _fioMeta,
+        fio.isAcceptableOrUnknown(data['fio']!, _fioMeta),
+      );
+    }
+    if (data.containsKey('account_address')) {
+      context.handle(
+        _accountAddressMeta,
+        accountAddress.isAcceptableOrUnknown(
+          data['account_address']!,
+          _accountAddressMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {backendId};
+  @override
+  PaymentDocumentDb map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PaymentDocumentDb(
+      backendId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}backend_id'],
+      )!,
+      accountId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}account_id'],
+      )!,
+      periodDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}period_date'],
+      ),
+      debtHeatingStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_heating_start'],
+      ),
+      chargedHeating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}charged_heating'],
+      ),
+      paidHeating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}paid_heating'],
+      ),
+      recalcHeating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}recalc_heating'],
+      ),
+      debtHeatingEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_heating_end'],
+      ),
+      debtHotWaterStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_hot_water_start'],
+      ),
+      chargedHotWater: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}charged_hot_water'],
+      ),
+      paidHotWater: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}paid_hot_water'],
+      ),
+      recalcHotWater: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}recalc_hot_water'],
+      ),
+      debtHotWaterEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_hot_water_end'],
+      ),
+      debtMaintenanceStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_maintenance_start'],
+      ),
+      chargedMaintenance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}charged_maintenance'],
+      ),
+      paidMaintenance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}paid_maintenance'],
+      ),
+      recalcMaintenance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}recalc_maintenance'],
+      ),
+      debtMaintenanceEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_maintenance_end'],
+      ),
+      debtWasteStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_waste_start'],
+      ),
+      chargedWaste: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}charged_waste'],
+      ),
+      paidWaste: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}paid_waste'],
+      ),
+      recalcWaste: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}recalc_waste'],
+      ),
+      debtWasteEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_waste_end'],
+      ),
+      debtOdnElectricityStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_odn_electricity_start'],
+      ),
+      chargedOdnElectricity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}charged_odn_electricity'],
+      ),
+      paidOdnElectricity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}paid_odn_electricity'],
+      ),
+      recalcOdnElectricity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}recalc_odn_electricity'],
+      ),
+      debtOdnElectricityEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_odn_electricity_end'],
+      ),
+      debtOdnWaterStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_odn_water_start'],
+      ),
+      chargedOdnWater: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}charged_odn_water'],
+      ),
+      paidOdnWater: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}paid_odn_water'],
+      ),
+      recalcOdnWater: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}recalc_odn_water'],
+      ),
+      debtOdnWaterEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}debt_odn_water_end'],
+      ),
+      t30: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}t30'],
+      ),
+      t31: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}t31'],
+      ),
+      residentsCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}residents_count'],
+      ),
+      fsValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fs_value'],
+      ),
+      importSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}import_source'],
+      ),
+      totalDebtStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_debt_start'],
+      ),
+      totalDebtEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_debt_end'],
+      ),
+      totalCharged: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_charged'],
+      ),
+      totalPaid: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_paid'],
+      ),
+      accountNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_number'],
+      ),
+      fio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fio'],
+      ),
+      accountAddress: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}account_address'],
+      ),
+    );
+  }
+
+  @override
+  $PaymentDocumentsLocalTable createAlias(String alias) {
+    return $PaymentDocumentsLocalTable(attachedDatabase, alias);
+  }
+}
+
+class PaymentDocumentDb extends DataClass
+    implements Insertable<PaymentDocumentDb> {
+  final int backendId;
+  final int accountId;
+  final String? periodDate;
+  final double? debtHeatingStart;
+  final double? chargedHeating;
+  final double? paidHeating;
+  final double? recalcHeating;
+  final double? debtHeatingEnd;
+  final double? debtHotWaterStart;
+  final double? chargedHotWater;
+  final double? paidHotWater;
+  final double? recalcHotWater;
+  final double? debtHotWaterEnd;
+  final double? debtMaintenanceStart;
+  final double? chargedMaintenance;
+  final double? paidMaintenance;
+  final double? recalcMaintenance;
+  final double? debtMaintenanceEnd;
+  final double? debtWasteStart;
+  final double? chargedWaste;
+  final double? paidWaste;
+  final double? recalcWaste;
+  final double? debtWasteEnd;
+  final double? debtOdnElectricityStart;
+  final double? chargedOdnElectricity;
+  final double? paidOdnElectricity;
+  final double? recalcOdnElectricity;
+  final double? debtOdnElectricityEnd;
+  final double? debtOdnWaterStart;
+  final double? chargedOdnWater;
+  final double? paidOdnWater;
+  final double? recalcOdnWater;
+  final double? debtOdnWaterEnd;
+  final double? t30;
+  final double? t31;
+  final int? residentsCount;
+  final double? fsValue;
+  final String? importSource;
+  final double? totalDebtStart;
+  final double? totalDebtEnd;
+  final double? totalCharged;
+  final double? totalPaid;
+  final String? accountNumber;
+  final String? fio;
+  final String? accountAddress;
+  const PaymentDocumentDb({
+    required this.backendId,
+    required this.accountId,
+    this.periodDate,
+    this.debtHeatingStart,
+    this.chargedHeating,
+    this.paidHeating,
+    this.recalcHeating,
+    this.debtHeatingEnd,
+    this.debtHotWaterStart,
+    this.chargedHotWater,
+    this.paidHotWater,
+    this.recalcHotWater,
+    this.debtHotWaterEnd,
+    this.debtMaintenanceStart,
+    this.chargedMaintenance,
+    this.paidMaintenance,
+    this.recalcMaintenance,
+    this.debtMaintenanceEnd,
+    this.debtWasteStart,
+    this.chargedWaste,
+    this.paidWaste,
+    this.recalcWaste,
+    this.debtWasteEnd,
+    this.debtOdnElectricityStart,
+    this.chargedOdnElectricity,
+    this.paidOdnElectricity,
+    this.recalcOdnElectricity,
+    this.debtOdnElectricityEnd,
+    this.debtOdnWaterStart,
+    this.chargedOdnWater,
+    this.paidOdnWater,
+    this.recalcOdnWater,
+    this.debtOdnWaterEnd,
+    this.t30,
+    this.t31,
+    this.residentsCount,
+    this.fsValue,
+    this.importSource,
+    this.totalDebtStart,
+    this.totalDebtEnd,
+    this.totalCharged,
+    this.totalPaid,
+    this.accountNumber,
+    this.fio,
+    this.accountAddress,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['backend_id'] = Variable<int>(backendId);
+    map['account_id'] = Variable<int>(accountId);
+    if (!nullToAbsent || periodDate != null) {
+      map['period_date'] = Variable<String>(periodDate);
+    }
+    if (!nullToAbsent || debtHeatingStart != null) {
+      map['debt_heating_start'] = Variable<double>(debtHeatingStart);
+    }
+    if (!nullToAbsent || chargedHeating != null) {
+      map['charged_heating'] = Variable<double>(chargedHeating);
+    }
+    if (!nullToAbsent || paidHeating != null) {
+      map['paid_heating'] = Variable<double>(paidHeating);
+    }
+    if (!nullToAbsent || recalcHeating != null) {
+      map['recalc_heating'] = Variable<double>(recalcHeating);
+    }
+    if (!nullToAbsent || debtHeatingEnd != null) {
+      map['debt_heating_end'] = Variable<double>(debtHeatingEnd);
+    }
+    if (!nullToAbsent || debtHotWaterStart != null) {
+      map['debt_hot_water_start'] = Variable<double>(debtHotWaterStart);
+    }
+    if (!nullToAbsent || chargedHotWater != null) {
+      map['charged_hot_water'] = Variable<double>(chargedHotWater);
+    }
+    if (!nullToAbsent || paidHotWater != null) {
+      map['paid_hot_water'] = Variable<double>(paidHotWater);
+    }
+    if (!nullToAbsent || recalcHotWater != null) {
+      map['recalc_hot_water'] = Variable<double>(recalcHotWater);
+    }
+    if (!nullToAbsent || debtHotWaterEnd != null) {
+      map['debt_hot_water_end'] = Variable<double>(debtHotWaterEnd);
+    }
+    if (!nullToAbsent || debtMaintenanceStart != null) {
+      map['debt_maintenance_start'] = Variable<double>(debtMaintenanceStart);
+    }
+    if (!nullToAbsent || chargedMaintenance != null) {
+      map['charged_maintenance'] = Variable<double>(chargedMaintenance);
+    }
+    if (!nullToAbsent || paidMaintenance != null) {
+      map['paid_maintenance'] = Variable<double>(paidMaintenance);
+    }
+    if (!nullToAbsent || recalcMaintenance != null) {
+      map['recalc_maintenance'] = Variable<double>(recalcMaintenance);
+    }
+    if (!nullToAbsent || debtMaintenanceEnd != null) {
+      map['debt_maintenance_end'] = Variable<double>(debtMaintenanceEnd);
+    }
+    if (!nullToAbsent || debtWasteStart != null) {
+      map['debt_waste_start'] = Variable<double>(debtWasteStart);
+    }
+    if (!nullToAbsent || chargedWaste != null) {
+      map['charged_waste'] = Variable<double>(chargedWaste);
+    }
+    if (!nullToAbsent || paidWaste != null) {
+      map['paid_waste'] = Variable<double>(paidWaste);
+    }
+    if (!nullToAbsent || recalcWaste != null) {
+      map['recalc_waste'] = Variable<double>(recalcWaste);
+    }
+    if (!nullToAbsent || debtWasteEnd != null) {
+      map['debt_waste_end'] = Variable<double>(debtWasteEnd);
+    }
+    if (!nullToAbsent || debtOdnElectricityStart != null) {
+      map['debt_odn_electricity_start'] = Variable<double>(
+        debtOdnElectricityStart,
+      );
+    }
+    if (!nullToAbsent || chargedOdnElectricity != null) {
+      map['charged_odn_electricity'] = Variable<double>(chargedOdnElectricity);
+    }
+    if (!nullToAbsent || paidOdnElectricity != null) {
+      map['paid_odn_electricity'] = Variable<double>(paidOdnElectricity);
+    }
+    if (!nullToAbsent || recalcOdnElectricity != null) {
+      map['recalc_odn_electricity'] = Variable<double>(recalcOdnElectricity);
+    }
+    if (!nullToAbsent || debtOdnElectricityEnd != null) {
+      map['debt_odn_electricity_end'] = Variable<double>(debtOdnElectricityEnd);
+    }
+    if (!nullToAbsent || debtOdnWaterStart != null) {
+      map['debt_odn_water_start'] = Variable<double>(debtOdnWaterStart);
+    }
+    if (!nullToAbsent || chargedOdnWater != null) {
+      map['charged_odn_water'] = Variable<double>(chargedOdnWater);
+    }
+    if (!nullToAbsent || paidOdnWater != null) {
+      map['paid_odn_water'] = Variable<double>(paidOdnWater);
+    }
+    if (!nullToAbsent || recalcOdnWater != null) {
+      map['recalc_odn_water'] = Variable<double>(recalcOdnWater);
+    }
+    if (!nullToAbsent || debtOdnWaterEnd != null) {
+      map['debt_odn_water_end'] = Variable<double>(debtOdnWaterEnd);
+    }
+    if (!nullToAbsent || t30 != null) {
+      map['t30'] = Variable<double>(t30);
+    }
+    if (!nullToAbsent || t31 != null) {
+      map['t31'] = Variable<double>(t31);
+    }
+    if (!nullToAbsent || residentsCount != null) {
+      map['residents_count'] = Variable<int>(residentsCount);
+    }
+    if (!nullToAbsent || fsValue != null) {
+      map['fs_value'] = Variable<double>(fsValue);
+    }
+    if (!nullToAbsent || importSource != null) {
+      map['import_source'] = Variable<String>(importSource);
+    }
+    if (!nullToAbsent || totalDebtStart != null) {
+      map['total_debt_start'] = Variable<double>(totalDebtStart);
+    }
+    if (!nullToAbsent || totalDebtEnd != null) {
+      map['total_debt_end'] = Variable<double>(totalDebtEnd);
+    }
+    if (!nullToAbsent || totalCharged != null) {
+      map['total_charged'] = Variable<double>(totalCharged);
+    }
+    if (!nullToAbsent || totalPaid != null) {
+      map['total_paid'] = Variable<double>(totalPaid);
+    }
+    if (!nullToAbsent || accountNumber != null) {
+      map['account_number'] = Variable<String>(accountNumber);
+    }
+    if (!nullToAbsent || fio != null) {
+      map['fio'] = Variable<String>(fio);
+    }
+    if (!nullToAbsent || accountAddress != null) {
+      map['account_address'] = Variable<String>(accountAddress);
+    }
+    return map;
+  }
+
+  PaymentDocumentsLocalCompanion toCompanion(bool nullToAbsent) {
+    return PaymentDocumentsLocalCompanion(
+      backendId: Value(backendId),
+      accountId: Value(accountId),
+      periodDate: periodDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(periodDate),
+      debtHeatingStart: debtHeatingStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtHeatingStart),
+      chargedHeating: chargedHeating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chargedHeating),
+      paidHeating: paidHeating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidHeating),
+      recalcHeating: recalcHeating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recalcHeating),
+      debtHeatingEnd: debtHeatingEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtHeatingEnd),
+      debtHotWaterStart: debtHotWaterStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtHotWaterStart),
+      chargedHotWater: chargedHotWater == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chargedHotWater),
+      paidHotWater: paidHotWater == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidHotWater),
+      recalcHotWater: recalcHotWater == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recalcHotWater),
+      debtHotWaterEnd: debtHotWaterEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtHotWaterEnd),
+      debtMaintenanceStart: debtMaintenanceStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtMaintenanceStart),
+      chargedMaintenance: chargedMaintenance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chargedMaintenance),
+      paidMaintenance: paidMaintenance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidMaintenance),
+      recalcMaintenance: recalcMaintenance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recalcMaintenance),
+      debtMaintenanceEnd: debtMaintenanceEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtMaintenanceEnd),
+      debtWasteStart: debtWasteStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtWasteStart),
+      chargedWaste: chargedWaste == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chargedWaste),
+      paidWaste: paidWaste == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidWaste),
+      recalcWaste: recalcWaste == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recalcWaste),
+      debtWasteEnd: debtWasteEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtWasteEnd),
+      debtOdnElectricityStart: debtOdnElectricityStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtOdnElectricityStart),
+      chargedOdnElectricity: chargedOdnElectricity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chargedOdnElectricity),
+      paidOdnElectricity: paidOdnElectricity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidOdnElectricity),
+      recalcOdnElectricity: recalcOdnElectricity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recalcOdnElectricity),
+      debtOdnElectricityEnd: debtOdnElectricityEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtOdnElectricityEnd),
+      debtOdnWaterStart: debtOdnWaterStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtOdnWaterStart),
+      chargedOdnWater: chargedOdnWater == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chargedOdnWater),
+      paidOdnWater: paidOdnWater == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paidOdnWater),
+      recalcOdnWater: recalcOdnWater == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recalcOdnWater),
+      debtOdnWaterEnd: debtOdnWaterEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(debtOdnWaterEnd),
+      t30: t30 == null && nullToAbsent ? const Value.absent() : Value(t30),
+      t31: t31 == null && nullToAbsent ? const Value.absent() : Value(t31),
+      residentsCount: residentsCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(residentsCount),
+      fsValue: fsValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fsValue),
+      importSource: importSource == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importSource),
+      totalDebtStart: totalDebtStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalDebtStart),
+      totalDebtEnd: totalDebtEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalDebtEnd),
+      totalCharged: totalCharged == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalCharged),
+      totalPaid: totalPaid == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalPaid),
+      accountNumber: accountNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountNumber),
+      fio: fio == null && nullToAbsent ? const Value.absent() : Value(fio),
+      accountAddress: accountAddress == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountAddress),
+    );
+  }
+
+  factory PaymentDocumentDb.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PaymentDocumentDb(
+      backendId: serializer.fromJson<int>(json['backendId']),
+      accountId: serializer.fromJson<int>(json['accountId']),
+      periodDate: serializer.fromJson<String?>(json['periodDate']),
+      debtHeatingStart: serializer.fromJson<double?>(json['debtHeatingStart']),
+      chargedHeating: serializer.fromJson<double?>(json['chargedHeating']),
+      paidHeating: serializer.fromJson<double?>(json['paidHeating']),
+      recalcHeating: serializer.fromJson<double?>(json['recalcHeating']),
+      debtHeatingEnd: serializer.fromJson<double?>(json['debtHeatingEnd']),
+      debtHotWaterStart: serializer.fromJson<double?>(
+        json['debtHotWaterStart'],
+      ),
+      chargedHotWater: serializer.fromJson<double?>(json['chargedHotWater']),
+      paidHotWater: serializer.fromJson<double?>(json['paidHotWater']),
+      recalcHotWater: serializer.fromJson<double?>(json['recalcHotWater']),
+      debtHotWaterEnd: serializer.fromJson<double?>(json['debtHotWaterEnd']),
+      debtMaintenanceStart: serializer.fromJson<double?>(
+        json['debtMaintenanceStart'],
+      ),
+      chargedMaintenance: serializer.fromJson<double?>(
+        json['chargedMaintenance'],
+      ),
+      paidMaintenance: serializer.fromJson<double?>(json['paidMaintenance']),
+      recalcMaintenance: serializer.fromJson<double?>(
+        json['recalcMaintenance'],
+      ),
+      debtMaintenanceEnd: serializer.fromJson<double?>(
+        json['debtMaintenanceEnd'],
+      ),
+      debtWasteStart: serializer.fromJson<double?>(json['debtWasteStart']),
+      chargedWaste: serializer.fromJson<double?>(json['chargedWaste']),
+      paidWaste: serializer.fromJson<double?>(json['paidWaste']),
+      recalcWaste: serializer.fromJson<double?>(json['recalcWaste']),
+      debtWasteEnd: serializer.fromJson<double?>(json['debtWasteEnd']),
+      debtOdnElectricityStart: serializer.fromJson<double?>(
+        json['debtOdnElectricityStart'],
+      ),
+      chargedOdnElectricity: serializer.fromJson<double?>(
+        json['chargedOdnElectricity'],
+      ),
+      paidOdnElectricity: serializer.fromJson<double?>(
+        json['paidOdnElectricity'],
+      ),
+      recalcOdnElectricity: serializer.fromJson<double?>(
+        json['recalcOdnElectricity'],
+      ),
+      debtOdnElectricityEnd: serializer.fromJson<double?>(
+        json['debtOdnElectricityEnd'],
+      ),
+      debtOdnWaterStart: serializer.fromJson<double?>(
+        json['debtOdnWaterStart'],
+      ),
+      chargedOdnWater: serializer.fromJson<double?>(json['chargedOdnWater']),
+      paidOdnWater: serializer.fromJson<double?>(json['paidOdnWater']),
+      recalcOdnWater: serializer.fromJson<double?>(json['recalcOdnWater']),
+      debtOdnWaterEnd: serializer.fromJson<double?>(json['debtOdnWaterEnd']),
+      t30: serializer.fromJson<double?>(json['t30']),
+      t31: serializer.fromJson<double?>(json['t31']),
+      residentsCount: serializer.fromJson<int?>(json['residentsCount']),
+      fsValue: serializer.fromJson<double?>(json['fsValue']),
+      importSource: serializer.fromJson<String?>(json['importSource']),
+      totalDebtStart: serializer.fromJson<double?>(json['totalDebtStart']),
+      totalDebtEnd: serializer.fromJson<double?>(json['totalDebtEnd']),
+      totalCharged: serializer.fromJson<double?>(json['totalCharged']),
+      totalPaid: serializer.fromJson<double?>(json['totalPaid']),
+      accountNumber: serializer.fromJson<String?>(json['accountNumber']),
+      fio: serializer.fromJson<String?>(json['fio']),
+      accountAddress: serializer.fromJson<String?>(json['accountAddress']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'backendId': serializer.toJson<int>(backendId),
+      'accountId': serializer.toJson<int>(accountId),
+      'periodDate': serializer.toJson<String?>(periodDate),
+      'debtHeatingStart': serializer.toJson<double?>(debtHeatingStart),
+      'chargedHeating': serializer.toJson<double?>(chargedHeating),
+      'paidHeating': serializer.toJson<double?>(paidHeating),
+      'recalcHeating': serializer.toJson<double?>(recalcHeating),
+      'debtHeatingEnd': serializer.toJson<double?>(debtHeatingEnd),
+      'debtHotWaterStart': serializer.toJson<double?>(debtHotWaterStart),
+      'chargedHotWater': serializer.toJson<double?>(chargedHotWater),
+      'paidHotWater': serializer.toJson<double?>(paidHotWater),
+      'recalcHotWater': serializer.toJson<double?>(recalcHotWater),
+      'debtHotWaterEnd': serializer.toJson<double?>(debtHotWaterEnd),
+      'debtMaintenanceStart': serializer.toJson<double?>(debtMaintenanceStart),
+      'chargedMaintenance': serializer.toJson<double?>(chargedMaintenance),
+      'paidMaintenance': serializer.toJson<double?>(paidMaintenance),
+      'recalcMaintenance': serializer.toJson<double?>(recalcMaintenance),
+      'debtMaintenanceEnd': serializer.toJson<double?>(debtMaintenanceEnd),
+      'debtWasteStart': serializer.toJson<double?>(debtWasteStart),
+      'chargedWaste': serializer.toJson<double?>(chargedWaste),
+      'paidWaste': serializer.toJson<double?>(paidWaste),
+      'recalcWaste': serializer.toJson<double?>(recalcWaste),
+      'debtWasteEnd': serializer.toJson<double?>(debtWasteEnd),
+      'debtOdnElectricityStart': serializer.toJson<double?>(
+        debtOdnElectricityStart,
+      ),
+      'chargedOdnElectricity': serializer.toJson<double?>(
+        chargedOdnElectricity,
+      ),
+      'paidOdnElectricity': serializer.toJson<double?>(paidOdnElectricity),
+      'recalcOdnElectricity': serializer.toJson<double?>(recalcOdnElectricity),
+      'debtOdnElectricityEnd': serializer.toJson<double?>(
+        debtOdnElectricityEnd,
+      ),
+      'debtOdnWaterStart': serializer.toJson<double?>(debtOdnWaterStart),
+      'chargedOdnWater': serializer.toJson<double?>(chargedOdnWater),
+      'paidOdnWater': serializer.toJson<double?>(paidOdnWater),
+      'recalcOdnWater': serializer.toJson<double?>(recalcOdnWater),
+      'debtOdnWaterEnd': serializer.toJson<double?>(debtOdnWaterEnd),
+      't30': serializer.toJson<double?>(t30),
+      't31': serializer.toJson<double?>(t31),
+      'residentsCount': serializer.toJson<int?>(residentsCount),
+      'fsValue': serializer.toJson<double?>(fsValue),
+      'importSource': serializer.toJson<String?>(importSource),
+      'totalDebtStart': serializer.toJson<double?>(totalDebtStart),
+      'totalDebtEnd': serializer.toJson<double?>(totalDebtEnd),
+      'totalCharged': serializer.toJson<double?>(totalCharged),
+      'totalPaid': serializer.toJson<double?>(totalPaid),
+      'accountNumber': serializer.toJson<String?>(accountNumber),
+      'fio': serializer.toJson<String?>(fio),
+      'accountAddress': serializer.toJson<String?>(accountAddress),
+    };
+  }
+
+  PaymentDocumentDb copyWith({
+    int? backendId,
+    int? accountId,
+    Value<String?> periodDate = const Value.absent(),
+    Value<double?> debtHeatingStart = const Value.absent(),
+    Value<double?> chargedHeating = const Value.absent(),
+    Value<double?> paidHeating = const Value.absent(),
+    Value<double?> recalcHeating = const Value.absent(),
+    Value<double?> debtHeatingEnd = const Value.absent(),
+    Value<double?> debtHotWaterStart = const Value.absent(),
+    Value<double?> chargedHotWater = const Value.absent(),
+    Value<double?> paidHotWater = const Value.absent(),
+    Value<double?> recalcHotWater = const Value.absent(),
+    Value<double?> debtHotWaterEnd = const Value.absent(),
+    Value<double?> debtMaintenanceStart = const Value.absent(),
+    Value<double?> chargedMaintenance = const Value.absent(),
+    Value<double?> paidMaintenance = const Value.absent(),
+    Value<double?> recalcMaintenance = const Value.absent(),
+    Value<double?> debtMaintenanceEnd = const Value.absent(),
+    Value<double?> debtWasteStart = const Value.absent(),
+    Value<double?> chargedWaste = const Value.absent(),
+    Value<double?> paidWaste = const Value.absent(),
+    Value<double?> recalcWaste = const Value.absent(),
+    Value<double?> debtWasteEnd = const Value.absent(),
+    Value<double?> debtOdnElectricityStart = const Value.absent(),
+    Value<double?> chargedOdnElectricity = const Value.absent(),
+    Value<double?> paidOdnElectricity = const Value.absent(),
+    Value<double?> recalcOdnElectricity = const Value.absent(),
+    Value<double?> debtOdnElectricityEnd = const Value.absent(),
+    Value<double?> debtOdnWaterStart = const Value.absent(),
+    Value<double?> chargedOdnWater = const Value.absent(),
+    Value<double?> paidOdnWater = const Value.absent(),
+    Value<double?> recalcOdnWater = const Value.absent(),
+    Value<double?> debtOdnWaterEnd = const Value.absent(),
+    Value<double?> t30 = const Value.absent(),
+    Value<double?> t31 = const Value.absent(),
+    Value<int?> residentsCount = const Value.absent(),
+    Value<double?> fsValue = const Value.absent(),
+    Value<String?> importSource = const Value.absent(),
+    Value<double?> totalDebtStart = const Value.absent(),
+    Value<double?> totalDebtEnd = const Value.absent(),
+    Value<double?> totalCharged = const Value.absent(),
+    Value<double?> totalPaid = const Value.absent(),
+    Value<String?> accountNumber = const Value.absent(),
+    Value<String?> fio = const Value.absent(),
+    Value<String?> accountAddress = const Value.absent(),
+  }) => PaymentDocumentDb(
+    backendId: backendId ?? this.backendId,
+    accountId: accountId ?? this.accountId,
+    periodDate: periodDate.present ? periodDate.value : this.periodDate,
+    debtHeatingStart: debtHeatingStart.present
+        ? debtHeatingStart.value
+        : this.debtHeatingStart,
+    chargedHeating: chargedHeating.present
+        ? chargedHeating.value
+        : this.chargedHeating,
+    paidHeating: paidHeating.present ? paidHeating.value : this.paidHeating,
+    recalcHeating: recalcHeating.present
+        ? recalcHeating.value
+        : this.recalcHeating,
+    debtHeatingEnd: debtHeatingEnd.present
+        ? debtHeatingEnd.value
+        : this.debtHeatingEnd,
+    debtHotWaterStart: debtHotWaterStart.present
+        ? debtHotWaterStart.value
+        : this.debtHotWaterStart,
+    chargedHotWater: chargedHotWater.present
+        ? chargedHotWater.value
+        : this.chargedHotWater,
+    paidHotWater: paidHotWater.present ? paidHotWater.value : this.paidHotWater,
+    recalcHotWater: recalcHotWater.present
+        ? recalcHotWater.value
+        : this.recalcHotWater,
+    debtHotWaterEnd: debtHotWaterEnd.present
+        ? debtHotWaterEnd.value
+        : this.debtHotWaterEnd,
+    debtMaintenanceStart: debtMaintenanceStart.present
+        ? debtMaintenanceStart.value
+        : this.debtMaintenanceStart,
+    chargedMaintenance: chargedMaintenance.present
+        ? chargedMaintenance.value
+        : this.chargedMaintenance,
+    paidMaintenance: paidMaintenance.present
+        ? paidMaintenance.value
+        : this.paidMaintenance,
+    recalcMaintenance: recalcMaintenance.present
+        ? recalcMaintenance.value
+        : this.recalcMaintenance,
+    debtMaintenanceEnd: debtMaintenanceEnd.present
+        ? debtMaintenanceEnd.value
+        : this.debtMaintenanceEnd,
+    debtWasteStart: debtWasteStart.present
+        ? debtWasteStart.value
+        : this.debtWasteStart,
+    chargedWaste: chargedWaste.present ? chargedWaste.value : this.chargedWaste,
+    paidWaste: paidWaste.present ? paidWaste.value : this.paidWaste,
+    recalcWaste: recalcWaste.present ? recalcWaste.value : this.recalcWaste,
+    debtWasteEnd: debtWasteEnd.present ? debtWasteEnd.value : this.debtWasteEnd,
+    debtOdnElectricityStart: debtOdnElectricityStart.present
+        ? debtOdnElectricityStart.value
+        : this.debtOdnElectricityStart,
+    chargedOdnElectricity: chargedOdnElectricity.present
+        ? chargedOdnElectricity.value
+        : this.chargedOdnElectricity,
+    paidOdnElectricity: paidOdnElectricity.present
+        ? paidOdnElectricity.value
+        : this.paidOdnElectricity,
+    recalcOdnElectricity: recalcOdnElectricity.present
+        ? recalcOdnElectricity.value
+        : this.recalcOdnElectricity,
+    debtOdnElectricityEnd: debtOdnElectricityEnd.present
+        ? debtOdnElectricityEnd.value
+        : this.debtOdnElectricityEnd,
+    debtOdnWaterStart: debtOdnWaterStart.present
+        ? debtOdnWaterStart.value
+        : this.debtOdnWaterStart,
+    chargedOdnWater: chargedOdnWater.present
+        ? chargedOdnWater.value
+        : this.chargedOdnWater,
+    paidOdnWater: paidOdnWater.present ? paidOdnWater.value : this.paidOdnWater,
+    recalcOdnWater: recalcOdnWater.present
+        ? recalcOdnWater.value
+        : this.recalcOdnWater,
+    debtOdnWaterEnd: debtOdnWaterEnd.present
+        ? debtOdnWaterEnd.value
+        : this.debtOdnWaterEnd,
+    t30: t30.present ? t30.value : this.t30,
+    t31: t31.present ? t31.value : this.t31,
+    residentsCount: residentsCount.present
+        ? residentsCount.value
+        : this.residentsCount,
+    fsValue: fsValue.present ? fsValue.value : this.fsValue,
+    importSource: importSource.present ? importSource.value : this.importSource,
+    totalDebtStart: totalDebtStart.present
+        ? totalDebtStart.value
+        : this.totalDebtStart,
+    totalDebtEnd: totalDebtEnd.present ? totalDebtEnd.value : this.totalDebtEnd,
+    totalCharged: totalCharged.present ? totalCharged.value : this.totalCharged,
+    totalPaid: totalPaid.present ? totalPaid.value : this.totalPaid,
+    accountNumber: accountNumber.present
+        ? accountNumber.value
+        : this.accountNumber,
+    fio: fio.present ? fio.value : this.fio,
+    accountAddress: accountAddress.present
+        ? accountAddress.value
+        : this.accountAddress,
+  );
+  PaymentDocumentDb copyWithCompanion(PaymentDocumentsLocalCompanion data) {
+    return PaymentDocumentDb(
+      backendId: data.backendId.present ? data.backendId.value : this.backendId,
+      accountId: data.accountId.present ? data.accountId.value : this.accountId,
+      periodDate: data.periodDate.present
+          ? data.periodDate.value
+          : this.periodDate,
+      debtHeatingStart: data.debtHeatingStart.present
+          ? data.debtHeatingStart.value
+          : this.debtHeatingStart,
+      chargedHeating: data.chargedHeating.present
+          ? data.chargedHeating.value
+          : this.chargedHeating,
+      paidHeating: data.paidHeating.present
+          ? data.paidHeating.value
+          : this.paidHeating,
+      recalcHeating: data.recalcHeating.present
+          ? data.recalcHeating.value
+          : this.recalcHeating,
+      debtHeatingEnd: data.debtHeatingEnd.present
+          ? data.debtHeatingEnd.value
+          : this.debtHeatingEnd,
+      debtHotWaterStart: data.debtHotWaterStart.present
+          ? data.debtHotWaterStart.value
+          : this.debtHotWaterStart,
+      chargedHotWater: data.chargedHotWater.present
+          ? data.chargedHotWater.value
+          : this.chargedHotWater,
+      paidHotWater: data.paidHotWater.present
+          ? data.paidHotWater.value
+          : this.paidHotWater,
+      recalcHotWater: data.recalcHotWater.present
+          ? data.recalcHotWater.value
+          : this.recalcHotWater,
+      debtHotWaterEnd: data.debtHotWaterEnd.present
+          ? data.debtHotWaterEnd.value
+          : this.debtHotWaterEnd,
+      debtMaintenanceStart: data.debtMaintenanceStart.present
+          ? data.debtMaintenanceStart.value
+          : this.debtMaintenanceStart,
+      chargedMaintenance: data.chargedMaintenance.present
+          ? data.chargedMaintenance.value
+          : this.chargedMaintenance,
+      paidMaintenance: data.paidMaintenance.present
+          ? data.paidMaintenance.value
+          : this.paidMaintenance,
+      recalcMaintenance: data.recalcMaintenance.present
+          ? data.recalcMaintenance.value
+          : this.recalcMaintenance,
+      debtMaintenanceEnd: data.debtMaintenanceEnd.present
+          ? data.debtMaintenanceEnd.value
+          : this.debtMaintenanceEnd,
+      debtWasteStart: data.debtWasteStart.present
+          ? data.debtWasteStart.value
+          : this.debtWasteStart,
+      chargedWaste: data.chargedWaste.present
+          ? data.chargedWaste.value
+          : this.chargedWaste,
+      paidWaste: data.paidWaste.present ? data.paidWaste.value : this.paidWaste,
+      recalcWaste: data.recalcWaste.present
+          ? data.recalcWaste.value
+          : this.recalcWaste,
+      debtWasteEnd: data.debtWasteEnd.present
+          ? data.debtWasteEnd.value
+          : this.debtWasteEnd,
+      debtOdnElectricityStart: data.debtOdnElectricityStart.present
+          ? data.debtOdnElectricityStart.value
+          : this.debtOdnElectricityStart,
+      chargedOdnElectricity: data.chargedOdnElectricity.present
+          ? data.chargedOdnElectricity.value
+          : this.chargedOdnElectricity,
+      paidOdnElectricity: data.paidOdnElectricity.present
+          ? data.paidOdnElectricity.value
+          : this.paidOdnElectricity,
+      recalcOdnElectricity: data.recalcOdnElectricity.present
+          ? data.recalcOdnElectricity.value
+          : this.recalcOdnElectricity,
+      debtOdnElectricityEnd: data.debtOdnElectricityEnd.present
+          ? data.debtOdnElectricityEnd.value
+          : this.debtOdnElectricityEnd,
+      debtOdnWaterStart: data.debtOdnWaterStart.present
+          ? data.debtOdnWaterStart.value
+          : this.debtOdnWaterStart,
+      chargedOdnWater: data.chargedOdnWater.present
+          ? data.chargedOdnWater.value
+          : this.chargedOdnWater,
+      paidOdnWater: data.paidOdnWater.present
+          ? data.paidOdnWater.value
+          : this.paidOdnWater,
+      recalcOdnWater: data.recalcOdnWater.present
+          ? data.recalcOdnWater.value
+          : this.recalcOdnWater,
+      debtOdnWaterEnd: data.debtOdnWaterEnd.present
+          ? data.debtOdnWaterEnd.value
+          : this.debtOdnWaterEnd,
+      t30: data.t30.present ? data.t30.value : this.t30,
+      t31: data.t31.present ? data.t31.value : this.t31,
+      residentsCount: data.residentsCount.present
+          ? data.residentsCount.value
+          : this.residentsCount,
+      fsValue: data.fsValue.present ? data.fsValue.value : this.fsValue,
+      importSource: data.importSource.present
+          ? data.importSource.value
+          : this.importSource,
+      totalDebtStart: data.totalDebtStart.present
+          ? data.totalDebtStart.value
+          : this.totalDebtStart,
+      totalDebtEnd: data.totalDebtEnd.present
+          ? data.totalDebtEnd.value
+          : this.totalDebtEnd,
+      totalCharged: data.totalCharged.present
+          ? data.totalCharged.value
+          : this.totalCharged,
+      totalPaid: data.totalPaid.present ? data.totalPaid.value : this.totalPaid,
+      accountNumber: data.accountNumber.present
+          ? data.accountNumber.value
+          : this.accountNumber,
+      fio: data.fio.present ? data.fio.value : this.fio,
+      accountAddress: data.accountAddress.present
+          ? data.accountAddress.value
+          : this.accountAddress,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PaymentDocumentDb(')
+          ..write('backendId: $backendId, ')
+          ..write('accountId: $accountId, ')
+          ..write('periodDate: $periodDate, ')
+          ..write('debtHeatingStart: $debtHeatingStart, ')
+          ..write('chargedHeating: $chargedHeating, ')
+          ..write('paidHeating: $paidHeating, ')
+          ..write('recalcHeating: $recalcHeating, ')
+          ..write('debtHeatingEnd: $debtHeatingEnd, ')
+          ..write('debtHotWaterStart: $debtHotWaterStart, ')
+          ..write('chargedHotWater: $chargedHotWater, ')
+          ..write('paidHotWater: $paidHotWater, ')
+          ..write('recalcHotWater: $recalcHotWater, ')
+          ..write('debtHotWaterEnd: $debtHotWaterEnd, ')
+          ..write('debtMaintenanceStart: $debtMaintenanceStart, ')
+          ..write('chargedMaintenance: $chargedMaintenance, ')
+          ..write('paidMaintenance: $paidMaintenance, ')
+          ..write('recalcMaintenance: $recalcMaintenance, ')
+          ..write('debtMaintenanceEnd: $debtMaintenanceEnd, ')
+          ..write('debtWasteStart: $debtWasteStart, ')
+          ..write('chargedWaste: $chargedWaste, ')
+          ..write('paidWaste: $paidWaste, ')
+          ..write('recalcWaste: $recalcWaste, ')
+          ..write('debtWasteEnd: $debtWasteEnd, ')
+          ..write('debtOdnElectricityStart: $debtOdnElectricityStart, ')
+          ..write('chargedOdnElectricity: $chargedOdnElectricity, ')
+          ..write('paidOdnElectricity: $paidOdnElectricity, ')
+          ..write('recalcOdnElectricity: $recalcOdnElectricity, ')
+          ..write('debtOdnElectricityEnd: $debtOdnElectricityEnd, ')
+          ..write('debtOdnWaterStart: $debtOdnWaterStart, ')
+          ..write('chargedOdnWater: $chargedOdnWater, ')
+          ..write('paidOdnWater: $paidOdnWater, ')
+          ..write('recalcOdnWater: $recalcOdnWater, ')
+          ..write('debtOdnWaterEnd: $debtOdnWaterEnd, ')
+          ..write('t30: $t30, ')
+          ..write('t31: $t31, ')
+          ..write('residentsCount: $residentsCount, ')
+          ..write('fsValue: $fsValue, ')
+          ..write('importSource: $importSource, ')
+          ..write('totalDebtStart: $totalDebtStart, ')
+          ..write('totalDebtEnd: $totalDebtEnd, ')
+          ..write('totalCharged: $totalCharged, ')
+          ..write('totalPaid: $totalPaid, ')
+          ..write('accountNumber: $accountNumber, ')
+          ..write('fio: $fio, ')
+          ..write('accountAddress: $accountAddress')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    backendId,
+    accountId,
+    periodDate,
+    debtHeatingStart,
+    chargedHeating,
+    paidHeating,
+    recalcHeating,
+    debtHeatingEnd,
+    debtHotWaterStart,
+    chargedHotWater,
+    paidHotWater,
+    recalcHotWater,
+    debtHotWaterEnd,
+    debtMaintenanceStart,
+    chargedMaintenance,
+    paidMaintenance,
+    recalcMaintenance,
+    debtMaintenanceEnd,
+    debtWasteStart,
+    chargedWaste,
+    paidWaste,
+    recalcWaste,
+    debtWasteEnd,
+    debtOdnElectricityStart,
+    chargedOdnElectricity,
+    paidOdnElectricity,
+    recalcOdnElectricity,
+    debtOdnElectricityEnd,
+    debtOdnWaterStart,
+    chargedOdnWater,
+    paidOdnWater,
+    recalcOdnWater,
+    debtOdnWaterEnd,
+    t30,
+    t31,
+    residentsCount,
+    fsValue,
+    importSource,
+    totalDebtStart,
+    totalDebtEnd,
+    totalCharged,
+    totalPaid,
+    accountNumber,
+    fio,
+    accountAddress,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PaymentDocumentDb &&
+          other.backendId == this.backendId &&
+          other.accountId == this.accountId &&
+          other.periodDate == this.periodDate &&
+          other.debtHeatingStart == this.debtHeatingStart &&
+          other.chargedHeating == this.chargedHeating &&
+          other.paidHeating == this.paidHeating &&
+          other.recalcHeating == this.recalcHeating &&
+          other.debtHeatingEnd == this.debtHeatingEnd &&
+          other.debtHotWaterStart == this.debtHotWaterStart &&
+          other.chargedHotWater == this.chargedHotWater &&
+          other.paidHotWater == this.paidHotWater &&
+          other.recalcHotWater == this.recalcHotWater &&
+          other.debtHotWaterEnd == this.debtHotWaterEnd &&
+          other.debtMaintenanceStart == this.debtMaintenanceStart &&
+          other.chargedMaintenance == this.chargedMaintenance &&
+          other.paidMaintenance == this.paidMaintenance &&
+          other.recalcMaintenance == this.recalcMaintenance &&
+          other.debtMaintenanceEnd == this.debtMaintenanceEnd &&
+          other.debtWasteStart == this.debtWasteStart &&
+          other.chargedWaste == this.chargedWaste &&
+          other.paidWaste == this.paidWaste &&
+          other.recalcWaste == this.recalcWaste &&
+          other.debtWasteEnd == this.debtWasteEnd &&
+          other.debtOdnElectricityStart == this.debtOdnElectricityStart &&
+          other.chargedOdnElectricity == this.chargedOdnElectricity &&
+          other.paidOdnElectricity == this.paidOdnElectricity &&
+          other.recalcOdnElectricity == this.recalcOdnElectricity &&
+          other.debtOdnElectricityEnd == this.debtOdnElectricityEnd &&
+          other.debtOdnWaterStart == this.debtOdnWaterStart &&
+          other.chargedOdnWater == this.chargedOdnWater &&
+          other.paidOdnWater == this.paidOdnWater &&
+          other.recalcOdnWater == this.recalcOdnWater &&
+          other.debtOdnWaterEnd == this.debtOdnWaterEnd &&
+          other.t30 == this.t30 &&
+          other.t31 == this.t31 &&
+          other.residentsCount == this.residentsCount &&
+          other.fsValue == this.fsValue &&
+          other.importSource == this.importSource &&
+          other.totalDebtStart == this.totalDebtStart &&
+          other.totalDebtEnd == this.totalDebtEnd &&
+          other.totalCharged == this.totalCharged &&
+          other.totalPaid == this.totalPaid &&
+          other.accountNumber == this.accountNumber &&
+          other.fio == this.fio &&
+          other.accountAddress == this.accountAddress);
+}
+
+class PaymentDocumentsLocalCompanion
+    extends UpdateCompanion<PaymentDocumentDb> {
+  final Value<int> backendId;
+  final Value<int> accountId;
+  final Value<String?> periodDate;
+  final Value<double?> debtHeatingStart;
+  final Value<double?> chargedHeating;
+  final Value<double?> paidHeating;
+  final Value<double?> recalcHeating;
+  final Value<double?> debtHeatingEnd;
+  final Value<double?> debtHotWaterStart;
+  final Value<double?> chargedHotWater;
+  final Value<double?> paidHotWater;
+  final Value<double?> recalcHotWater;
+  final Value<double?> debtHotWaterEnd;
+  final Value<double?> debtMaintenanceStart;
+  final Value<double?> chargedMaintenance;
+  final Value<double?> paidMaintenance;
+  final Value<double?> recalcMaintenance;
+  final Value<double?> debtMaintenanceEnd;
+  final Value<double?> debtWasteStart;
+  final Value<double?> chargedWaste;
+  final Value<double?> paidWaste;
+  final Value<double?> recalcWaste;
+  final Value<double?> debtWasteEnd;
+  final Value<double?> debtOdnElectricityStart;
+  final Value<double?> chargedOdnElectricity;
+  final Value<double?> paidOdnElectricity;
+  final Value<double?> recalcOdnElectricity;
+  final Value<double?> debtOdnElectricityEnd;
+  final Value<double?> debtOdnWaterStart;
+  final Value<double?> chargedOdnWater;
+  final Value<double?> paidOdnWater;
+  final Value<double?> recalcOdnWater;
+  final Value<double?> debtOdnWaterEnd;
+  final Value<double?> t30;
+  final Value<double?> t31;
+  final Value<int?> residentsCount;
+  final Value<double?> fsValue;
+  final Value<String?> importSource;
+  final Value<double?> totalDebtStart;
+  final Value<double?> totalDebtEnd;
+  final Value<double?> totalCharged;
+  final Value<double?> totalPaid;
+  final Value<String?> accountNumber;
+  final Value<String?> fio;
+  final Value<String?> accountAddress;
+  const PaymentDocumentsLocalCompanion({
+    this.backendId = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.periodDate = const Value.absent(),
+    this.debtHeatingStart = const Value.absent(),
+    this.chargedHeating = const Value.absent(),
+    this.paidHeating = const Value.absent(),
+    this.recalcHeating = const Value.absent(),
+    this.debtHeatingEnd = const Value.absent(),
+    this.debtHotWaterStart = const Value.absent(),
+    this.chargedHotWater = const Value.absent(),
+    this.paidHotWater = const Value.absent(),
+    this.recalcHotWater = const Value.absent(),
+    this.debtHotWaterEnd = const Value.absent(),
+    this.debtMaintenanceStart = const Value.absent(),
+    this.chargedMaintenance = const Value.absent(),
+    this.paidMaintenance = const Value.absent(),
+    this.recalcMaintenance = const Value.absent(),
+    this.debtMaintenanceEnd = const Value.absent(),
+    this.debtWasteStart = const Value.absent(),
+    this.chargedWaste = const Value.absent(),
+    this.paidWaste = const Value.absent(),
+    this.recalcWaste = const Value.absent(),
+    this.debtWasteEnd = const Value.absent(),
+    this.debtOdnElectricityStart = const Value.absent(),
+    this.chargedOdnElectricity = const Value.absent(),
+    this.paidOdnElectricity = const Value.absent(),
+    this.recalcOdnElectricity = const Value.absent(),
+    this.debtOdnElectricityEnd = const Value.absent(),
+    this.debtOdnWaterStart = const Value.absent(),
+    this.chargedOdnWater = const Value.absent(),
+    this.paidOdnWater = const Value.absent(),
+    this.recalcOdnWater = const Value.absent(),
+    this.debtOdnWaterEnd = const Value.absent(),
+    this.t30 = const Value.absent(),
+    this.t31 = const Value.absent(),
+    this.residentsCount = const Value.absent(),
+    this.fsValue = const Value.absent(),
+    this.importSource = const Value.absent(),
+    this.totalDebtStart = const Value.absent(),
+    this.totalDebtEnd = const Value.absent(),
+    this.totalCharged = const Value.absent(),
+    this.totalPaid = const Value.absent(),
+    this.accountNumber = const Value.absent(),
+    this.fio = const Value.absent(),
+    this.accountAddress = const Value.absent(),
+  });
+  PaymentDocumentsLocalCompanion.insert({
+    this.backendId = const Value.absent(),
+    this.accountId = const Value.absent(),
+    this.periodDate = const Value.absent(),
+    this.debtHeatingStart = const Value.absent(),
+    this.chargedHeating = const Value.absent(),
+    this.paidHeating = const Value.absent(),
+    this.recalcHeating = const Value.absent(),
+    this.debtHeatingEnd = const Value.absent(),
+    this.debtHotWaterStart = const Value.absent(),
+    this.chargedHotWater = const Value.absent(),
+    this.paidHotWater = const Value.absent(),
+    this.recalcHotWater = const Value.absent(),
+    this.debtHotWaterEnd = const Value.absent(),
+    this.debtMaintenanceStart = const Value.absent(),
+    this.chargedMaintenance = const Value.absent(),
+    this.paidMaintenance = const Value.absent(),
+    this.recalcMaintenance = const Value.absent(),
+    this.debtMaintenanceEnd = const Value.absent(),
+    this.debtWasteStart = const Value.absent(),
+    this.chargedWaste = const Value.absent(),
+    this.paidWaste = const Value.absent(),
+    this.recalcWaste = const Value.absent(),
+    this.debtWasteEnd = const Value.absent(),
+    this.debtOdnElectricityStart = const Value.absent(),
+    this.chargedOdnElectricity = const Value.absent(),
+    this.paidOdnElectricity = const Value.absent(),
+    this.recalcOdnElectricity = const Value.absent(),
+    this.debtOdnElectricityEnd = const Value.absent(),
+    this.debtOdnWaterStart = const Value.absent(),
+    this.chargedOdnWater = const Value.absent(),
+    this.paidOdnWater = const Value.absent(),
+    this.recalcOdnWater = const Value.absent(),
+    this.debtOdnWaterEnd = const Value.absent(),
+    this.t30 = const Value.absent(),
+    this.t31 = const Value.absent(),
+    this.residentsCount = const Value.absent(),
+    this.fsValue = const Value.absent(),
+    this.importSource = const Value.absent(),
+    this.totalDebtStart = const Value.absent(),
+    this.totalDebtEnd = const Value.absent(),
+    this.totalCharged = const Value.absent(),
+    this.totalPaid = const Value.absent(),
+    this.accountNumber = const Value.absent(),
+    this.fio = const Value.absent(),
+    this.accountAddress = const Value.absent(),
+  });
+  static Insertable<PaymentDocumentDb> custom({
+    Expression<int>? backendId,
+    Expression<int>? accountId,
+    Expression<String>? periodDate,
+    Expression<double>? debtHeatingStart,
+    Expression<double>? chargedHeating,
+    Expression<double>? paidHeating,
+    Expression<double>? recalcHeating,
+    Expression<double>? debtHeatingEnd,
+    Expression<double>? debtHotWaterStart,
+    Expression<double>? chargedHotWater,
+    Expression<double>? paidHotWater,
+    Expression<double>? recalcHotWater,
+    Expression<double>? debtHotWaterEnd,
+    Expression<double>? debtMaintenanceStart,
+    Expression<double>? chargedMaintenance,
+    Expression<double>? paidMaintenance,
+    Expression<double>? recalcMaintenance,
+    Expression<double>? debtMaintenanceEnd,
+    Expression<double>? debtWasteStart,
+    Expression<double>? chargedWaste,
+    Expression<double>? paidWaste,
+    Expression<double>? recalcWaste,
+    Expression<double>? debtWasteEnd,
+    Expression<double>? debtOdnElectricityStart,
+    Expression<double>? chargedOdnElectricity,
+    Expression<double>? paidOdnElectricity,
+    Expression<double>? recalcOdnElectricity,
+    Expression<double>? debtOdnElectricityEnd,
+    Expression<double>? debtOdnWaterStart,
+    Expression<double>? chargedOdnWater,
+    Expression<double>? paidOdnWater,
+    Expression<double>? recalcOdnWater,
+    Expression<double>? debtOdnWaterEnd,
+    Expression<double>? t30,
+    Expression<double>? t31,
+    Expression<int>? residentsCount,
+    Expression<double>? fsValue,
+    Expression<String>? importSource,
+    Expression<double>? totalDebtStart,
+    Expression<double>? totalDebtEnd,
+    Expression<double>? totalCharged,
+    Expression<double>? totalPaid,
+    Expression<String>? accountNumber,
+    Expression<String>? fio,
+    Expression<String>? accountAddress,
+  }) {
+    return RawValuesInsertable({
+      if (backendId != null) 'backend_id': backendId,
+      if (accountId != null) 'account_id': accountId,
+      if (periodDate != null) 'period_date': periodDate,
+      if (debtHeatingStart != null) 'debt_heating_start': debtHeatingStart,
+      if (chargedHeating != null) 'charged_heating': chargedHeating,
+      if (paidHeating != null) 'paid_heating': paidHeating,
+      if (recalcHeating != null) 'recalc_heating': recalcHeating,
+      if (debtHeatingEnd != null) 'debt_heating_end': debtHeatingEnd,
+      if (debtHotWaterStart != null) 'debt_hot_water_start': debtHotWaterStart,
+      if (chargedHotWater != null) 'charged_hot_water': chargedHotWater,
+      if (paidHotWater != null) 'paid_hot_water': paidHotWater,
+      if (recalcHotWater != null) 'recalc_hot_water': recalcHotWater,
+      if (debtHotWaterEnd != null) 'debt_hot_water_end': debtHotWaterEnd,
+      if (debtMaintenanceStart != null)
+        'debt_maintenance_start': debtMaintenanceStart,
+      if (chargedMaintenance != null) 'charged_maintenance': chargedMaintenance,
+      if (paidMaintenance != null) 'paid_maintenance': paidMaintenance,
+      if (recalcMaintenance != null) 'recalc_maintenance': recalcMaintenance,
+      if (debtMaintenanceEnd != null)
+        'debt_maintenance_end': debtMaintenanceEnd,
+      if (debtWasteStart != null) 'debt_waste_start': debtWasteStart,
+      if (chargedWaste != null) 'charged_waste': chargedWaste,
+      if (paidWaste != null) 'paid_waste': paidWaste,
+      if (recalcWaste != null) 'recalc_waste': recalcWaste,
+      if (debtWasteEnd != null) 'debt_waste_end': debtWasteEnd,
+      if (debtOdnElectricityStart != null)
+        'debt_odn_electricity_start': debtOdnElectricityStart,
+      if (chargedOdnElectricity != null)
+        'charged_odn_electricity': chargedOdnElectricity,
+      if (paidOdnElectricity != null)
+        'paid_odn_electricity': paidOdnElectricity,
+      if (recalcOdnElectricity != null)
+        'recalc_odn_electricity': recalcOdnElectricity,
+      if (debtOdnElectricityEnd != null)
+        'debt_odn_electricity_end': debtOdnElectricityEnd,
+      if (debtOdnWaterStart != null) 'debt_odn_water_start': debtOdnWaterStart,
+      if (chargedOdnWater != null) 'charged_odn_water': chargedOdnWater,
+      if (paidOdnWater != null) 'paid_odn_water': paidOdnWater,
+      if (recalcOdnWater != null) 'recalc_odn_water': recalcOdnWater,
+      if (debtOdnWaterEnd != null) 'debt_odn_water_end': debtOdnWaterEnd,
+      if (t30 != null) 't30': t30,
+      if (t31 != null) 't31': t31,
+      if (residentsCount != null) 'residents_count': residentsCount,
+      if (fsValue != null) 'fs_value': fsValue,
+      if (importSource != null) 'import_source': importSource,
+      if (totalDebtStart != null) 'total_debt_start': totalDebtStart,
+      if (totalDebtEnd != null) 'total_debt_end': totalDebtEnd,
+      if (totalCharged != null) 'total_charged': totalCharged,
+      if (totalPaid != null) 'total_paid': totalPaid,
+      if (accountNumber != null) 'account_number': accountNumber,
+      if (fio != null) 'fio': fio,
+      if (accountAddress != null) 'account_address': accountAddress,
+    });
+  }
+
+  PaymentDocumentsLocalCompanion copyWith({
+    Value<int>? backendId,
+    Value<int>? accountId,
+    Value<String?>? periodDate,
+    Value<double?>? debtHeatingStart,
+    Value<double?>? chargedHeating,
+    Value<double?>? paidHeating,
+    Value<double?>? recalcHeating,
+    Value<double?>? debtHeatingEnd,
+    Value<double?>? debtHotWaterStart,
+    Value<double?>? chargedHotWater,
+    Value<double?>? paidHotWater,
+    Value<double?>? recalcHotWater,
+    Value<double?>? debtHotWaterEnd,
+    Value<double?>? debtMaintenanceStart,
+    Value<double?>? chargedMaintenance,
+    Value<double?>? paidMaintenance,
+    Value<double?>? recalcMaintenance,
+    Value<double?>? debtMaintenanceEnd,
+    Value<double?>? debtWasteStart,
+    Value<double?>? chargedWaste,
+    Value<double?>? paidWaste,
+    Value<double?>? recalcWaste,
+    Value<double?>? debtWasteEnd,
+    Value<double?>? debtOdnElectricityStart,
+    Value<double?>? chargedOdnElectricity,
+    Value<double?>? paidOdnElectricity,
+    Value<double?>? recalcOdnElectricity,
+    Value<double?>? debtOdnElectricityEnd,
+    Value<double?>? debtOdnWaterStart,
+    Value<double?>? chargedOdnWater,
+    Value<double?>? paidOdnWater,
+    Value<double?>? recalcOdnWater,
+    Value<double?>? debtOdnWaterEnd,
+    Value<double?>? t30,
+    Value<double?>? t31,
+    Value<int?>? residentsCount,
+    Value<double?>? fsValue,
+    Value<String?>? importSource,
+    Value<double?>? totalDebtStart,
+    Value<double?>? totalDebtEnd,
+    Value<double?>? totalCharged,
+    Value<double?>? totalPaid,
+    Value<String?>? accountNumber,
+    Value<String?>? fio,
+    Value<String?>? accountAddress,
+  }) {
+    return PaymentDocumentsLocalCompanion(
+      backendId: backendId ?? this.backendId,
+      accountId: accountId ?? this.accountId,
+      periodDate: periodDate ?? this.periodDate,
+      debtHeatingStart: debtHeatingStart ?? this.debtHeatingStart,
+      chargedHeating: chargedHeating ?? this.chargedHeating,
+      paidHeating: paidHeating ?? this.paidHeating,
+      recalcHeating: recalcHeating ?? this.recalcHeating,
+      debtHeatingEnd: debtHeatingEnd ?? this.debtHeatingEnd,
+      debtHotWaterStart: debtHotWaterStart ?? this.debtHotWaterStart,
+      chargedHotWater: chargedHotWater ?? this.chargedHotWater,
+      paidHotWater: paidHotWater ?? this.paidHotWater,
+      recalcHotWater: recalcHotWater ?? this.recalcHotWater,
+      debtHotWaterEnd: debtHotWaterEnd ?? this.debtHotWaterEnd,
+      debtMaintenanceStart: debtMaintenanceStart ?? this.debtMaintenanceStart,
+      chargedMaintenance: chargedMaintenance ?? this.chargedMaintenance,
+      paidMaintenance: paidMaintenance ?? this.paidMaintenance,
+      recalcMaintenance: recalcMaintenance ?? this.recalcMaintenance,
+      debtMaintenanceEnd: debtMaintenanceEnd ?? this.debtMaintenanceEnd,
+      debtWasteStart: debtWasteStart ?? this.debtWasteStart,
+      chargedWaste: chargedWaste ?? this.chargedWaste,
+      paidWaste: paidWaste ?? this.paidWaste,
+      recalcWaste: recalcWaste ?? this.recalcWaste,
+      debtWasteEnd: debtWasteEnd ?? this.debtWasteEnd,
+      debtOdnElectricityStart:
+          debtOdnElectricityStart ?? this.debtOdnElectricityStart,
+      chargedOdnElectricity:
+          chargedOdnElectricity ?? this.chargedOdnElectricity,
+      paidOdnElectricity: paidOdnElectricity ?? this.paidOdnElectricity,
+      recalcOdnElectricity: recalcOdnElectricity ?? this.recalcOdnElectricity,
+      debtOdnElectricityEnd:
+          debtOdnElectricityEnd ?? this.debtOdnElectricityEnd,
+      debtOdnWaterStart: debtOdnWaterStart ?? this.debtOdnWaterStart,
+      chargedOdnWater: chargedOdnWater ?? this.chargedOdnWater,
+      paidOdnWater: paidOdnWater ?? this.paidOdnWater,
+      recalcOdnWater: recalcOdnWater ?? this.recalcOdnWater,
+      debtOdnWaterEnd: debtOdnWaterEnd ?? this.debtOdnWaterEnd,
+      t30: t30 ?? this.t30,
+      t31: t31 ?? this.t31,
+      residentsCount: residentsCount ?? this.residentsCount,
+      fsValue: fsValue ?? this.fsValue,
+      importSource: importSource ?? this.importSource,
+      totalDebtStart: totalDebtStart ?? this.totalDebtStart,
+      totalDebtEnd: totalDebtEnd ?? this.totalDebtEnd,
+      totalCharged: totalCharged ?? this.totalCharged,
+      totalPaid: totalPaid ?? this.totalPaid,
+      accountNumber: accountNumber ?? this.accountNumber,
+      fio: fio ?? this.fio,
+      accountAddress: accountAddress ?? this.accountAddress,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (backendId.present) {
+      map['backend_id'] = Variable<int>(backendId.value);
+    }
+    if (accountId.present) {
+      map['account_id'] = Variable<int>(accountId.value);
+    }
+    if (periodDate.present) {
+      map['period_date'] = Variable<String>(periodDate.value);
+    }
+    if (debtHeatingStart.present) {
+      map['debt_heating_start'] = Variable<double>(debtHeatingStart.value);
+    }
+    if (chargedHeating.present) {
+      map['charged_heating'] = Variable<double>(chargedHeating.value);
+    }
+    if (paidHeating.present) {
+      map['paid_heating'] = Variable<double>(paidHeating.value);
+    }
+    if (recalcHeating.present) {
+      map['recalc_heating'] = Variable<double>(recalcHeating.value);
+    }
+    if (debtHeatingEnd.present) {
+      map['debt_heating_end'] = Variable<double>(debtHeatingEnd.value);
+    }
+    if (debtHotWaterStart.present) {
+      map['debt_hot_water_start'] = Variable<double>(debtHotWaterStart.value);
+    }
+    if (chargedHotWater.present) {
+      map['charged_hot_water'] = Variable<double>(chargedHotWater.value);
+    }
+    if (paidHotWater.present) {
+      map['paid_hot_water'] = Variable<double>(paidHotWater.value);
+    }
+    if (recalcHotWater.present) {
+      map['recalc_hot_water'] = Variable<double>(recalcHotWater.value);
+    }
+    if (debtHotWaterEnd.present) {
+      map['debt_hot_water_end'] = Variable<double>(debtHotWaterEnd.value);
+    }
+    if (debtMaintenanceStart.present) {
+      map['debt_maintenance_start'] = Variable<double>(
+        debtMaintenanceStart.value,
+      );
+    }
+    if (chargedMaintenance.present) {
+      map['charged_maintenance'] = Variable<double>(chargedMaintenance.value);
+    }
+    if (paidMaintenance.present) {
+      map['paid_maintenance'] = Variable<double>(paidMaintenance.value);
+    }
+    if (recalcMaintenance.present) {
+      map['recalc_maintenance'] = Variable<double>(recalcMaintenance.value);
+    }
+    if (debtMaintenanceEnd.present) {
+      map['debt_maintenance_end'] = Variable<double>(debtMaintenanceEnd.value);
+    }
+    if (debtWasteStart.present) {
+      map['debt_waste_start'] = Variable<double>(debtWasteStart.value);
+    }
+    if (chargedWaste.present) {
+      map['charged_waste'] = Variable<double>(chargedWaste.value);
+    }
+    if (paidWaste.present) {
+      map['paid_waste'] = Variable<double>(paidWaste.value);
+    }
+    if (recalcWaste.present) {
+      map['recalc_waste'] = Variable<double>(recalcWaste.value);
+    }
+    if (debtWasteEnd.present) {
+      map['debt_waste_end'] = Variable<double>(debtWasteEnd.value);
+    }
+    if (debtOdnElectricityStart.present) {
+      map['debt_odn_electricity_start'] = Variable<double>(
+        debtOdnElectricityStart.value,
+      );
+    }
+    if (chargedOdnElectricity.present) {
+      map['charged_odn_electricity'] = Variable<double>(
+        chargedOdnElectricity.value,
+      );
+    }
+    if (paidOdnElectricity.present) {
+      map['paid_odn_electricity'] = Variable<double>(paidOdnElectricity.value);
+    }
+    if (recalcOdnElectricity.present) {
+      map['recalc_odn_electricity'] = Variable<double>(
+        recalcOdnElectricity.value,
+      );
+    }
+    if (debtOdnElectricityEnd.present) {
+      map['debt_odn_electricity_end'] = Variable<double>(
+        debtOdnElectricityEnd.value,
+      );
+    }
+    if (debtOdnWaterStart.present) {
+      map['debt_odn_water_start'] = Variable<double>(debtOdnWaterStart.value);
+    }
+    if (chargedOdnWater.present) {
+      map['charged_odn_water'] = Variable<double>(chargedOdnWater.value);
+    }
+    if (paidOdnWater.present) {
+      map['paid_odn_water'] = Variable<double>(paidOdnWater.value);
+    }
+    if (recalcOdnWater.present) {
+      map['recalc_odn_water'] = Variable<double>(recalcOdnWater.value);
+    }
+    if (debtOdnWaterEnd.present) {
+      map['debt_odn_water_end'] = Variable<double>(debtOdnWaterEnd.value);
+    }
+    if (t30.present) {
+      map['t30'] = Variable<double>(t30.value);
+    }
+    if (t31.present) {
+      map['t31'] = Variable<double>(t31.value);
+    }
+    if (residentsCount.present) {
+      map['residents_count'] = Variable<int>(residentsCount.value);
+    }
+    if (fsValue.present) {
+      map['fs_value'] = Variable<double>(fsValue.value);
+    }
+    if (importSource.present) {
+      map['import_source'] = Variable<String>(importSource.value);
+    }
+    if (totalDebtStart.present) {
+      map['total_debt_start'] = Variable<double>(totalDebtStart.value);
+    }
+    if (totalDebtEnd.present) {
+      map['total_debt_end'] = Variable<double>(totalDebtEnd.value);
+    }
+    if (totalCharged.present) {
+      map['total_charged'] = Variable<double>(totalCharged.value);
+    }
+    if (totalPaid.present) {
+      map['total_paid'] = Variable<double>(totalPaid.value);
+    }
+    if (accountNumber.present) {
+      map['account_number'] = Variable<String>(accountNumber.value);
+    }
+    if (fio.present) {
+      map['fio'] = Variable<String>(fio.value);
+    }
+    if (accountAddress.present) {
+      map['account_address'] = Variable<String>(accountAddress.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PaymentDocumentsLocalCompanion(')
+          ..write('backendId: $backendId, ')
+          ..write('accountId: $accountId, ')
+          ..write('periodDate: $periodDate, ')
+          ..write('debtHeatingStart: $debtHeatingStart, ')
+          ..write('chargedHeating: $chargedHeating, ')
+          ..write('paidHeating: $paidHeating, ')
+          ..write('recalcHeating: $recalcHeating, ')
+          ..write('debtHeatingEnd: $debtHeatingEnd, ')
+          ..write('debtHotWaterStart: $debtHotWaterStart, ')
+          ..write('chargedHotWater: $chargedHotWater, ')
+          ..write('paidHotWater: $paidHotWater, ')
+          ..write('recalcHotWater: $recalcHotWater, ')
+          ..write('debtHotWaterEnd: $debtHotWaterEnd, ')
+          ..write('debtMaintenanceStart: $debtMaintenanceStart, ')
+          ..write('chargedMaintenance: $chargedMaintenance, ')
+          ..write('paidMaintenance: $paidMaintenance, ')
+          ..write('recalcMaintenance: $recalcMaintenance, ')
+          ..write('debtMaintenanceEnd: $debtMaintenanceEnd, ')
+          ..write('debtWasteStart: $debtWasteStart, ')
+          ..write('chargedWaste: $chargedWaste, ')
+          ..write('paidWaste: $paidWaste, ')
+          ..write('recalcWaste: $recalcWaste, ')
+          ..write('debtWasteEnd: $debtWasteEnd, ')
+          ..write('debtOdnElectricityStart: $debtOdnElectricityStart, ')
+          ..write('chargedOdnElectricity: $chargedOdnElectricity, ')
+          ..write('paidOdnElectricity: $paidOdnElectricity, ')
+          ..write('recalcOdnElectricity: $recalcOdnElectricity, ')
+          ..write('debtOdnElectricityEnd: $debtOdnElectricityEnd, ')
+          ..write('debtOdnWaterStart: $debtOdnWaterStart, ')
+          ..write('chargedOdnWater: $chargedOdnWater, ')
+          ..write('paidOdnWater: $paidOdnWater, ')
+          ..write('recalcOdnWater: $recalcOdnWater, ')
+          ..write('debtOdnWaterEnd: $debtOdnWaterEnd, ')
+          ..write('t30: $t30, ')
+          ..write('t31: $t31, ')
+          ..write('residentsCount: $residentsCount, ')
+          ..write('fsValue: $fsValue, ')
+          ..write('importSource: $importSource, ')
+          ..write('totalDebtStart: $totalDebtStart, ')
+          ..write('totalDebtEnd: $totalDebtEnd, ')
+          ..write('totalCharged: $totalCharged, ')
+          ..write('totalPaid: $totalPaid, ')
+          ..write('accountNumber: $accountNumber, ')
+          ..write('fio: $fio, ')
+          ..write('accountAddress: $accountAddress')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -11926,6 +14606,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MyAccountsTable myAccounts = $MyAccountsTable(this);
   late final $PendingChangesTable pendingChanges = $PendingChangesTable(this);
   late final $SyncMetadataTable syncMetadata = $SyncMetadataTable(this);
+  late final $PaymentDocumentsLocalTable paymentDocumentsLocal =
+      $PaymentDocumentsLocalTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11945,6 +14627,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     myAccounts,
     pendingChanges,
     syncMetadata,
+    paymentDocumentsLocal,
   ];
 }
 
@@ -14831,6 +17514,7 @@ typedef $$SavedLocationsTableCreateCompanionBuilder =
       Value<DateTime?> updatedAt,
       Value<int?> yearBuilt,
       Value<String?> managementCompanyName,
+      Value<double?> tariff,
       Value<int?> boilerHouseId,
       Value<String?> managementCompanyRefId,
       Value<int> id,
@@ -14856,6 +17540,7 @@ typedef $$SavedLocationsTableUpdateCompanionBuilder =
       Value<DateTime?> updatedAt,
       Value<int?> yearBuilt,
       Value<String?> managementCompanyName,
+      Value<double?> tariff,
       Value<int?> boilerHouseId,
       Value<String?> managementCompanyRefId,
       Value<int> id,
@@ -15066,6 +17751,11 @@ class $$SavedLocationsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get tariff => $composableBuilder(
+    column: $table.tariff,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -15272,6 +17962,11 @@ class $$SavedLocationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get tariff => $composableBuilder(
+    column: $table.tariff,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -15406,6 +18101,9 @@ class $$SavedLocationsTableAnnotationComposer
     column: $table.managementCompanyName,
     builder: (column) => column,
   );
+
+  GeneratedColumn<double> get tariff =>
+      $composableBuilder(column: $table.tariff, builder: (column) => column);
 
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
@@ -15562,6 +18260,7 @@ class $$SavedLocationsTableTableManager
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int?> yearBuilt = const Value.absent(),
                 Value<String?> managementCompanyName = const Value.absent(),
+                Value<double?> tariff = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
                 Value<String?> managementCompanyRefId = const Value.absent(),
                 Value<int> id = const Value.absent(),
@@ -15585,6 +18284,7 @@ class $$SavedLocationsTableTableManager
                 updatedAt: updatedAt,
                 yearBuilt: yearBuilt,
                 managementCompanyName: managementCompanyName,
+                tariff: tariff,
                 boilerHouseId: boilerHouseId,
                 managementCompanyRefId: managementCompanyRefId,
                 id: id,
@@ -15610,6 +18310,7 @@ class $$SavedLocationsTableTableManager
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int?> yearBuilt = const Value.absent(),
                 Value<String?> managementCompanyName = const Value.absent(),
+                Value<double?> tariff = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
                 Value<String?> managementCompanyRefId = const Value.absent(),
                 Value<int> id = const Value.absent(),
@@ -15633,6 +18334,7 @@ class $$SavedLocationsTableTableManager
                 updatedAt: updatedAt,
                 yearBuilt: yearBuilt,
                 managementCompanyName: managementCompanyName,
+                tariff: tariff,
                 boilerHouseId: boilerHouseId,
                 managementCompanyRefId: managementCompanyRefId,
                 id: id,
@@ -19308,6 +22010,1053 @@ typedef $$SyncMetadataTableProcessedTableManager =
       SyncMetadataDb,
       PrefetchHooks Function()
     >;
+typedef $$PaymentDocumentsLocalTableCreateCompanionBuilder =
+    PaymentDocumentsLocalCompanion Function({
+      Value<int> backendId,
+      Value<int> accountId,
+      Value<String?> periodDate,
+      Value<double?> debtHeatingStart,
+      Value<double?> chargedHeating,
+      Value<double?> paidHeating,
+      Value<double?> recalcHeating,
+      Value<double?> debtHeatingEnd,
+      Value<double?> debtHotWaterStart,
+      Value<double?> chargedHotWater,
+      Value<double?> paidHotWater,
+      Value<double?> recalcHotWater,
+      Value<double?> debtHotWaterEnd,
+      Value<double?> debtMaintenanceStart,
+      Value<double?> chargedMaintenance,
+      Value<double?> paidMaintenance,
+      Value<double?> recalcMaintenance,
+      Value<double?> debtMaintenanceEnd,
+      Value<double?> debtWasteStart,
+      Value<double?> chargedWaste,
+      Value<double?> paidWaste,
+      Value<double?> recalcWaste,
+      Value<double?> debtWasteEnd,
+      Value<double?> debtOdnElectricityStart,
+      Value<double?> chargedOdnElectricity,
+      Value<double?> paidOdnElectricity,
+      Value<double?> recalcOdnElectricity,
+      Value<double?> debtOdnElectricityEnd,
+      Value<double?> debtOdnWaterStart,
+      Value<double?> chargedOdnWater,
+      Value<double?> paidOdnWater,
+      Value<double?> recalcOdnWater,
+      Value<double?> debtOdnWaterEnd,
+      Value<double?> t30,
+      Value<double?> t31,
+      Value<int?> residentsCount,
+      Value<double?> fsValue,
+      Value<String?> importSource,
+      Value<double?> totalDebtStart,
+      Value<double?> totalDebtEnd,
+      Value<double?> totalCharged,
+      Value<double?> totalPaid,
+      Value<String?> accountNumber,
+      Value<String?> fio,
+      Value<String?> accountAddress,
+    });
+typedef $$PaymentDocumentsLocalTableUpdateCompanionBuilder =
+    PaymentDocumentsLocalCompanion Function({
+      Value<int> backendId,
+      Value<int> accountId,
+      Value<String?> periodDate,
+      Value<double?> debtHeatingStart,
+      Value<double?> chargedHeating,
+      Value<double?> paidHeating,
+      Value<double?> recalcHeating,
+      Value<double?> debtHeatingEnd,
+      Value<double?> debtHotWaterStart,
+      Value<double?> chargedHotWater,
+      Value<double?> paidHotWater,
+      Value<double?> recalcHotWater,
+      Value<double?> debtHotWaterEnd,
+      Value<double?> debtMaintenanceStart,
+      Value<double?> chargedMaintenance,
+      Value<double?> paidMaintenance,
+      Value<double?> recalcMaintenance,
+      Value<double?> debtMaintenanceEnd,
+      Value<double?> debtWasteStart,
+      Value<double?> chargedWaste,
+      Value<double?> paidWaste,
+      Value<double?> recalcWaste,
+      Value<double?> debtWasteEnd,
+      Value<double?> debtOdnElectricityStart,
+      Value<double?> chargedOdnElectricity,
+      Value<double?> paidOdnElectricity,
+      Value<double?> recalcOdnElectricity,
+      Value<double?> debtOdnElectricityEnd,
+      Value<double?> debtOdnWaterStart,
+      Value<double?> chargedOdnWater,
+      Value<double?> paidOdnWater,
+      Value<double?> recalcOdnWater,
+      Value<double?> debtOdnWaterEnd,
+      Value<double?> t30,
+      Value<double?> t31,
+      Value<int?> residentsCount,
+      Value<double?> fsValue,
+      Value<String?> importSource,
+      Value<double?> totalDebtStart,
+      Value<double?> totalDebtEnd,
+      Value<double?> totalCharged,
+      Value<double?> totalPaid,
+      Value<String?> accountNumber,
+      Value<String?> fio,
+      Value<String?> accountAddress,
+    });
+
+class $$PaymentDocumentsLocalTableFilterComposer
+    extends Composer<_$AppDatabase, $PaymentDocumentsLocalTable> {
+  $$PaymentDocumentsLocalTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get backendId => $composableBuilder(
+    column: $table.backendId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodDate => $composableBuilder(
+    column: $table.periodDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtHeatingStart => $composableBuilder(
+    column: $table.debtHeatingStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get chargedHeating => $composableBuilder(
+    column: $table.chargedHeating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get paidHeating => $composableBuilder(
+    column: $table.paidHeating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get recalcHeating => $composableBuilder(
+    column: $table.recalcHeating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtHeatingEnd => $composableBuilder(
+    column: $table.debtHeatingEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtHotWaterStart => $composableBuilder(
+    column: $table.debtHotWaterStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get chargedHotWater => $composableBuilder(
+    column: $table.chargedHotWater,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get paidHotWater => $composableBuilder(
+    column: $table.paidHotWater,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get recalcHotWater => $composableBuilder(
+    column: $table.recalcHotWater,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtHotWaterEnd => $composableBuilder(
+    column: $table.debtHotWaterEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtMaintenanceStart => $composableBuilder(
+    column: $table.debtMaintenanceStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get chargedMaintenance => $composableBuilder(
+    column: $table.chargedMaintenance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get paidMaintenance => $composableBuilder(
+    column: $table.paidMaintenance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get recalcMaintenance => $composableBuilder(
+    column: $table.recalcMaintenance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtMaintenanceEnd => $composableBuilder(
+    column: $table.debtMaintenanceEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtWasteStart => $composableBuilder(
+    column: $table.debtWasteStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get chargedWaste => $composableBuilder(
+    column: $table.chargedWaste,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get paidWaste => $composableBuilder(
+    column: $table.paidWaste,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get recalcWaste => $composableBuilder(
+    column: $table.recalcWaste,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtWasteEnd => $composableBuilder(
+    column: $table.debtWasteEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtOdnElectricityStart => $composableBuilder(
+    column: $table.debtOdnElectricityStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get chargedOdnElectricity => $composableBuilder(
+    column: $table.chargedOdnElectricity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get paidOdnElectricity => $composableBuilder(
+    column: $table.paidOdnElectricity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get recalcOdnElectricity => $composableBuilder(
+    column: $table.recalcOdnElectricity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtOdnElectricityEnd => $composableBuilder(
+    column: $table.debtOdnElectricityEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtOdnWaterStart => $composableBuilder(
+    column: $table.debtOdnWaterStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get chargedOdnWater => $composableBuilder(
+    column: $table.chargedOdnWater,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get paidOdnWater => $composableBuilder(
+    column: $table.paidOdnWater,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get recalcOdnWater => $composableBuilder(
+    column: $table.recalcOdnWater,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get debtOdnWaterEnd => $composableBuilder(
+    column: $table.debtOdnWaterEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get t30 => $composableBuilder(
+    column: $table.t30,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get t31 => $composableBuilder(
+    column: $table.t31,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get residentsCount => $composableBuilder(
+    column: $table.residentsCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fsValue => $composableBuilder(
+    column: $table.fsValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get importSource => $composableBuilder(
+    column: $table.importSource,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalDebtStart => $composableBuilder(
+    column: $table.totalDebtStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalDebtEnd => $composableBuilder(
+    column: $table.totalDebtEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalCharged => $composableBuilder(
+    column: $table.totalCharged,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalPaid => $composableBuilder(
+    column: $table.totalPaid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get accountNumber => $composableBuilder(
+    column: $table.accountNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fio => $composableBuilder(
+    column: $table.fio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get accountAddress => $composableBuilder(
+    column: $table.accountAddress,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PaymentDocumentsLocalTableOrderingComposer
+    extends Composer<_$AppDatabase, $PaymentDocumentsLocalTable> {
+  $$PaymentDocumentsLocalTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get backendId => $composableBuilder(
+    column: $table.backendId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get accountId => $composableBuilder(
+    column: $table.accountId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get periodDate => $composableBuilder(
+    column: $table.periodDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtHeatingStart => $composableBuilder(
+    column: $table.debtHeatingStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get chargedHeating => $composableBuilder(
+    column: $table.chargedHeating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get paidHeating => $composableBuilder(
+    column: $table.paidHeating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get recalcHeating => $composableBuilder(
+    column: $table.recalcHeating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtHeatingEnd => $composableBuilder(
+    column: $table.debtHeatingEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtHotWaterStart => $composableBuilder(
+    column: $table.debtHotWaterStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get chargedHotWater => $composableBuilder(
+    column: $table.chargedHotWater,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get paidHotWater => $composableBuilder(
+    column: $table.paidHotWater,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get recalcHotWater => $composableBuilder(
+    column: $table.recalcHotWater,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtHotWaterEnd => $composableBuilder(
+    column: $table.debtHotWaterEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtMaintenanceStart => $composableBuilder(
+    column: $table.debtMaintenanceStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get chargedMaintenance => $composableBuilder(
+    column: $table.chargedMaintenance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get paidMaintenance => $composableBuilder(
+    column: $table.paidMaintenance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get recalcMaintenance => $composableBuilder(
+    column: $table.recalcMaintenance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtMaintenanceEnd => $composableBuilder(
+    column: $table.debtMaintenanceEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtWasteStart => $composableBuilder(
+    column: $table.debtWasteStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get chargedWaste => $composableBuilder(
+    column: $table.chargedWaste,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get paidWaste => $composableBuilder(
+    column: $table.paidWaste,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get recalcWaste => $composableBuilder(
+    column: $table.recalcWaste,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtWasteEnd => $composableBuilder(
+    column: $table.debtWasteEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtOdnElectricityStart => $composableBuilder(
+    column: $table.debtOdnElectricityStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get chargedOdnElectricity => $composableBuilder(
+    column: $table.chargedOdnElectricity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get paidOdnElectricity => $composableBuilder(
+    column: $table.paidOdnElectricity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get recalcOdnElectricity => $composableBuilder(
+    column: $table.recalcOdnElectricity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtOdnElectricityEnd => $composableBuilder(
+    column: $table.debtOdnElectricityEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtOdnWaterStart => $composableBuilder(
+    column: $table.debtOdnWaterStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get chargedOdnWater => $composableBuilder(
+    column: $table.chargedOdnWater,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get paidOdnWater => $composableBuilder(
+    column: $table.paidOdnWater,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get recalcOdnWater => $composableBuilder(
+    column: $table.recalcOdnWater,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get debtOdnWaterEnd => $composableBuilder(
+    column: $table.debtOdnWaterEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get t30 => $composableBuilder(
+    column: $table.t30,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get t31 => $composableBuilder(
+    column: $table.t31,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get residentsCount => $composableBuilder(
+    column: $table.residentsCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fsValue => $composableBuilder(
+    column: $table.fsValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get importSource => $composableBuilder(
+    column: $table.importSource,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalDebtStart => $composableBuilder(
+    column: $table.totalDebtStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalDebtEnd => $composableBuilder(
+    column: $table.totalDebtEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalCharged => $composableBuilder(
+    column: $table.totalCharged,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalPaid => $composableBuilder(
+    column: $table.totalPaid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get accountNumber => $composableBuilder(
+    column: $table.accountNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fio => $composableBuilder(
+    column: $table.fio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get accountAddress => $composableBuilder(
+    column: $table.accountAddress,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PaymentDocumentsLocalTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PaymentDocumentsLocalTable> {
+  $$PaymentDocumentsLocalTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get backendId =>
+      $composableBuilder(column: $table.backendId, builder: (column) => column);
+
+  GeneratedColumn<int> get accountId =>
+      $composableBuilder(column: $table.accountId, builder: (column) => column);
+
+  GeneratedColumn<String> get periodDate => $composableBuilder(
+    column: $table.periodDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtHeatingStart => $composableBuilder(
+    column: $table.debtHeatingStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get chargedHeating => $composableBuilder(
+    column: $table.chargedHeating,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get paidHeating => $composableBuilder(
+    column: $table.paidHeating,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get recalcHeating => $composableBuilder(
+    column: $table.recalcHeating,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtHeatingEnd => $composableBuilder(
+    column: $table.debtHeatingEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtHotWaterStart => $composableBuilder(
+    column: $table.debtHotWaterStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get chargedHotWater => $composableBuilder(
+    column: $table.chargedHotWater,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get paidHotWater => $composableBuilder(
+    column: $table.paidHotWater,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get recalcHotWater => $composableBuilder(
+    column: $table.recalcHotWater,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtHotWaterEnd => $composableBuilder(
+    column: $table.debtHotWaterEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtMaintenanceStart => $composableBuilder(
+    column: $table.debtMaintenanceStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get chargedMaintenance => $composableBuilder(
+    column: $table.chargedMaintenance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get paidMaintenance => $composableBuilder(
+    column: $table.paidMaintenance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get recalcMaintenance => $composableBuilder(
+    column: $table.recalcMaintenance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtMaintenanceEnd => $composableBuilder(
+    column: $table.debtMaintenanceEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtWasteStart => $composableBuilder(
+    column: $table.debtWasteStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get chargedWaste => $composableBuilder(
+    column: $table.chargedWaste,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get paidWaste =>
+      $composableBuilder(column: $table.paidWaste, builder: (column) => column);
+
+  GeneratedColumn<double> get recalcWaste => $composableBuilder(
+    column: $table.recalcWaste,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtWasteEnd => $composableBuilder(
+    column: $table.debtWasteEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtOdnElectricityStart => $composableBuilder(
+    column: $table.debtOdnElectricityStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get chargedOdnElectricity => $composableBuilder(
+    column: $table.chargedOdnElectricity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get paidOdnElectricity => $composableBuilder(
+    column: $table.paidOdnElectricity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get recalcOdnElectricity => $composableBuilder(
+    column: $table.recalcOdnElectricity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtOdnElectricityEnd => $composableBuilder(
+    column: $table.debtOdnElectricityEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtOdnWaterStart => $composableBuilder(
+    column: $table.debtOdnWaterStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get chargedOdnWater => $composableBuilder(
+    column: $table.chargedOdnWater,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get paidOdnWater => $composableBuilder(
+    column: $table.paidOdnWater,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get recalcOdnWater => $composableBuilder(
+    column: $table.recalcOdnWater,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get debtOdnWaterEnd => $composableBuilder(
+    column: $table.debtOdnWaterEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get t30 =>
+      $composableBuilder(column: $table.t30, builder: (column) => column);
+
+  GeneratedColumn<double> get t31 =>
+      $composableBuilder(column: $table.t31, builder: (column) => column);
+
+  GeneratedColumn<int> get residentsCount => $composableBuilder(
+    column: $table.residentsCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get fsValue =>
+      $composableBuilder(column: $table.fsValue, builder: (column) => column);
+
+  GeneratedColumn<String> get importSource => $composableBuilder(
+    column: $table.importSource,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalDebtStart => $composableBuilder(
+    column: $table.totalDebtStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalDebtEnd => $composableBuilder(
+    column: $table.totalDebtEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalCharged => $composableBuilder(
+    column: $table.totalCharged,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalPaid =>
+      $composableBuilder(column: $table.totalPaid, builder: (column) => column);
+
+  GeneratedColumn<String> get accountNumber => $composableBuilder(
+    column: $table.accountNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fio =>
+      $composableBuilder(column: $table.fio, builder: (column) => column);
+
+  GeneratedColumn<String> get accountAddress => $composableBuilder(
+    column: $table.accountAddress,
+    builder: (column) => column,
+  );
+}
+
+class $$PaymentDocumentsLocalTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PaymentDocumentsLocalTable,
+          PaymentDocumentDb,
+          $$PaymentDocumentsLocalTableFilterComposer,
+          $$PaymentDocumentsLocalTableOrderingComposer,
+          $$PaymentDocumentsLocalTableAnnotationComposer,
+          $$PaymentDocumentsLocalTableCreateCompanionBuilder,
+          $$PaymentDocumentsLocalTableUpdateCompanionBuilder,
+          (
+            PaymentDocumentDb,
+            BaseReferences<
+              _$AppDatabase,
+              $PaymentDocumentsLocalTable,
+              PaymentDocumentDb
+            >,
+          ),
+          PaymentDocumentDb,
+          PrefetchHooks Function()
+        > {
+  $$PaymentDocumentsLocalTableTableManager(
+    _$AppDatabase db,
+    $PaymentDocumentsLocalTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PaymentDocumentsLocalTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$PaymentDocumentsLocalTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PaymentDocumentsLocalTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> backendId = const Value.absent(),
+                Value<int> accountId = const Value.absent(),
+                Value<String?> periodDate = const Value.absent(),
+                Value<double?> debtHeatingStart = const Value.absent(),
+                Value<double?> chargedHeating = const Value.absent(),
+                Value<double?> paidHeating = const Value.absent(),
+                Value<double?> recalcHeating = const Value.absent(),
+                Value<double?> debtHeatingEnd = const Value.absent(),
+                Value<double?> debtHotWaterStart = const Value.absent(),
+                Value<double?> chargedHotWater = const Value.absent(),
+                Value<double?> paidHotWater = const Value.absent(),
+                Value<double?> recalcHotWater = const Value.absent(),
+                Value<double?> debtHotWaterEnd = const Value.absent(),
+                Value<double?> debtMaintenanceStart = const Value.absent(),
+                Value<double?> chargedMaintenance = const Value.absent(),
+                Value<double?> paidMaintenance = const Value.absent(),
+                Value<double?> recalcMaintenance = const Value.absent(),
+                Value<double?> debtMaintenanceEnd = const Value.absent(),
+                Value<double?> debtWasteStart = const Value.absent(),
+                Value<double?> chargedWaste = const Value.absent(),
+                Value<double?> paidWaste = const Value.absent(),
+                Value<double?> recalcWaste = const Value.absent(),
+                Value<double?> debtWasteEnd = const Value.absent(),
+                Value<double?> debtOdnElectricityStart = const Value.absent(),
+                Value<double?> chargedOdnElectricity = const Value.absent(),
+                Value<double?> paidOdnElectricity = const Value.absent(),
+                Value<double?> recalcOdnElectricity = const Value.absent(),
+                Value<double?> debtOdnElectricityEnd = const Value.absent(),
+                Value<double?> debtOdnWaterStart = const Value.absent(),
+                Value<double?> chargedOdnWater = const Value.absent(),
+                Value<double?> paidOdnWater = const Value.absent(),
+                Value<double?> recalcOdnWater = const Value.absent(),
+                Value<double?> debtOdnWaterEnd = const Value.absent(),
+                Value<double?> t30 = const Value.absent(),
+                Value<double?> t31 = const Value.absent(),
+                Value<int?> residentsCount = const Value.absent(),
+                Value<double?> fsValue = const Value.absent(),
+                Value<String?> importSource = const Value.absent(),
+                Value<double?> totalDebtStart = const Value.absent(),
+                Value<double?> totalDebtEnd = const Value.absent(),
+                Value<double?> totalCharged = const Value.absent(),
+                Value<double?> totalPaid = const Value.absent(),
+                Value<String?> accountNumber = const Value.absent(),
+                Value<String?> fio = const Value.absent(),
+                Value<String?> accountAddress = const Value.absent(),
+              }) => PaymentDocumentsLocalCompanion(
+                backendId: backendId,
+                accountId: accountId,
+                periodDate: periodDate,
+                debtHeatingStart: debtHeatingStart,
+                chargedHeating: chargedHeating,
+                paidHeating: paidHeating,
+                recalcHeating: recalcHeating,
+                debtHeatingEnd: debtHeatingEnd,
+                debtHotWaterStart: debtHotWaterStart,
+                chargedHotWater: chargedHotWater,
+                paidHotWater: paidHotWater,
+                recalcHotWater: recalcHotWater,
+                debtHotWaterEnd: debtHotWaterEnd,
+                debtMaintenanceStart: debtMaintenanceStart,
+                chargedMaintenance: chargedMaintenance,
+                paidMaintenance: paidMaintenance,
+                recalcMaintenance: recalcMaintenance,
+                debtMaintenanceEnd: debtMaintenanceEnd,
+                debtWasteStart: debtWasteStart,
+                chargedWaste: chargedWaste,
+                paidWaste: paidWaste,
+                recalcWaste: recalcWaste,
+                debtWasteEnd: debtWasteEnd,
+                debtOdnElectricityStart: debtOdnElectricityStart,
+                chargedOdnElectricity: chargedOdnElectricity,
+                paidOdnElectricity: paidOdnElectricity,
+                recalcOdnElectricity: recalcOdnElectricity,
+                debtOdnElectricityEnd: debtOdnElectricityEnd,
+                debtOdnWaterStart: debtOdnWaterStart,
+                chargedOdnWater: chargedOdnWater,
+                paidOdnWater: paidOdnWater,
+                recalcOdnWater: recalcOdnWater,
+                debtOdnWaterEnd: debtOdnWaterEnd,
+                t30: t30,
+                t31: t31,
+                residentsCount: residentsCount,
+                fsValue: fsValue,
+                importSource: importSource,
+                totalDebtStart: totalDebtStart,
+                totalDebtEnd: totalDebtEnd,
+                totalCharged: totalCharged,
+                totalPaid: totalPaid,
+                accountNumber: accountNumber,
+                fio: fio,
+                accountAddress: accountAddress,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> backendId = const Value.absent(),
+                Value<int> accountId = const Value.absent(),
+                Value<String?> periodDate = const Value.absent(),
+                Value<double?> debtHeatingStart = const Value.absent(),
+                Value<double?> chargedHeating = const Value.absent(),
+                Value<double?> paidHeating = const Value.absent(),
+                Value<double?> recalcHeating = const Value.absent(),
+                Value<double?> debtHeatingEnd = const Value.absent(),
+                Value<double?> debtHotWaterStart = const Value.absent(),
+                Value<double?> chargedHotWater = const Value.absent(),
+                Value<double?> paidHotWater = const Value.absent(),
+                Value<double?> recalcHotWater = const Value.absent(),
+                Value<double?> debtHotWaterEnd = const Value.absent(),
+                Value<double?> debtMaintenanceStart = const Value.absent(),
+                Value<double?> chargedMaintenance = const Value.absent(),
+                Value<double?> paidMaintenance = const Value.absent(),
+                Value<double?> recalcMaintenance = const Value.absent(),
+                Value<double?> debtMaintenanceEnd = const Value.absent(),
+                Value<double?> debtWasteStart = const Value.absent(),
+                Value<double?> chargedWaste = const Value.absent(),
+                Value<double?> paidWaste = const Value.absent(),
+                Value<double?> recalcWaste = const Value.absent(),
+                Value<double?> debtWasteEnd = const Value.absent(),
+                Value<double?> debtOdnElectricityStart = const Value.absent(),
+                Value<double?> chargedOdnElectricity = const Value.absent(),
+                Value<double?> paidOdnElectricity = const Value.absent(),
+                Value<double?> recalcOdnElectricity = const Value.absent(),
+                Value<double?> debtOdnElectricityEnd = const Value.absent(),
+                Value<double?> debtOdnWaterStart = const Value.absent(),
+                Value<double?> chargedOdnWater = const Value.absent(),
+                Value<double?> paidOdnWater = const Value.absent(),
+                Value<double?> recalcOdnWater = const Value.absent(),
+                Value<double?> debtOdnWaterEnd = const Value.absent(),
+                Value<double?> t30 = const Value.absent(),
+                Value<double?> t31 = const Value.absent(),
+                Value<int?> residentsCount = const Value.absent(),
+                Value<double?> fsValue = const Value.absent(),
+                Value<String?> importSource = const Value.absent(),
+                Value<double?> totalDebtStart = const Value.absent(),
+                Value<double?> totalDebtEnd = const Value.absent(),
+                Value<double?> totalCharged = const Value.absent(),
+                Value<double?> totalPaid = const Value.absent(),
+                Value<String?> accountNumber = const Value.absent(),
+                Value<String?> fio = const Value.absent(),
+                Value<String?> accountAddress = const Value.absent(),
+              }) => PaymentDocumentsLocalCompanion.insert(
+                backendId: backendId,
+                accountId: accountId,
+                periodDate: periodDate,
+                debtHeatingStart: debtHeatingStart,
+                chargedHeating: chargedHeating,
+                paidHeating: paidHeating,
+                recalcHeating: recalcHeating,
+                debtHeatingEnd: debtHeatingEnd,
+                debtHotWaterStart: debtHotWaterStart,
+                chargedHotWater: chargedHotWater,
+                paidHotWater: paidHotWater,
+                recalcHotWater: recalcHotWater,
+                debtHotWaterEnd: debtHotWaterEnd,
+                debtMaintenanceStart: debtMaintenanceStart,
+                chargedMaintenance: chargedMaintenance,
+                paidMaintenance: paidMaintenance,
+                recalcMaintenance: recalcMaintenance,
+                debtMaintenanceEnd: debtMaintenanceEnd,
+                debtWasteStart: debtWasteStart,
+                chargedWaste: chargedWaste,
+                paidWaste: paidWaste,
+                recalcWaste: recalcWaste,
+                debtWasteEnd: debtWasteEnd,
+                debtOdnElectricityStart: debtOdnElectricityStart,
+                chargedOdnElectricity: chargedOdnElectricity,
+                paidOdnElectricity: paidOdnElectricity,
+                recalcOdnElectricity: recalcOdnElectricity,
+                debtOdnElectricityEnd: debtOdnElectricityEnd,
+                debtOdnWaterStart: debtOdnWaterStart,
+                chargedOdnWater: chargedOdnWater,
+                paidOdnWater: paidOdnWater,
+                recalcOdnWater: recalcOdnWater,
+                debtOdnWaterEnd: debtOdnWaterEnd,
+                t30: t30,
+                t31: t31,
+                residentsCount: residentsCount,
+                fsValue: fsValue,
+                importSource: importSource,
+                totalDebtStart: totalDebtStart,
+                totalDebtEnd: totalDebtEnd,
+                totalCharged: totalCharged,
+                totalPaid: totalPaid,
+                accountNumber: accountNumber,
+                fio: fio,
+                accountAddress: accountAddress,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PaymentDocumentsLocalTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PaymentDocumentsLocalTable,
+      PaymentDocumentDb,
+      $$PaymentDocumentsLocalTableFilterComposer,
+      $$PaymentDocumentsLocalTableOrderingComposer,
+      $$PaymentDocumentsLocalTableAnnotationComposer,
+      $$PaymentDocumentsLocalTableCreateCompanionBuilder,
+      $$PaymentDocumentsLocalTableUpdateCompanionBuilder,
+      (
+        PaymentDocumentDb,
+        BaseReferences<
+          _$AppDatabase,
+          $PaymentDocumentsLocalTable,
+          PaymentDocumentDb
+        >,
+      ),
+      PaymentDocumentDb,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -19340,4 +23089,6 @@ class $AppDatabaseManager {
       $$PendingChangesTableTableManager(_db, _db.pendingChanges);
   $$SyncMetadataTableTableManager get syncMetadata =>
       $$SyncMetadataTableTableManager(_db, _db.syncMetadata);
+  $$PaymentDocumentsLocalTableTableManager get paymentDocumentsLocal =>
+      $$PaymentDocumentsLocalTableTableManager(_db, _db.paymentDocumentsLocal);
 }

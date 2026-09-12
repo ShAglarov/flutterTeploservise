@@ -13,6 +13,7 @@ import 'action_log_list_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
 import 'management_company_list_screen.dart';
+import 'accounts_list_screen.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/offline_edit_permission.dart';
 import '../widgets/connectivity_banner.dart';
@@ -1986,8 +1987,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             
                             const SizedBox(height: 16),
                             
-                            // 3. Accounts Section
-                            _buildAccountsSection(loc.accountsCount ?? loc.accounts?.length ?? 0),
+                            // 3. Accounts Section — tappable, opens accounts list
+                            _buildAccountsSection(loc.id, loc.accountsCount ?? loc.accounts?.length ?? 0),
                             
                             const SizedBox(height: 24),
                             
@@ -2387,19 +2388,37 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  Widget _buildAccountsSection(int count) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF14223A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
-      ),
-      child: Center(
-        child: Text(
-          'Лицевые счета: $count',
-          style: const TextStyle(color: AppTheme.primaryBlue, fontSize: 18, fontWeight: FontWeight.bold),
+  Widget _buildAccountsSection(int locationId, int count) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context); // close bottom sheet
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AccountsListScreen(locationId: locationId),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF14223A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.people_outline, color: AppTheme.primaryBlue, size: 22),
+            const SizedBox(width: 10),
+            Text(
+              'Лицевые счета: $count',
+              style: const TextStyle(color: AppTheme.primaryBlue, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: AppTheme.primaryBlue, size: 22),
+          ],
         ),
       ),
     );

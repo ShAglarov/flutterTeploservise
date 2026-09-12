@@ -311,6 +311,7 @@ class SavedLocations extends Table {
   DateTimeColumn get updatedAt => dateTime().nullable()();
   IntColumn get yearBuilt => integer().nullable().withDefault(const Constant(0))();
   TextColumn get managementCompanyName => text().nullable()();
+  RealColumn get tariff => real().nullable()();
 
   // Relationships
   IntColumn get boilerHouseId => integer().nullable().references(BoilerHouses, #backendId)();
@@ -335,6 +336,81 @@ class SyncMetadata extends Table {
 }
 
 // ----------------------------------------------------------------------
+// Платежные документы
+// ----------------------------------------------------------------------
+@DataClassName('PaymentDocumentDb')
+class PaymentDocumentsLocal extends Table {
+  IntColumn get backendId => integer().withDefault(const Constant(0))();
+  IntColumn get accountId => integer().withDefault(const Constant(0))();
+  TextColumn get periodDate => text().nullable()();
+  
+  // Отопление
+  RealColumn get debtHeatingStart => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get chargedHeating => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get paidHeating => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get recalcHeating => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get debtHeatingEnd => real().nullable().withDefault(const Constant(0.0))();
+  
+  // ГВС
+  RealColumn get debtHotWaterStart => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get chargedHotWater => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get paidHotWater => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get recalcHotWater => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get debtHotWaterEnd => real().nullable().withDefault(const Constant(0.0))();
+  
+  // Теплообслуживание
+  RealColumn get debtMaintenanceStart => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get chargedMaintenance => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get paidMaintenance => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get recalcMaintenance => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get debtMaintenanceEnd => real().nullable().withDefault(const Constant(0.0))();
+  
+  // ТБО
+  RealColumn get debtWasteStart => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get chargedWaste => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get paidWaste => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get recalcWaste => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get debtWasteEnd => real().nullable().withDefault(const Constant(0.0))();
+  
+  // ОДН Электричество
+  RealColumn get debtOdnElectricityStart => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get chargedOdnElectricity => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get paidOdnElectricity => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get recalcOdnElectricity => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get debtOdnElectricityEnd => real().nullable().withDefault(const Constant(0.0))();
+  
+  // ОДН Вода
+  RealColumn get debtOdnWaterStart => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get chargedOdnWater => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get paidOdnWater => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get recalcOdnWater => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get debtOdnWaterEnd => real().nullable().withDefault(const Constant(0.0))();
+  
+  // Температура
+  RealColumn get t30 => real().nullable().withDefault(const Constant(0.0))();
+  RealColumn get t31 => real().nullable().withDefault(const Constant(0.0))();
+  
+  // Доп. данные
+  IntColumn get residentsCount => integer().nullable()();
+  RealColumn get fsValue => real().nullable()();
+  TextColumn get importSource => text().nullable()();
+  
+  // Вычисляемые
+  RealColumn get totalDebtStart => real().nullable()();
+  RealColumn get totalDebtEnd => real().nullable()();
+  RealColumn get totalCharged => real().nullable()();
+  RealColumn get totalPaid => real().nullable()();
+  
+  // Данные из Account
+  TextColumn get accountNumber => text().nullable()();
+  TextColumn get fio => text().nullable()();
+  TextColumn get accountAddress => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {backendId};
+}
+
+// ----------------------------------------------------------------------
 // Database Definition
 // ----------------------------------------------------------------------
 @DriftDatabase(tables: [
@@ -352,12 +428,13 @@ class SyncMetadata extends Table {
   PendingChanges,
   SavedLocations,
   SyncMetadata,
+  PaymentDocumentsLocal,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

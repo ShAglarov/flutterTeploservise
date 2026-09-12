@@ -27,6 +27,10 @@ import '../widgets/user_avatar_widget.dart';
 import 'action_log_list_screen.dart';
 import 'permission_editor_screen.dart';
 import 'profile_screen.dart';
+import 'payment_documents_screen.dart';
+import 'import_xls_screen.dart';
+import 'activity_monitor_screen.dart';
+import 'org_requisites_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -326,8 +330,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Загрузить все данные с сервера',
             onTap: _handleFullSync,
           ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.receipt_long_outlined,
+            iconColor: Colors.deepPurple,
+            title: 'Платежные документы',
+            subtitle: 'Просмотр начислений и долгов по лицевым счетам',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PaymentDocumentsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.monitor_heart_outlined,
+            iconColor: Colors.redAccent,
+            title: 'Монитор активности',
+            subtitle: 'Анализ платежной дисциплины жильцов',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ActivityMonitorScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.file_upload_outlined,
+            iconColor: Colors.teal,
+            title: 'Импорт XLS',
+            subtitle: 'Загрузка лицевых счетов и платежных документов из файла',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ImportXlsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.account_balance_outlined,
+            iconColor: Colors.indigo,
+            title: 'Реквизиты организаций',
+            subtitle: 'Управление БИК, расчётными счетами, ИНН',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OrgRequisitesScreen()),
+              );
+            },
+          ),
         ]),
-        _buildSectionFooter('Полная пересинхронизация котельных и домов с сервера'),
+        _buildSectionFooter('Полная пересинхронизация, платежные документы и импорт данных'),
 
         const SizedBox(height: 24),
 
