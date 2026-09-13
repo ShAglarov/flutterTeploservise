@@ -645,7 +645,6 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
                         initialDate: _promiseDate ?? DateTime.now().add(const Duration(days: 7)),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
-                        locale: const Locale('ru'),
                       );
                       if (picked != null) setState(() => _promiseDate = picked);
                     },

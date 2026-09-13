@@ -385,24 +385,40 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
               if (promises.isNotEmpty) ...[
                 const Text('🤝 Обещания оплаты:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 6),
-                ...promises.map((p) => Card(
-                  child: ListTile(
-                    leading: Icon(
-                      p['status'] == 'fulfilled' ? Icons.check_circle : p['status'] == 'broken' ? Icons.cancel : Icons.schedule,
-                      color: p['status'] == 'fulfilled' ? Colors.green : p['status'] == 'broken' ? Colors.red : Colors.orange,
+                ...promises.map((p) {
+                  // Форматируем дату
+                  String dateStr = p['promised_date'] ?? '-';
+                  final parsed = DateTime.tryParse(dateStr);
+                  if (parsed != null) {
+                    dateStr = '${parsed.day.toString().padLeft(2, '0')}.${parsed.month.toString().padLeft(2, '0')}.${parsed.year}';
+                  }
+                  return Card(
+                    child: ListTile(
+                      leading: Icon(
+                        p['status'] == 'fulfilled' ? Icons.check_circle : p['status'] == 'broken' ? Icons.cancel : Icons.schedule,
+                        color: p['status'] == 'fulfilled' ? Colors.green : p['status'] == 'broken' ? Colors.red : Colors.orange,
+                      ),
+                      title: Text('До $dateStr${p['promised_amount'] != null ? ' — ${p['promised_amount']} ₽' : ''}'),
+                      subtitle: p['note'] != null ? Text(p['note'], maxLines: 2) : null,
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (v) {
+                          if (v == 'edit') {
+                            Navigator.pop(ctx);
+                            _addPromise(accountId!, existingPromise: p);
+                          } else {
+                            _updatePromise(p['id'], v, ctx);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(value: 'edit', child: Text('✏️ Редактировать')),
+                          const PopupMenuItem(value: 'fulfilled', child: Text('✅ Выполнено')),
+                          const PopupMenuItem(value: 'broken', child: Text('❌ Не выполнено')),
+                          const PopupMenuItem(value: 'delete', child: Text('🗑 Удалить')),
+                        ],
+                      ),
                     ),
-                    title: Text('До ${p['promised_date'] ?? '-'}${p['promised_amount'] != null ? ' — ${p['promised_amount']} ₽' : ''}'),
-                    subtitle: p['note'] != null ? Text(p['note'], maxLines: 2) : null,
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (v) => _updatePromise(p['id'], v, ctx),
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'fulfilled', child: Text('✅ Выполнено')),
-                        const PopupMenuItem(value: 'broken', child: Text('❌ Не выполнено')),
-                        const PopupMenuItem(value: 'delete', child: Text('🗑 Удалить')),
-                      ],
-                    ),
-                  ),
-                )),
+                  );
+                }),
                 const SizedBox(height: 8),
               ],
 
@@ -458,52 +474,118 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
     );
   }
 
-  Future<void> _addPromise(int accountId) async {
-    final dateCtrl = TextEditingController();
-    final amountCtrl = TextEditingController();
-    final noteCtrl = TextEditingController();
+  Future<void> _addPromise(int accountId, {Map<String, dynamic>? existingPromise}) async {
+    final amountCtrl = TextEditingController(text: existingPromise?['promised_amount']?.toString() ?? '');
+    final noteCtrl = TextEditingController(text: existingPromise?['note'] ?? '');
+    DateTime selectedDate = DateTime.now();
+    
+    // Парсим дату из существующего обещания
+    if (existingPromise?['promised_date'] != null) {
+      final parsed = DateTime.tryParse(existingPromise!['promised_date'].toString());
+      if (parsed != null) selectedDate = parsed;
+    }
 
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>?>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('🤝 Обещание оплаты'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'Дата оплаты (ДД.ММ.ГГГГ)', border: OutlineInputBorder())),
-            const SizedBox(height: 10),
-            TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Сумма (необязательно)', border: OutlineInputBorder(), suffixText: '₽')),
-            const SizedBox(height: 10),
-            TextField(controller: noteCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Комментарий', border: OutlineInputBorder())),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Сохранить'),
-          ),
-        ],
-      ),
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setDialogState) {
+          return AlertDialog(
+            title: Text(existingPromise != null ? '✏️ Редактировать обещание' : '🤝 Обещание оплаты'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Календарь
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setDialogState(() => selectedDate = picked);
+                    }
+                  },
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: '📅 Дата оплаты',
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(),
+                    ),
+                    child: Text(
+                      '${selectedDate.day.toString().padLeft(2, '0')}.${selectedDate.month.toString().padLeft(2, '0')}.${selectedDate.year}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Сумма (необязательно)', border: OutlineInputBorder(), suffixText: '₽')),
+                const SizedBox(height: 10),
+                TextField(controller: noteCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Комментарий', border: OutlineInputBorder())),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, {
+                  'date': selectedDate,
+                  'amount': amountCtrl.text,
+                  'note': noteCtrl.text,
+                }),
+                child: const Text('Сохранить'),
+              ),
+            ],
+          );
+        });
+      },
     );
 
-    if (result != true || dateCtrl.text.isEmpty) return;
+    if (result == null) return;
 
     try {
-      // Парсим дату ДД.ММ.ГГГГ → ГГГГ-ММ-ДД
-      final parts = dateCtrl.text.split('.');
-      final isoDate = parts.length == 3 ? '${parts[2]}-${parts[1]}-${parts[0]}' : dateCtrl.text;
+      final date = result['date'] as DateTime;
+      final isoDate = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
       final dio = ref.read(dioProvider);
-      await dio.post('/activity-monitor/promises', data: {
-        'account_id': accountId,
-        'promised_date': isoDate,
-        if (amountCtrl.text.isNotEmpty) 'promised_amount': double.tryParse(amountCtrl.text),
-        if (noteCtrl.text.isNotEmpty) 'note': noteCtrl.text,
-      });
+      
+      if (existingPromise != null) {
+        // Обновляем существующее обещание
+        await dio.put('/activity-monitor/promises/${existingPromise['id']}', data: {
+          'promised_date': isoDate,
+          if (result['amount'].toString().isNotEmpty) 'promised_amount': double.tryParse(result['amount']),
+          if (result['note'].toString().isNotEmpty) 'note': result['note'],
+        });
+      } else {
+        // Создаём новое обещание
+        await dio.post('/activity-monitor/promises', data: {
+          'account_id': accountId,
+          'promised_date': isoDate,
+          if (result['amount'].toString().isNotEmpty) 'promised_amount': double.tryParse(result['amount']),
+          if (result['note'].toString().isNotEmpty) 'note': result['note'],
+        });
+      }
+
+      // Также обновляем promise_to_pay у жильца (ищем по account_id)
+      try {
+        final accResp = await dio.get('/accounts', queryParameters: {'skip': 0, 'limit': 5000});
+        if (accResp.statusCode == 200) {
+          final accounts = accResp.data is List ? accResp.data : [];
+          for (final acc in accounts) {
+            if (acc['id'] == accountId && acc['resident'] != null) {
+              final residentId = acc['resident']['id'];
+              await dio.put('/residents/$residentId', data: {
+                'promise_to_pay': true,
+                'promise_date': isoDate,
+              });
+              break;
+            }
+          }
+        }
+      } catch (_) {}
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Обещание добавлено'), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(existingPromise != null ? '✅ Обещание обновлено' : '✅ Обещание добавлено'), backgroundColor: Colors.green));
       }
       _loadData();
     } catch (e) {

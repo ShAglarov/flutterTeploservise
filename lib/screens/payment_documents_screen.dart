@@ -250,100 +250,378 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
   }
 
   Future<Map<String, String>?> _showDosudebSettings(String format) async {
-    // Загружаем реквизиты по умолчанию с сервера
+    // Загружаем ВСЕ реквизиты организаций
+    List<Map<String, dynamic>> allRequisites = [];
     Map<String, dynamic> defaults = {};
+    final dio = ref.read(dioProvider);
+    
+    // Пробуем загрузить реквизиты
     try {
-      final dio = ref.read(dioProvider);
-      final resp = await dio.get('/org-requisites/default');
-      if (resp.statusCode == 200) defaults = resp.data as Map<String, dynamic>;
-    } catch (_) {}
+      final resp = await dio.get('/org-requisites/');
+      if (resp.statusCode == 200 && resp.data is List) {
+        allRequisites = (resp.data as List).map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('⚠️ org-requisites failed: $e');
+    }
+
+    // Если нет реквизитов — пробуем management-companies
+    if (allRequisites.isEmpty) {
+      try {
+        final resp = await dio.get('/management-companies/');
+        if (resp.statusCode == 200 && resp.data is List) {
+          allRequisites = (resp.data as List).map<Map<String, dynamic>>((e) {
+            final m = Map<String, dynamic>.from(e);
+            // Маппим поля management_company → org_requisites формат
+            return {
+              'id': m['id'],
+              'org_name': m['name'] ?? '',
+              'director_name': m['director'] ?? '',
+              'director_title': 'Генеральный директор',
+              'city': 'г. Махачкала',
+              'bik': '',
+              'account_number': '',
+              'inn': '',
+              'bank_name': '',
+              'corr_account': '',
+              'is_default': 0,
+            };
+          }).toList();
+        }
+      } catch (e) {
+        debugPrint('⚠️ management-companies failed: $e');
+      }
+    }
+    
+    debugPrint('📋 Loaded ${allRequisites.length} requisites');
+
+    // Найдём default
+    for (final r in allRequisites) {
+      if (r['is_default'] == 1) { defaults = r; break; }
+    }
+    if (defaults.isEmpty && allRequisites.isNotEmpty) {
+      defaults = allRequisites.first;
+    }
 
     final deadlineCtrl = TextEditingController(text: '20.10.2026');
     final orgNameCtrl = TextEditingController(text: (defaults['org_name'] as String?) ?? 'ООО УК "СТАНДАРТ СЕРВИС"');
     final directorTitleCtrl = TextEditingController(text: (defaults['director_title'] as String?) ?? 'Генеральный директор');
     final directorNameCtrl = TextEditingController(text: (defaults['director_name'] as String?) ?? 'Агларов Ш.Р.');
-    // Формируем строку реквизитов
-    final reqParts = <String>[];
-    if (defaults['bik'] != null && (defaults['bik'] as String).isNotEmpty) reqParts.add('БИК: ${defaults['bik']}');
-    if (defaults['account_number'] != null && (defaults['account_number'] as String).isNotEmpty) reqParts.add('Р/с: ${defaults['account_number']}');
-    if (defaults['inn'] != null && (defaults['inn'] as String).isNotEmpty) reqParts.add('ИНН: ${defaults['inn']}');
-    if (defaults['bank_name'] != null && (defaults['bank_name'] as String).isNotEmpty) reqParts.add('Банк: ${defaults['bank_name']}');
-    if (defaults['corr_account'] != null && (defaults['corr_account'] as String).isNotEmpty) reqParts.add('Корр/с: ${defaults['corr_account']}');
-    final requisitesCtrl = TextEditingController(text: reqParts.join('\n'));
+    final cityCtrl = TextEditingController(text: (defaults['city'] as String?) ?? 'г. Махачкала');
+
+    String _buildRequisitesText(Map<String, dynamic> r) {
+      final parts = <String>[];
+      if (r['bik'] != null && (r['bik'] as String).isNotEmpty) parts.add('БИК: ${r['bik']}');
+      if (r['account_number'] != null && (r['account_number'] as String).isNotEmpty) parts.add('Р/с: ${r['account_number']}');
+      if (r['inn'] != null && (r['inn'] as String).isNotEmpty) parts.add('ИНН: ${r['inn']}');
+      if (r['bank_name'] != null && (r['bank_name'] as String).isNotEmpty) parts.add('Банк: ${r['bank_name']}');
+      if (r['corr_account'] != null && (r['corr_account'] as String).isNotEmpty) parts.add('Корр/с: ${r['corr_account']}');
+      return parts.join('\n');
+    }
+
+    final requisitesCtrl = TextEditingController(text: _buildRequisitesText(defaults));
     final noticeDateCtrl = TextEditingController(
       text: '${DateTime.now().day.toString().padLeft(2, '0')}.${DateTime.now().month.toString().padLeft(2, '0')}.${DateTime.now().year}',
     );
-    final cityCtrl = TextEditingController(text: 'г. Махачкала');
+
+    String? selectedReqId = defaults['id']?.toString();
 
     final isPersonal = format == 'dosudebnoye';
     final title = isPersonal ? 'Досудебное (личное)' : 'Досудебное (общее)';
 
+    bool excludePromises = true;
+    bool excludePayers = true;
+
     return showDialog<Map<String, String>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('⚖️ $title'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: noticeDateCtrl,
-                decoration: const InputDecoration(labelText: 'Дата составления', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: deadlineCtrl,
-                decoration: const InputDecoration(labelText: 'Срок оплаты (до)', prefixIcon: Icon(Icons.timer), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: orgNameCtrl,
-                decoration: const InputDecoration(labelText: 'Название организации', prefixIcon: Icon(Icons.business), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: directorTitleCtrl,
-                decoration: const InputDecoration(labelText: 'Должность', prefixIcon: Icon(Icons.badge), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: directorNameCtrl,
-                decoration: const InputDecoration(labelText: 'ФИО руководителя', prefixIcon: Icon(Icons.person), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: cityCtrl,
-                decoration: const InputDecoration(labelText: 'Город', prefixIcon: Icon(Icons.location_city), border: OutlineInputBorder()),
-              ),
-              if (isPersonal) ...[
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('⚖️ $title'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Выбор организации — сверху
+                if (allRequisites.isNotEmpty) ...[
+                  InkWell(
+                    onTap: () async {
+                      final selected = await showDialog<Map<String, dynamic>>(
+                        context: ctx,
+                        builder: (dialogCtx) {
+                          String searchText = '';
+                          return StatefulBuilder(
+                            builder: (dialogCtx, setSearchState) {
+                              final filtered = allRequisites.where((r) {
+                                final name = (r['org_name'] ?? '').toString().toLowerCase();
+                                return name.contains(searchText.toLowerCase());
+                              }).toList();
+
+                              Future<void> openOrgForm({Map<String, dynamic>? existing}) async {
+                                final nc = TextEditingController(text: existing?['org_name'] ?? '');
+                                final dtc = TextEditingController(text: existing?['director_title'] ?? 'Генеральный директор');
+                                final dnc = TextEditingController(text: existing?['director_name'] ?? '');
+                                final cc = TextEditingController(text: existing?['city'] ?? 'г. Махачкала');
+                                final bikc = TextEditingController(text: existing?['bik'] ?? '');
+                                final acc = TextEditingController(text: existing?['account_number'] ?? '');
+                                final innc = TextEditingController(text: existing?['inn'] ?? '');
+                                final bnc = TextEditingController(text: existing?['bank_name'] ?? '');
+                                final corc = TextEditingController(text: existing?['corr_account'] ?? '');
+
+                                final saved = await showDialog<Map<String, dynamic>>(
+                                  context: dialogCtx,
+                                  builder: (formCtx) => AlertDialog(
+                                    title: Text(existing != null ? '✏️ Редактировать' : '➕ Новая организация'),
+                                    content: SingleChildScrollView(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(controller: nc, decoration: const InputDecoration(labelText: 'Название *', border: OutlineInputBorder())),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: dtc, decoration: const InputDecoration(labelText: 'Должность руководителя', border: OutlineInputBorder())),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: dnc, decoration: const InputDecoration(labelText: 'ФИО руководителя', border: OutlineInputBorder())),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: cc, decoration: const InputDecoration(labelText: 'Город', border: OutlineInputBorder())),
+                                          const SizedBox(height: 12),
+                                          const Text('Реквизиты', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: innc, decoration: const InputDecoration(labelText: 'ИНН', border: OutlineInputBorder())),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: bikc, decoration: const InputDecoration(labelText: 'БИК', border: OutlineInputBorder())),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: acc, decoration: const InputDecoration(labelText: 'Расчётный счёт', border: OutlineInputBorder())),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: bnc, decoration: const InputDecoration(labelText: 'Банк', border: OutlineInputBorder())),
+                                          const SizedBox(height: 8),
+                                          TextField(controller: corc, decoration: const InputDecoration(labelText: 'Корр. счёт', border: OutlineInputBorder())),
+                                        ],
+                                      ),
+                                    ),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(formCtx), child: const Text('Отмена')),
+                                      FilledButton(
+                                        onPressed: () async {
+                                          if (nc.text.trim().isEmpty) return;
+                                          final body = {
+                                            'org_name': nc.text.trim(),
+                                            'director_title': dtc.text.trim(),
+                                            'director_name': dnc.text.trim(),
+                                            'city': cc.text.trim(),
+                                            'bik': bikc.text.trim(),
+                                            'account_number': acc.text.trim(),
+                                            'inn': innc.text.trim(),
+                                            'bank_name': bnc.text.trim(),
+                                            'corr_account': corc.text.trim(),
+                                          };
+                                          try {
+                                            if (existing != null && existing['id'] != null) {
+                                              await dio.put('/org-requisites/${existing['id']}', data: body);
+                                            } else {
+                                              await dio.post('/org-requisites/', data: body);
+                                            }
+                                            // Перезагружаем список
+                                            final resp = await dio.get('/org-requisites/');
+                                            if (resp.statusCode == 200 && resp.data is List) {
+                                              allRequisites.clear();
+                                              allRequisites.addAll((resp.data as List).map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e)));
+                                            }
+                                            if (formCtx.mounted) Navigator.pop(formCtx, body);
+                                          } catch (e) {
+                                            debugPrint('❌ Save org error: $e');
+                                          }
+                                        },
+                                        child: Text(existing != null ? 'Сохранить' : 'Создать'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (saved != null) {
+                                  setSearchState(() {});
+                                }
+                              }
+
+                              return AlertDialog(
+                                title: Row(
+                                  children: [
+                                    const Expanded(child: Text('🏢 Организации')),
+                                    IconButton(
+                                      icon: const Icon(Icons.add_circle, color: Colors.green),
+                                      tooltip: 'Добавить организацию',
+                                      onPressed: () => openOrgForm(),
+                                    ),
+                                  ],
+                                ),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  height: 400,
+                                  child: Column(
+                                    children: [
+                                      TextField(
+                                        autofocus: true,
+                                        decoration: const InputDecoration(
+                                          hintText: 'Поиск...',
+                                          prefixIcon: Icon(Icons.search),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (v) => setSearchState(() => searchText = v),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Expanded(
+                                        child: ListView.builder(
+                                          itemCount: filtered.length,
+                                          itemBuilder: (_, i) {
+                                            final r = filtered[i];
+                                            final isSelected = r['id']?.toString() == selectedReqId;
+                                            return ListTile(
+                                              dense: true,
+                                              selected: isSelected,
+                                              leading: Icon(Icons.business, color: isSelected ? Colors.blue : Colors.grey),
+                                              title: Text(r['org_name'] ?? '-', style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                                              subtitle: r['director_name'] != null && r['director_name'].toString().isNotEmpty
+                                                  ? Text(r['director_name'], style: const TextStyle(fontSize: 12))
+                                                  : null,
+                                              trailing: IconButton(
+                                                icon: const Icon(Icons.edit, size: 18),
+                                                onPressed: () => openOrgForm(existing: r),
+                                              ),
+                                              onTap: () => Navigator.pop(dialogCtx, r),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                      if (selected != null) {
+                        setDialogState(() {
+                          selectedReqId = selected['id']?.toString();
+                          orgNameCtrl.text = selected['org_name'] ?? '';
+                          directorTitleCtrl.text = selected['director_title'] ?? 'Генеральный директор';
+                          directorNameCtrl.text = selected['director_name'] ?? '';
+                          cityCtrl.text = selected['city'] ?? 'г. Махачкала';
+                          requisitesCtrl.text = _buildRequisitesText(selected);
+                        });
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: '🏢 Организация',
+                        prefixIcon: Icon(Icons.business),
+                        suffixIcon: Icon(Icons.arrow_drop_down),
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        orgNameCtrl.text.isNotEmpty ? orgNameCtrl.text : 'Выберите организацию',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: orgNameCtrl.text.isNotEmpty ? null : Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                TextField(
+                  controller: noticeDateCtrl,
+                  decoration: const InputDecoration(labelText: 'Дата составления', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()),
+                ),
                 const SizedBox(height: 10),
                 TextField(
-                  controller: requisitesCtrl,
-                  maxLines: 3,
-                  decoration: const InputDecoration(labelText: 'Реквизиты для оплаты', prefixIcon: Icon(Icons.account_balance), border: OutlineInputBorder(), alignLabelWithHint: true),
+                  controller: deadlineCtrl,
+                  decoration: const InputDecoration(labelText: 'Срок оплаты (до)', prefixIcon: Icon(Icons.timer), border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: orgNameCtrl,
+                  decoration: const InputDecoration(labelText: 'Название организации', prefixIcon: Icon(Icons.business), border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: directorTitleCtrl,
+                  decoration: const InputDecoration(labelText: 'Должность', prefixIcon: Icon(Icons.badge), border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: directorNameCtrl,
+                  decoration: const InputDecoration(labelText: 'ФИО руководителя', prefixIcon: Icon(Icons.person), border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: cityCtrl,
+                  decoration: const InputDecoration(labelText: 'Город', prefixIcon: Icon(Icons.location_city), border: OutlineInputBorder()),
+                ),
+                if (isPersonal) ...[
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: requisitesCtrl,
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: 'Реквизиты для оплаты', prefixIcon: Icon(Icons.account_balance), border: OutlineInputBorder(), alignLabelWithHint: true),
+                  ),
+                ],
+                // Фильтры исключений — внизу
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('🛡️ Защита от ошибок', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 4),
+                      CheckboxListTile(
+                        value: excludePromises,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: const Text('Исключить обещавших', style: TextStyle(fontSize: 13)),
+                        subtitle: const Text('🤝 Кто обещал оплатить', style: TextStyle(fontSize: 11)),
+                        onChanged: (v) => setDialogState(() => excludePromises = v ?? true),
+                      ),
+                      CheckboxListTile(
+                        value: excludePayers,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: const Text('Исключить плательщиков', style: TextStyle(fontSize: 13)),
+                        subtitle: const Text('💰 Кто ежемесячно платит', style: TextStyle(fontSize: 11)),
+                        onChanged: (v) => setDialogState(() => excludePayers = v ?? true),
+                      ),
+                    ],
+                  ),
                 ),
               ],
-            ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+            FilledButton.icon(
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('Сформировать'),
+              onPressed: () {
+                Navigator.pop(ctx, {
+                  'deadline': deadlineCtrl.text,
+                  'org_name': orgNameCtrl.text,
+                  'director_title': directorTitleCtrl.text,
+                  'director_name': directorNameCtrl.text,
+                  'notice_date': noticeDateCtrl.text,
+                  'city': cityCtrl.text,
+                  if (isPersonal) 'requisites': requisitesCtrl.text,
+                  'exclude_promises': excludePromises.toString(),
+                  'exclude_payers': excludePayers.toString(),
+                });
+              },
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-          FilledButton.icon(
-            icon: const Icon(Icons.picture_as_pdf),
-            label: const Text('Сформировать'),
-            onPressed: () {
-              Navigator.pop(ctx, {
-                'deadline': deadlineCtrl.text,
-                'org_name': orgNameCtrl.text,
-                'director_title': directorTitleCtrl.text,
-                'director_name': directorNameCtrl.text,
-                'notice_date': noticeDateCtrl.text,
-                'city': cityCtrl.text,
-                if (isPersonal) 'requisites': requisitesCtrl.text,
-              });
-            },
-          ),
-        ],
       ),
     );
   }
@@ -802,6 +1080,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
   // ═══════ Детали документа ═══════
 
   void _showDocumentDetails(Map<String, dynamic> doc) {
+    debugPrint('🔍 DOC RESIDENT: ${doc['resident']}');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -867,45 +1146,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                         ),
                       ],
                       const SizedBox(height: 8),
-                      // Обещание оплатить
-                      if (doc['resident']['promise_to_pay'] == true) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange.shade300),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.handshake, size: 16, color: Colors.orange[700]),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Обещание оплатить${doc['resident']['promise_date'] != null ? ' до ${doc['resident']['promise_date']}' : ''}',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.orange[700]),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ] else
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.warning_amber, size: 16, color: Colors.red[700]),
-                              const SizedBox(width: 6),
-                              Text('Нет обещания оплатить', style: TextStyle(fontSize: 13, color: Colors.red[700])),
-                            ],
-                          ),
-                        ),
                       if (doc['resident']['is_blocked'] == true) ...[
-                        const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(6)),
@@ -929,6 +1170,71 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                       Icon(Icons.person_outline, size: 16, color: Colors.orange[700]),
                       const SizedBox(width: 6),
                       Text('Нет зарегистрированного жильца', style: TextStyle(fontSize: 13, color: Colors.orange[700])),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Обещания из payment_promises
+              if (doc['promises'] != null && (doc['promises'] as List).isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.handshake, size: 18, color: Colors.orange[700]),
+                          const SizedBox(width: 6),
+                          Text('Обещания оплаты', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.orange[700])),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...(doc['promises'] as List).map<Widget>((p) {
+                        String dateStr = p['promised_date'] ?? '-';
+                        final parsed = DateTime.tryParse(dateStr);
+                        if (parsed != null) {
+                          dateStr = '${parsed.day.toString().padLeft(2, '0')}.${parsed.month.toString().padLeft(2, '0')}.${parsed.year}';
+                        }
+                        final statusIcon = p['status'] == 'fulfilled' ? '✅' : p['status'] == 'broken' ? '❌' : '⏳';
+                        final statusColor = p['status'] == 'fulfilled' ? Colors.green : p['status'] == 'broken' ? Colors.red : Colors.orange;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text('$statusIcon До $dateStr', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: statusColor)),
+                                  if (p['promised_amount'] != null) Text(' — ${p['promised_amount']} ₽', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                              if (p['note'] != null && p['note'].toString().isNotEmpty)
+                                Text(p['note'].toString(), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ] else if (doc['resident'] != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.warning_amber, size: 16, color: Colors.red[700]),
+                      const SizedBox(width: 6),
+                      Text('Нет обещания оплатить', style: TextStyle(fontSize: 13, color: Colors.red[700])),
                     ],
                   ),
                 ),
@@ -990,12 +1296,173 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              // Кнопка обещания
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.handshake),
+                  label: Text(doc['resident']?['promise_to_pay'] == true ? 'Редактировать обещание' : 'Добавить обещание оплатить'),
+                  style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showPromiseDialog(doc);
+                  },
+                ),
+              ),
               const SizedBox(height: 40),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _showPromiseDialog(Map<String, dynamic> doc) async {
+    final resident = doc['resident'] as Map<String, dynamic>?;
+    final promises = (doc['promises'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final latestPromise = promises.isNotEmpty ? promises.first : null;
+    final hasPromise = latestPromise != null && latestPromise['status'] == 'pending';
+    
+    DateTime selectedDate = DateTime.now();
+    final amountCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+    
+    if (hasPromise) {
+      final parsed = DateTime.tryParse(latestPromise['promised_date']?.toString() ?? '');
+      if (parsed != null) selectedDate = parsed;
+      if (latestPromise['promised_amount'] != null) amountCtrl.text = latestPromise['promised_amount'].toString();
+      if (latestPromise['note'] != null) noteCtrl.text = latestPromise['note'].toString();
+    }
+
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setDialogState) {
+          return AlertDialog(
+            title: Text(hasPromise ? '✏️ Редактировать обещание' : '🤝 Обещание оплаты'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (resident != null)
+                    Text('Жилец: ${resident['full_name'] ?? resident['username'] ?? '-'}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (doc['account_number'] != null)
+                    Text('Л/С: ${doc['account_number']}', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        initialDate: selectedDate,
+                        firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setDialogState(() => selectedDate = picked);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: '📅 До какого числа обещает оплатить',
+                        prefixIcon: Icon(Icons.calendar_today),
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Text(
+                        '${selectedDate.day.toString().padLeft(2, '0')}.${selectedDate.month.toString().padLeft(2, '0')}.${selectedDate.year}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: amountCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Сумма (необязательно)', border: OutlineInputBorder(), suffixText: '₽'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: noteCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Заметка / Комментарий', border: OutlineInputBorder()),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              if (hasPromise)
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, {'remove': true}),
+                  child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+                ),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, {
+                  'date': selectedDate,
+                  'amount': amountCtrl.text,
+                  'note': noteCtrl.text,
+                }),
+                child: const Text('Сохранить'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+
+    if (result == null) return;
+
+    try {
+      final dio = ref.read(dioProvider);
+      final accountId = doc['account_id'];
+      
+      if (result['remove'] == true) {
+        if (hasPromise && latestPromise['id'] != null) {
+          await dio.delete('/activity-monitor/promises/${latestPromise['id']}');
+        }
+        if (resident != null) {
+          await dio.put('/residents/${resident['id']}', data: {
+            'promise_to_pay': false,
+            'promise_date': null,
+          });
+        }
+      } else {
+        final date = result['date'] as DateTime;
+        final isoDate = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        
+        if (hasPromise && latestPromise['id'] != null) {
+          await dio.put('/activity-monitor/promises/${latestPromise['id']}', data: {
+            'promised_date': isoDate,
+            if (result['amount'].toString().isNotEmpty) 'promised_amount': double.tryParse(result['amount']),
+            'note': result['note'],
+          });
+        } else {
+          await dio.post('/activity-monitor/promises', data: {
+            'account_id': accountId,
+            'promised_date': isoDate,
+            if (result['amount'].toString().isNotEmpty) 'promised_amount': double.tryParse(result['amount']),
+            if (result['note'].toString().isNotEmpty) 'note': result['note'],
+          });
+        }
+        
+        if (resident != null) {
+          await dio.put('/residents/${resident['id']}', data: {
+            'promise_to_pay': true,
+            'promise_date': isoDate,
+          });
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Обещание обновлено'), backgroundColor: Colors.green));
+      }
+      _loadDocuments();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Ошибка: $e'), backgroundColor: Colors.red));
+      }
+    }
   }
 
   Future<void> _showPaymentDialog(Map<String, dynamic> doc) async {
