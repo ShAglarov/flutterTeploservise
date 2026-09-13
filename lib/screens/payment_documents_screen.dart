@@ -7,6 +7,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/base_api_service.dart';
+import 'cashier_detail_screen.dart';
+import 'cashier_help_screen.dart';
 
 /// Экран платежных документов с поиском, фильтрами, сортировкой и экспортом
 class PaymentDocumentsScreen extends ConsumerStatefulWidget {
@@ -659,77 +661,106 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
               const PopupMenuItem(value: 'baosna-xls', child: ListTile(leading: Icon(Icons.grid_on, color: Colors.green), title: Text('БАОСНА (XLS)'))),
             ],
           ),
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Инструкция кассира',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CashierHelpScreen())),
+          ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadDocuments),
         ],
       ),
-      body: Column(
-        children: [
-          // ═══ Строка поиска ═══
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (_) => _onSearchChanged(),
-              decoration: InputDecoration(
-                hintText: 'Поиск по ФИО, Л/С, адресу...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () { _searchController.clear(); _loadDocuments(); },
-                      )
-                    : null,
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      body: LayoutBuilder(builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 900;
+        final horizontalPad = isWide ? 24.0 : 12.0;
+
+        return Column(
+          children: [
+            // ═══ Поиск ═══
+            Padding(
+              padding: EdgeInsets.fromLTRB(horizontalPad, 10, horizontalPad, 6),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => _onSearchChanged(),
+                decoration: InputDecoration(
+                  hintText: 'Поиск по ФИО, лицевому счёту, адресу...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () { _searchController.clear(); _loadDocuments(); },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(50),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
               ),
             ),
-          ),
 
-          // ═══ Фильтры ═══
-          _buildFilterChips(),
+            // ═══ Фильтры ═══
+            _buildFilterChips(horizontalPad),
 
-          // ═══ Статистика ═══
-          if (_stats.isNotEmpty) _buildStatsBar(),
+            // ═══ Статистика ═══
+            if (_stats.isNotEmpty) _buildStatsBar(isWide, horizontalPad),
 
-          // ═══ Сортировка + количество ═══
-          _buildSortBar(),
+            // ═══ Сортировка + количество ═══
+            _buildSortBar(horizontalPad),
 
-          // ═══ Список ═══
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(child: Text(_error!, style: TextStyle(color: theme.colorScheme.error)))
-                    : _documents.isEmpty
-                        ? const Center(child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.search_off, size: 64, color: Colors.grey),
-                              SizedBox(height: 12),
-                              Text('Документы не найдены', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                              Text('Попробуйте изменить фильтры', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                            ],
-                          ))
-                        : RefreshIndicator(
-                            onRefresh: _loadDocuments,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              itemCount: _documents.length,
-                              itemBuilder: (context, index) => _buildDocumentCard(_documents[index]),
-                            ),
+            // ═══ Список ═══
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+                          const SizedBox(height: 12),
+                          Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Повторить'),
+                            onPressed: _loadDocuments,
                           ),
-          ),
-        ],
-      ),
+                        ]))
+                      : _documents.isEmpty
+                          ? Center(child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+                                const SizedBox(height: 12),
+                                Text('Документы не найдены', style: TextStyle(fontSize: 16, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                                const SizedBox(height: 4),
+                                Text('Попробуйте изменить фильтры', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                              ],
+                            ))
+                          : RefreshIndicator(
+                              onRefresh: _loadDocuments,
+                              child: ListView.builder(
+                                padding: EdgeInsets.symmetric(horizontal: isWide ? horizontalPad : 8, vertical: 4),
+                                itemCount: _documents.length,
+                                itemBuilder: (context, index) => _buildDocumentCard(_documents[index], isWide),
+                              ),
+                            ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips([double horizontalPad = 12]) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPad, vertical: 4),
       child: Row(
         children: [
           // Период
@@ -754,7 +785,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
             avatar: const Icon(Icons.warning_amber, size: 16),
             selected: _hasDebt,
             onSelected: (v) { setState(() { _hasDebt = v; _hasOverpayment = false; }); _loadDocuments(); },
-            selectedColor: Colors.red.withValues(alpha: 0.3),
+            selectedColor: Colors.red.withAlpha(60),
           ),
           const SizedBox(width: 6),
           // Переплата
@@ -763,7 +794,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
             avatar: const Icon(Icons.check_circle_outline, size: 16),
             selected: _hasOverpayment,
             onSelected: (v) { setState(() { _hasOverpayment = v; _hasDebt = false; }); _loadDocuments(); },
-            selectedColor: Colors.green.withValues(alpha: 0.3),
+            selectedColor: Colors.green.withAlpha(60),
           ),
           const SizedBox(width: 6),
           // Диапазон долга
@@ -801,20 +832,38 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     );
   }
 
-  Widget _buildStatsBar() {
+  Widget _buildStatsBar([bool isWide = false, double horizontalPad = 12]) {
     final debtorsCount = _stats['debtors_count'] ?? 0;
     final totalDebt = (_stats['total_debt'] as num?)?.toDouble() ?? 0;
     final totalCharged = (_stats['total_charged'] as num?)?.toDouble() ?? 0;
     final totalPaid = (_stats['total_paid'] as num?)?.toDouble() ?? 0;
 
     final theme = Theme.of(context);
+
+    if (isWide) {
+      // Desktop — горизонтальные карточки
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPad, vertical: 6),
+        child: Row(children: [
+          Expanded(child: _statCard('Начислено', totalCharged, Colors.orange, Icons.receipt_long, theme)),
+          const SizedBox(width: 10),
+          Expanded(child: _statCard('Оплачено', totalPaid, Colors.green, Icons.payments, theme)),
+          const SizedBox(width: 10),
+          Expanded(child: _statCard('Общий долг', totalDebt, totalDebt > 0 ? Colors.red : Colors.green, Icons.account_balance_wallet, theme)),
+          const SizedBox(width: 10),
+          Expanded(child: _statCard('Должников', debtorsCount.toDouble(), Colors.red, Icons.people, theme, isCount: true)),
+        ]),
+      );
+    }
+
+    // Mobile — компактная полоска
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: horizontalPad, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withAlpha(60)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -825,6 +874,40 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
           _buildStatItem('Должн.', debtorsCount.toDouble(), Colors.red, isCount: true, theme: theme),
         ],
       ),
+    );
+  }
+
+  Widget _statCard(String label, double value, Color color, IconData icon, ThemeData theme, {bool isCount = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withAlpha(15), color.withAlpha(8)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withAlpha(50)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(
+            color: color.withAlpha(25),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 2),
+          Text(
+            isCount ? '${value.toInt()}' : '${_formatMoney(value)} ₽',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ])),
+      ]),
     );
   }
 
@@ -842,7 +925,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     );
   }
 
-  Widget _buildSortBar() {
+  Widget _buildSortBar([double horizontalPad = 12]) {
     final sortLabels = {
       'debt_end': 'Долг',
       'total_charged': 'Начислено',
@@ -853,10 +936,17 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     };
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPad, vertical: 2),
       child: Row(
         children: [
-          Text('$_totalCount док.', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withAlpha(80),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text('$_totalCount док.', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
+          ),
           const Spacer(),
           Icon(Icons.sort, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 4),
@@ -879,105 +969,128 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     );
   }
 
-  Widget _buildDocumentCard(Map<String, dynamic> doc) {
+  Widget _buildDocumentCard(Map<String, dynamic> doc, [bool isWide = false]) {
     final totalDebtEnd = (doc['total_debt_end'] as num?)?.toDouble() ?? 0.0;
     final isDebt = totalDebtEnd > 0.01;
     final isOverpaid = totalDebtEnd < -0.01;
+    final theme = Theme.of(context);
+    final debtColor = isDebt ? Colors.red : isOverpaid ? Colors.green : Colors.grey;
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      elevation: 1,
+      margin: EdgeInsets.symmetric(vertical: isWide ? 4 : 3),
+      elevation: isWide ? 1 : 0.5,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: isDebt ? Colors.red.shade200 : isOverpaid ? Colors.green.shade200 : Colors.transparent,
+          color: debtColor.withAlpha(isDebt || isOverpaid ? 50 : 0),
           width: isDebt || isOverpaid ? 1 : 0,
         ),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showDocumentDetails(doc),
+        borderRadius: BorderRadius.circular(14),
+        onTap: () async {
+          await Navigator.push(context, MaterialPageRoute(
+            builder: (_) => CashierDetailScreen(docId: doc['id']),
+          ));
+          _loadDocuments();
+        },
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: EdgeInsets.all(isWide ? 16 : 12),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  // Индикатор долга
-                  Container(
-                    width: 4, height: 40,
-                    decoration: BoxDecoration(
-                      color: isDebt ? Colors.red : isOverpaid ? Colors.green : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+              // Индикатор долга
+              Container(
+                width: 4, height: isWide ? 56 : 44,
+                decoration: BoxDecoration(
+                  color: debtColor.withAlpha(isDebt || isOverpaid ? 200 : 80),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(width: isWide ? 14 : 10),
+              // Основная информация
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      doc['fio'] ?? 'Без имени',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: isWide ? 15 : 14),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 3),
+                    Text(
+                      '${doc['account_number'] ?? '-'}  •  ${doc['address'] ?? ''}',
+                      style: TextStyle(fontSize: isWide ? 12 : 11, color: theme.colorScheme.onSurfaceVariant),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // Мини-баланс
+                    Row(
                       children: [
-                        Text(
-                          doc['fio'] ?? 'Без имени',
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${doc['account_number'] ?? '-'}  •  ${doc['address'] ?? ''}',
-                          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        _miniTag('Начисл.', doc['total_charged'], Colors.orange),
+                        const SizedBox(width: 10),
+                        _miniTag('Оплач.', doc['total_paid'], Colors.green),
+                        if (isWide) ...[
+                          const SizedBox(width: 10),
+                          _miniTag('Д.нач', doc['total_debt_start'], Colors.grey),
+                          const SizedBox(width: 10),
+                          _miniTag('Перер.', doc['total_recalc'], Colors.blue),
+                        ],
                       ],
                     ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isDebt
-                              ? Colors.red.withValues(alpha: 0.15)
-                              : isOverpaid
-                                  ? Colors.green.withValues(alpha: 0.15)
-                                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${totalDebtEnd.toStringAsFixed(2)} ₽',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13,
-                            color: isDebt ? Colors.red : isOverpaid ? Colors.green : Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatPeriod(doc['period_date'] ?? ''),
-                        style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.primary),
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(height: 6),
-              // Мини-баланс
-              Row(
+              SizedBox(width: isWide ? 16 : 10),
+              // Долг + период
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const SizedBox(width: 14),
-                  _buildMiniStat('Начисл.', doc['total_charged'], Colors.orange),
-                  const SizedBox(width: 16),
-                  _buildMiniStat('Оплач.', doc['total_paid'], Colors.green),
-                  const SizedBox(width: 16),
-                  _buildMiniStat('Долг нач.', doc['total_debt_start'], Colors.grey),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: debtColor.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: debtColor.withAlpha(50)),
+                    ),
+                    child: Text(
+                      '${totalDebtEnd.toStringAsFixed(2)} ₽',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700, fontSize: isWide ? 14 : 13,
+                        color: debtColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withAlpha(60),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      _formatPeriod(doc['period_date'] ?? ''),
+                      style: TextStyle(fontSize: 10, color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 ],
               ),
+              SizedBox(width: isWide ? 8 : 4),
+              Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _miniTag(String label, dynamic value, Color color) {
+    final val = (value as num?)?.toDouble() ?? 0;
+    return Row(children: [
+      Container(width: 6, height: 6, decoration: BoxDecoration(color: color.withAlpha(150), shape: BoxShape.circle)),
+      const SizedBox(width: 4),
+      Text('$label: ${val.toStringAsFixed(0)}₽', style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w500)),
+    ]);
   }
 
   Widget _buildMiniStat(String label, dynamic value, Color color) {

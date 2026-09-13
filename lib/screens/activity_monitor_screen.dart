@@ -159,70 +159,130 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
           indicatorWeight: 3,
         ),
       ),
-      body: Column(
-        children: [
-          // Поиск
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (_) => _onSearchChanged(),
-              decoration: InputDecoration(
-                hintText: 'Поиск по ФИО, Л/С, адресу, дом,кв...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(icon: const Icon(Icons.clear), onPressed: () { _searchController.clear(); _loadData(); })
-                    : null,
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+      body: LayoutBuilder(builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 900;
+        final pad = isWide ? 24.0 : 12.0;
+
+        return Column(
+          children: [
+            // Поиск
+            Padding(
+              padding: EdgeInsets.fromLTRB(pad, 10, pad, 6),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => _onSearchChanged(),
+                decoration: InputDecoration(
+                  hintText: 'Поиск по ФИО, лицевому счёту, адресу...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(icon: const Icon(Icons.clear), onPressed: () { _searchController.clear(); _loadData(); })
+                      : null,
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(50),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
               ),
             ),
-          ),
 
-          // Сводка
-          if (!_isLoading && _summary.isNotEmpty) _buildSummaryBar(theme),
+            // Сводка
+            if (!_isLoading && _summary.isNotEmpty) _buildSummaryBar(theme, isWide, pad),
 
-          // Контент
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _error != null
-                    ? Center(child: Text('Ошибка: $_error', style: TextStyle(color: theme.colorScheme.error)))
-                    : TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildList(_getList('chronic'), Colors.red, '😤'),
-                          _buildList(_getList('irregular'), Colors.orange, '📉'),
-                          _buildList(_getList('stable'), Colors.green, '✅'),
-                          _buildList(_getList('promised'), Colors.blue, '🤝'),
-                        ],
-                      ),
-          ),
-        ],
-      ),
+            // Контент
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+                          const SizedBox(height: 12),
+                          Text('Ошибка: $_error', style: TextStyle(color: theme.colorScheme.error)),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(icon: const Icon(Icons.refresh), label: const Text('Повторить'), onPressed: _loadData),
+                        ]))
+                      : TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildList(_getList('chronic'), Colors.red, '😤', isWide, pad),
+                            _buildList(_getList('irregular'), Colors.orange, '📉', isWide, pad),
+                            _buildList(_getList('stable'), Colors.green, '✅', isWide, pad),
+                            _buildList(_getList('promised'), Colors.blue, '🤝', isWide, pad),
+                          ],
+                        ),
+            ),
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildSummaryBar(ThemeData theme) {
+  Widget _buildSummaryBar(ThemeData theme, bool isWide, double pad) {
+    if (isWide) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: pad, vertical: 6),
+        child: Row(children: [
+          Expanded(child: _summaryCard('Всего', '${_summary['total_accounts'] ?? 0}', theme.colorScheme.onSurface, Icons.people, theme)),
+          const SizedBox(width: 10),
+          Expanded(child: _summaryCard('Стабильные', '${_summary['stable_count'] ?? 0}', Colors.green, Icons.check_circle, theme)),
+          const SizedBox(width: 10),
+          Expanded(child: _summaryCard('Нерегулярные', '${_summary['irregular_count'] ?? 0}', Colors.orange, Icons.trending_down, theme)),
+          const SizedBox(width: 10),
+          Expanded(child: _summaryCard('Злостные', '${_summary['chronic_count'] ?? 0}', Colors.red, Icons.warning_amber, theme)),
+          const SizedBox(width: 10),
+          Expanded(child: _summaryCard('Обещали', '${_summary['promised_count'] ?? 0}', Colors.blue, Icons.handshake, theme)),
+        ]),
+      );
+    }
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      margin: EdgeInsets.symmetric(horizontal: pad, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withAlpha(60)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _summaryItem('Всего', '${_summary['total_accounts'] ?? 0}', theme.colorScheme.onSurface),
-          _summaryItem('Стабильные', '${_summary['stable_count'] ?? 0}', Colors.green),
-          _summaryItem('Нерегулярные', '${_summary['irregular_count'] ?? 0}', Colors.orange),
+          _summaryItem('Стабильн.', '${_summary['stable_count'] ?? 0}', Colors.green),
+          _summaryItem('Нерегул.', '${_summary['irregular_count'] ?? 0}', Colors.orange),
           _summaryItem('Злостные', '${_summary['chronic_count'] ?? 0}', Colors.red),
           _summaryItem('Обещали', '${_summary['promised_count'] ?? 0}', Colors.blue),
         ],
       ),
+    );
+  }
+
+  Widget _summaryCard(String label, String value, Color color, IconData icon, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [color.withAlpha(15), color.withAlpha(8)]),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withAlpha(50)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(color: color.withAlpha(25), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: color)),
+        ])),
+      ]),
     );
   }
 
@@ -231,12 +291,12 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.8))),
+        Text(label, style: TextStyle(fontSize: 9, color: color.withAlpha(200))),
       ],
     );
   }
 
-  Widget _buildList(List<Map<String, dynamic>> items, Color color, String emoji) {
+  Widget _buildList(List<Map<String, dynamic>> items, Color color, String emoji, bool isWide, double pad) {
     if (items.isEmpty) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -249,15 +309,16 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
 
     return RefreshIndicator(
       onRefresh: _loadData,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: ListView.separated(
+        padding: EdgeInsets.symmetric(horizontal: isWide ? pad : 12, vertical: 8),
         itemCount: items.length,
-        itemBuilder: (context, index) => _buildResidentCard(items[index], color, emoji),
+        separatorBuilder: (_, __) => Divider(height: 1, color: Theme.of(context).dividerColor.withAlpha(30)),
+        itemBuilder: (context, index) => _buildResidentCard(items[index], color, emoji, isWide),
       ),
     );
   }
 
-  Widget _buildResidentCard(Map<String, dynamic> item, Color color, String emoji) {
+  Widget _buildResidentCard(Map<String, dynamic> item, Color color, String emoji, bool isWide) {
     final fio = item['fio'] ?? 'Не указано';
     final address = item['address'] ?? '';
     final debt = (item['current_debt'] as num?)?.toDouble() ?? 0;
@@ -266,74 +327,60 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
     final paidPeriods = item['paid_periods'] ?? 0;
     final promises = (item['promises'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final hasPromise = item['has_active_promise'] == true;
-    final accountId = item['account_id'] as int?;
+    final debtColor = debt > 0 ? Colors.red : Colors.green;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: color.withValues(alpha: 0.3)),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _showResidentDetails(item, color),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(fio, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14), overflow: TextOverflow.ellipsis),
-                        Text(address, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant), overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-                  ),
-                  // Долг
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${debt.toStringAsFixed(0)} ₽',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: debt > 0 ? Colors.red : Colors.green),
-                      ),
-                      Text('$paidPeriods/$totalPeriods опл.', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              // Прогресс бар оплаты
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: payRatio / 100,
-                  backgroundColor: Colors.grey.shade300,
-                  color: payRatio >= 70 ? Colors.green : payRatio >= 30 ? Colors.orange : Colors.red,
-                  minHeight: 4,
-                ),
-              ),
-              if (hasPromise) ...[
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _showResidentDetails(item, color),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: isWide ? 10 : 8, horizontal: 4),
+        child: Row(
+          children: [
+            // Цветная полоска категории
+            Container(
+              width: 3, height: isWide ? 44 : 38,
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+            ),
+            SizedBox(width: isWide ? 12 : 10),
+            // ФИО + адрес
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(fio, style: TextStyle(fontWeight: FontWeight.w600, fontSize: isWide ? 14 : 13), overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(address, style: TextStyle(fontSize: isWide ? 11 : 10, color: Theme.of(context).colorScheme.onSurfaceVariant), overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.handshake, size: 14, color: Colors.blue),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Обещал оплатить${promises.isNotEmpty ? " до ${promises.first['promised_date'] ?? ''}" : ""}',
-                      style: const TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.w500),
+                // Прогресс
+                Row(children: [
+                  SizedBox(
+                    width: isWide ? 120 : 80,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: payRatio / 100,
+                        backgroundColor: Theme.of(context).dividerColor.withAlpha(40),
+                        color: payRatio >= 70 ? Colors.green : payRatio >= 30 ? Colors.orange : Colors.red,
+                        minHeight: 4,
+                      ),
                     ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('$paidPeriods/$totalPeriods', style: TextStyle(fontSize: 9, color: Colors.grey.shade500)),
+                  if (hasPromise) ...[
+                    const SizedBox(width: 8),
+                    Icon(Icons.handshake, size: 12, color: Colors.blue.shade300),
                   ],
-                ),
-              ],
-            ],
-          ),
+                ]),
+              ]),
+            ),
+            const SizedBox(width: 8),
+            // Долг — просто текст без контейнера
+            Text(
+              '${debt.toStringAsFixed(0)} ₽',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: isWide ? 14 : 13, color: debtColor),
+            ),
+            const SizedBox(width: 4),
+            Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade500),
+          ],
         ),
       ),
     );
@@ -342,135 +389,169 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
   void _showResidentDetails(Map<String, dynamic> item, Color color) {
     final accountId = item['account_id'] as int?;
     final promises = (item['promises'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final debt = (item['current_debt'] as num?)?.toDouble() ?? 0;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6, minChildSize: 0.3, maxChildSize: 0.9, expand: false,
-        builder: (ctx, scroll) => SingleChildScrollView(
-          controller: scroll,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
-              Text(item['fio'] ?? '', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              Text(item['address'] ?? '', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-              Text('Л/С: ${item['account_number'] ?? '-'}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-              const SizedBox(height: 12),
+        initialChildSize: 0.65, minChildSize: 0.3, maxChildSize: 0.9, expand: false,
+        builder: (ctx, scroll) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(ctx).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            controller: scroll,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Хэндл
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 16),
 
-              // Статистика
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    _detailRow('Текущий долг', '${(item['current_debt'] as num?)?.toStringAsFixed(2) ?? '0'} ₽'),
-                    _detailRow('Оплачено периодов', '${item['paid_periods']} из ${item['total_periods']}'),
-                    _detailRow('Процент оплаты', '${item['pay_ratio']}%'),
-                    _detailRow('Всего начислено', '${(item['total_charged'] as num?)?.toStringAsFixed(2) ?? '0'} ₽'),
-                    _detailRow('Всего оплачено', '${(item['total_paid'] as num?)?.toStringAsFixed(2) ?? '0'} ₽'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Обещания
-              if (promises.isNotEmpty) ...[
-                const Text('🤝 Обещания оплаты:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 6),
-                ...promises.map((p) {
-                  // Форматируем дату
-                  String dateStr = p['promised_date'] ?? '-';
-                  final parsed = DateTime.tryParse(dateStr);
-                  if (parsed != null) {
-                    dateStr = '${parsed.day.toString().padLeft(2, '0')}.${parsed.month.toString().padLeft(2, '0')}.${parsed.year}';
-                  }
-                  return Card(
-                    child: ListTile(
-                      leading: Icon(
-                        p['status'] == 'fulfilled' ? Icons.check_circle : p['status'] == 'broken' ? Icons.cancel : Icons.schedule,
-                        color: p['status'] == 'fulfilled' ? Colors.green : p['status'] == 'broken' ? Colors.red : Colors.orange,
-                      ),
-                      title: Text('До $dateStr${p['promised_amount'] != null ? ' — ${p['promised_amount']} ₽' : ''}'),
-                      subtitle: p['note'] != null ? Text(p['note'], maxLines: 2) : null,
-                      trailing: PopupMenuButton<String>(
-                        onSelected: (v) {
-                          if (v == 'edit') {
-                            Navigator.pop(ctx);
-                            _addPromise(accountId!, existingPromise: p);
-                          } else {
-                            _updatePromise(p['id'], v, ctx);
-                          }
-                        },
-                        itemBuilder: (_) => [
-                          const PopupMenuItem(value: 'edit', child: Text('✏️ Редактировать')),
-                          const PopupMenuItem(value: 'fulfilled', child: Text('✅ Выполнено')),
-                          const PopupMenuItem(value: 'broken', child: Text('❌ Не выполнено')),
-                          const PopupMenuItem(value: 'delete', child: Text('🗑 Удалить')),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 8),
-              ],
-
-              // Кнопки
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.handshake),
-                      label: const Text('Обещание'),
-                      onPressed: () { Navigator.pop(ctx); _addPromise(accountId!); },
-                    ),
+                // Заголовок
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [color.withAlpha(25), color.withAlpha(10)]),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: color.withAlpha(40)),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.receipt_long),
-                      label: const Text('Документы'),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        if (accountId != null) {
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => PaymentDocumentsScreen(
-                              accountId: accountId,
-                              accountNumber: item['account_number'],
-                              fio: item['fio'],
-                            ),
-                          ));
-                        }
-                      },
+                  child: Row(children: [
+                    Container(
+                      width: 42, height: 42,
+                      decoration: BoxDecoration(color: color.withAlpha(30), borderRadius: BorderRadius.circular(12)),
+                      child: Icon(Icons.person, color: color, size: 22),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(item['fio'] ?? '', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
+                      Text('${item['address'] ?? ''}  •  Л/С: ${item['account_number'] ?? '-'}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    ])),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: (debt > 0 ? Colors.red : Colors.green).withAlpha(20),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: (debt > 0 ? Colors.red : Colors.green).withAlpha(50)),
+                      ),
+                      child: Text('${debt.toStringAsFixed(2)} ₽',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: debt > 0 ? Colors.red : Colors.green)),
+                    ),
+                  ]),
+                ),
+                const SizedBox(height: 16),
+
+                // Статистика
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.surfaceContainerHighest.withAlpha(60),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Theme.of(ctx).colorScheme.outlineVariant.withAlpha(50)),
                   ),
+                  child: Column(children: [
+                    _detailRow('Оплачено периодов', '${item['paid_periods']} из ${item['total_periods']}', Icons.calendar_today),
+                    _detailRow('Процент оплаты', '${item['pay_ratio']}%', Icons.pie_chart),
+                    _detailRow('Всего начислено', '${(item['total_charged'] as num?)?.toStringAsFixed(2) ?? '0'} ₽', Icons.receipt_long),
+                    _detailRow('Всего оплачено', '${(item['total_paid'] as num?)?.toStringAsFixed(2) ?? '0'} ₽', Icons.payments),
+                  ]),
+                ),
+                const SizedBox(height: 16),
+
+                // Обещания
+                if (promises.isNotEmpty) ...[
+                  Text('🤝 Обещания оплаты', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(ctx).colorScheme.onSurface)),
+                  const SizedBox(height: 8),
+                  ...promises.map((p) {
+                    String dateStr = p['promised_date'] ?? '-';
+                    final parsed = DateTime.tryParse(dateStr);
+                    if (parsed != null) {
+                      dateStr = '${parsed.day.toString().padLeft(2, '0')}.${parsed.month.toString().padLeft(2, '0')}.${parsed.year}';
+                    }
+                    final statusColor = p['status'] == 'fulfilled' ? Colors.green : p['status'] == 'broken' ? Colors.red : Colors.orange;
+                    final statusIcon = p['status'] == 'fulfilled' ? Icons.check_circle : p['status'] == 'broken' ? Icons.cancel : Icons.schedule;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: statusColor.withAlpha(10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withAlpha(40)),
+                      ),
+                      child: Row(children: [
+                        Icon(statusIcon, color: statusColor, size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('До $dateStr${p['promised_amount'] != null ? ' — ${p['promised_amount']} ₽' : ''}',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                          if (p['note'] != null) Text(p['note'], style: TextStyle(fontSize: 11, color: Colors.grey.shade600), maxLines: 2),
+                        ])),
+                        PopupMenuButton<String>(
+                          iconSize: 20,
+                          onSelected: (v) {
+                            if (v == 'edit') { Navigator.pop(ctx); _addPromise(accountId!, existingPromise: p); }
+                            else { _updatePromise(p['id'], v, ctx); }
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(value: 'edit', child: Text('✏️ Редактировать')),
+                            const PopupMenuItem(value: 'fulfilled', child: Text('✅ Выполнено')),
+                            const PopupMenuItem(value: 'broken', child: Text('❌ Не выполнено')),
+                            const PopupMenuItem(value: 'delete', child: Text('🗑 Удалить')),
+                          ],
+                        ),
+                      ]),
+                    );
+                  }),
+                  const SizedBox(height: 8),
                 ],
-              ),
-              const SizedBox(height: 30),
-            ],
+
+                // Кнопки
+                Row(children: [
+                  Expanded(child: FilledButton.icon(
+                    icon: const Icon(Icons.handshake, size: 18),
+                    label: const Text('Обещание'),
+                    onPressed: () { Navigator.pop(ctx); _addPromise(accountId!); },
+                    style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: OutlinedButton.icon(
+                    icon: const Icon(Icons.receipt_long, size: 18),
+                    label: const Text('Документы'),
+                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      if (accountId != null) {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => PaymentDocumentsScreen(accountId: accountId, accountNumber: item['account_number'], fio: item['fio']),
+                        ));
+                      }
+                    },
+                  )),
+                ]),
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _detailRow(String label, String value, [IconData? icon]) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        if (icon != null) ...[Icon(icon, size: 16, color: Colors.grey.shade500), const SizedBox(width: 8)],
+        Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade600))),
+        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      ]),
     );
   }
 
@@ -485,57 +566,117 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
       if (parsed != null) selectedDate = parsed;
     }
 
-    final result = await showDialog<Map<String, dynamic>?>(
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setDialogState) {
-          return AlertDialog(
-            title: Text(existingPromise != null ? '✏️ Редактировать обещание' : '🤝 Обещание оплаты'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Календарь
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) {
-                      setDialogState(() => selectedDate = picked);
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: '📅 Дата оплаты',
-                      prefixIcon: Icon(Icons.calendar_today),
-                      border: OutlineInputBorder(),
-                    ),
-                    child: Text(
-                      '${selectedDate.day.toString().padLeft(2, '0')}.${selectedDate.month.toString().padLeft(2, '0')}.${selectedDate.year}',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Сумма (необязательно)', border: OutlineInputBorder(), suffixText: '₽')),
-                const SizedBox(height: 10),
-                TextField(controller: noteCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Комментарий', border: OutlineInputBorder())),
-              ],
+          return Container(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, {
-                  'date': selectedDate,
-                  'amount': amountCtrl.text,
-                  'note': noteCtrl.text,
-                }),
-                child: const Text('Сохранить'),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 12),
+              // Заголовок
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [Colors.blue.withAlpha(25), Colors.blue.withAlpha(10)]),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.blue.withAlpha(40)),
+                ),
+                child: Row(children: [
+                  Container(
+                    width: 38, height: 38,
+                    decoration: BoxDecoration(color: Colors.blue.withAlpha(30), borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.handshake, color: Colors.blue, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(existingPromise != null ? 'Редактировать обещание' : 'Обещание оплаты',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+                ]),
               ),
-            ],
+              const SizedBox(height: 16),
+              // Календарь
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: ctx,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) setDialogState(() => selectedDate = picked);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Theme.of(ctx).colorScheme.outlineVariant.withAlpha(80)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.calendar_today, size: 18, color: Colors.blue),
+                    const SizedBox(width: 12),
+                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Дата оплаты', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      Text(
+                        '${selectedDate.day.toString().padLeft(2, '0')}.${selectedDate.month.toString().padLeft(2, '0')}.${selectedDate.year}',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                    ]),
+                    const Spacer(),
+                    Icon(Icons.edit_calendar, size: 18, color: Colors.grey.shade400),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Сумма
+              TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(
+                labelText: 'Сумма (необязательно)', suffixText: '₽',
+                filled: true, fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest.withAlpha(40),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(ctx).colorScheme.outlineVariant.withAlpha(80))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5)),
+              )),
+              const SizedBox(height: 12),
+              // Комментарий
+              TextField(controller: noteCtrl, maxLines: 2, decoration: InputDecoration(
+                labelText: 'Комментарий',
+                filled: true, fillColor: Theme.of(ctx).colorScheme.surfaceContainerHighest.withAlpha(40),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(ctx).colorScheme.outlineVariant.withAlpha(80))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5)),
+              )),
+              const SizedBox(height: 16),
+              // Кнопки
+              Row(children: [
+                Expanded(child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  child: const Text('Отмена'),
+                )),
+                const SizedBox(width: 12),
+                Expanded(flex: 2, child: FilledButton.icon(
+                  onPressed: () => Navigator.pop(ctx, {
+                    'date': selectedDate,
+                    'amount': amountCtrl.text,
+                    'note': noteCtrl.text,
+                  }),
+                  icon: const Icon(Icons.save, size: 18),
+                  label: const Text('Сохранить'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                )),
+              ]),
+            ]),
           );
         });
       },
