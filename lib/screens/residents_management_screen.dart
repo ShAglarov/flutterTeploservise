@@ -240,41 +240,20 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
 
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isNew ? '👤 Новый жилец' : '✏️ Редактирование'),
-        content: SizedBox(
-          width: 420,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isNew) ...[
-                  _f(usernameCtrl, 'Логин *', Icons.person),
-                  _f(emailCtrl, 'Email *', Icons.email),
-                  _f(passwordCtrl, 'Пароль *', Icons.lock, obscure: true),
-                  const Divider(),
-                ],
-                _f(lastNameCtrl, 'Фамилия', Icons.badge),
-                _f(firstNameCtrl, 'Имя', Icons.badge_outlined),
-                _f(middleNameCtrl, 'Отчество', Icons.badge_outlined),
-                const Divider(),
-                _f(phoneCtrl, 'Телефон', Icons.phone),
-                _f(addressCtrl, 'Адрес', Icons.home),
-                _f(apartmentCtrl, 'Квартира', Icons.door_front_door),
-                _f(accountCtrl, 'Лицевой счёт', Icons.receipt),
-                const Divider(),
-                _f(notesCtrl, 'Заметки', Icons.note, maxLines: 2),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(isNew ? 'Создать' : 'Сохранить'),
-          ),
-        ],
+      builder: (ctx) => _ResidentEditDialog(
+        isNew: isNew,
+        usernameCtrl: usernameCtrl,
+        emailCtrl: emailCtrl,
+        passwordCtrl: passwordCtrl,
+        lastNameCtrl: lastNameCtrl,
+        firstNameCtrl: firstNameCtrl,
+        middleNameCtrl: middleNameCtrl,
+        phoneCtrl: phoneCtrl,
+        addressCtrl: addressCtrl,
+        apartmentCtrl: apartmentCtrl,
+        accountCtrl: accountCtrl,
+        notesCtrl: notesCtrl,
+        dio: ref.read(dioProvider),
       ),
     );
 
@@ -399,5 +378,234 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e'), backgroundColor: Colors.red));
     }
+  }
+}
+
+/// Диалог редактирования жильца с выбором дома/квартиры из списка
+class _ResidentEditDialog extends StatefulWidget {
+  final bool isNew;
+  final TextEditingController usernameCtrl, emailCtrl, passwordCtrl;
+  final TextEditingController lastNameCtrl, firstNameCtrl, middleNameCtrl;
+  final TextEditingController phoneCtrl, addressCtrl, apartmentCtrl;
+  final TextEditingController accountCtrl, notesCtrl;
+  final dynamic dio;
+
+  const _ResidentEditDialog({
+    required this.isNew,
+    required this.usernameCtrl, required this.emailCtrl, required this.passwordCtrl,
+    required this.lastNameCtrl, required this.firstNameCtrl, required this.middleNameCtrl,
+    required this.phoneCtrl, required this.addressCtrl, required this.apartmentCtrl,
+    required this.accountCtrl, required this.notesCtrl,
+    required this.dio,
+  });
+
+  @override
+  State<_ResidentEditDialog> createState() => _ResidentEditDialogState();
+}
+
+class _ResidentEditDialogState extends State<_ResidentEditDialog> {
+  List<Map<String, dynamic>> _locations = [];
+  List<String> _apartments = [];
+  int? _selectedLocationId;
+  String? _selectedApartment;
+  bool _loadingLocations = true;
+  bool _loadingApartments = false;
+  bool _manualAddress = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocations();
+  }
+
+  Future<void> _loadLocations() async {
+    try {
+      final resp = await widget.dio.get('/payment-documents/locations');
+      if (resp.statusCode == 200) {
+        _locations = (resp.data as List).cast<Map<String, dynamic>>();
+
+        // Если есть текущий адрес — пробуем найти совпадение
+        final currentAddr = widget.addressCtrl.text;
+        if (currentAddr.isNotEmpty) {
+          for (final loc in _locations) {
+            final name = (loc['name'] ?? '').toString();
+            if (currentAddr.contains(name) || name.contains(currentAddr)) {
+              _selectedLocationId = loc['id'];
+              await _loadApartments(loc['id']);
+              // Пробуем найти квартиру
+              final currentApt = widget.apartmentCtrl.text;
+              if (currentApt.isNotEmpty && _apartments.contains(currentApt)) {
+                _selectedApartment = currentApt;
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loadingLocations = false);
+  }
+
+  Future<void> _loadApartments(int locationId) async {
+    setState(() { _loadingApartments = true; _apartments = []; _selectedApartment = null; });
+    try {
+      final resp = await widget.dio.get('/payment-documents/', queryParameters: {
+        'location_id': locationId,
+        'limit': 1000,
+        'sort_by': 'apartment',
+        'sort_order': 'asc',
+      });
+      if (resp.statusCode == 200) {
+        final docs = resp.data['items'] as List? ?? resp.data as List? ?? [];
+        final aptSet = <String>{};
+        for (final d in docs) {
+          final addr = (d['address'] ?? '').toString();
+          // Извлечь квартиру из адреса "ул. X, д. Y, кв. Z"
+          final match = RegExp(r'кв\.\s*(\S+)').firstMatch(addr);
+          if (match != null) aptSet.add(match.group(1)!);
+        }
+        _apartments = aptSet.toList()
+          ..sort((a, b) {
+            final na = int.tryParse(a) ?? 0;
+            final nb = int.tryParse(b) ?? 0;
+            if (na != 0 && nb != 0) return na.compareTo(nb);
+            return a.compareTo(b);
+          });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loadingApartments = false);
+  }
+
+  Widget _field(TextEditingController ctrl, String label, IconData icon, {bool obscure = false, int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        controller: ctrl,
+        obscureText: obscure,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, size: 20),
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.isNew ? '👤 Новый жилец' : '✏️ Редактирование'),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.isNew) ...[
+                _field(widget.usernameCtrl, 'Логин *', Icons.person),
+                _field(widget.emailCtrl, 'Email *', Icons.email),
+                _field(widget.passwordCtrl, 'Пароль *', Icons.lock, obscure: true),
+                const Divider(),
+              ],
+              _field(widget.lastNameCtrl, 'Фамилия', Icons.badge),
+              _field(widget.firstNameCtrl, 'Имя', Icons.badge_outlined),
+              _field(widget.middleNameCtrl, 'Отчество', Icons.badge_outlined),
+              const Divider(),
+              _field(widget.phoneCtrl, 'Телефон', Icons.phone),
+
+              // Адрес — выбор дома
+              if (_manualAddress) ...[
+                _field(widget.addressCtrl, 'Адрес (вручную)', Icons.home),
+                _field(widget.apartmentCtrl, 'Квартира (вручную)', Icons.door_front_door),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.list, size: 16),
+                    label: const Text('Выбрать из списка', style: TextStyle(fontSize: 12)),
+                    onPressed: () => setState(() => _manualAddress = false),
+                  ),
+                ),
+              ] else ...[
+                // Выбор дома
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _loadingLocations
+                      ? const LinearProgressIndicator()
+                      : DropdownButtonFormField<int>(
+                          value: _selectedLocationId,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: '🏠 Дом',
+                            prefixIcon: Icon(Icons.home, size: 20),
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          items: _locations.map((loc) => DropdownMenuItem<int>(
+                            value: loc['id'] as int,
+                            child: Text(loc['name']?.toString() ?? '', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                          )).toList(),
+                          onChanged: (v) {
+                            if (v == null) return;
+                            _selectedLocationId = v;
+                            final name = _locations.firstWhere((l) => l['id'] == v)['name']?.toString() ?? '';
+                            widget.addressCtrl.text = name;
+                            _loadApartments(v);
+                          },
+                        ),
+                ),
+                // Выбор квартиры
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _loadingApartments
+                      ? const LinearProgressIndicator()
+                      : _apartments.isEmpty
+                          ? _field(widget.apartmentCtrl, 'Квартира', Icons.door_front_door)
+                          : DropdownButtonFormField<String>(
+                              value: _selectedApartment,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: '🚪 Квартира',
+                                prefixIcon: Icon(Icons.door_front_door, size: 20),
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              items: _apartments.map((apt) => DropdownMenuItem<String>(
+                                value: apt,
+                                child: Text('кв. $apt', style: const TextStyle(fontSize: 13)),
+                              )).toList(),
+                              onChanged: (v) {
+                                if (v == null) return;
+                                setState(() => _selectedApartment = v);
+                                widget.apartmentCtrl.text = v;
+                              },
+                            ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Ввести вручную', style: TextStyle(fontSize: 12)),
+                    onPressed: () => setState(() => _manualAddress = true),
+                  ),
+                ),
+              ],
+
+              _field(widget.accountCtrl, 'Лицевой счёт', Icons.receipt),
+              const Divider(),
+              _field(widget.notesCtrl, 'Заметки', Icons.note, maxLines: 2),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(widget.isNew ? 'Создать' : 'Сохранить'),
+        ),
+      ],
+    );
   }
 }
