@@ -406,6 +406,7 @@ class _ResidentEditDialog extends StatefulWidget {
 class _ResidentEditDialogState extends State<_ResidentEditDialog> {
   List<Map<String, dynamic>> _locations = [];
   List<String> _apartments = [];
+  Map<String, String> _aptAccountMap = {}; // кв → лицевой счёт
   int? _selectedLocationId;
   String? _selectedApartment;
   bool _loadingLocations = true;
@@ -447,7 +448,7 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
   }
 
   Future<void> _loadApartments(int locationId) async {
-    setState(() { _loadingApartments = true; _apartments = []; _selectedApartment = null; });
+    setState(() { _loadingApartments = true; _apartments = []; _aptAccountMap = {}; _selectedApartment = null; });
     try {
       final resp = await widget.dio.get('/payment-documents/', queryParameters: {
         'location_id': locationId,
@@ -458,11 +459,17 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
       if (resp.statusCode == 200) {
         final docs = resp.data['items'] as List? ?? resp.data as List? ?? [];
         final aptSet = <String>{};
+        final aptAccMap = <String, String>{};
         for (final d in docs) {
           final addr = (d['address'] ?? '').toString();
+          final accNum = (d['account_number'] ?? '').toString();
           // Извлечь квартиру из адреса "ул. X, д. Y, кв. Z"
           final match = RegExp(r'кв\.\s*(\S+)').firstMatch(addr);
-          if (match != null) aptSet.add(match.group(1)!);
+          if (match != null) {
+            final apt = match.group(1)!;
+            aptSet.add(apt);
+            if (accNum.isNotEmpty) aptAccMap[apt] = accNum;
+          }
         }
         _apartments = aptSet.toList()
           ..sort((a, b) {
@@ -471,6 +478,7 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
             if (na != 0 && nb != 0) return na.compareTo(nb);
             return a.compareTo(b);
           });
+        _aptAccountMap = aptAccMap;
       }
     } catch (_) {}
     if (mounted) setState(() => _loadingApartments = false);
@@ -579,6 +587,11 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
                                 if (v == null) return;
                                 setState(() => _selectedApartment = v);
                                 widget.apartmentCtrl.text = v;
+                                // Автозаполнение лицевого счёта
+                                final acc = _aptAccountMap[v];
+                                if (acc != null && acc.isNotEmpty) {
+                                  widget.accountCtrl.text = acc;
+                                }
                               },
                             ),
                 ),
