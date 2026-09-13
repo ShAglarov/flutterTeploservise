@@ -850,17 +850,32 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              // Кнопка редактирования
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Редактировать'),
-                  onPressed: () {
-                    Navigator.pop(context); // close detail sheet
-                    _editDocument(doc);
-                  },
-                ),
+              // Кнопки действий
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.payments),
+                      label: const Text('Внести оплату'),
+                      style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showPaymentDialog(doc);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Редактировать'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _editDocument(doc);
+                      },
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 40),
             ],
@@ -868,6 +883,140 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _showPaymentDialog(Map<String, dynamic> doc) async {
+    final docId = doc['id'];
+    if (docId == null) return;
+
+    final services = <String, _PaySvc>{
+      'heating': _PaySvc('🔥 Отопление', doc['debt_heating_end']),
+      'hot_water': _PaySvc('💧 ГВС', doc['debt_hot_water_end']),
+      'maintenance': _PaySvc('🏠 Теплообсл.', doc['debt_maintenance_end']),
+      'waste': _PaySvc('🗑 ТБО', doc['debt_waste_end']),
+      'odn_electricity': _PaySvc('⚡ ОДН Эл.', doc['debt_odn_electricity_end']),
+      'odn_water': _PaySvc('💧 ОДН Вода', doc['debt_odn_water_end']),
+    };
+
+    final controllers = <String, TextEditingController>{};
+    for (final key in services.keys) {
+      controllers[key] = TextEditingController();
+    }
+    final noteCtrl = TextEditingController();
+
+    // «Оплатить всё» — заполняет поля суммами долгов
+    void fillAll() {
+      for (final entry in services.entries) {
+        final debt = (entry.value.debt as num?)?.toDouble() ?? 0;
+        if (debt > 0) {
+          controllers[entry.key]!.text = debt.toStringAsFixed(2);
+        }
+      }
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.payments, color: Colors.green),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Внести оплату')),
+            TextButton(onPressed: fillAll, child: const Text('Оплатить всё')),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${doc['fio'] ?? ''} | Л/С: ${doc['account_number'] ?? ''}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 12),
+                for (final entry in services.entries)
+                  if (((entry.value.debt as num?)?.toDouble() ?? 0) > 0.01 ||
+                      ((entry.value.debt as num?)?.toDouble() ?? 0) < -0.01)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: TextField(
+                        controller: controllers[entry.key],
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: entry.value.label,
+                          hintText: 'Долг: ${((entry.value.debt as num?)?.toDouble() ?? 0).toStringAsFixed(2)} ₽',
+                          prefixIcon: const Icon(Icons.attach_money, size: 18),
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                const Divider(),
+                TextField(
+                  controller: noteCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Комментарий (необязательно)',
+                    prefixIcon: Icon(Icons.note, size: 18),
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('💰 Оплатить'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != true) return;
+
+    // Собираем суммы
+    final body = <String, dynamic>{};
+    double total = 0;
+    for (final entry in controllers.entries) {
+      final val = double.tryParse(entry.value.text.replaceAll(',', '.')) ?? 0;
+      if (val > 0) {
+        body['paid_${entry.key}'] = val;
+        total += val;
+      }
+    }
+    if (noteCtrl.text.isNotEmpty) body['note'] = noteCtrl.text;
+
+    if (total <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Введите хотя бы одну сумму'), backgroundColor: Colors.orange),
+        );
+      }
+      return;
+    }
+
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.post('/payment-documents/$docId/pay', data: body);
+      if (resp.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ Оплата ${total.toStringAsFixed(2)} ₽ внесена'), backgroundColor: Colors.green),
+          );
+        }
+        _loadDocuments(); // обновляем список
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Ошибка: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildServiceSection(String title, Map<String, dynamic> values) {
@@ -1103,4 +1252,10 @@ class _EditField {
   final String label;
   final dynamic value;
   _EditField(this.key, this.label, this.value);
+}
+
+class _PaySvc {
+  final String label;
+  final dynamic debt;
+  _PaySvc(this.label, this.debt);
 }
