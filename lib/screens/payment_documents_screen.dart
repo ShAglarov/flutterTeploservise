@@ -820,6 +820,119 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
               Text('Период: ${_formatPeriod(doc['period_date'] ?? '')}', style: TextStyle(fontSize: 14, color: Colors.blue[700])),
               if (doc['address'] != null) Text(doc['address'], style: TextStyle(fontSize: 13, color: Colors.grey[600])),
               Text('Л/С: ${doc['account_number'] ?? '-'}', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+
+              // Информация о жильце
+              if (doc['resident'] != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.person, size: 18, color: Colors.green[700]),
+                          const SizedBox(width: 6),
+                          Text('Зарегистрированный жилец', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.green[700])),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        doc['resident']['full_name'] ?? doc['resident']['username'] ?? 'Без имени',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                      ),
+                      if (doc['resident']['phone_number'] != null && doc['resident']['phone_number'].toString().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.phone, size: 14, color: Colors.blue),
+                            const SizedBox(width: 6),
+                            Text(doc['resident']['phone_number'].toString(), style: const TextStyle(fontSize: 14, color: Colors.blue)),
+                          ],
+                        ),
+                      ],
+                      if (doc['resident']['email'] != null && doc['resident']['email'].toString().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.email, size: 14, color: Colors.grey),
+                            const SizedBox(width: 6),
+                            Text(doc['resident']['email'].toString(), style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      // Обещание оплатить
+                      if (doc['resident']['promise_to_pay'] == true) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange.shade300),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.handshake, size: 16, color: Colors.orange[700]),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Обещание оплатить${doc['resident']['promise_date'] != null ? ' до ${doc['resident']['promise_date']}' : ''}',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.orange[700]),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.warning_amber, size: 16, color: Colors.red[700]),
+                              const SizedBox(width: 6),
+                              Text('Нет обещания оплатить', style: TextStyle(fontSize: 13, color: Colors.red[700])),
+                            ],
+                          ),
+                        ),
+                      if (doc['resident']['is_blocked'] == true) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.red.shade100, borderRadius: BorderRadius.circular(6)),
+                          child: const Text('⛔ Жилец заблокирован', style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_outline, size: 16, color: Colors.orange[700]),
+                      const SizedBox(width: 6),
+                      Text('Нет зарегистрированного жильца', style: TextStyle(fontSize: 13, color: Colors.orange[700])),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
 
               _buildServiceSection('🔥 Отопление', {'Долг на начало': doc['debt_heating_start'], 'Начислено': doc['charged_heating'], 'Оплачено': doc['paid_heating'], 'Перерасчёт': doc['recalc_heating'], 'Долг на конец': doc['debt_heating_end']}),

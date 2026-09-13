@@ -194,6 +194,8 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
             if (subtitle.isNotEmpty) Text(subtitle, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant), overflow: TextOverflow.ellipsis),
             if (phone.isNotEmpty) Text('📱 $phone', style: const TextStyle(fontSize: 11)),
             if (email.isNotEmpty) Text('✉️ $email', style: const TextStyle(fontSize: 11)),
+            if (r['promise_to_pay'] == true)
+              Text('🤝 Обещание оплатить${r['promise_date'] != null ? ' до ${r['promise_date']}' : ''}', style: TextStyle(fontSize: 11, color: Colors.orange[700], fontWeight: FontWeight.w600)),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -238,7 +240,7 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
     final accountCtrl = TextEditingController(text: existing?['account_number'] ?? '');
     final notesCtrl = TextEditingController(text: existing?['notes'] ?? '');
 
-    final result = await showDialog<bool>(
+    final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (ctx) => _ResidentEditDialog(
         isNew: isNew,
@@ -254,13 +256,19 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
         accountCtrl: accountCtrl,
         notesCtrl: notesCtrl,
         dio: ref.read(dioProvider),
+        initialPromiseToPay: existing?['promise_to_pay'] == true,
+        initialPromiseDate: existing?['promise_date']?.toString(),
       ),
     );
 
-    if (result != true) return;
+    if (result == null) return;
 
     try {
       final dio = ref.read(dioProvider);
+      final promiseData = {
+        'promise_to_pay': result['promise_to_pay'] ?? false,
+        if (result['promise_date'] != null) 'promise_date': result['promise_date'],
+      };
       if (isNew) {
         await dio.post('/residents', data: {
           'username': usernameCtrl.text,
@@ -274,6 +282,7 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
           'apartment': apartmentCtrl.text,
           'account_number': accountCtrl.text,
           'notes': notesCtrl.text,
+          ...promiseData,
         });
       } else {
         await dio.put('/residents/${existing['id']}', data: {
@@ -285,6 +294,7 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
           'apartment': apartmentCtrl.text,
           'account_number': accountCtrl.text,
           'notes': notesCtrl.text,
+          ...promiseData,
         });
       }
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Сохранено'), backgroundColor: Colors.green));
@@ -389,6 +399,8 @@ class _ResidentEditDialog extends StatefulWidget {
   final TextEditingController phoneCtrl, addressCtrl, apartmentCtrl;
   final TextEditingController accountCtrl, notesCtrl;
   final dynamic dio;
+  final bool initialPromiseToPay;
+  final String? initialPromiseDate;
 
   const _ResidentEditDialog({
     required this.isNew,
@@ -397,6 +409,8 @@ class _ResidentEditDialog extends StatefulWidget {
     required this.phoneCtrl, required this.addressCtrl, required this.apartmentCtrl,
     required this.accountCtrl, required this.notesCtrl,
     required this.dio,
+    this.initialPromiseToPay = false,
+    this.initialPromiseDate,
   });
 
   @override
@@ -412,10 +426,16 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
   bool _loadingLocations = true;
   bool _loadingApartments = false;
   bool _manualAddress = false;
+  late bool _promiseToPay;
+  DateTime? _promiseDate;
 
   @override
   void initState() {
     super.initState();
+    _promiseToPay = widget.initialPromiseToPay;
+    if (widget.initialPromiseDate != null) {
+      _promiseDate = DateTime.tryParse(widget.initialPromiseDate!);
+    }
     _loadLocations();
   }
 
@@ -607,6 +627,45 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
 
               _field(widget.accountCtrl, 'Лицевой счёт', Icons.receipt),
               const Divider(),
+              // Обещание оплатить
+              SwitchListTile(
+                title: const Text('🤝 Обещание оплатить', style: TextStyle(fontSize: 14)),
+                value: _promiseToPay,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setState(() => _promiseToPay = v),
+              ),
+              if (_promiseToPay)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _promiseDate ?? DateTime.now().add(const Duration(days: 7)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        locale: const Locale('ru'),
+                      );
+                      if (picked != null) setState(() => _promiseDate = picked);
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: '📅 До какого числа',
+                        prefixIcon: Icon(Icons.calendar_today, size: 20),
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      child: Text(
+                        _promiseDate != null
+                            ? '${_promiseDate!.day.toString().padLeft(2, '0')}.${_promiseDate!.month.toString().padLeft(2, '0')}.${_promiseDate!.year}'
+                            : 'Выберите дату',
+                        style: TextStyle(fontSize: 14, color: _promiseDate != null ? null : Colors.grey),
+                      ),
+                    ),
+                  ),
+                ),
+              const Divider(),
               _field(widget.notesCtrl, 'Заметки', Icons.note, maxLines: 2),
             ],
           ),
@@ -615,7 +674,12 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
         FilledButton(
-          onPressed: () => Navigator.pop(context, true),
+          onPressed: () => Navigator.pop(context, {
+            'promise_to_pay': _promiseToPay,
+            'promise_date': _promiseDate != null
+                ? '${_promiseDate!.year}-${_promiseDate!.month.toString().padLeft(2, '0')}-${_promiseDate!.day.toString().padLeft(2, '0')}'
+                : null,
+          }),
           child: Text(widget.isNew ? 'Создать' : 'Сохранить'),
         ),
       ],

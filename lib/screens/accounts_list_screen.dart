@@ -45,6 +45,12 @@ class _AccountsListScreenState extends ConsumerState<AccountsListScreen> {
 
       if (response.statusCode == 200) {
         final data = (response.data as List).cast<Map<String, dynamic>>();
+        // Debug: check resident field
+        for (final a in data) {
+          if ((a['address'] ?? '').toString().contains('25')) {
+            debugPrint('🔍 ACC ${a['account_number']}: resident=${a['resident']}');
+          }
+        }
         // Get location name from first account
         if (data.isNotEmpty) {
           _locationName = data.first['location_name'] ?? data.first['address'] ?? '';
@@ -158,6 +164,7 @@ class _AccountsListScreenState extends ConsumerState<AccountsListScreen> {
     final area = (account['area'] as num?)?.toDouble();
     final jku = account['jku_identifier'] ?? '';
     final accountId = account['id'] as int?;
+    final resident = account['resident'] as Map<String, dynamic>?;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 3),
@@ -210,6 +217,50 @@ class _AccountsListScreenState extends ConsumerState<AccountsListScreen> {
                         '${address.isNotEmpty ? address : ''}${area != null ? '  •  ${area.toStringAsFixed(1)} м²' : ''}',
                         style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 4),
+                    // Жилец
+                    if (resident != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: (resident['is_blocked'] == true) ? Colors.red.shade50 : Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              resident['is_blocked'] == true ? Icons.person_off : Icons.person,
+                              size: 12,
+                              color: resident['is_blocked'] == true ? Colors.red : Colors.green.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                '${resident['full_name'] ?? resident['username'] ?? 'Жилец'}${resident['phone_number'] != null && resident['phone_number'].toString().isNotEmpty ? '  📱${resident['phone_number']}' : ''}',
+                                style: TextStyle(fontSize: 10, color: resident['is_blocked'] == true ? Colors.red : Colors.green.shade700),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.person_outline, size: 12, color: Colors.orange.shade700),
+                            const SizedBox(width: 4),
+                            Text('Нет жильца', style: TextStyle(fontSize: 10, color: Colors.orange.shade700)),
+                          ],
+                        ),
                       ),
                   ],
                 ),
