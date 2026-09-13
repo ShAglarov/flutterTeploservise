@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/base_api_service.dart';
 
 /// Экран платежных документов с поиском, фильтрами, сортировкой и экспортом
@@ -165,7 +167,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
 
     if (isDosudebnoye) {
       final result = await _showDosudebSettings(format);
-      if (result == null) return; // Отменено
+      if (result == null) return;
       extraParams = result;
     }
 
@@ -177,28 +179,6 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
       'obshee-dosudebnoye': 'obshee_dosudebnoye',
     }[format] ?? 'export';
     final defaultName = '${namePrefix}_${DateTime.now().millisecondsSinceEpoch}.$ext';
-
-    String? savePath;
-    try {
-      savePath = await FilePicker.platform.saveFile(
-        dialogTitle: 'Сохранить $namePrefix',
-        fileName: defaultName,
-      );
-    } catch (e) {
-      try {
-        final dir = await FilePicker.platform.getDirectoryPath(
-          dialogTitle: 'Выберите папку для сохранения',
-        );
-        if (dir != null) {
-          savePath = '$dir/$defaultName';
-        }
-      } catch (_) {
-        final dir = Directory.systemTemp.parent;
-        savePath = '${dir.path}/Documents/$defaultName';
-      }
-    }
-
-    if (savePath == null) return;
 
     setState(() => _isExporting = true);
     try {
@@ -212,20 +192,51 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
         options: Options(responseType: ResponseType.bytes),
       );
 
-      if (response.statusCode == 200) {
-        final filePath = savePath.endsWith('.$ext') ? savePath : (savePath.contains('.') ? savePath : '$savePath.$ext');
-        final file = File(filePath);
-        await file.writeAsBytes(response.data);
+      if (response.statusCode != 200) return;
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ Сохранено: ${file.path}'),
-              duration: const Duration(seconds: 5),
-              action: SnackBarAction(label: 'OK', onPressed: () {}),
-            ),
-          );
-        }
+      final bytes = response.data as List<int>;
+
+      // iOS/Android: сохраняем в temp и шарим через Share Sheet
+      if (Platform.isIOS || Platform.isAndroid) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$defaultName');
+        await tempFile.writeAsBytes(bytes);
+
+        if (!mounted) return;
+        await Share.shareXFiles(
+          [XFile(tempFile.path, mimeType: ext == 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+          subject: defaultName,
+        );
+        return;
+      }
+
+      // macOS / Windows / Linux: диалог «Сохранить как»
+      String? savePath;
+      try {
+        savePath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Сохранить $namePrefix',
+          fileName: defaultName,
+        );
+      } catch (_) {
+        try {
+          final dir = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Выберите папку');
+          if (dir != null) savePath = '$dir/$defaultName';
+        } catch (_) {}
+      }
+
+      if (savePath == null) return;
+
+      final filePath = savePath.endsWith('.$ext') ? savePath : '$savePath.$ext';
+      await File(filePath).writeAsBytes(bytes);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Сохранено: $filePath'),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(label: 'OK', onPressed: () {}),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

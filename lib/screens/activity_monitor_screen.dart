@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/base_api_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'payment_documents_screen.dart';
 
 /// Монитор активности жильцов — анализ платежной дисциплины
@@ -72,23 +74,9 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
   }
 
   Future<void> _exportPdf() async {
-    final catKeys = ['all', 'chronic', 'irregular', 'stable', 'promised'];
     final currentTab = _tabController.index;
     final cat = currentTab == 0 ? 'chronic' : currentTab == 1 ? 'irregular' : currentTab == 2 ? 'stable' : 'promised';
-
     final defaultName = 'monitor_${cat}_${DateTime.now().millisecondsSinceEpoch}.pdf';
-    String? savePath;
-    try {
-      savePath = await FilePicker.platform.saveFile(dialogTitle: 'Сохранить PDF', fileName: defaultName);
-    } catch (e) {
-      try {
-        final dir = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Выберите папку');
-        if (dir != null) savePath = '$dir/$defaultName';
-      } catch (_) {
-        savePath = '${Directory.systemTemp.parent.path}/Documents/$defaultName';
-      }
-    }
-    if (savePath == null) return;
 
     try {
       final dio = ref.read(dioProvider);
@@ -103,12 +91,35 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
         options: Options(responseType: ResponseType.bytes),
       );
 
-      if (response.statusCode == 200) {
-        final filePath = savePath.endsWith('.pdf') ? savePath : '$savePath.pdf';
-        await File(filePath).writeAsBytes(response.data);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Сохранено: $filePath'), duration: const Duration(seconds: 5)));
-        }
+      if (response.statusCode != 200) return;
+      final bytes = response.data as List<int>;
+
+      // iOS/Android — Share Sheet
+      if (Platform.isIOS || Platform.isAndroid) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File('${tempDir.path}/$defaultName');
+        await tempFile.writeAsBytes(bytes);
+        if (!mounted) return;
+        await Share.shareXFiles([XFile(tempFile.path, mimeType: 'application/pdf')], subject: defaultName);
+        return;
+      }
+
+      // Desktop — диалог сохранения
+      String? savePath;
+      try {
+        savePath = await FilePicker.platform.saveFile(dialogTitle: 'Сохранить PDF', fileName: defaultName);
+      } catch (_) {
+        try {
+          final dir = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Выберите папку');
+          if (dir != null) savePath = '$dir/$defaultName';
+        } catch (_) {}
+      }
+      if (savePath == null) return;
+
+      final filePath = savePath.endsWith('.pdf') ? savePath : '$savePath.pdf';
+      await File(filePath).writeAsBytes(bytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Сохранено: $filePath'), duration: const Duration(seconds: 5)));
       }
     } catch (e) {
       if (mounted) {

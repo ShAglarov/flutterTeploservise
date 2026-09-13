@@ -31,6 +31,7 @@ import 'payment_documents_screen.dart';
 import 'import_xls_screen.dart';
 import 'activity_monitor_screen.dart';
 import 'org_requisites_screen.dart';
+import 'residents_management_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -379,6 +380,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const OrgRequisitesScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.people_outline,
+            iconColor: Colors.amber,
+            title: 'Управление жильцами',
+            subtitle: 'Добавление, редактирование, блокировка жильцов',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ResidentsManagementScreen()),
               );
             },
           ),
