@@ -171,9 +171,13 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
       extraParams = result;
     }
 
-    final ext = format == 'excel' ? 'xlsx' : 'pdf';
+    final extMap = {'excel': 'xlsx', 'baosna-xml': 'xml', 'baosna-json': 'json', 'baosna-xls': 'xlsx'};
+    final ext = extMap[format] ?? 'pdf';
     final namePrefix = {
       'excel': 'payment_docs',
+      'baosna-xml': 'baosna',
+      'baosna-json': 'baosna',
+      'baosna-xls': 'baosna',
       'pdf': 'payment_docs',
       'dosudebnoye': 'dosudebnoye',
       'obshee-dosudebnoye': 'obshee_dosudebnoye',
@@ -204,7 +208,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
 
         if (!mounted) return;
         await Share.shareXFiles(
-          [XFile(tempFile.path, mimeType: ext == 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+          [XFile(tempFile.path, mimeType: ext == 'pdf' ? 'application/pdf' : ext == 'xml' ? 'application/xml' : ext == 'json' ? 'application/json' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
           subject: defaultName,
         );
         return;
@@ -649,6 +653,10 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'dosudebnoye', child: ListTile(leading: Icon(Icons.gavel, color: Colors.orange), title: Text('Досудебное (личное)'))),
               const PopupMenuItem(value: 'obshee-dosudebnoye', child: ListTile(leading: Icon(Icons.list_alt, color: Colors.deepOrange), title: Text('Досудебное (общее)'))),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'baosna-xml', child: ListTile(leading: Icon(Icons.code, color: Colors.teal), title: Text('БАОСНА (XML)'))),
+              const PopupMenuItem(value: 'baosna-json', child: ListTile(leading: Icon(Icons.data_object, color: Colors.indigo), title: Text('БАОСНА (JSON)'))),
+              const PopupMenuItem(value: 'baosna-xls', child: ListTile(leading: Icon(Icons.grid_on, color: Colors.green), title: Text('БАОСНА (XLS)'))),
             ],
           ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadDocuments),
