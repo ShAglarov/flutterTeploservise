@@ -26,6 +26,9 @@ class SavedLocationResponse {
   final String? commissioningDate;
   final String? managementCompanyName;
   final int? accountsCount;
+  final String? stoveType;
+  final String? housingType;
+  final int? entrancesCount;
   final String createdAt;
   final String? updatedAt;
   final List<PhotoInfo>? photos;
@@ -53,6 +56,9 @@ class SavedLocationResponse {
     this.commissioningDate,
     this.managementCompanyName,
     this.accountsCount,
+    this.stoveType,
+    this.housingType,
+    this.entrancesCount,
     required this.createdAt,
     this.updatedAt,
     this.photos,
@@ -82,6 +88,9 @@ class SavedLocationCreate {
   final bool? providesHotWater;
   final String? cadastralNumber;
   final String? commissioningDate;
+  final String? stoveType;
+  final String? housingType;
+  final int? entrancesCount;
 
   SavedLocationCreate({
     required this.name,
@@ -101,6 +110,9 @@ class SavedLocationCreate {
     this.providesHotWater,
     this.cadastralNumber,
     this.commissioningDate,
+    this.stoveType,
+    this.housingType,
+    this.entrancesCount,
   });
 
   factory SavedLocationCreate.fromJson(Map<String, dynamic> json) => _$SavedLocationCreateFromJson(json);
@@ -126,6 +138,9 @@ class SavedLocationUpdate {
   final bool? providesHotWater;
   final String? cadastralNumber;
   final String? commissioningDate;
+  final String? stoveType;
+  final String? housingType;
+  final int? entrancesCount;
 
   SavedLocationUpdate({
     this.name,
@@ -145,6 +160,9 @@ class SavedLocationUpdate {
     this.providesHotWater,
     this.cadastralNumber,
     this.commissioningDate,
+    this.stoveType,
+    this.housingType,
+    this.entrancesCount,
   });
 
   factory SavedLocationUpdate.fromJson(Map<String, dynamic> json) => _$SavedLocationUpdateFromJson(json);

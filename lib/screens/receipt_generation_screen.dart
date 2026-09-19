@@ -44,7 +44,7 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
   Future<void> _loadLocations() async {
     try {
       final dio = ref.read(dioProvider);
-      final resp = await dio.get('/locations/');
+      final resp = await dio.get('/locations/', queryParameters: {'limit': 1000, 'assigned_only': true});
       if (mounted) {
         final data = resp.data;
         List<Map<String, dynamic>> locs;

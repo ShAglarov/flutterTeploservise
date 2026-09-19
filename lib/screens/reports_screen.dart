@@ -29,6 +29,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   bool _isExporting = false;
   bool _loadingPeriods = true;
   String? _error;
+  String? _periodsError;
 
   @override
   void initState() {
@@ -37,17 +38,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _loadPeriods() async {
+    setState(() { _loadingPeriods = true; _periodsError = null; });
     try {
       final dio = ref.read(dioProvider);
       final resp = await dio.get('/payment-documents/periods');
-      if (resp.statusCode == 200) {
-        final periods = (resp.data as List).map((e) => e.toString()).toList();
-        setState(() {
-          _periods = periods;
-          if (periods.isNotEmpty) _selectedPeriod = periods.first;
-        });
+      final data = resp.data;
+      List<String> periods;
+      if (data is List) {
+        periods = data.map((e) => e.toString()).toList();
+      } else {
+        periods = [];
       }
-    } catch (_) {}
+      setState(() {
+        _periods = periods;
+        if (periods.isNotEmpty && _selectedPeriod == null) _selectedPeriod = periods.first;
+      });
+    } catch (e) {
+      debugPrint('❌ Ошибка загрузки периодов: $e');
+      setState(() => _periodsError = 'Не удалось загрузить периоды');
+    }
     setState(() => _loadingPeriods = false);
   }
 
@@ -64,12 +73,60 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         children: [
           // Фильтры
           _buildFilters(theme, isDark),
+          // Предупреждение если периоды не загрузились
+          if (_periodsError != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.orange.shade50,
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber, color: Colors.orange, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_periodsError!, style: TextStyle(fontSize: 13, color: Colors.orange.shade900))),
+                  TextButton(
+                    onPressed: _loadPeriods,
+                    child: const Text('Повторить', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
           const Divider(height: 1),
           // Каталог отчётов + результат
           Expanded(
-            child: _reportData != null
-                ? _buildReportResult(theme, isDark)
-                : _buildReportCatalog(theme, isDark),
+            child: _isLoading
+                ? const Center(child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 12),
+                      Text('Формирование отчёта...'),
+                    ],
+                  ))
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                              const SizedBox(height: 12),
+                              Text(_error!, style: const TextStyle(fontSize: 13), textAlign: TextAlign.center),
+                              const SizedBox(height: 12),
+                              FilledButton(
+                                onPressed: () => setState(() { _reportData = null; _error = null; }),
+                                child: const Text('Назад'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _reportData != null
+                        ? _buildReportResult(theme, isDark)
+                        : _loadingPeriods
+                            ? const Center(child: CircularProgressIndicator())
+                            : _buildReportCatalog(theme, isDark),
           ),
         ],
       ),
@@ -248,9 +305,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Future<void> _loadReport(String type) async {
-    if (_selectedPeriod == null) {
+    // benefit_stats и monthly не требуют периода
+    final needsPeriod = type != 'benefit_stats' && type != 'monthly';
+    if (needsPeriod && _selectedPeriod == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ Выберите период'), backgroundColor: Colors.red),
+        SnackBar(
+          content: const Text('❌ Выберите период'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          action: _periodsError != null
+              ? SnackBarAction(label: 'Повторить', textColor: Colors.white, onPressed: _loadPeriods)
+              : null,
+        ),
       );
       return;
     }
@@ -269,8 +335,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         final params = <String, dynamic>{};
         if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
         final resp = await dio.get('/benefits/', queryParameters: {...params, 'limit': 500});
+        // API /benefits/ возвращает чистый List, не {items: [...]}
+        final data = resp.data;
+        final List items = data is List ? data : (data is Map ? (data['items'] ?? []) : []);
         setState(() {
-          _reportData = {'benefits': resp.data, 'type': type};
+          _reportData = {'benefits': items, 'type': type};
         });
       } catch (e) {
         setState(() => _error = '$e');
@@ -310,22 +379,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       };
       if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
 
-      final resp = await dio.get('/payment-documents/stats', queryParameters: params);
+      // /statistics — агрегированная статистика (count, total_debt, total_charged, total_paid)
+      final resp = await dio.get('/payment-documents/statistics', queryParameters: {
+        'period_date': _selectedPeriod,
+        if (_selectedLocationId != null) 'location_id': _selectedLocationId,
+        if (type == 'debtors') 'has_debt': true,
+      });
       final docsResp = await dio.get('/payment-documents/', queryParameters: {
         ...params,
         'limit': 2000,
         if (type == 'debtors') 'has_debt': true,
       });
 
-      if (resp.statusCode == 200) {
-        setState(() {
-          _reportData = {
-            'stats': resp.data,
-            'docs': docsResp.data,
-            'type': type,
-          };
-        });
-      }
+      // API /payment-documents/ возвращает {items: [...], total: ...}
+      final docsData = docsResp.data;
+      final List docsList = docsData is List
+          ? docsData
+          : (docsData is Map ? (docsData['items'] ?? []) : []);
+      setState(() {
+        _reportData = {
+          'stats': resp.data,
+          'docs': docsList,
+          'type': type,
+        };
+      });
     } catch (e) {
       setState(() => _error = e.toString());
     }
@@ -333,36 +410,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _buildReportResult(ThemeData theme, bool isDark) {
-    if (_isLoading) {
-      return const Center(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 12),
-          Text('Формирование отчёта...'),
-        ],
-      ));
-    }
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: () => setState(() { _reportData = null; _error = null; }), child: const Text('Назад')),
-          ],
-        ),
-      );
-    }
 
     final type = _reportData?['type'] as String?;
 
     // Рендеринг статистики льгот
     if (type == 'benefit_stats') {
-      final items = (_reportData?['benefits']?['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final rawBenefits = _reportData?['benefits'];
+      final List benefitsList = rawBenefits is List ? rawBenefits : [];
+      final items = benefitsList.cast<Map<String, dynamic>>();
       final byCategory = <String, List<Map<String, dynamic>>>{};
       for (final b in items) {
         final cat = b['category'] as String? ?? 'other';
@@ -534,10 +589,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   Widget _buildStatsSummary(Map<String, dynamic> stats, ThemeData theme) {
-    final totalDebt = (stats['total_debt_end'] as num?)?.toDouble() ?? 0;
+    // Ключи от API /statistics: count, total_debt, total_charged, total_paid
+    final totalDebt = (stats['total_debt'] as num?)?.toDouble() ?? 0;
     final totalCharged = (stats['total_charged'] as num?)?.toDouble() ?? 0;
     final totalPaid = (stats['total_paid'] as num?)?.toDouble() ?? 0;
-    final count = stats['total_count'] as int? ?? 0;
+    final count = stats['count'] as int? ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -666,26 +722,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
 
       final resp = await dio.get(
-        '/payment-documents/export/xlsx',
+        '/payment-documents/export/excel',
         queryParameters: params,
         options: Options(responseType: ResponseType.bytes),
       );
 
       if (resp.statusCode == 200) {
-        final dir = await getApplicationDocumentsDirectory();
-        final file = File('${dir.path}/report_${_selectedPeriod}.xlsx');
+        // Сохраняем во временную папку и сразу открываем диалог выбора
+        final dir = await getTemporaryDirectory();
+        final filename = 'report_${_selectedPeriod ?? 'all'}.xlsx';
+        final file = File('${dir.path}/$filename');
         await file.writeAsBytes(resp.data as List<int>);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('✅ Файл сохранён: ${file.path}'),
-              backgroundColor: Colors.green,
-              action: SnackBarAction(
-                label: 'Поделиться',
-                textColor: Colors.white,
-                onPressed: () => Share.shareXFiles([XFile(file.path)]),
-              ),
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+              subject: 'Отчёт ЖКУ $_selectedPeriod',
             ),
           );
         }
@@ -740,7 +793,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       final dio = ref.read(dioProvider);
       final resp = await dio.get('/locations/', queryParameters: {'limit': 1000, 'assigned_only': true});
       if (resp.statusCode != 200) return;
-      final locations = (resp.data as List).cast<Map<String, dynamic>>();
+      final data = resp.data;
+      List<Map<String, dynamic>> locations;
+      if (data is List) {
+        locations = data.cast<Map<String, dynamic>>();
+      } else if (data is Map && data.containsKey('items')) {
+        locations = (data['items'] as List).cast<Map<String, dynamic>>();
+      } else {
+        locations = [];
+      }
 
       if (!mounted) return;
       await showDialog(

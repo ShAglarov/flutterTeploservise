@@ -72,9 +72,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _fiasAOController = TextEditingController(text: initial?.fiasAOGuid ?? '');
     _cadastralController = TextEditingController(text: initial?.cadastralNumber ?? '');
     _commissioningDateController = TextEditingController(text: initial?.commissioningDate ?? '');
-    _entrancesController = TextEditingController(text: '');
-    _stoveType = null;
-    _housingType = null;
+    _entrancesController = TextEditingController(text: initial?.entrancesCount?.toString() ?? '');
+    _stoveType = initial?.stoveType;
+    _housingType = initial?.housingType;
     _providesHeating = initial?.providesHeating ?? false;
     _providesHotWater = initial?.providesHotWater ?? false;
     _selectedManagementCompanyId = initial?.managementCompanyId;
@@ -245,6 +245,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           managementCompanyId: _selectedManagementCompanyId,
           cadastralNumber: _cadastralController.text.isNotEmpty ? _cadastralController.text : null,
           commissioningDate: _commissioningDateController.text.isNotEmpty ? _commissioningDateController.text : null,
+          stoveType: _stoveType,
+          housingType: _housingType,
+          entrancesCount: int.tryParse(_entrancesController.text),
         );
         result = await ref.read(locationServiceProvider).updateSavedLocation(widget.initialLocation!.id, update);
       } else {
@@ -265,6 +268,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           managementCompanyId: _selectedManagementCompanyId,
           cadastralNumber: _cadastralController.text.isNotEmpty ? _cadastralController.text : null,
           commissioningDate: _commissioningDateController.text.isNotEmpty ? _commissioningDateController.text : null,
+          stoveType: _stoveType,
+          housingType: _housingType,
+          entrancesCount: int.tryParse(_entrancesController.text),
         );
         result = await ref.read(locationServiceProvider).createSavedLocation(location);
       }
@@ -323,6 +329,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
         _selectedManagementCompanyName = result.managementCompanyName;
         _cadastralController.text = result.cadastralNumber ?? '';
         _commissioningDateController.text = result.commissioningDate ?? '';
+        _entrancesController.text = result.entrancesCount?.toString() ?? '';
+        _stoveType = result.stoveType;
+        _housingType = result.housingType;
       });
     }
   }

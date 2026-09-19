@@ -209,6 +209,48 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
     );
   }
 
+  /// Fetch previous reading from server for auto-calculation
+  Future<Map<String, dynamic>?> _fetchPreviousReading(int accountId, String meterType) async {
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get('/meter-readings/', queryParameters: {
+        'account_id': accountId,
+        'meter_type': meterType,
+        'limit': 1,
+      });
+      final list = resp.data as List?;
+      if (list != null && list.isNotEmpty) return Map<String, dynamic>.from(list.first);
+    } catch (_) {}
+    return null;
+  }
+
+  /// Fetch current rate from tariffs for a meter type
+  Future<double?> _fetchRate(String meterType) async {
+    try {
+      final dio = ref.read(dioProvider);
+      // Map meter_type to tariff service_type
+      // Валидные тарифы на бэкенде: heating, hot_water, maintenance,
+      // waste, odn_electricity, odn_water
+      final serviceType = switch (meterType) {
+        'hot_water' => 'hot_water',
+        'heating' => 'heating',
+        // gas, electricity, cold_water — нет прямых тарифов на бэкенде,
+        // пробуем запросить по названию, API вернёт пустой список если нет
+        _ => meterType,
+      };
+      final resp = await dio.get('/tariffs/', queryParameters: {
+        'service_type': serviceType,
+        'is_active': true,
+        'limit': 1,
+      });
+      final items = resp.data?['items'] as List?;
+      if (items != null && items.isNotEmpty) {
+        return (items.first['rate'] as num?)?.toDouble();
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _edit(Map<String, dynamic>? existing) async {
     final isNew = existing == null;
     String meterType = (existing?['meter_type'] as String?) ?? 'gas';
@@ -223,6 +265,49 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
     int? accountId = existing?['account_id'] as int?;
     String accountLabel = existing != null ? '${existing['fio'] ?? ''} (ЛС: ${existing['account_number'] ?? ''})' : 'Выберите ЛС';
 
+    // Live calculation state
+    double? liveConsumption;
+    double? liveAmount;
+    bool isFetchingPrev = false;
+
+    void recalc(void Function(void Function()) ss) {
+      final prev = double.tryParse(prevCtrl.text);
+      final curr = double.tryParse(currentCtrl.text);
+      final rate = double.tryParse(rateCtrl.text);
+      if (prev != null && curr != null) {
+        liveConsumption = double.parse((curr - prev).toStringAsFixed(2));
+        liveAmount = (rate != null && liveConsumption != null)
+            ? double.parse((liveConsumption! * rate).toStringAsFixed(2))
+            : null;
+      } else {
+        liveConsumption = null;
+        liveAmount = null;
+      }
+      ss(() {});
+    }
+
+    Future<void> autoFetchPrev(void Function(void Function()) ss) async {
+      if (accountId == null) return;
+      ss(() => isFetchingPrev = true);
+      final prev = await _fetchPreviousReading(accountId!, meterType);
+      if (prev != null) {
+        final prevReading = prev['current_reading'];
+        if (prevReading != null) {
+          prevCtrl.text = prevReading.toString();
+          if (prev['meter_number'] != null && numberCtrl.text.isEmpty) {
+            numberCtrl.text = prev['meter_number'];
+          }
+        }
+      }
+      // Also fetch rate if empty
+      if (rateCtrl.text.isEmpty) {
+        final rate = await _fetchRate(meterType);
+        if (rate != null) rateCtrl.text = rate.toString();
+      }
+      ss(() => isFetchingPrev = false);
+      recalc(ss);
+    }
+
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -233,7 +318,10 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
             child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
               if (isNew) ...[
                 InkWell(
-                  onTap: () => _pickAccount(ctx, (id, label) => ss(() { accountId = id; accountLabel = label; })),
+                  onTap: () => _pickAccount(ctx, (id, label) {
+                    ss(() { accountId = id; accountLabel = label; });
+                    autoFetchPrev(ss);
+                  }),
                   child: InputDecorator(
                     decoration: const InputDecoration(labelText: 'Лицевой счёт *', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.person, size: 20)),
                     child: Text(accountLabel, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis),
@@ -247,7 +335,10 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
                     Icon(meterIcons[e.key], size: 18, color: meterColors[e.key]),
                     const SizedBox(width: 8), Text(e.value),
                   ]))).toList(),
-                  onChanged: (v) => ss(() => meterType = v!),
+                  onChanged: (v) {
+                    ss(() => meterType = v!);
+                    if (accountId != null) autoFetchPrev(ss);
+                  },
                 ),
                 const SizedBox(height: 12),
               ],
@@ -258,11 +349,76 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
               const SizedBox(height: 12),
               TextField(controller: numberCtrl, decoration: const InputDecoration(labelText: 'Номер прибора', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.tag, size: 20))),
               const SizedBox(height: 12),
-              TextField(controller: prevCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Предыдущее показание', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.history, size: 20))),
+              TextField(
+                controller: prevCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => recalc(ss),
+                decoration: InputDecoration(
+                  labelText: 'Предыдущее показание',
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.history, size: 20),
+                  suffixIcon: isFetchingPrev
+                      ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
+                      : null,
+                ),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: currentCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Текущее показание *', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.speed, size: 20))),
+              TextField(
+                controller: currentCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => recalc(ss),
+                decoration: const InputDecoration(labelText: 'Текущее показание *', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.speed, size: 20)),
+              ),
               const SizedBox(height: 12),
-              TextField(controller: rateCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Тариф (₽)', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.payments, size: 20))),
+              TextField(
+                controller: rateCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (_) => recalc(ss),
+                decoration: const InputDecoration(labelText: 'Тариф (₽)', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.payments, size: 20)),
+              ),
+              // ── Live consumption preview ──
+              if (liveConsumption != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: liveConsumption! >= 0 ? Colors.green.withAlpha(20) : Colors.red.withAlpha(20),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: liveConsumption! >= 0 ? Colors.green.withAlpha(60) : Colors.red.withAlpha(60)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.analytics, size: 20, color: liveConsumption! >= 0 ? Colors.green : Colors.red),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Расход: ${liveConsumption!.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: liveConsumption! >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                              ),
+                            ),
+                            if (liveAmount != null)
+                              Text(
+                                'Сумма: ${liveAmount!.toStringAsFixed(2)} ₽',
+                                style: TextStyle(fontSize: 13, color: Colors.green.shade700),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (liveConsumption! < 0)
+                        const Tooltip(
+                          message: 'Текущее показание меньше предыдущего!',
+                          child: Icon(Icons.warning_amber, color: Colors.red, size: 20),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               TextField(controller: noteCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Примечание', border: OutlineInputBorder(), isDense: true)),
             ])),

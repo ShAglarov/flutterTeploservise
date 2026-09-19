@@ -30,6 +30,9 @@ SavedLocationResponse _$SavedLocationResponseFromJson(
   commissioningDate: json['commissioning_date'] as String?,
   managementCompanyName: json['management_company_name'] as String?,
   accountsCount: (json['accounts_count'] as num?)?.toInt(),
+  stoveType: json['stove_type'] as String?,
+  housingType: json['housing_type'] as String?,
+  entrancesCount: (json['entrances_count'] as num?)?.toInt(),
   createdAt: json['created_at'] as String,
   updatedAt: json['updated_at'] as String?,
   photos: (json['photos'] as List<dynamic>?)
@@ -64,6 +67,9 @@ Map<String, dynamic> _$SavedLocationResponseToJson(
   'commissioning_date': instance.commissioningDate,
   'management_company_name': instance.managementCompanyName,
   'accounts_count': instance.accountsCount,
+  'stove_type': instance.stoveType,
+  'housing_type': instance.housingType,
+  'entrances_count': instance.entrancesCount,
   'created_at': instance.createdAt,
   'updated_at': instance.updatedAt,
   'photos': instance.photos,
@@ -89,6 +95,9 @@ SavedLocationCreate _$SavedLocationCreateFromJson(Map<String, dynamic> json) =>
       providesHotWater: json['provides_hot_water'] as bool?,
       cadastralNumber: json['cadastral_number'] as String?,
       commissioningDate: json['commissioning_date'] as String?,
+      stoveType: json['stove_type'] as String?,
+      housingType: json['housing_type'] as String?,
+      entrancesCount: (json['entrances_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$SavedLocationCreateToJson(
@@ -111,6 +120,9 @@ Map<String, dynamic> _$SavedLocationCreateToJson(
   'provides_hot_water': instance.providesHotWater,
   'cadastral_number': instance.cadastralNumber,
   'commissioning_date': instance.commissioningDate,
+  'stove_type': instance.stoveType,
+  'housing_type': instance.housingType,
+  'entrances_count': instance.entrancesCount,
 };
 
 SavedLocationUpdate _$SavedLocationUpdateFromJson(Map<String, dynamic> json) =>
@@ -132,6 +144,9 @@ SavedLocationUpdate _$SavedLocationUpdateFromJson(Map<String, dynamic> json) =>
       providesHotWater: json['provides_hot_water'] as bool?,
       cadastralNumber: json['cadastral_number'] as String?,
       commissioningDate: json['commissioning_date'] as String?,
+      stoveType: json['stove_type'] as String?,
+      housingType: json['housing_type'] as String?,
+      entrancesCount: (json['entrances_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$SavedLocationUpdateToJson(
@@ -154,6 +169,9 @@ Map<String, dynamic> _$SavedLocationUpdateToJson(
   'provides_hot_water': instance.providesHotWater,
   'cadastral_number': instance.cadastralNumber,
   'commissioning_date': instance.commissioningDate,
+  'stove_type': instance.stoveType,
+  'housing_type': instance.housingType,
+  'entrances_count': instance.entrancesCount,
 };
 
 AccountResponse _$AccountResponseFromJson(Map<String, dynamic> json) =>
