@@ -163,6 +163,7 @@ class _AccountsListScreenState extends ConsumerState<AccountsListScreen> {
     final address = account['address'] ?? '';
     final area = (account['area'] as num?)?.toDouble();
     final jku = account['jku_identifier'] ?? '';
+    final cadastral = account['cadastral_number'] ?? '';
     final accountId = account['id'] as int?;
     final resident = account['resident'] as Map<String, dynamic>?;
 
@@ -216,6 +217,12 @@ class _AccountsListScreenState extends ConsumerState<AccountsListScreen> {
                       Text(
                         '${address.isNotEmpty ? address : ''}${area != null ? '  •  ${area.toStringAsFixed(1)} м²' : ''}',
                         style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (cadastral.isNotEmpty)
+                      Text(
+                        'Кадастр: $cadastral',
+                        style: TextStyle(fontSize: 11, color: Colors.teal.shade600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     const SizedBox(height: 4),

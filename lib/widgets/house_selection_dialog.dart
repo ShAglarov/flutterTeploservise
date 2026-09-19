@@ -24,7 +24,7 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
   bool _isMoreLoading = false;
   bool _hasMore = true;
   int _skip = 0;
-  final int _limit = 20;
+  final int _limit = 100;
   String _query = '';
   Timer? _debounce;
   bool _isOfflineMode = false;
@@ -69,9 +69,8 @@ class _HouseSelectionDialogState extends ConsumerState<HouseSelectionDialog> {
       final service = ref.read(locationServiceProvider);
       final results = await service.searchHouses(
         skip: _skip,
-        limit: _limit,
+        limit: _query.isNotEmpty ? 500 : _limit,
         q: _query,
-        unassignedOnly: true,
       );
 
       setState(() {

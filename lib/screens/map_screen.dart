@@ -2192,6 +2192,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     label: 'Год постройки',
                     value: loc.yearBuilt?.toString() ?? '—',
                   ),
+                  if (loc.cadastralNumber != null && loc.cadastralNumber!.isNotEmpty)
+                    _buildGridItem(
+                      itemWidth: itemWidth,
+                      icon: Icons.pin,
+                      label: 'Кадастр',
+                      value: loc.cadastralNumber!,
+                    ),
+                  if (loc.commissioningDate != null && loc.commissioningDate!.isNotEmpty)
+                    _buildGridItem(
+                      itemWidth: itemWidth,
+                      icon: Icons.event_available,
+                      label: 'Ввод в экспл.',
+                      value: loc.commissioningDate!,
+                    ),
                 ],
               );
             },

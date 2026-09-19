@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/location_models.dart';
 import '../models/user_role.dart';
 import '../services/location_service.dart';
 import '../services/user_service.dart';
+import '../services/base_api_service.dart';
 import '../utils/app_theme.dart';
 import '../providers/offline_edit_permission.dart';
 import 'house_selection_dialog.dart';
@@ -38,6 +41,8 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   late final TextEditingController _lngController;
   late final TextEditingController _fiasHouseController;
   late final TextEditingController _fiasAOController;
+  late final TextEditingController _cadastralController;
+  late final TextEditingController _commissioningDateController;
   
   bool _providesHeating = false;
   bool _providesHotWater = false;
@@ -45,6 +50,8 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   String? _selectedSiteManager;
   String? _selectedManagementCompanyId;
   String? _selectedManagementCompanyName;
+  List<Map<String, dynamic>> _documents = [];
+  bool _isUploadingDoc = false;
 
   @override
   void initState() {
@@ -60,10 +67,119 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _lngController = TextEditingController(text: initial != null ? initial.longitude.toStringAsFixed(12) : widget.position.longitude.toStringAsFixed(12));
     _fiasHouseController = TextEditingController(text: initial?.fiasHouseGuid ?? '');
     _fiasAOController = TextEditingController(text: initial?.fiasAOGuid ?? '');
+    _cadastralController = TextEditingController(text: initial?.cadastralNumber ?? '');
+    _commissioningDateController = TextEditingController(text: initial?.commissioningDate ?? '');
     _providesHeating = initial?.providesHeating ?? false;
     _providesHotWater = initial?.providesHotWater ?? false;
     _selectedManagementCompanyId = initial?.managementCompanyId;
     _selectedManagementCompanyName = initial?.managementCompanyName;
+    if (initial != null) {
+      _loadDocuments(initial.id);
+    }
+  }
+
+  Future<void> _pickCommissioningDate() async {
+    DateTime initialDate = DateTime.now();
+    if (_commissioningDateController.text.isNotEmpty) {
+      try {
+        initialDate = DateTime.parse(_commissioningDateController.text);
+      } catch (_) {}
+    }
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+      locale: const Locale('ru'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Colors.blue,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _commissioningDateController.text = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      });
+    }
+  }
+
+  Future<void> _loadDocuments(int locationId) async {
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get('/house-documents/by-location/$locationId');
+      if (mounted) {
+        setState(() {
+          _documents = List<Map<String, dynamic>>.from(resp.data);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _uploadDocument() async {
+    final locationId = widget.initialLocation?.id;
+    if (locationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Сначала сохраните дом, затем загрузите документ')),
+      );
+      return;
+    }
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'xls', 'xlsx'],
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    if (file.path == null) return;
+
+    setState(() => _isUploadingDoc = true);
+
+    try {
+      final dio = ref.read(dioProvider);
+      final formData = FormData.fromMap({
+        'location_id': locationId,
+        'document_type': 'commissioning',
+        'title': file.name,
+        'file': await MultipartFile.fromFile(file.path!, filename: file.name),
+      });
+      await dio.post('/house-documents/upload', data: formData);
+      await _loadDocuments(locationId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Документ загружен'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Ошибка загрузки: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingDoc = false);
+    }
+  }
+
+  Future<void> _deleteDocument(int docId) async {
+    try {
+      final dio = ref.read(dioProvider);
+      await dio.delete('/house-documents/$docId');
+      final locId = widget.initialLocation?.id;
+      if (locId != null) await _loadDocuments(locId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка удаления: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -78,6 +194,8 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _lngController.dispose();
     _fiasHouseController.dispose();
     _fiasAOController.dispose();
+    _cadastralController.dispose();
+    _commissioningDateController.dispose();
     super.dispose();
   }
 
@@ -119,6 +237,8 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           fiasHouseGuid: _fiasHouseController.text.isNotEmpty ? _fiasHouseController.text : null,
           fiasAOGuid: _fiasAOController.text.isNotEmpty ? _fiasAOController.text : null,
           managementCompanyId: _selectedManagementCompanyId,
+          cadastralNumber: _cadastralController.text.isNotEmpty ? _cadastralController.text : null,
+          commissioningDate: _commissioningDateController.text.isNotEmpty ? _commissioningDateController.text : null,
         );
         result = await ref.read(locationServiceProvider).updateSavedLocation(widget.initialLocation!.id, update);
       } else {
@@ -137,6 +257,8 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           fiasHouseGuid: _fiasHouseController.text.isNotEmpty ? _fiasHouseController.text : null,
           fiasAOGuid: _fiasAOController.text.isNotEmpty ? _fiasAOController.text : null,
           managementCompanyId: _selectedManagementCompanyId,
+          cadastralNumber: _cadastralController.text.isNotEmpty ? _cadastralController.text : null,
+          commissioningDate: _commissioningDateController.text.isNotEmpty ? _commissioningDateController.text : null,
         );
         result = await ref.read(locationServiceProvider).createSavedLocation(location);
       }
@@ -193,6 +315,8 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
         _providesHotWater = result.providesHotWater ?? false;
         _selectedManagementCompanyId = result.managementCompanyId;
         _selectedManagementCompanyName = result.managementCompanyName;
+        _cadastralController.text = result.cadastralNumber ?? '';
+        _commissioningDateController.text = result.commissioningDate ?? '';
       });
     }
   }
@@ -256,11 +380,90 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                         _buildInputRow(Icons.navigation, Colors.red, 'Долгота', _lngController, keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                       ]),
                       
-                      _SectionHeader('ФИАС'),
+                      _SectionHeader('ФИАС и кадастр'),
                       _buildSection([
-                        _buildInputRow(Icons.description, Colors.purple, 'Дом', _fiasHouseController, hint: 'a0b1c2d3...'),
+                        _buildInputRow(Icons.description, Colors.purple, 'ФИАС дом', _fiasHouseController, hint: 'a0b1c2d3...'),
                         _buildDivider(),
-                        _buildInputRow(Icons.description, Colors.blue, 'Адресообразующий объект', _fiasAOController, hint: 'e4f5g6h7...'),
+                        _buildInputRow(Icons.description, Colors.blue, 'ФИАС адр. объект', _fiasAOController, hint: 'e4f5g6h7...'),
+                        _buildDivider(),
+                        _buildInputRow(Icons.pin, Colors.teal, 'Кадастровый номер', _cadastralController, hint: '05:40:000038:3079'),
+                        _buildDivider(),
+                        _buildActionRow(
+                          Icons.event_available,
+                          Colors.green,
+                          'Ввод в эксплуатацию',
+                          _commissioningDateController.text.isNotEmpty 
+                            ? _commissioningDateController.text 
+                            : 'Выбрать дату',
+                          onTap: _pickCommissioningDate,
+                        ),
+                      ]),
+                      
+                      _SectionHeader('Документы'),
+                      _buildSection([
+                        _buildActionRow(
+                          Icons.upload_file,
+                          Colors.indigo,
+                          'Загрузить документ',
+                          _isUploadingDoc ? 'Загрузка...' : 'Выбрать файл',
+                          onTap: _isUploadingDoc ? null : _uploadDocument,
+                        ),
+                        if (_documents.isNotEmpty) ...[
+                          _buildDivider(),
+                          ..._documents.map((doc) => Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _getDocIcon(doc['content_type'] ?? ''),
+                                      size: 20,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            doc['title'] ?? doc['filename'] ?? 'Документ',
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                              fontSize: 14,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            '${doc['document_type_label'] ?? ''} • ${_formatFileSize(doc['file_size'])}',
+                                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                      onPressed: () => _deleteDocument(doc['id']),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (doc != _documents.last) _buildDivider(),
+                            ],
+                          )),
+                        ],
+                        if (widget.initialLocation == null) ...[
+                          _buildDivider(),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Text(
+                              'Документы можно загрузить после сохранения дома',
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ],
                       ]),
                       
                        _SectionHeader('Управление и связи'),
@@ -521,6 +724,22 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
 
   Widget _buildDivider() {
     return Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25), height: 1, indent: 46);
+  }
+
+  IconData _getDocIcon(String contentType) {
+    if (contentType.contains('pdf')) return Icons.picture_as_pdf;
+    if (contentType.contains('image')) return Icons.image;
+    if (contentType.contains('word') || contentType.contains('doc')) return Icons.description;
+    if (contentType.contains('excel') || contentType.contains('sheet')) return Icons.table_chart;
+    return Icons.insert_drive_file;
+  }
+
+  String _formatFileSize(dynamic bytes) {
+    if (bytes == null) return '';
+    final b = bytes is int ? bytes : int.tryParse(bytes.toString()) ?? 0;
+    if (b < 1024) return '$b Б';
+    if (b < 1024 * 1024) return '${(b / 1024).toStringAsFixed(1)} КБ';
+    return '${(b / (1024 * 1024)).toStringAsFixed(1)} МБ';
   }
 }
 

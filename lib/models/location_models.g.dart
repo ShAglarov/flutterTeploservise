@@ -26,6 +26,8 @@ SavedLocationResponse _$SavedLocationResponseFromJson(
   locationUUID: json['location_u_u_i_d'] as String?,
   providesHeating: json['provides_heating'] as bool?,
   providesHotWater: json['provides_hot_water'] as bool?,
+  cadastralNumber: json['cadastral_number'] as String?,
+  commissioningDate: json['commissioning_date'] as String?,
   managementCompanyName: json['management_company_name'] as String?,
   accountsCount: (json['accounts_count'] as num?)?.toInt(),
   createdAt: json['created_at'] as String,
@@ -58,6 +60,8 @@ Map<String, dynamic> _$SavedLocationResponseToJson(
   'location_u_u_i_d': instance.locationUUID,
   'provides_heating': instance.providesHeating,
   'provides_hot_water': instance.providesHotWater,
+  'cadastral_number': instance.cadastralNumber,
+  'commissioning_date': instance.commissioningDate,
   'management_company_name': instance.managementCompanyName,
   'accounts_count': instance.accountsCount,
   'created_at': instance.createdAt,
@@ -83,6 +87,8 @@ SavedLocationCreate _$SavedLocationCreateFromJson(Map<String, dynamic> json) =>
       locationUUID: json['location_u_u_i_d'] as String?,
       providesHeating: json['provides_heating'] as bool?,
       providesHotWater: json['provides_hot_water'] as bool?,
+      cadastralNumber: json['cadastral_number'] as String?,
+      commissioningDate: json['commissioning_date'] as String?,
     );
 
 Map<String, dynamic> _$SavedLocationCreateToJson(
@@ -103,6 +109,8 @@ Map<String, dynamic> _$SavedLocationCreateToJson(
   'location_u_u_i_d': instance.locationUUID,
   'provides_heating': instance.providesHeating,
   'provides_hot_water': instance.providesHotWater,
+  'cadastral_number': instance.cadastralNumber,
+  'commissioning_date': instance.commissioningDate,
 };
 
 SavedLocationUpdate _$SavedLocationUpdateFromJson(Map<String, dynamic> json) =>
@@ -122,6 +130,8 @@ SavedLocationUpdate _$SavedLocationUpdateFromJson(Map<String, dynamic> json) =>
       locationUUID: json['location_u_u_i_d'] as String?,
       providesHeating: json['provides_heating'] as bool?,
       providesHotWater: json['provides_hot_water'] as bool?,
+      cadastralNumber: json['cadastral_number'] as String?,
+      commissioningDate: json['commissioning_date'] as String?,
     );
 
 Map<String, dynamic> _$SavedLocationUpdateToJson(
@@ -142,6 +152,8 @@ Map<String, dynamic> _$SavedLocationUpdateToJson(
   'location_u_u_i_d': instance.locationUUID,
   'provides_heating': instance.providesHeating,
   'provides_hot_water': instance.providesHotWater,
+  'cadastral_number': instance.cadastralNumber,
+  'commissioning_date': instance.commissioningDate,
 };
 
 AccountResponse _$AccountResponseFromJson(Map<String, dynamic> json) =>
@@ -159,6 +171,8 @@ AccountResponse _$AccountResponseFromJson(Map<String, dynamic> json) =>
       jkuIdentifier: json['jku_identifier'] as String?,
       openDate: json['open_date'] as String?,
       closeDate: json['close_date'] as String?,
+      cadastralNumber: json['cadastral_number'] as String?,
+      roomsCount: (json['rooms_count'] as num?)?.toInt(),
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String?,
       locationUUID: json['location_u_u_i_d'] as String?,
@@ -179,6 +193,8 @@ Map<String, dynamic> _$AccountResponseToJson(AccountResponse instance) =>
       'jku_identifier': instance.jkuIdentifier,
       'open_date': instance.openDate,
       'close_date': instance.closeDate,
+      'cadastral_number': instance.cadastralNumber,
+      'rooms_count': instance.roomsCount,
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,
       'location_u_u_i_d': instance.locationUUID,
@@ -198,6 +214,8 @@ AccountCreate _$AccountCreateFromJson(Map<String, dynamic> json) =>
       jkuIdentifier: json['jku_identifier'] as String?,
       openDate: json['open_date'] as String?,
       closeDate: json['close_date'] as String?,
+      cadastralNumber: json['cadastral_number'] as String?,
+      roomsCount: (json['rooms_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$AccountCreateToJson(AccountCreate instance) =>
@@ -214,6 +232,8 @@ Map<String, dynamic> _$AccountCreateToJson(AccountCreate instance) =>
       'jku_identifier': instance.jkuIdentifier,
       'open_date': instance.openDate,
       'close_date': instance.closeDate,
+      'cadastral_number': instance.cadastralNumber,
+      'rooms_count': instance.roomsCount,
     };
 
 AccountUpdate _$AccountUpdateFromJson(Map<String, dynamic> json) =>
@@ -230,6 +250,8 @@ AccountUpdate _$AccountUpdateFromJson(Map<String, dynamic> json) =>
       jkuIdentifier: json['jku_identifier'] as String?,
       openDate: json['open_date'] as String?,
       closeDate: json['close_date'] as String?,
+      cadastralNumber: json['cadastral_number'] as String?,
+      roomsCount: (json['rooms_count'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$AccountUpdateToJson(AccountUpdate instance) =>
@@ -246,4 +268,6 @@ Map<String, dynamic> _$AccountUpdateToJson(AccountUpdate instance) =>
       'jku_identifier': instance.jkuIdentifier,
       'open_date': instance.openDate,
       'close_date': instance.closeDate,
+      'cadastral_number': instance.cadastralNumber,
+      'rooms_count': instance.roomsCount,
     };

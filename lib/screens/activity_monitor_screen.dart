@@ -107,10 +107,10 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
       // Desktop — диалог сохранения
       String? savePath;
       try {
-        savePath = await FilePicker.platform.saveFile(dialogTitle: 'Сохранить PDF', fileName: defaultName);
+        savePath = await FilePicker.saveFile(dialogTitle: 'Сохранить PDF', fileName: defaultName);
       } catch (_) {
         try {
-          final dir = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Выберите папку');
+          final dir = await FilePicker.getDirectoryPath(dialogTitle: 'Выберите папку');
           if (dir != null) savePath = '$dir/$defaultName';
         } catch (_) {}
       }

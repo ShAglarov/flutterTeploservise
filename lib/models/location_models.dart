@@ -22,6 +22,8 @@ class SavedLocationResponse {
   final String? locationUUID;
   final bool? providesHeating;
   final bool? providesHotWater;
+  final String? cadastralNumber;
+  final String? commissioningDate;
   final String? managementCompanyName;
   final int? accountsCount;
   final String createdAt;
@@ -47,6 +49,8 @@ class SavedLocationResponse {
     this.locationUUID,
     this.providesHeating,
     this.providesHotWater,
+    this.cadastralNumber,
+    this.commissioningDate,
     this.managementCompanyName,
     this.accountsCount,
     required this.createdAt,
@@ -76,6 +80,8 @@ class SavedLocationCreate {
   final String? locationUUID;
   final bool? providesHeating;
   final bool? providesHotWater;
+  final String? cadastralNumber;
+  final String? commissioningDate;
 
   SavedLocationCreate({
     required this.name,
@@ -93,6 +99,8 @@ class SavedLocationCreate {
     this.locationUUID,
     this.providesHeating,
     this.providesHotWater,
+    this.cadastralNumber,
+    this.commissioningDate,
   });
 
   factory SavedLocationCreate.fromJson(Map<String, dynamic> json) => _$SavedLocationCreateFromJson(json);
@@ -116,6 +124,8 @@ class SavedLocationUpdate {
   final String? locationUUID;
   final bool? providesHeating;
   final bool? providesHotWater;
+  final String? cadastralNumber;
+  final String? commissioningDate;
 
   SavedLocationUpdate({
     this.name,
@@ -133,6 +143,8 @@ class SavedLocationUpdate {
     this.locationUUID,
     this.providesHeating,
     this.providesHotWater,
+    this.cadastralNumber,
+    this.commissioningDate,
   });
 
   factory SavedLocationUpdate.fromJson(Map<String, dynamic> json) => _$SavedLocationUpdateFromJson(json);
@@ -154,6 +166,8 @@ class AccountResponse {
   final String? jkuIdentifier;
   final String? openDate;
   final String? closeDate;
+  final String? cadastralNumber;
+  final int? roomsCount;
   final String createdAt;
   final String? updatedAt;
   final String? locationUUID;
@@ -172,6 +186,8 @@ class AccountResponse {
     this.jkuIdentifier,
     this.openDate,
     this.closeDate,
+    this.cadastralNumber,
+    this.roomsCount,
     required this.createdAt,
     this.updatedAt,
     this.locationUUID,
@@ -195,6 +211,8 @@ class AccountCreate {
   final String? jkuIdentifier;
   final String? openDate;
   final String? closeDate;
+  final String? cadastralNumber;
+  final int? roomsCount;
 
   AccountCreate({
     required this.locationId,
@@ -209,6 +227,8 @@ class AccountCreate {
     this.jkuIdentifier,
     this.openDate,
     this.closeDate,
+    this.cadastralNumber,
+    this.roomsCount,
   });
 
   factory AccountCreate.fromJson(Map<String, dynamic> json) => _$AccountCreateFromJson(json);
@@ -229,6 +249,8 @@ class AccountUpdate {
   final String? jkuIdentifier;
   final String? openDate;
   final String? closeDate;
+  final String? cadastralNumber;
+  final int? roomsCount;
 
   AccountUpdate({
     this.locationId,
@@ -243,6 +265,8 @@ class AccountUpdate {
     this.jkuIdentifier,
     this.openDate,
     this.closeDate,
+    this.cadastralNumber,
+    this.roomsCount,
   });
 
   factory AccountUpdate.fromJson(Map<String, dynamic> json) => _$AccountUpdateFromJson(json);

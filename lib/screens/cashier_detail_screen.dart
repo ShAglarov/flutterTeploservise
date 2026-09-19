@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -322,6 +323,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
             // Основные операции
             _actionTile(Icons.payments, '💰 Оплата по услуге', 'Внести оплату по конкретной услуге', Colors.green, () => _showPayDialog()),
             _actionTile(Icons.auto_fix_high, '🔄 Авто-оплата', 'Распределить общую сумму по долгам', Colors.teal, () => _showAutoPayDialog()),
+            _actionTile(Icons.receipt_long, '🧾 Выдать чек', 'Сформировать чек об оплате', Colors.indigo, () => _showReceipt()),
             const Divider(height: 20),
             _actionTile(Icons.calculate, '📊 Перерасчёт', 'Увеличить или уменьшить начисление', Colors.blue, () => _showRecalcDialog()),
             _actionTile(Icons.add_circle_outline, '📝 Начисление', 'Добавить начисление по услуге', Colors.orange, () => _showChargeDialog()),
@@ -901,6 +903,222 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Ошибка: $e'), backgroundColor: Colors.red));
       }
+    }
+  }
+
+  // ═══════ Чек об оплате ═══════
+
+  void _showReceipt() {
+    final d = _details;
+    if (d == null) return;
+
+    final services = (d['services'] as List?) ?? [];
+    final totalPaid = services.fold<double>(0, (sum, s) => sum + ((s['paid'] as num?)?.toDouble() ?? 0));
+    
+    if (totalPaid <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Нет оплат для формирования чека')),
+      );
+      return;
+    }
+
+    final now = DateTime.now();
+    final dateStr = '${now.day.toString().padLeft(2, '0')}.${now.month.toString().padLeft(2, '0')}.${now.year}';
+    final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            width: 360,
+            padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Заголовок
+                  const Icon(Icons.receipt_long, size: 40, color: Colors.indigo),
+                  const SizedBox(height: 8),
+                  const Text('ЧЕК ОБ ОПЛАТЕ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  Text('$dateStr  $timeStr', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  const SizedBox(height: 16),
+                  
+                  // Разделитель
+                  _receiptDivider(),
+                  
+                  // Данные плательщика
+                  _receiptRow('Плательщик:', d['fio'] ?? '—'),
+                  _receiptRow('Лицевой счёт:', d['account_number'] ?? '—'),
+                  _receiptRow('Адрес:', d['address'] ?? '—'),
+                  _receiptRow('Период:', _formatPeriod(d['period_date'])),
+                  if (d['area'] != null) _receiptRow('Площадь:', '${d['area']} м²'),
+                  
+                  _receiptDivider(),
+                  
+                  // Услуги
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Услуги:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                  ),
+                  const SizedBox(height: 6),
+                  ...services.where((s) => ((s['paid'] as num?)?.toDouble() ?? 0) > 0).map((s) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            s['label'] ?? s['key'] ?? '',
+                            style: const TextStyle(fontSize: 12, color: Colors.black87),
+                          ),
+                        ),
+                        Text(
+                          '${_fmt(s['paid'])} ₽',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+                        ),
+                      ],
+                    ),
+                  )),
+                  
+                  _receiptDivider(),
+                  
+                  // Итого
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('ИТОГО ОПЛАЧЕНО:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      Text('${_fmt(totalPaid)} ₽', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Остаток долга
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Остаток долга:', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                      Text(
+                        '${_fmt(services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0)))} ₽',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                      ),
+                    ],
+                  ),
+                  
+                  _receiptDivider(),
+                  
+                  Text('Спасибо за оплату!', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Кнопки
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close, size: 16),
+                          label: const Text('Закрыть'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.grey.shade700,
+                            side: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _shareReceipt(d, services, totalPaid, dateStr, timeStr),
+                          icon: const Icon(Icons.share, size: 16),
+                          label: const Text('Поделиться'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _receiptDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: List.generate(30, (_) => Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 1),
+            height: 1,
+            color: Colors.grey.shade300,
+          ),
+        )),
+      ),
+    );
+  }
+
+  Widget _receiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          ),
+          Expanded(
+            child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _shareReceipt(Map<String, dynamic> d, List services, double totalPaid, String date, String time) {
+    final buffer = StringBuffer();
+    buffer.writeln('═══════════════════════');
+    buffer.writeln('     ЧЕК ОБ ОПЛАТЕ');
+    buffer.writeln('  $date  $time');
+    buffer.writeln('═══════════════════════');
+    buffer.writeln('Плательщик: ${d['fio'] ?? '—'}');
+    buffer.writeln('Л/С: ${d['account_number'] ?? '—'}');
+    buffer.writeln('Адрес: ${d['address'] ?? '—'}');
+    buffer.writeln('Период: ${_formatPeriod(d['period_date'])}');
+    if (d['area'] != null) buffer.writeln('Площадь: ${d['area']} м²');
+    buffer.writeln('───────────────────────');
+    for (final s in services) {
+      final paid = (s['paid'] as num?)?.toDouble() ?? 0;
+      if (paid > 0) {
+        buffer.writeln('${s['label'] ?? s['key']}: ${_fmt(paid)} ₽');
+      }
+    }
+    buffer.writeln('───────────────────────');
+    buffer.writeln('ИТОГО: ${_fmt(totalPaid)} ₽');
+    buffer.writeln('═══════════════════════');
+    buffer.writeln('Спасибо за оплату!');
+
+    // Copy to clipboard and show confirmation
+    final text = buffer.toString();
+    _copyToClipboard(text);
+  }
+
+  void _copyToClipboard(String text) {
+    final data = ClipboardData(text: text);
+    Clipboard.setData(data);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('📋 Чек скопирован в буфер обмена'), backgroundColor: Colors.indigo),
+      );
     }
   }
 

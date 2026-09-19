@@ -552,7 +552,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
   Future<void> _selectLocation() async {
     try {
       final dio = ref.read(dioProvider);
-      final resp = await dio.get('/locations/', queryParameters: {'limit': 1000});
+      final resp = await dio.get('/locations/', queryParameters: {'limit': 1000, 'assigned_only': true});
       if (resp.statusCode != 200) return;
       final locations = (resp.data as List).cast<Map<String, dynamic>>();
 

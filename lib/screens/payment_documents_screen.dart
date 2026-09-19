@@ -219,13 +219,13 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
       // macOS / Windows / Linux: диалог «Сохранить как»
       String? savePath;
       try {
-        savePath = await FilePicker.platform.saveFile(
+        savePath = await FilePicker.saveFile(
           dialogTitle: 'Сохранить $namePrefix',
           fileName: defaultName,
         );
       } catch (_) {
         try {
-          final dir = await FilePicker.platform.getDirectoryPath(dialogTitle: 'Выберите папку');
+          final dir = await FilePicker.getDirectoryPath(dialogTitle: 'Выберите папку');
           if (dir != null) savePath = '$dir/$defaultName';
         } catch (_) {}
       }

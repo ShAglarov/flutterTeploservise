@@ -23,7 +23,7 @@ class _ImportXlsScreenState extends ConsumerState<ImportXlsScreen> {
 
   Future<void> _pickFile() async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xls', 'xlsx'],
       );
