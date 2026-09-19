@@ -1,8 +1,13 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../services/base_api_service.dart';
 import 'cashier_help_screen.dart';
 
@@ -1031,9 +1036,9 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _shareReceipt(d, services, totalPaid, dateStr, timeStr),
-                          icon: const Icon(Icons.share, size: 16),
-                          label: const Text('Поделиться'),
+                          onPressed: () => _generateAndSharePdf(d, services, totalPaid, dateStr, timeStr),
+                          icon: const Icon(Icons.picture_as_pdf, size: 16),
+                          label: const Text('PDF'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.indigo,
                             foregroundColor: Colors.white,
@@ -1084,43 +1089,138 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     );
   }
 
-  void _shareReceipt(Map<String, dynamic> d, List services, double totalPaid, String date, String time) {
-    final buffer = StringBuffer();
-    buffer.writeln('═══════════════════════');
-    buffer.writeln('     ЧЕК ОБ ОПЛАТЕ');
-    buffer.writeln('  $date  $time');
-    buffer.writeln('═══════════════════════');
-    buffer.writeln('Плательщик: ${d['fio'] ?? '—'}');
-    buffer.writeln('Л/С: ${d['account_number'] ?? '—'}');
-    buffer.writeln('Адрес: ${d['address'] ?? '—'}');
-    buffer.writeln('Период: ${_formatPeriod(d['period_date'])}');
-    if (d['area'] != null) buffer.writeln('Площадь: ${d['area']} м²');
-    buffer.writeln('───────────────────────');
-    for (final s in services) {
-      final paid = (s['paid'] as num?)?.toDouble() ?? 0;
-      if (paid > 0) {
-        buffer.writeln('${s['label'] ?? s['key']}: ${_fmt(paid)} ₽');
+  Future<void> _generateAndSharePdf(Map<String, dynamic> d, List services, double totalPaid, String date, String time) async {
+    try {
+      final pdf = pw.Document();
+      
+      final paidServices = services.where((s) => ((s['paid'] as num?)?.toDouble() ?? 0) > 0).toList();
+      final debtEnd = services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a5,
+          margin: const pw.EdgeInsets.all(24),
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Заголовок
+                pw.Center(
+                  child: pw.Text('ЧЕК ОБ ОПЛАТЕ', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                ),
+                pw.Center(
+                  child: pw.Text('$date  $time', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                ),
+                pw.SizedBox(height: 16),
+                pw.Divider(thickness: 1.5),
+                pw.SizedBox(height: 10),
+
+                // Данные плательщика
+                _pdfInfoRow('Плательщик:', d['fio'] ?? '—'),
+                _pdfInfoRow('Лицевой счёт:', d['account_number'] ?? '—'),
+                _pdfInfoRow('Адрес:', d['address'] ?? '—'),
+                _pdfInfoRow('Период:', _formatPeriod(d['period_date'])),
+                if (d['area'] != null) _pdfInfoRow('Площадь:', '${d['area']} м²'),
+                
+                pw.SizedBox(height: 12),
+                pw.Divider(),
+                pw.SizedBox(height: 8),
+
+                // Таблица услуг
+                pw.Text('Оплаченные услуги:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 6),
+                
+                pw.Table(
+                  border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(3),
+                    1: const pw.FlexColumnWidth(1),
+                  },
+                  children: [
+                    pw.TableRow(
+                      decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                      children: [
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Услуга', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Сумма', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10), textAlign: pw.TextAlign.right)),
+                      ],
+                    ),
+                    ...paidServices.map((s) => pw.TableRow(
+                      children: [
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(s['label'] ?? s['key'] ?? '', style: const pw.TextStyle(fontSize: 10))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${_fmt(s['paid'])} р.', style: const pw.TextStyle(fontSize: 10), textAlign: pw.TextAlign.right)),
+                      ],
+                    )),
+                  ],
+                ),
+
+                pw.SizedBox(height: 12),
+                pw.Divider(thickness: 1.5),
+                pw.SizedBox(height: 8),
+
+                // Итого
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('ИТОГО ОПЛАЧЕНО:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('${_fmt(totalPaid)} р.', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                  ],
+                ),
+                pw.SizedBox(height: 4),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Остаток долга:', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                    pw.Text('${_fmt(debtEnd)} р.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  ],
+                ),
+
+                pw.SizedBox(height: 20),
+                pw.Divider(),
+                pw.SizedBox(height: 8),
+                pw.Center(
+                  child: pw.Text('Спасибо за оплату!', style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+
+      // Сохраняем PDF во временную папку
+      final dir = await getTemporaryDirectory();
+      final fileName = 'check_${d['account_number'] ?? 'receipt'}_${date.replaceAll('.', '')}.pdf';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(await pdf.save());
+
+      // Шарим через системный диалог
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'Чек об оплате — ${d['fio'] ?? ''}',
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Ошибка генерации PDF: $e'), backgroundColor: Colors.red),
+        );
       }
     }
-    buffer.writeln('───────────────────────');
-    buffer.writeln('ИТОГО: ${_fmt(totalPaid)} ₽');
-    buffer.writeln('═══════════════════════');
-    buffer.writeln('Спасибо за оплату!');
-
-    // Copy to clipboard and show confirmation
-    final text = buffer.toString();
-    _copyToClipboard(text);
   }
 
-  void _copyToClipboard(String text) {
-    final data = ClipboardData(text: text);
-    Clipboard.setData(data);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('📋 Чек скопирован в буфер обмена'), backgroundColor: Colors.indigo),
-      );
-    }
+  pw.Widget _pdfInfoRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(width: 100, child: pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700))),
+          pw.Expanded(child: pw.Text(value, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold))),
+        ],
+      ),
+    );
   }
+
 
   // ═══════ История операций ═══════
 
