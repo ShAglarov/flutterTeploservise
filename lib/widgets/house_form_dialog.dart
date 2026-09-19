@@ -43,6 +43,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   late final TextEditingController _fiasAOController;
   late final TextEditingController _cadastralController;
   late final TextEditingController _commissioningDateController;
+  late final TextEditingController _entrancesController;
+  String? _stoveType;
+  String? _housingType;
   
   bool _providesHeating = false;
   bool _providesHotWater = false;
@@ -69,6 +72,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _fiasAOController = TextEditingController(text: initial?.fiasAOGuid ?? '');
     _cadastralController = TextEditingController(text: initial?.cadastralNumber ?? '');
     _commissioningDateController = TextEditingController(text: initial?.commissioningDate ?? '');
+    _entrancesController = TextEditingController(text: '');
+    _stoveType = null;
+    _housingType = null;
     _providesHeating = initial?.providesHeating ?? false;
     _providesHotWater = initial?.providesHotWater ?? false;
     _selectedManagementCompanyId = initial?.managementCompanyId;
@@ -396,6 +402,44 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                             ? _commissioningDateController.text 
                             : 'Выбрать дату',
                           onTap: _pickCommissioningDate,
+                        ),
+                        _buildDivider(),
+                        _buildInputRow(Icons.door_front_door, Colors.indigo, 'Подъездов', _entrancesController, hint: '4', keyboardType: TextInputType.number),
+                        _buildDivider(),
+                        _buildActionRow(
+                          Icons.local_fire_department,
+                          Colors.orange,
+                          'Тип плит',
+                          _stoveType == 'gas' ? 'Газовые' : _stoveType == 'electric' ? 'Электрические' : _stoveType == 'mixed' ? 'Смешанные' : 'Не указан',
+                          onTap: () async {
+                            final result = await showDialog<String>(context: context, builder: (c) => SimpleDialog(
+                              title: const Text('Тип плит'),
+                              children: [
+                                SimpleDialogOption(child: const Text('🔥 Газовые'), onPressed: () => Navigator.pop(c, 'gas')),
+                                SimpleDialogOption(child: const Text('⚡ Электрические'), onPressed: () => Navigator.pop(c, 'electric')),
+                                SimpleDialogOption(child: const Text('🔄 Смешанные'), onPressed: () => Navigator.pop(c, 'mixed')),
+                              ],
+                            ));
+                            if (result != null) setState(() => _stoveType = result);
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildActionRow(
+                          Icons.home,
+                          Colors.deepPurple,
+                          'Тип жилья',
+                          _housingType == 'privatized' ? 'Приватизированное' : _housingType == 'municipal' ? 'Муниципальное' : _housingType == 'departmental' ? 'Ведомственное' : 'Не указан',
+                          onTap: () async {
+                            final result = await showDialog<String>(context: context, builder: (c) => SimpleDialog(
+                              title: const Text('Тип жилья'),
+                              children: [
+                                SimpleDialogOption(child: const Text('🏠 Приватизированное'), onPressed: () => Navigator.pop(c, 'privatized')),
+                                SimpleDialogOption(child: const Text('🏢 Муниципальное'), onPressed: () => Navigator.pop(c, 'municipal')),
+                                SimpleDialogOption(child: const Text('🏗️ Ведомственное'), onPressed: () => Navigator.pop(c, 'departmental')),
+                              ],
+                            ));
+                            if (result != null) setState(() => _housingType = result);
+                          },
                         ),
                       ]),
                       

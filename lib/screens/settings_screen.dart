@@ -38,6 +38,9 @@ import 'reports_screen.dart';
 import 'benefits_screen.dart';
 import 'meter_readings_screen.dart';
 import 'debt_notices_screen.dart';
+import 'subsidies_screen.dart';
+import 'receipt_generation_screen.dart';
+import 'archives_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -477,6 +480,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const DebtNoticesScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.monetization_on,
+            iconColor: Colors.deepPurple,
+            title: 'Субсидии',
+            subtitle: 'Назначение и управление субсидиями абонентов',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubsidiesScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.receipt_long,
+            iconColor: Colors.teal,
+            title: 'Квитанции',
+            subtitle: 'Формирование и массовая печать квитанций ЖКУ',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReceiptGenerationScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.archive,
+            iconColor: Colors.blueGrey,
+            title: 'Архив начислений',
+            subtitle: 'Помесячные архивы, просмотр и экспорт',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ArchivesScreen()),
               );
             },
           ),

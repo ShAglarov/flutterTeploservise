@@ -178,6 +178,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               subtitle: 'Сводная информация по начислениям/оплатам в разрезе домов',
               type: 'by_house',
             ),
+            _ReportItem(
+              icon: Icons.card_giftcard,
+              color: Colors.purple,
+              title: 'Статистика льгот',
+              subtitle: 'Количество льготников, суммы льгот по категориям',
+              type: 'benefit_stats',
+            ),
+            _ReportItem(
+              icon: Icons.calendar_view_month,
+              color: Colors.cyan,
+              title: 'Помесячный отчёт',
+              subtitle: 'Сравнение начислений, оплат и долгов по месяцам',
+              type: 'monthly',
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -247,6 +261,44 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       return;
     }
 
+    // Статистика льгот
+    if (type == 'benefit_stats') {
+      setState(() { _isLoading = true; _error = null; _currentReportType = type; _reportData = null; });
+      try {
+        final dio = ref.read(dioProvider);
+        final params = <String, dynamic>{};
+        if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
+        final resp = await dio.get('/benefits/', queryParameters: {...params, 'limit': 500});
+        setState(() {
+          _reportData = {'benefits': resp.data, 'type': type};
+        });
+      } catch (e) {
+        setState(() => _error = '$e');
+      } finally {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
+    // Помесячный отчёт
+    if (type == 'monthly') {
+      setState(() { _isLoading = true; _error = null; _currentReportType = type; _reportData = null; });
+      try {
+        final dio = ref.read(dioProvider);
+        final params = <String, dynamic>{};
+        if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
+        final resp = await dio.get('/archives/periods', queryParameters: params);
+        setState(() {
+          _reportData = {'periods': resp.data, 'type': type};
+        });
+      } catch (e) {
+        setState(() => _error = '$e');
+      } finally {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
     setState(() { _isLoading = true; _error = null; _currentReportType = type; _reportData = null; });
 
     try {
@@ -307,6 +359,135 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
 
     final type = _reportData?['type'] as String?;
+
+    // Рендеринг статистики льгот
+    if (type == 'benefit_stats') {
+      final items = (_reportData?['benefits']?['items'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final byCategory = <String, List<Map<String, dynamic>>>{};
+      for (final b in items) {
+        final cat = b['category'] as String? ?? 'other';
+        byCategory.putIfAbsent(cat, () => []).add(b);
+      }
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() { _reportData = null; _currentReportType = null; })),
+                const Expanded(child: Text('Статистика льгот', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+                Text('Всего: ${items.length}', style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(12),
+              children: byCategory.entries.map((e) {
+                final totalDiscount = e.value.fold<double>(0, (sum, b) => sum + ((b['discount_percent'] as num?)?.toDouble() ?? 0));
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.card_giftcard, color: Colors.purple, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(e.key, style: const TextStyle(fontWeight: FontWeight.bold))),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(8)),
+                              child: Text('${e.value.length} чел.', style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.w600)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('Средний % скидки: ${(totalDiscount / e.value.length).toStringAsFixed(1)}%', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Рендеринг помесячного отчёта
+    if (type == 'monthly') {
+      final periods = (_reportData?['periods'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() { _reportData = null; _currentReportType = null; })),
+                const Expanded(child: Text('Помесячный отчёт', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: periods.length,
+              itemBuilder: (_, i) {
+                final p = periods[i];
+                final charged = (p['total_charged'] as num?)?.toDouble() ?? 0;
+                final paid = (p['total_paid'] as num?)?.toDouble() ?? 0;
+                final debt = (p['total_debt'] as num?)?.toDouble() ?? 0;
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_month, size: 16, color: Colors.cyan),
+                            const SizedBox(width: 6),
+                            Text(p['period_label'] ?? p['period'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const Spacer(),
+                            Text('${p['count'] ?? 0} Л/С', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(child: Column(children: [
+                              Text('${charged.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                              const Text('Начислено', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                            ])),
+                            Expanded(child: Column(children: [
+                              Text('${paid.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                              const Text('Оплачено', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                            ])),
+                            Expanded(child: Column(children: [
+                              Text('${debt.toStringAsFixed(0)}₽', style: TextStyle(color: debt > 0 ? Colors.red : Colors.grey, fontWeight: FontWeight.bold)),
+                              const Text('Долг', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                            ])),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
     final stats = _reportData?['stats'] as Map<String, dynamic>? ?? {};
     final docs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
@@ -466,6 +647,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       'service_stats' => 'Статистика по услугам',
       'receipts' => 'Реестр квитанций',
       'by_house' => 'Реестр по домам',
+      'benefit_stats' => 'Статистика льгот',
+      'monthly' => 'Помесячный отчёт',
       _ => 'Отчёт',
     };
   }
