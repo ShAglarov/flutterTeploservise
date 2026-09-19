@@ -121,6 +121,22 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ Сохранено: $filePath'), duration: const Duration(seconds: 5)));
       }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final statusCode = e.response?.statusCode;
+      String msg;
+      if (statusCode == 404) {
+        msg = 'Функция экспорта PDF ещё не доступна на сервере. Требуется обновление бэкенда.';
+      } else if (statusCode == 500) {
+        msg = 'Ошибка сервера при генерации PDF. Обратитесь к администратору.';
+      } else {
+        msg = 'Ошибка сети ($statusCode). Проверьте подключение.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: statusCode == 404 ? Colors.orange : Colors.red,
+        duration: const Duration(seconds: 4),
+      ));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Ошибка: $e'), backgroundColor: Colors.red));

@@ -32,6 +32,12 @@ import 'import_xls_screen.dart';
 import 'activity_monitor_screen.dart';
 import 'org_requisites_screen.dart';
 import 'residents_management_screen.dart';
+import 'tariffs_screen.dart';
+import 'billing_screen.dart';
+import 'reports_screen.dart';
+import 'benefits_screen.dart';
+import 'meter_readings_screen.dart';
+import 'debt_notices_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -393,6 +399,84 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ResidentsManagementScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.price_change_outlined,
+            iconColor: Colors.deepOrange,
+            title: 'Тарифы',
+            subtitle: 'Управление тарифами по услугам (отопление, ГВС, ТБО и др.)',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TariffsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.calculate_outlined,
+            iconColor: Colors.purple,
+            title: 'Начисления',
+            subtitle: 'Массовое начисление по тарифам за период',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BillingScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.assessment_outlined,
+            iconColor: Colors.blueGrey,
+            title: 'Реестры и отчёты',
+            subtitle: 'Оборотные ведомости, реестры, списки неплательщиков',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReportsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.card_giftcard,
+            iconColor: Colors.teal,
+            title: 'Льготы',
+            subtitle: 'Управление льготами абонентов по категориям',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BenefitsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.speed,
+            iconColor: Colors.orange,
+            title: 'Показания счётчиков',
+            subtitle: 'Ввод показаний газа, электричества, воды',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MeterReadingsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.mail_outline,
+            iconColor: Colors.red,
+            title: 'Уведомления о задолженности',
+            subtitle: 'Формирование претензий и уведомлений должникам',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DebtNoticesScreen()),
               );
             },
           ),
