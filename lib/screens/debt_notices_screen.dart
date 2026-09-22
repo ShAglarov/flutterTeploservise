@@ -26,6 +26,7 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
 
   // ── Кэш аккаунтов (загружается 1 раз) ──
   List<Map<String, dynamic>>? _cachedAccounts;
+  bool _isPickerOpen = false;
 
   // ── Режим множественного выбора ──
   bool _selectionMode = false;
@@ -1236,16 +1237,25 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
   }
 
   Future<void> _pickAccount(BuildContext ctx, void Function(int, String, double) onPick) async {
+    // Защита от множественных открытий
+    if (_isPickerOpen) return;
+    _isPickerOpen = true;
+
     try {
       // Используем кэш или загружаем
       if (_cachedAccounts == null) {
+        if (ctx.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('⏳ Загрузка списка ЛС...'), duration: Duration(seconds: 2)),
+          );
+        }
         final dio = ref.read(dioProvider);
         final resp = await dio.get('/accounts/', queryParameters: {'limit': 10000});
-        if (resp.statusCode != 200 || !ctx.mounted) return;
+        if (resp.statusCode != 200 || !ctx.mounted) { _isPickerOpen = false; return; }
         _cachedAccounts = (resp.data as List).cast<Map<String, dynamic>>();
       }
       final accounts = _cachedAccounts!;
-      if (!ctx.mounted) return;
+      if (!ctx.mounted) { _isPickerOpen = false; return; }
 
       final searchCtrl = TextEditingController();
       var filtered = accounts;
@@ -1357,6 +1367,7 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
         ])),
       )));
     } catch (_) {}
+    _isPickerOpen = false;
   }
 
   Future<void> _delete(int id) async {
