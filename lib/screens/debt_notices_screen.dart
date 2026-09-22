@@ -1262,8 +1262,10 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
               border: OutlineInputBorder(),
             ),
             onChanged: (q) {
-              // Мульти-слово поиск: "37 42" находит "д. 37, кв. 42"
-              final terms = q.toLowerCase().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+              // Умный поиск: разделяем по пробелам, запятым, точкам, точке с запятой
+              // "37,42" "37 42" "37.42" "красноярская 37 42" — всё работает
+              final terms = q.toLowerCase().split(RegExp(r'[\s,;.]+'))
+                  .where((t) => t.isNotEmpty).toList();
               ss(() => filtered = accounts.where((a) {
                 final haystack = '${a['fio']} ${a['account_number']} ${a['address']}'.toLowerCase();
                 return terms.every((term) => haystack.contains(term));
