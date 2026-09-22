@@ -309,11 +309,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         const SizedBox(height: 24),
 
-        // ═══════ Пользователи ═══════
-        if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userRead)) ...[
-          _buildSectionHeader('Пользователи'),
-          const SizedBox(height: 8),
-          _buildCard([
+        // ═══════ Пользователи и жильцы ═══════
+        _buildSectionHeader('Пользователи и жильцы'),
+        const SizedBox(height: 8),
+        _buildCard([
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userRead))
             _buildNavRow(
               icon: Icons.people_outline,
               iconColor: AppTheme.primaryBlue,
@@ -326,21 +326,102 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 );
               },
             ),
-          ]),
-          const SizedBox(height: 24),
-        ],
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userRead))
+            _buildDivider(),
+          _buildNavRow(
+            icon: Icons.people_outline,
+            iconColor: Colors.amber,
+            title: 'Управление жильцами',
+            subtitle: 'Добавление, редактирование, блокировка жильцов',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ResidentsManagementScreen()),
+              );
+            },
+          ),
+        ]),
+        _buildSectionFooter('Управление учётными записями и жильцами домов'),
 
-        // ═══════ Данные ═══════
-        _buildSectionHeader('Данные'),
+        const SizedBox(height: 24),
+
+        // ═══════ Биллинг и начисления ═══════
+        _buildSectionHeader('Биллинг и начисления'),
         const SizedBox(height: 8),
         _buildCard([
-          _buildActionRow(
-            icon: Icons.cloud_download_outlined,
-            iconColor: Colors.orangeAccent,
-            title: 'Загрузить все данные с сервера',
-            onTap: _handleFullSync,
+          _buildNavRow(
+            icon: Icons.price_change_outlined,
+            iconColor: Colors.deepOrange,
+            title: 'Тарифы',
+            subtitle: 'Управление тарифами по услугам (отопление, ГВС, ТБО и др.)',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TariffsScreen()),
+              );
+            },
           ),
           _buildDivider(),
+          _buildNavRow(
+            icon: Icons.calculate_outlined,
+            iconColor: Colors.purple,
+            title: 'Начисления',
+            subtitle: 'Массовое начисление по тарифам за период',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BillingScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.receipt_long,
+            iconColor: Colors.teal,
+            title: 'Квитанции',
+            subtitle: 'Формирование и массовая печать квитанций ЖКУ',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReceiptGenerationScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.archive,
+            iconColor: Colors.blueGrey,
+            title: 'Архив начислений',
+            subtitle: 'Помесячные архивы, просмотр и экспорт',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ArchivesScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.account_balance_outlined,
+            iconColor: Colors.indigo,
+            title: 'Реквизиты организаций',
+            subtitle: 'Управление БИК, расчётными счетами, ИНН',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OrgRequisitesScreen()),
+              );
+            },
+          ),
+        ]),
+        _buildSectionFooter('Тарифы, начисления, квитанции и архивы'),
+
+        const SizedBox(height: 24),
+
+        // ═══════ Платёжные документы ═══════
+        _buildSectionHeader('Платёжные документы'),
+        const SizedBox(height: 8),
+        _buildCard([
           _buildNavRow(
             icon: Icons.receipt_long_outlined,
             iconColor: Colors.deepPurple,
@@ -379,72 +460,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             },
           ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.account_balance_outlined,
-            iconColor: Colors.indigo,
-            title: 'Реквизиты организаций',
-            subtitle: 'Управление БИК, расчётными счетами, ИНН',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const OrgRequisitesScreen()),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.people_outline,
-            iconColor: Colors.amber,
-            title: 'Управление жильцами',
-            subtitle: 'Добавление, редактирование, блокировка жильцов',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ResidentsManagementScreen()),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.price_change_outlined,
-            iconColor: Colors.deepOrange,
-            title: 'Тарифы',
-            subtitle: 'Управление тарифами по услугам (отопление, ГВС, ТБО и др.)',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const TariffsScreen()),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.calculate_outlined,
-            iconColor: Colors.purple,
-            title: 'Начисления',
-            subtitle: 'Массовое начисление по тарифам за период',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BillingScreen()),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.assessment_outlined,
-            iconColor: Colors.blueGrey,
-            title: 'Реестры и отчёты',
-            subtitle: 'Оборотные ведомости, реестры, списки неплательщиков',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ReportsScreen()),
-              );
-            },
-          ),
-          _buildDivider(),
+        ]),
+        _buildSectionFooter('Просмотр, анализ и загрузка платёжных документов'),
+
+        const SizedBox(height: 24),
+
+        // ═══════ Абоненты и услуги ═══════
+        _buildSectionHeader('Абоненты и услуги'),
+        const SizedBox(height: 8),
+        _buildCard([
           _buildNavRow(
             icon: Icons.card_giftcard,
             iconColor: Colors.teal,
@@ -454,6 +478,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const BenefitsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.monetization_on,
+            iconColor: Colors.deepPurple,
+            title: 'Субсидии',
+            subtitle: 'Назначение и управление субсидиями абонентов',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SubsidiesScreen()),
               );
             },
           ),
@@ -483,47 +520,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             },
           ),
-          _buildDivider(),
+        ]),
+        _buildSectionFooter('Льготы, субсидии, счётчики и уведомления'),
+
+        const SizedBox(height: 24),
+
+        // ═══════ Реестры и отчёты ═══════
+        _buildSectionHeader('Аналитика'),
+        const SizedBox(height: 8),
+        _buildCard([
           _buildNavRow(
-            icon: Icons.monetization_on,
-            iconColor: Colors.deepPurple,
-            title: 'Субсидии',
-            subtitle: 'Назначение и управление субсидиями абонентов',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SubsidiesScreen()),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.receipt_long,
-            iconColor: Colors.teal,
-            title: 'Квитанции',
-            subtitle: 'Формирование и массовая печать квитанций ЖКУ',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ReceiptGenerationScreen()),
-              );
-            },
-          ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.archive,
+            icon: Icons.assessment_outlined,
             iconColor: Colors.blueGrey,
-            title: 'Архив начислений',
-            subtitle: 'Помесячные архивы, просмотр и экспорт',
+            title: 'Реестры и отчёты',
+            subtitle: 'Оборотные ведомости, реестры, списки неплательщиков',
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ArchivesScreen()),
+                MaterialPageRoute(builder: (_) => const ReportsScreen()),
               );
             },
           ),
         ]),
-        _buildSectionFooter('Полная пересинхронизация, платежные документы и импорт данных'),
+        _buildSectionFooter('Формирование отчётов и аналитика'),
+
+        const SizedBox(height: 24),
+
+        // ═══════ Синхронизация ═══════
+        _buildSectionHeader('Синхронизация'),
+        const SizedBox(height: 8),
+        _buildCard([
+          _buildActionRow(
+            icon: Icons.cloud_download_outlined,
+            iconColor: Colors.orangeAccent,
+            title: 'Загрузить все данные с сервера',
+            onTap: _handleFullSync,
+          ),
+        ]),
+        _buildSectionFooter('Полная пересинхронизация данных с сервером'),
 
         const SizedBox(height: 24),
 
