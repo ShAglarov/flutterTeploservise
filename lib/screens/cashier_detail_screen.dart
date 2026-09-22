@@ -79,6 +79,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       final padding = isWide ? 24.0 : 12.0;
 
       final headerCard = _buildHeader(theme, d, totals, isWide);
+      final residentCard = _buildResidentCard(theme, d);
       final tableCard = _buildServiceTable(theme, services, totals, isWide);
       final actionsCard = _buildActions(theme, isWide);
 
@@ -90,6 +91,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
             padding: EdgeInsets.all(padding),
             child: Column(children: [
               headerCard,
+              residentCard,
               const SizedBox(height: 16),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,6 +114,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
             padding: EdgeInsets.all(padding),
             children: [
               headerCard,
+              residentCard,
               const SizedBox(height: 12),
               tableCard,
               const SizedBox(height: 12),
@@ -177,6 +180,14 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         const SizedBox(height: 4),
         _infoRow(Icons.square_foot, '${d['area']} м²', theme),
       ],
+      if (d['cadastral_number'] != null && d['cadastral_number'].toString().isNotEmpty) ...[
+        const SizedBox(height: 4),
+        _infoRow(Icons.pin, 'Кадастр: ${d['cadastral_number']}', theme),
+      ],
+      if (d['rooms_count'] != null) ...[
+        const SizedBox(height: 4),
+        _infoRow(Icons.meeting_room, 'Комнат: ${d['rooms_count']}', theme),
+      ],
     ]);
   }
 
@@ -188,6 +199,94 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         fontWeight: bold ? FontWeight.w600 : null,
       ))),
     ]);
+  }
+
+  // ═══════ Блок жильца (нанимателя) ═══════
+
+  Widget _buildResidentCard(ThemeData theme, Map<String, dynamic> d) {
+    final resident = d['resident'] as Map<String, dynamic>?;
+    if (resident == null) return const SizedBox.shrink();
+
+    final fullName = resident['full_name'] ?? resident['username'] ?? 'Без имени';
+    final phone = resident['phone_number']?.toString() ?? '';
+    final email = resident['email']?.toString() ?? '';
+    final isBlocked = resident['is_blocked'] == true;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isBlocked ? Colors.red.withAlpha(80) : Colors.green.withAlpha(80),
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isBlocked ? Icons.person_off : Icons.person,
+                    size: 18,
+                    color: isBlocked ? Colors.red[700] : Colors.green[700],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Наниматель помещения',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isBlocked ? Colors.red[700] : Colors.green[700],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                fullName,
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              ),
+              if (phone.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  const Icon(Icons.phone, size: 14, color: Colors.blue),
+                  const SizedBox(width: 6),
+                  Text(phone, style: const TextStyle(fontSize: 14, color: Colors.blue)),
+                ]),
+              ],
+              if (email.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  const Icon(Icons.email, size: 14, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(email, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                ]),
+              ],
+              if (isBlocked) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    '⛔ Жилец заблокирован',
+                    style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _debtBadge(ThemeData theme, double totalDebt, Color debtColor, bool isWide) {
