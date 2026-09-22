@@ -24,6 +24,9 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
   String? _filterType;
   String? _filterStatus;
 
+  // ── Кэш аккаунтов (загружается 1 раз) ──
+  List<Map<String, dynamic>>? _cachedAccounts;
+
   // ── Режим множественного выбора ──
   bool _selectionMode = false;
   final Set<int> _selectedIds = {};
@@ -70,6 +73,18 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
   void initState() {
     super.initState();
     _load();
+    _preloadAccounts();
+  }
+
+  /// Предзагрузка аккаунтов в фоне — чтобы пикер открывался мгновенно
+  Future<void> _preloadAccounts() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get('/accounts/', queryParameters: {'limit': 10000});
+      if (resp.statusCode == 200) {
+        _cachedAccounts = (resp.data as List).cast<Map<String, dynamic>>();
+      }
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -1138,7 +1153,13 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
             child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
               if (isNew) ...[
                 InkWell(
-                  onTap: () => _pickAccount(ctx, (id, label) => ss(() { accountId = id; accountLabel = label; })),
+                  onTap: () => _pickAccount(ctx, (id, label, debt) => ss(() {
+                    accountId = id;
+                    accountLabel = label;
+                    if (debt > 0 && debtCtrl.text.isEmpty) {
+                      debtCtrl.text = debt.toStringAsFixed(2);
+                    }
+                  })),
                   child: InputDecorator(
                     decoration: const InputDecoration(labelText: 'Лицевой счёт *', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.person, size: 20)),
                     child: Text(accountLabel, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis),
@@ -1214,27 +1235,84 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
     }
   }
 
-  Future<void> _pickAccount(BuildContext ctx, void Function(int, String) onPick) async {
+  Future<void> _pickAccount(BuildContext ctx, void Function(int, String, double) onPick) async {
     try {
-      final dio = ref.read(dioProvider);
-      final resp = await dio.get('/accounts/', queryParameters: {'limit': 10000});
-      if (resp.statusCode != 200 || !ctx.mounted) return;
-      final accounts = (resp.data as List).cast<Map<String, dynamic>>();
+      // Используем кэш или загружаем
+      if (_cachedAccounts == null) {
+        final dio = ref.read(dioProvider);
+        final resp = await dio.get('/accounts/', queryParameters: {'limit': 10000});
+        if (resp.statusCode != 200 || !ctx.mounted) return;
+        _cachedAccounts = (resp.data as List).cast<Map<String, dynamic>>();
+      }
+      final accounts = _cachedAccounts!;
+      if (!ctx.mounted) return;
+
       final searchCtrl = TextEditingController();
       var filtered = accounts;
       await showDialog(context: ctx, builder: (dlg) => StatefulBuilder(builder: (dlg, ss) => AlertDialog(
         title: const Text('Выбор ЛС'),
         content: SizedBox(width: 400, height: 400, child: Column(children: [
-          TextField(controller: searchCtrl, decoration: const InputDecoration(hintText: 'Поиск...', prefixIcon: Icon(Icons.search), isDense: true, border: OutlineInputBorder()), onChanged: (q) {
-            ss(() => filtered = accounts.where((a) => '${a['fio']} ${a['account_number']} ${a['address']}'.toLowerCase().contains(q.toLowerCase())).toList());
-          }),
-          const SizedBox(height: 8),
-          Expanded(child: ListView(children: filtered.map((a) => ListTile(
-            dense: true,
-            title: Text('${a['fio'] ?? ''} (ЛС: ${a['account_number'] ?? ''})', style: const TextStyle(fontSize: 13)),
-            subtitle: Text(a['address'] ?? '', style: const TextStyle(fontSize: 11)),
-            onTap: () { onPick(a['id'] as int, '${a['fio']} (ЛС: ${a['account_number']})'); Navigator.pop(dlg); },
-          )).toList())),
+          TextField(
+            controller: searchCtrl,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Поиск (ФИО, адрес, дом, кв)...',
+              prefixIcon: Icon(Icons.search),
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (q) {
+              // Мульти-слово поиск: "37 42" находит "д. 37, кв. 42"
+              final terms = q.toLowerCase().split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+              ss(() => filtered = accounts.where((a) {
+                final haystack = '${a['fio']} ${a['account_number']} ${a['address']}'.toLowerCase();
+                return terms.every((term) => haystack.contains(term));
+              }).toList());
+            },
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '${filtered.length} из ${accounts.length}',
+              style: TextStyle(fontSize: 11, color: Theme.of(dlg).colorScheme.onSurfaceVariant),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Expanded(child: ListView.builder(
+            itemCount: filtered.length,
+            itemBuilder: (_, i) {
+              final a = filtered[i];
+              return ListTile(
+                dense: true,
+                title: Text('${a['fio'] ?? ''} (ЛС: ${a['account_number'] ?? ''})', style: const TextStyle(fontSize: 13)),
+                subtitle: Text(a['address'] ?? '', style: const TextStyle(fontSize: 11)),
+                onTap: () async {
+                  Navigator.pop(dlg);
+                  // Загружаем долг по этому ЛС
+                  double debt = 0;
+                  try {
+                    final dio = ref.read(dioProvider);
+                    final pdResp = await dio.get('/payment-documents/', queryParameters: {
+                      'account_id': a['id'],
+                      'limit': 1,
+                    });
+                    if (pdResp.statusCode == 200) {
+                      final docs = pdResp.data is List ? pdResp.data as List : (pdResp.data['items'] ?? []) as List;
+                      if (docs.isNotEmpty) {
+                        final doc = docs.last as Map<String, dynamic>;
+                        debt = [
+                          'debt_heating_end', 'debt_hot_water_end', 'debt_maintenance_end',
+                          'debt_waste_end', 'debt_odn_electricity_end', 'debt_odn_water_end',
+                        ].fold<double>(0, (sum, key) => sum + ((doc[key] as num?)?.toDouble() ?? 0));
+                      }
+                    }
+                  } catch (_) {}
+                  onPick(a['id'] as int, '${a['fio']} (ЛС: ${a['account_number']})', debt);
+                },
+              );
+            },
+          )),
         ])),
       )));
     } catch (_) {}
