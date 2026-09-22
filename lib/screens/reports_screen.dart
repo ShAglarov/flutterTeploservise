@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
@@ -6,9 +7,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/base_api_service.dart';
 
-/// Экран отчётов и реестров — аналог reeskvi, reeskviu, reestrr1, stlg*, vedost*
-/// из FoxPro. Позволяет формировать и экспортировать реестры квитанций,
-/// оборотные ведомости, списки неплательщиков.
+/// Экран отчётов и реестров — 6 уникальных отчётов + экспорт.
+/// Каждый отчёт показывает принципиально разную аналитику,
+/// используя различные данные из API.
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -23,7 +24,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   List<String> _periods = [];
 
   // Текущий отчёт
-  String? _currentReportType;
   Map<String, dynamic>? _reportData;
   bool _isLoading = false;
   bool _isExporting = false;
@@ -183,6 +183,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // КАТАЛОГ ОТЧЁТОВ
+  // ═══════════════════════════════════════════════════════════════════
+
   Widget _buildReportCatalog(ThemeData theme, bool isDark) {
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -193,25 +197,40 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           Colors.green,
           [
             _ReportItem(
-              icon: Icons.summarize,
+              icon: Icons.table_chart_outlined,
               color: Colors.blue,
               title: 'Оборотная ведомость',
-              subtitle: 'Долг НМ, начислено, оплачено, перерасчёт, долг КМ по всем услугам',
+              subtitle: 'Детализация по каждой услуге: отопление, ГВС, ТБО, ОДН и др.',
               type: 'turnover',
             ),
             _ReportItem(
-              icon: Icons.money_off,
+              icon: Icons.warning_amber_rounded,
               color: Colors.red,
               title: 'Список неплательщиков',
-              subtitle: 'Абоненты с задолженностью на конец периода',
+              subtitle: 'Должники с индикаторами критичности и процентом неоплаты',
               type: 'debtors',
             ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildReportCategory(
+          'Аналитика',
+          Icons.analytics_outlined,
+          Colors.indigo,
+          [
             _ReportItem(
-              icon: Icons.bar_chart,
-              color: Colors.teal,
-              title: 'Статистика по услугам',
-              subtitle: 'Суммы начислений, оплат и долгов по каждой услуге',
-              type: 'service_stats',
+              icon: Icons.home_work,
+              color: Colors.orange,
+              title: 'Сводка по домам',
+              subtitle: 'Начисления, оплаты и процент собираемости по каждому дому',
+              type: 'house_summary',
+            ),
+            _ReportItem(
+              icon: Icons.show_chart,
+              color: Colors.cyan,
+              title: 'Помесячная динамика',
+              subtitle: 'Графики трендов начислений, оплат и собираемости',
+              type: 'monthly',
             ),
           ],
         ),
@@ -219,35 +238,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         _buildReportCategory(
           'Реестры',
           Icons.list_alt,
-          Colors.indigo,
+          Colors.deepPurple,
           [
             _ReportItem(
               icon: Icons.receipt_long,
               color: Colors.deepPurple,
               title: 'Реестр квитанций',
-              subtitle: 'Полный реестр платежных документов за период',
+              subtitle: 'Полный список документов с поиском и итоговой строкой',
               type: 'receipts',
-            ),
-            _ReportItem(
-              icon: Icons.home_work,
-              color: Colors.orange,
-              title: 'Реестр по домам',
-              subtitle: 'Сводная информация по начислениям/оплатам в разрезе домов',
-              type: 'by_house',
             ),
             _ReportItem(
               icon: Icons.card_giftcard,
               color: Colors.purple,
               title: 'Статистика льгот',
-              subtitle: 'Количество льготников, суммы льгот по категориям',
+              subtitle: 'Количество льготников и суммы скидок по категориям',
               type: 'benefit_stats',
-            ),
-            _ReportItem(
-              icon: Icons.calendar_view_month,
-              color: Colors.cyan,
-              title: 'Помесячный отчёт',
-              subtitle: 'Сравнение начислений, оплат и долгов по месяцам',
-              type: 'monthly',
             ),
           ],
         ),
@@ -304,8 +309,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // ЗАГРУЗКА ДАННЫХ
+  // ═══════════════════════════════════════════════════════════════════
+
   Future<void> _loadReport(String type) async {
-    // benefit_stats и monthly не требуют периода
+    // Проверяем необходимость периода
     final needsPeriod = type != 'benefit_stats' && type != 'monthly';
     if (needsPeriod && _selectedPeriod == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -329,46 +338,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
     // Статистика льгот
     if (type == 'benefit_stats') {
-      setState(() { _isLoading = true; _error = null; _currentReportType = type; _reportData = null; });
-      try {
-        final dio = ref.read(dioProvider);
-        final params = <String, dynamic>{};
-        if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
-        final resp = await dio.get('/benefits/', queryParameters: {...params, 'limit': 500});
-        // API /benefits/ возвращает чистый List, не {items: [...]}
-        final data = resp.data;
-        final List items = data is List ? data : (data is Map ? (data['items'] ?? []) : []);
-        setState(() {
-          _reportData = {'benefits': items, 'type': type};
-        });
-      } catch (e) {
-        setState(() => _error = '$e');
-      } finally {
-        setState(() => _isLoading = false);
-      }
+      await _loadBenefitStats();
       return;
     }
 
-    // Помесячный отчёт
+    // Помесячная динамика
     if (type == 'monthly') {
-      setState(() { _isLoading = true; _error = null; _currentReportType = type; _reportData = null; });
-      try {
-        final dio = ref.read(dioProvider);
-        final params = <String, dynamic>{};
-        if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
-        final resp = await dio.get('/archives/periods', queryParameters: params);
-        setState(() {
-          _reportData = {'periods': resp.data, 'type': type};
-        });
-      } catch (e) {
-        setState(() => _error = '$e');
-      } finally {
-        setState(() => _isLoading = false);
-      }
+      await _loadMonthlyDynamics();
       return;
     }
 
-    setState(() { _isLoading = true; _error = null; _currentReportType = type; _reportData = null; });
+    // Сводка по домам
+    if (type == 'house_summary') {
+      await _loadHouseSummary();
+      return;
+    }
+
+    // Оборотная ведомость и неплательщики — загружают документы
+    setState(() { _isLoading = true; _error = null; _reportData = null; });
 
     try {
       final dio = ref.read(dioProvider);
@@ -379,23 +366,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       };
       if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
 
-      // /statistics — агрегированная статистика (count, total_debt, total_charged, total_paid)
+      // Статистика
       final resp = await dio.get('/payment-documents/statistics', queryParameters: {
         'period_date': _selectedPeriod,
         if (_selectedLocationId != null) 'location_id': _selectedLocationId,
         if (type == 'debtors') 'has_debt': true,
       });
+
+      // Документы
       final docsResp = await dio.get('/payment-documents/', queryParameters: {
         ...params,
         'limit': 2000,
         if (type == 'debtors') 'has_debt': true,
       });
 
-      // API /payment-documents/ возвращает {items: [...], total: ...}
       final docsData = docsResp.data;
       final List docsList = docsData is List
           ? docsData
           : (docsData is Map ? (docsData['items'] ?? []) : []);
+
       setState(() {
         _reportData = {
           'stats': resp.data,
@@ -409,207 +398,982 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     setState(() => _isLoading = false);
   }
 
-  Widget _buildReportResult(ThemeData theme, bool isDark) {
+  Future<void> _loadBenefitStats() async {
+    setState(() { _isLoading = true; _error = null; _reportData = null; });
+    try {
+      final dio = ref.read(dioProvider);
+      final params = <String, dynamic>{};
+      if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
+      final resp = await dio.get('/benefits/', queryParameters: {...params, 'limit': 500});
+      final data = resp.data;
+      final List items = data is List ? data : (data is Map ? (data['items'] ?? []) : []);
+      setState(() {
+        _reportData = {'benefits': items, 'type': 'benefit_stats'};
+      });
+    } catch (e) {
+      setState(() => _error = '$e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
+  Future<void> _loadMonthlyDynamics() async {
+    setState(() { _isLoading = true; _error = null; _reportData = null; });
+    try {
+      final dio = ref.read(dioProvider);
+      final params = <String, dynamic>{};
+      if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
+      final resp = await dio.get('/archives/periods', queryParameters: params);
+      setState(() {
+        _reportData = {'periods': resp.data, 'type': 'monthly'};
+      });
+    } catch (e) {
+      setState(() => _error = '$e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadHouseSummary() async {
+    if (_selectedPeriod == null) return;
+    setState(() { _isLoading = true; _error = null; _reportData = null; });
+    try {
+      final dio = ref.read(dioProvider);
+
+      // Получаем список домов
+      final locResp = await dio.get('/locations/', queryParameters: {'limit': 1000, 'assigned_only': true});
+      final locData = locResp.data;
+      List<Map<String, dynamic>> locations;
+      if (locData is List) {
+        locations = locData.cast<Map<String, dynamic>>();
+      } else if (locData is Map && locData.containsKey('items')) {
+        locations = (locData['items'] as List).cast<Map<String, dynamic>>();
+      } else {
+        locations = [];
+      }
+
+      // Для каждого дома запрашиваем статистику
+      final housesData = <Map<String, dynamic>>[];
+      for (final loc in locations) {
+        try {
+          final statsResp = await dio.get('/payment-documents/statistics', queryParameters: {
+            'period_date': _selectedPeriod,
+            'location_id': loc['id'],
+          });
+          final stats = statsResp.data as Map<String, dynamic>? ?? {};
+          final count = stats['count'] as int? ?? 0;
+          if (count == 0) continue; // Пропускаем дома без документов
+
+          housesData.add({
+            'id': loc['id'],
+            'name': loc['name'] ?? 'ID: ${loc['id']}',
+            'address': loc['address'] ?? loc['name'] ?? '',
+            'count': count,
+            'total_charged': (stats['total_charged'] as num?)?.toDouble() ?? 0,
+            'total_paid': (stats['total_paid'] as num?)?.toDouble() ?? 0,
+            'total_debt': (stats['total_debt'] as num?)?.toDouble() ?? 0,
+            'debtors_count': stats['debtors_count'] as int? ?? 0,
+          });
+        } catch (_) {
+          // Пропускаем дом при ошибке
+        }
+      }
+
+      // Сортируем по долгу (макс. долг первый)
+      housesData.sort((a, b) => ((b['total_debt'] as double) - (a['total_debt'] as double)).sign.toInt());
+
+      setState(() {
+        _reportData = {'houses': housesData, 'type': 'house_summary'};
+      });
+    } catch (e) {
+      setState(() => _error = '$e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // РЕНДЕРИНГ ОТЧЁТОВ
+  // ═══════════════════════════════════════════════════════════════════
+
+  Widget _buildReportResult(ThemeData theme, bool isDark) {
     final type = _reportData?['type'] as String?;
 
-    // Рендеринг статистики льгот
-    if (type == 'benefit_stats') {
-      final rawBenefits = _reportData?['benefits'];
-      final List benefitsList = rawBenefits is List ? rawBenefits : [];
-      final items = benefitsList.cast<Map<String, dynamic>>();
-      final byCategory = <String, List<Map<String, dynamic>>>{};
-      for (final b in items) {
-        final cat = b['category'] as String? ?? 'other';
-        byCategory.putIfAbsent(cat, () => []).add(b);
-      }
-      return Column(
+    return switch (type) {
+      'benefit_stats' => _buildBenefitStatsResult(theme, isDark),
+      'monthly' => _buildMonthlyResult(theme, isDark),
+      'house_summary' => _buildHouseSummaryResult(theme, isDark),
+      'turnover' => _buildTurnoverResult(theme, isDark),
+      'debtors' => _buildDebtorsResult(theme, isDark),
+      'receipts' => _buildReceiptsResult(theme, isDark),
+      _ => const Center(child: Text('Неизвестный тип отчёта')),
+    };
+  }
+
+  // ─── Кнопка «Назад» (общая) ───
+  Widget _reportHeader(String title, {String? subtitle}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => setState(() { _reportData = null; }),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() { _reportData = null; _currentReportType = null; })),
-                const Expanded(child: Text('Статистика льгот', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
-                Text('Всего: ${items.length}', style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                if (subtitle != null)
+                  Text(subtitle, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
-          const Divider(height: 1),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(12),
-              children: byCategory.entries.map((e) {
-                final totalDiscount = e.value.fold<double>(0, (sum, b) => sum + ((b['discount_percent'] as num?)?.toDouble() ?? 0));
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.card_giftcard, color: Colors.purple, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(e.key, style: const TextStyle(fontWeight: FontWeight.bold))),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(8)),
-                              child: Text('${e.value.length} чел.', style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text('Средний % скидки: ${(totalDiscount / e.value.length).toStringAsFixed(1)}%', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
         ],
-      );
-    }
+      ),
+    );
+  }
 
-    // Рендеринг помесячного отчёта
-    if (type == 'monthly') {
-      final periods = (_reportData?['periods'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() { _reportData = null; _currentReportType = null; })),
-                const Expanded(child: Text('Помесячный отчёт', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: periods.length,
-              itemBuilder: (_, i) {
-                final p = periods[i];
-                final charged = (p['total_charged'] as num?)?.toDouble() ?? 0;
-                final paid = (p['total_paid'] as num?)?.toDouble() ?? 0;
-                final debt = (p['total_debt'] as num?)?.toDouble() ?? 0;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.calendar_month, size: 16, color: Colors.cyan),
-                            const SizedBox(width: 6),
-                            Text(p['period_label'] ?? p['period'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            const Spacer(),
-                            Text('${p['count'] ?? 0} Л/С', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(child: Column(children: [
-                              Text('${charged.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                              const Text('Начислено', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                            ])),
-                            Expanded(child: Column(children: [
-                              Text('${paid.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                              const Text('Оплачено', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                            ])),
-                            Expanded(child: Column(children: [
-                              Text('${debt.toStringAsFixed(0)}₽', style: TextStyle(color: debt > 0 ? Colors.red : Colors.grey, fontWeight: FontWeight.bold)),
-                              const Text('Долг', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                            ])),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      );
-    }
+  // ═══════════════════════════════════════════════════════════════════
+  // 1. ОБОРОТНАЯ ВЕДОМОСТЬ (по услугам)
+  // ═══════════════════════════════════════════════════════════════════
 
-    final stats = _reportData?['stats'] as Map<String, dynamic>? ?? {};
+  Widget _buildTurnoverResult(ThemeData theme, bool isDark) {
     final docs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    // Агрегируем итоги по каждой услуге
+    const services = ['heating', 'hot_water', 'maintenance', 'waste', 'odn_electricity', 'odn_water'];
+    const serviceLabels = {
+      'heating': 'Отопление',
+      'hot_water': 'ГВС',
+      'maintenance': 'Содержание',
+      'waste': 'ТБО',
+      'odn_electricity': 'ОДН (эл)',
+      'odn_water': 'ОДН (вода)',
+    };
+
+    // Считаем итоги по услугам
+    final serviceTotals = <String, Map<String, double>>{};
+    for (final svc in services) {
+      double totalCharged = 0, totalPaid = 0, totalDebt = 0;
+      for (final doc in docs) {
+        totalCharged += (doc['charged_$svc'] as num?)?.toDouble() ?? 0;
+        totalPaid += (doc['paid_$svc'] as num?)?.toDouble() ?? 0;
+        totalDebt += (doc['debt_${svc}_end'] as num?)?.toDouble() ?? 0;
+      }
+      serviceTotals[svc] = {'charged': totalCharged, 'paid': totalPaid, 'debt': totalDebt};
+    }
 
     return Column(
       children: [
-        // Заголовок отчёта + кнопка "Назад"
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() { _reportData = null; _currentReportType = null; }),
-              ),
-              Expanded(
-                child: Text(
-                  _getReportTitle(type),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        _reportHeader('Оборотная ведомость',
+          subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • ${docs.length} Л/С'),
+        const Divider(height: 1),
+        // Сводка по услугам (горизонтально прокручиваемая)
+        SizedBox(
+          height: 90,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            children: services.where((svc) {
+              final t = serviceTotals[svc]!;
+              return (t['charged']! > 0 || t['debt']! != 0);
+            }).map((svc) {
+              final t = serviceTotals[svc]!;
+              return Container(
+                width: 130,
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDark ? theme.colorScheme.surfaceContainerHigh : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: theme.dividerColor.withAlpha(50)),
                 ),
-              ),
-              Text(
-                _formatPeriodString(_selectedPeriod ?? ''),
-                style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(serviceLabels[svc] ?? svc, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                    const Spacer(),
+                    Text('${t['charged']!.toStringAsFixed(0)}₽', style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                    Text('${t['paid']!.toStringAsFixed(0)}₽', style: const TextStyle(fontSize: 12, color: Colors.green)),
+                    Text('${t['debt']!.toStringAsFixed(0)}₽',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                        color: t['debt']! > 0 ? Colors.red : Colors.green)),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ),
         const Divider(height: 1),
-        // Сводка
-        if (stats.isNotEmpty) _buildStatsSummary(stats, theme),
-        const Divider(height: 1),
-        // Таблица документов
+        // Таблица абонентов с горизонтальной прокруткой по услугам
         Expanded(
           child: docs.isEmpty
               ? const Center(child: Text('Нет данных'))
               : ListView.builder(
                   padding: const EdgeInsets.all(8),
                   itemCount: docs.length,
-                  itemBuilder: (_, i) => _buildDocRow(docs[i], i, theme, type),
+                  itemBuilder: (_, i) {
+                    final doc = docs[i];
+                    final fio = doc['fio'] ?? '';
+                    final accountNumber = doc['account_number'] ?? '';
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        leading: SizedBox(
+                          width: 28,
+                          child: Text('${i + 1}', style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+                        ),
+                        title: Text(fio, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text('ЛС: $accountNumber • ${(doc['total_charged'] as num?)?.toStringAsFixed(0) ?? '0'}₽ / ${(doc['total_paid'] as num?)?.toStringAsFixed(0) ?? '0'}₽',
+                            style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                        trailing: Text(
+                          '${((doc['total_debt_end'] as num?)?.toDouble() ?? 0).toStringAsFixed(0)}₽',
+                          style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700,
+                            color: ((doc['total_debt_end'] as num?)?.toDouble() ?? 0) > 0 ? Colors.red : Colors.green,
+                          ),
+                        ),
+                        // Раскрывающаяся детализация по услугам
+                        children: [
+                          Table(
+                            columnWidths: const {
+                              0: FlexColumnWidth(2.2),
+                              1: FlexColumnWidth(1.5),
+                              2: FlexColumnWidth(1.5),
+                              3: FlexColumnWidth(1.5),
+                            },
+                            children: [
+                              TableRow(
+                                decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withAlpha(80)),
+                                children: const [
+                                  Padding(padding: EdgeInsets.all(4), child: Text('Услуга', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700))),
+                                  Padding(padding: EdgeInsets.all(4), child: Text('Начисл.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                                  Padding(padding: EdgeInsets.all(4), child: Text('Оплач.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                                  Padding(padding: EdgeInsets.all(4), child: Text('Долг', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                                ],
+                              ),
+                              ...services.where((svc) {
+                                final ch = (doc['charged_$svc'] as num?)?.toDouble() ?? 0;
+                                final de = (doc['debt_${svc}_end'] as num?)?.toDouble() ?? 0;
+                                return ch != 0 || de != 0;
+                              }).map((svc) {
+                                final ch = (doc['charged_$svc'] as num?)?.toDouble() ?? 0;
+                                final pd = (doc['paid_$svc'] as num?)?.toDouble() ?? 0;
+                                final de = (doc['debt_${svc}_end'] as num?)?.toDouble() ?? 0;
+                                return TableRow(children: [
+                                  Padding(padding: const EdgeInsets.all(4), child: Text(serviceLabels[svc] ?? svc, style: const TextStyle(fontSize: 11))),
+                                  Padding(padding: const EdgeInsets.all(4), child: Text(ch.toStringAsFixed(2), style: const TextStyle(fontSize: 11), textAlign: TextAlign.right)),
+                                  Padding(padding: const EdgeInsets.all(4), child: Text(pd.toStringAsFixed(2), style: const TextStyle(fontSize: 11, color: Colors.green), textAlign: TextAlign.right)),
+                                  Padding(padding: const EdgeInsets.all(4), child: Text(de.toStringAsFixed(2),
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: de > 0 ? Colors.red : Colors.green), textAlign: TextAlign.right)),
+                                ]);
+                              }),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
         ),
       ],
     );
   }
 
-  Widget _buildStatsSummary(Map<String, dynamic> stats, ThemeData theme) {
-    // Ключи от API /statistics: count, total_debt, total_charged, total_paid
-    final totalDebt = (stats['total_debt'] as num?)?.toDouble() ?? 0;
-    final totalCharged = (stats['total_charged'] as num?)?.toDouble() ?? 0;
-    final totalPaid = (stats['total_paid'] as num?)?.toDouble() ?? 0;
-    final count = stats['count'] as int? ?? 0;
+  // ═══════════════════════════════════════════════════════════════════
+  // 2. СПИСОК НЕПЛАТЕЛЬЩИКОВ (с индикаторами критичности)
+  // ═══════════════════════════════════════════════════════════════════
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _statChip('Документов', count.toString(), Colors.blue),
-          _statChip('Начислено', '${totalCharged.toStringAsFixed(0)} ₽', Colors.orange),
-          _statChip('Оплачено', '${totalPaid.toStringAsFixed(0)} ₽', Colors.green),
-          _statChip('Долг', '${totalDebt.toStringAsFixed(0)} ₽',
-              totalDebt > 0 ? Colors.red : Colors.green),
-        ],
-      ),
+  Widget _buildDebtorsResult(ThemeData theme, bool isDark) {
+    final stats = _reportData?['stats'] as Map<String, dynamic>? ?? {};
+    final allDocs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    // Считаем метрики для каждого должника
+    final debtors = allDocs.map((doc) {
+      final totalDebt = (doc['total_debt_end'] as num?)?.toDouble() ?? 0;
+      final totalCharged = (doc['total_charged'] as num?)?.toDouble() ?? 0;
+      final debtPercent = totalCharged > 0 ? (totalDebt / totalCharged * 100) : 0.0;
+      return {...doc, '_debt': totalDebt, '_debt_percent': debtPercent};
+    }).where((d) => (d['_debt'] as double) > 0).toList();
+
+    // Сортировка по долгу (убыв.)
+    debtors.sort((a, b) => (b['_debt'] as double).compareTo(a['_debt'] as double));
+
+    final totalDebt = (stats['total_debt'] as num?)?.toDouble() ?? 0;
+    final debtorsCount = debtors.length;
+    final criticalCount = debtors.where((d) => (d['_debt'] as double) > 5000).length;
+    final warningCount = debtors.where((d) {
+      final debt = d['_debt'] as double;
+      return debt > 1000 && debt <= 5000;
+    }).length;
+    final lowCount = debtorsCount - criticalCount - warningCount;
+
+    return Column(
+      children: [
+        _reportHeader('Список неплательщиков',
+          subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $debtorsCount должников'),
+        const Divider(height: 1),
+        // Сводная панель критичности
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _debtorChip('🔴 Критичные', criticalCount, '> 5 000₽', Colors.red),
+                  _debtorChip('🟠 Средние', warningCount, '1 000 — 5 000₽', Colors.orange),
+                  _debtorChip('🟡 Малые', lowCount, '< 1 000₽', Colors.amber),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Общая задолженность: ', style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+                  Text('${totalDebt.toStringAsFixed(0)} ₽', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.red)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // Список должников
+        Expanded(
+          child: debtors.isEmpty
+              ? const Center(child: Text('Нет должников 🎉'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: debtors.length,
+                  itemBuilder: (_, i) {
+                    final doc = debtors[i];
+                    final debt = doc['_debt'] as double;
+                    final debtPercent = doc['_debt_percent'] as double;
+                    final fio = doc['fio'] ?? '';
+                    final address = doc['address'] ?? '';
+                    final accountNumber = doc['account_number'] ?? '';
+                    final totalCharged = (doc['total_charged'] as num?)?.toDouble() ?? 0;
+
+                    // Цвет по критичности
+                    final Color severityColor;
+                    final String severityIcon;
+                    if (debt > 5000) {
+                      severityColor = Colors.red;
+                      severityIcon = '🔴';
+                    } else if (debt > 1000) {
+                      severityColor = Colors.orange;
+                      severityIcon = '🟠';
+                    } else {
+                      severityColor = Colors.amber.shade700;
+                      severityIcon = '🟡';
+                    }
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: severityColor.withAlpha(60), width: 1),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            // Номер + индикатор
+                            SizedBox(
+                              width: 40,
+                              child: Column(
+                                children: [
+                                  Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                                  Text(severityIcon, style: const TextStyle(fontSize: 14)),
+                                ],
+                              ),
+                            ),
+                            // Абонент
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(fio, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  Text('$address • ЛС: $accountNumber',
+                                      style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+                                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 4),
+                                  // Процент неоплаты
+                                  Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 80,
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: LinearProgressIndicator(
+                                            value: totalCharged > 0 ? min(debt / totalCharged, 1.0) : 0,
+                                            backgroundColor: Colors.grey.shade200,
+                                            color: severityColor,
+                                            minHeight: 6,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text('${debtPercent.toStringAsFixed(0)}% не оплачено',
+                                          style: TextStyle(fontSize: 10, color: severityColor)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Долг
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('${debt.toStringAsFixed(0)} ₽',
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: severityColor)),
+                                Text('из ${totalCharged.toStringAsFixed(0)}₽',
+                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
+
+  Widget _debtorChip(String label, int count, String range, Color color) {
+    return Column(
+      children: [
+        Text('$count', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
+        Text(label, style: const TextStyle(fontSize: 11)),
+        Text(range, style: TextStyle(fontSize: 9, color: Colors.grey.shade600)),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 3. СВОДКА ПО ДОМАМ (с процентом собираемости)
+  // ═══════════════════════════════════════════════════════════════════
+
+  Widget _buildHouseSummaryResult(ThemeData theme, bool isDark) {
+    final houses = (_reportData?['houses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    // Общие итоги
+    double totalCharged = 0, totalPaid = 0, totalDebt = 0;
+    int totalAccounts = 0;
+    for (final h in houses) {
+      totalCharged += (h['total_charged'] as num?)?.toDouble() ?? 0;
+      totalPaid += (h['total_paid'] as num?)?.toDouble() ?? 0;
+      totalDebt += (h['total_debt'] as num?)?.toDouble() ?? 0;
+      totalAccounts += (h['count'] as int?) ?? 0;
+    }
+    final avgCollection = totalCharged > 0 ? (totalPaid / totalCharged * 100) : 0.0;
+
+    return Column(
+      children: [
+        _reportHeader('Сводка по домам',
+          subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • ${houses.length} домов, $totalAccounts Л/С'),
+        const Divider(height: 1),
+        // Итоговая строка
+        Container(
+          padding: const EdgeInsets.all(12),
+          color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _statChip('Начислено', '${totalCharged.toStringAsFixed(0)} ₽', Colors.blue),
+              _statChip('Оплачено', '${totalPaid.toStringAsFixed(0)} ₽', Colors.green),
+              _statChip('Долг', '${totalDebt.toStringAsFixed(0)} ₽', totalDebt > 0 ? Colors.red : Colors.green),
+              _statChip('Собираемость', '${avgCollection.toStringAsFixed(1)}%',
+                  avgCollection >= 80 ? Colors.green : avgCollection >= 50 ? Colors.orange : Colors.red),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // Дома
+        Expanded(
+          child: houses.isEmpty
+              ? const Center(child: Text('Нет данных'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: houses.length,
+                  itemBuilder: (_, i) {
+                    final h = houses[i];
+                    final name = h['name'] as String? ?? '';
+                    final count = h['count'] as int? ?? 0;
+                    final charged = (h['total_charged'] as num?)?.toDouble() ?? 0;
+                    final paid = (h['total_paid'] as num?)?.toDouble() ?? 0;
+                    final debt = (h['total_debt'] as num?)?.toDouble() ?? 0;
+                    final debtorsCount = h['debtors_count'] as int? ?? 0;
+                    final collection = charged > 0 ? (paid / charged * 100) : 0.0;
+
+                    final Color collectionColor;
+                    if (collection >= 80) {
+                      collectionColor = Colors.green;
+                    } else if (collection >= 50) {
+                      collectionColor = Colors.orange;
+                    } else {
+                      collectionColor = Colors.red;
+                    }
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Адрес + кол-во ЛС
+                            Row(
+                              children: [
+                                const Icon(Icons.home, size: 18, color: Colors.indigo),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                    maxLines: 2, overflow: TextOverflow.ellipsis)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.indigo.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text('$count Л/С', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.indigo.shade700)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            // Начислено / Оплачено / Долг
+                            Row(
+                              children: [
+                                Expanded(child: Column(children: [
+                                  Text('${charged.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  const Text('Начислено', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                ])),
+                                Expanded(child: Column(children: [
+                                  Text('${paid.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  const Text('Оплачено', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                ])),
+                                Expanded(child: Column(children: [
+                                  Text('${debt.toStringAsFixed(0)}₽', style: TextStyle(color: debt > 0 ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                  Text('Долг ($debtorsCount)', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                ])),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            // Процент собираемости — прогресс-бар
+                            Row(
+                              children: [
+                                Text('Собираемость:', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: collection / 100,
+                                      backgroundColor: Colors.grey.shade200,
+                                      color: collectionColor,
+                                      minHeight: 8,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text('${collection.toStringAsFixed(1)}%',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: collectionColor)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 4. ПОМЕСЯЧНАЯ ДИНАМИКА (с мини-графиками и трендами)
+  // ═══════════════════════════════════════════════════════════════════
+
+  Widget _buildMonthlyResult(ThemeData theme, bool isDark) {
+    final periods = (_reportData?['periods'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    // Находим максимальное начисление для масштабирования графиков
+    double maxCharged = 1;
+    for (final p in periods) {
+      final ch = (p['total_charged'] as num?)?.toDouble() ?? 0;
+      if (ch > maxCharged) maxCharged = ch;
+    }
+
+    return Column(
+      children: [
+        _reportHeader('Помесячная динамика',
+          subtitle: '${periods.length} периодов'),
+        const Divider(height: 1),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: periods.length,
+            itemBuilder: (_, i) {
+              final p = periods[i];
+              final charged = (p['total_charged'] as num?)?.toDouble() ?? 0;
+              final paid = (p['total_paid'] as num?)?.toDouble() ?? 0;
+              final debt = (p['total_debt'] as num?)?.toDouble() ?? 0;
+              final count = p['count'] as int? ?? 0;
+              final collection = charged > 0 ? (paid / charged * 100) : 0.0;
+
+              // Тренд по сравнению с предыдущим месяцем
+              String trendIcon = '➖';
+              if (i < periods.length - 1) {
+                final prevDebt = (periods[i + 1]['total_debt'] as num?)?.toDouble() ?? 0;
+                if (debt > prevDebt + 100) {
+                  trendIcon = '📈';
+                } else if (debt < prevDebt - 100) {
+                  trendIcon = '📉';
+                }
+              }
+
+              // Ширина полосок (относительно макс.)
+              final chargedWidth = maxCharged > 0 ? (charged / maxCharged) : 0.0;
+              final paidWidth = maxCharged > 0 ? (paid / maxCharged) : 0.0;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Заголовок: период + тренд
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_month, size: 16, color: Colors.cyan),
+                          const SizedBox(width: 6),
+                          Text(p['period_label'] ?? p['period'] ?? '',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(width: 8),
+                          Text(trendIcon, style: const TextStyle(fontSize: 14)),
+                          const Spacer(),
+                          Text('$count Л/С', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Мини-графики (горизонтальные полоски)
+                      Row(
+                        children: [
+                          SizedBox(width: 65, child: Text('Начисл.', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant))),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: chargedWidth,
+                                backgroundColor: Colors.grey.shade200,
+                                color: Colors.blue,
+                                minHeight: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(width: 70, child: Text('${charged.toStringAsFixed(0)}₽', textAlign: TextAlign.right,
+                              style: const TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.w600))),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          SizedBox(width: 65, child: Text('Оплач.', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant))),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: paidWidth,
+                                backgroundColor: Colors.grey.shade200,
+                                color: Colors.green,
+                                minHeight: 10,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(width: 70, child: Text('${paid.toStringAsFixed(0)}₽', textAlign: TextAlign.right,
+                              style: const TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.w600))),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Долг и процент собираемости
+                      Row(
+                        children: [
+                          Text('Долг: ', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                          Text('${debt.toStringAsFixed(0)}₽',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: debt > 0 ? Colors.red : Colors.green)),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: collection >= 80 ? Colors.green.shade50 : collection >= 50 ? Colors.orange.shade50 : Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Собираемость: ${collection.toStringAsFixed(1)}%',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                                color: collection >= 80 ? Colors.green.shade700 : collection >= 50 ? Colors.orange.shade700 : Colors.red.shade700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 5. РЕЕСТР КВИТАНЦИЙ (с поиском и итоговой строкой)
+  // ═══════════════════════════════════════════════════════════════════
+
+  Widget _buildReceiptsResult(ThemeData theme, bool isDark) {
+    final docs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final searchController = TextEditingController();
+
+    // Итоговые суммы — считаем из документов для точности
+    double totalCharged = 0, totalPaid = 0, totalDebt = 0;
+    for (final doc in docs) {
+      totalCharged += (doc['total_charged'] as num?)?.toDouble() ?? 0;
+      totalPaid += (doc['total_paid'] as num?)?.toDouble() ?? 0;
+      totalDebt += (doc['total_debt_end'] as num?)?.toDouble() ?? 0;
+    }
+    final count = docs.length;
+
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        final searchQuery = searchController.text.toLowerCase();
+        final filtered = searchQuery.isEmpty
+            ? docs
+            : docs.where((d) {
+                final fio = (d['fio'] ?? '').toString().toLowerCase();
+                final address = (d['address'] ?? '').toString().toLowerCase();
+                final account = (d['account_number'] ?? '').toString().toLowerCase();
+                return fio.contains(searchQuery) || address.contains(searchQuery) || account.contains(searchQuery);
+              }).toList();
+
+        return Column(
+          children: [
+            _reportHeader('Реестр квитанций',
+              subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $count документов'),
+            const Divider(height: 1),
+            // Поиск
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: 'Поиск по ФИО, адресу, Л/С...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                onChanged: (_) => setLocalState(() {}),
+              ),
+            ),
+            // Итоговая строка
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+              child: Row(
+                children: [
+                  const Text('ИТОГО: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  _miniStat('Начисл.', totalCharged, Colors.blue),
+                  const SizedBox(width: 16),
+                  _miniStat('Оплач.', totalPaid, Colors.green),
+                  const SizedBox(width: 16),
+                  _miniStat('Долг', totalDebt, totalDebt > 0 ? Colors.red : Colors.green),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Заголовок таблицы
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              color: theme.colorScheme.surfaceContainerHighest.withAlpha(40),
+              child: const Row(
+                children: [
+                  SizedBox(width: 28, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700))),
+                  Expanded(flex: 3, child: Text('Абонент', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700))),
+                  SizedBox(width: 70, child: Text('Начисл.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                  SizedBox(width: 70, child: Text('Оплач.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                  SizedBox(width: 70, child: Text('Долг', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                ],
+              ),
+            ),
+            // Список документов
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(child: Text(searchQuery.isEmpty ? 'Нет данных' : 'Ничего не найдено'))
+                  : ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final doc = filtered[i];
+                        final fio = doc['fio'] ?? '';
+                        final address = doc['address'] ?? '';
+                        final accountNumber = doc['account_number'] ?? '';
+                        final docDebt = (doc['total_debt_end'] as num?)?.toDouble() ?? 0;
+                        final docCharged = (doc['total_charged'] as num?)?.toDouble() ?? 0;
+                        final docPaid = (doc['total_paid'] as num?)?.toDouble() ?? 0;
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            border: Border(bottom: BorderSide(color: theme.dividerColor.withAlpha(30))),
+                            color: i.isEven ? theme.colorScheme.surfaceContainerHighest.withAlpha(20) : null,
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(width: 28, child: Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant))),
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(fio, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                                    Text('$address • $accountNumber',
+                                        style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(width: 70, child: Text(docCharged.toStringAsFixed(0),
+                                  style: const TextStyle(fontSize: 11), textAlign: TextAlign.right)),
+                              SizedBox(width: 70, child: Text(docPaid.toStringAsFixed(0),
+                                  style: const TextStyle(fontSize: 11, color: Colors.green), textAlign: TextAlign.right)),
+                              SizedBox(width: 70, child: Text(docDebt.toStringAsFixed(0),
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                                    color: docDebt > 0 ? Colors.red : Colors.green),
+                                  textAlign: TextAlign.right)),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _miniStat(String label, double value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text('${value.toStringAsFixed(0)}₽', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+        Text(label, style: TextStyle(fontSize: 9, color: color.withAlpha(180))),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 6. СТАТИСТИКА ЛЬГОТ (сохранена из предыдущей версии)
+  // ═══════════════════════════════════════════════════════════════════
+
+  Widget _buildBenefitStatsResult(ThemeData theme, bool isDark) {
+    final rawBenefits = _reportData?['benefits'];
+    final List benefitsList = rawBenefits is List ? rawBenefits : [];
+    final items = benefitsList.cast<Map<String, dynamic>>();
+    final byCategory = <String, List<Map<String, dynamic>>>{};
+    for (final b in items) {
+      final cat = b['category'] as String? ?? 'other';
+      byCategory.putIfAbsent(cat, () => []).add(b);
+    }
+
+    // Общая статистика
+    final totalPeople = items.length;
+    final avgDiscount = totalPeople > 0
+        ? items.fold<double>(0, (sum, b) => sum + ((b['discount_percent'] as num?)?.toDouble() ?? 0)) / totalPeople
+        : 0.0;
+
+    return Column(
+      children: [
+        _reportHeader('Статистика льгот',
+          subtitle: 'Всего: $totalPeople льготников • Средняя скидка: ${avgDiscount.toStringAsFixed(1)}%'),
+        const Divider(height: 1),
+        Expanded(
+          child: byCategory.isEmpty
+              ? const Center(child: Text('Нет данных о льготниках'))
+              : ListView(
+                  padding: const EdgeInsets.all(12),
+                  children: byCategory.entries.map((e) {
+                    final totalDiscount = e.value.fold<double>(0, (sum, b) => sum + ((b['discount_percent'] as num?)?.toDouble() ?? 0));
+                    final avgCatDiscount = e.value.isNotEmpty ? totalDiscount / e.value.length : 0;
+                    final percent = totalPeople > 0 ? (e.value.length / totalPeople * 100) : 0;
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.card_giftcard, color: Colors.purple, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(e.key, style: const TextStyle(fontWeight: FontWeight.bold))),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(8)),
+                                  child: Text('${e.value.length} чел. (${percent.toStringAsFixed(0)}%)',
+                                      style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.w600)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            // Прогресс-бар доли от общего числа
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: totalPeople > 0 ? e.value.length / totalPeople : 0,
+                                backgroundColor: Colors.grey.shade200,
+                                color: Colors.purple.shade300,
+                                minHeight: 4,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text('Средний % скидки: ${avgCatDiscount.toStringAsFixed(1)}%',
+                                style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        ),
+      ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ОБЩИЕ УТИЛИТЫ
+  // ═══════════════════════════════════════════════════════════════════
 
   Widget _statChip(String label, String value, Color color) {
     return Column(
@@ -619,94 +1383,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         Text(label, style: TextStyle(fontSize: 11, color: color.withAlpha(180))),
       ],
     );
-  }
-
-  Widget _buildDocRow(Map<String, dynamic> doc, int index, ThemeData theme, String? type) {
-    final fio = doc['fio'] ?? '';
-    final address = doc['address'] ?? '';
-    final accountNumber = doc['account_number'] ?? '';
-    final totalDebt = (doc['total_debt_end'] as num?)?.toDouble() ?? 0;
-    final totalCharged = (doc['total_charged'] as num?)?.toDouble() ?? 0;
-    final totalPaid = (doc['total_paid'] as num?)?.toDouble() ?? 0;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            // Номер
-            SizedBox(
-              width: 32,
-              child: Text(
-                '${index + 1}',
-                style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ),
-            // Абонент
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(fio, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text('$address • ЛС: $accountNumber',
-                      style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Начислено
-            SizedBox(
-              width: 80,
-              child: Text(
-                totalCharged.toStringAsFixed(2),
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
-            // Оплачено
-            SizedBox(
-              width: 80,
-              child: Text(
-                totalPaid.toStringAsFixed(2),
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 12, color: Colors.green),
-              ),
-            ),
-            // Долг
-            SizedBox(
-              width: 80,
-              child: Text(
-                totalDebt.toStringAsFixed(2),
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: totalDebt > 0 ? Colors.red : Colors.green,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getReportTitle(String? type) {
-    return switch (type) {
-      'turnover' => 'Оборотная ведомость',
-      'debtors' => 'Список неплательщиков',
-      'service_stats' => 'Статистика по услугам',
-      'receipts' => 'Реестр квитанций',
-      'by_house' => 'Реестр по домам',
-      'benefit_stats' => 'Статистика льгот',
-      'monthly' => 'Помесячный отчёт',
-      _ => 'Отчёт',
-    };
   }
 
   Future<void> _exportXlsx() async {

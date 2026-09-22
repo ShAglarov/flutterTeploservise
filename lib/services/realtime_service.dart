@@ -5,6 +5,7 @@ import 'dart:math' as math; // ADDED: for jitter
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 import '../utils/constants.dart';
 import 'secure_storage_service.dart';
 import 'device_id_service.dart';
@@ -155,14 +156,21 @@ class RealtimeService {
 
       String url = '${AppConstants.wsBaseUrl}/$deviceId?token=$token';
       
-      // NOTE: wss:// is used for all environments. MyHttpOverrides in main.dart
-      // handles self-signed certs for debug builds. The previous ws:// override
-      // for macOS debug was causing constant reconnections (every 3-60s) because
-      // plain WebSocket through nginx SSL proxy is inherently unstable.
+      // NOTE: wss:// is used for all environments.
+      // IOWebSocketChannel.connect uses a custom HttpClient that accepts
+      // bad/self-signed certificates (VPN proxies, corporate firewalls).
+      // Also sets a connection timeout to avoid indefinite hangs on VPN.
 
       dev.log('RealtimeService: Connecting to $url', name: 'WS');
 
-      _channel = WebSocketChannel.connect(Uri.parse(url));
+      final wsClient = HttpClient();
+      wsClient.badCertificateCallback = (cert, host, port) => true;
+      wsClient.connectionTimeout = const Duration(seconds: 15);
+
+      _channel = IOWebSocketChannel.connect(
+        Uri.parse(url),
+        customClient: wsClient,
+      );
       
       _subscription = _channel?.stream.listen(
         (data) {
