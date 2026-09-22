@@ -179,9 +179,9 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
       late Response resp;
 
       if (_generationType == 'by_account') {
-        final accountId = int.tryParse(_accountIdCtrl.text);
-        if (accountId == null) {
-          _showError('Укажите ID лицевого счёта');
+        final accountId = _accountIdCtrl.text.trim();
+        if (accountId.isEmpty) {
+          _showError('Укажите номер лицевого счёта');
           return;
         }
         resp = await dio.get(
@@ -225,6 +225,22 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ $msg'), backgroundColor: Colors.red),
       );
+    }
+  }
+
+  static const _monthNames = [
+    '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+  ];
+
+  String _formatPeriod(String period) {
+    try {
+      final parts = period.split('-');
+      final year = parts[0];
+      final month = int.parse(parts[1]);
+      return '${_monthNames[month]} $year';
+    } catch (_) {
+      return period;
     }
   }
 
@@ -283,7 +299,7 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
                       prefixIcon: const Icon(Icons.calendar_month),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    items: _periods.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                    items: _periods.map((p) => DropdownMenuItem(value: p, child: Text(_formatPeriod(p)))).toList(),
                     onChanged: (v) {
                       setState(() => _selectedPeriod = v);
                       _loadStats();
@@ -318,9 +334,9 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
                     // ID лицевого счёта
                     TextField(
                       controller: _accountIdCtrl,
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.text,
                       decoration: InputDecoration(
-                        labelText: 'ID лицевого счёта',
+                        labelText: 'Номер лицевого счёта',
                         prefixIcon: const Icon(Icons.credit_card),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
