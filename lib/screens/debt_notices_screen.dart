@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -814,7 +815,13 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
   // ═══════════════════════════════════════════════════════════════════
 
   Future<File> _generatePdfForNotices(List<Map<String, dynamic>> notices) async {
-    final pdf = pw.Document();
+    // Загружаем кириллический шрифт
+    final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+    final ttf = pw.Font.ttf(fontData);
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
+    );
 
     for (final n in notices) {
       final type = n['notice_type'] as String? ?? 'warning';
@@ -1237,136 +1244,20 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
   }
 
   Future<void> _pickAccount(BuildContext ctx, void Function(int, String, double) onPick) async {
-    // Защита от множественных открытий
     if (_isPickerOpen) return;
     _isPickerOpen = true;
 
-    try {
-      // Используем кэш или загружаем
-      if (_cachedAccounts == null) {
-        if (ctx.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('⏳ Загрузка списка ЛС...'), duration: Duration(seconds: 2)),
-          );
-        }
-        final dio = ref.read(dioProvider);
-        final resp = await dio.get('/accounts/', queryParameters: {'limit': 10000});
-        if (resp.statusCode != 200 || !ctx.mounted) { _isPickerOpen = false; return; }
-        _cachedAccounts = (resp.data as List).cast<Map<String, dynamic>>();
-      }
-      final accounts = _cachedAccounts!;
-      if (!ctx.mounted) { _isPickerOpen = false; return; }
+    await showDialog(context: ctx, builder: (dlg) {
+      return _AccountPickerDialog(
+        cachedAccounts: _cachedAccounts,
+        dio: ref.read(dioProvider),
+        onPick: onPick,
+        onAccountsLoaded: (accounts) {
+          _cachedAccounts = accounts;
+        },
+      );
+    });
 
-      final searchCtrl = TextEditingController();
-      var filtered = accounts;
-      await showDialog(context: ctx, builder: (dlg) => StatefulBuilder(builder: (dlg, ss) => AlertDialog(
-        title: const Text('Выбор ЛС'),
-        content: SizedBox(width: 400, height: 400, child: Column(children: [
-          TextField(
-            controller: searchCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'Поиск (ФИО, адрес, дом, кв)...',
-              prefixIcon: Icon(Icons.search),
-              isDense: true,
-              border: OutlineInputBorder(),
-            ),
-            onChanged: (q) {
-              // Умный структурный поиск:
-              // Числа сопоставляются с номером дома/квартиры из адреса
-              // Текст ищется по ФИО, ЛС, адресу
-              final terms = q.toLowerCase().split(RegExp(r'[\s,;.]+'))
-                  .where((t) => t.isNotEmpty).toList();
-
-              ss(() => filtered = accounts.where((a) {
-                final addr = (a['address'] as String? ?? '').toLowerCase();
-                final haystack = '${a['fio']} ${a['account_number']} $addr'.toLowerCase();
-
-                // Извлекаем дом и квартиру из адреса
-                final houseMatch = RegExp(r'д\.\s*(\S+)').firstMatch(addr);
-                final aptMatch = RegExp(r'кв\.\s*(\S+)').firstMatch(addr);
-                final houseNum = houseMatch?.group(1)?.replaceAll(',', '') ?? '';
-                final aptNum = aptMatch?.group(1)?.replaceAll(',', '') ?? '';
-
-                // Разделяем термины на числовые и текстовые
-                final numTerms = <String>[];
-                final textTerms = <String>[];
-                for (final t in terms) {
-                  if (RegExp(r'^\d+$').hasMatch(t)) {
-                    numTerms.add(t);
-                  } else {
-                    textTerms.add(t);
-                  }
-                }
-
-                // Текстовые термины — ищем везде (ФИО, адрес, ЛС)
-                for (final t in textTerms) {
-                  if (!haystack.contains(t)) return false;
-                }
-
-                // Числовые термины — первый = дом, второй = квартира
-                if (numTerms.length == 1) {
-                  // Одно число — ищем в доме ИЛИ квартире ИЛИ ЛС
-                  final n = numTerms[0];
-                  if (houseNum != n && aptNum != n && !(a['account_number']?.toString().contains(n) ?? false)) {
-                    return false;
-                  }
-                } else if (numTerms.length >= 2) {
-                  // Два числа — первый = дом, второй = квартира
-                  if (houseNum != numTerms[0]) return false;
-                  if (aptNum != numTerms[1]) return false;
-                }
-
-                return true;
-              }).toList());
-            },
-          ),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              '${filtered.length} из ${accounts.length}',
-              style: TextStyle(fontSize: 11, color: Theme.of(dlg).colorScheme.onSurfaceVariant),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Expanded(child: ListView.builder(
-            itemCount: filtered.length,
-            itemBuilder: (_, i) {
-              final a = filtered[i];
-              return ListTile(
-                dense: true,
-                title: Text('${a['fio'] ?? ''} (ЛС: ${a['account_number'] ?? ''})', style: const TextStyle(fontSize: 13)),
-                subtitle: Text(a['address'] ?? '', style: const TextStyle(fontSize: 11)),
-                onTap: () async {
-                  Navigator.pop(dlg);
-                  // Загружаем долг по этому ЛС
-                  double debt = 0;
-                  try {
-                    final dio = ref.read(dioProvider);
-                    final pdResp = await dio.get('/payment-documents/', queryParameters: {
-                      'account_id': a['id'],
-                      'limit': 1,
-                    });
-                    if (pdResp.statusCode == 200) {
-                      final docs = pdResp.data is List ? pdResp.data as List : (pdResp.data['items'] ?? []) as List;
-                      if (docs.isNotEmpty) {
-                        final doc = docs.last as Map<String, dynamic>;
-                        debt = [
-                          'debt_heating_end', 'debt_hot_water_end', 'debt_maintenance_end',
-                          'debt_waste_end', 'debt_odn_electricity_end', 'debt_odn_water_end',
-                        ].fold<double>(0, (sum, key) => sum + ((doc[key] as num?)?.toDouble() ?? 0));
-                      }
-                    }
-                  } catch (_) {}
-                  onPick(a['id'] as int, '${a['fio']} (ЛС: ${a['account_number']})', debt);
-                },
-              );
-            },
-          )),
-        ])),
-      )));
-    } catch (_) {}
     _isPickerOpen = false;
   }
 
@@ -1391,5 +1282,198 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
 
   void _showSnack(String text, Color bg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: bg));
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ДИАЛОГ ВЫБОРА ЛС — открывается мгновенно, загрузка внутри
+// ═══════════════════════════════════════════════════════════════════
+
+class _AccountPickerDialog extends StatefulWidget {
+  final List<Map<String, dynamic>>? cachedAccounts;
+  final dynamic dio;
+  final void Function(int, String, double) onPick;
+  final void Function(List<Map<String, dynamic>>) onAccountsLoaded;
+
+  const _AccountPickerDialog({
+    required this.cachedAccounts,
+    required this.dio,
+    required this.onPick,
+    required this.onAccountsLoaded,
+  });
+
+  @override
+  State<_AccountPickerDialog> createState() => _AccountPickerDialogState();
+}
+
+class _AccountPickerDialogState extends State<_AccountPickerDialog> {
+  List<Map<String, dynamic>>? _accounts;
+  List<Map<String, dynamic>> _filtered = [];
+  bool _isLoading = true;
+  String? _error;
+  final _searchCtrl = TextEditingController();
+  final _searchFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.cachedAccounts != null) {
+      _accounts = widget.cachedAccounts;
+      _filtered = _accounts!;
+      _isLoading = false;
+      // Фокус на поиске после build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _searchFocus.requestFocus();
+      });
+    } else {
+      _loadAccounts();
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadAccounts() async {
+    try {
+      final resp = await widget.dio.get('/accounts/', queryParameters: {'limit': 10000});
+      if (resp.statusCode == 200 && mounted) {
+        final accounts = (resp.data as List).cast<Map<String, dynamic>>();
+        widget.onAccountsLoaded(accounts);
+        setState(() {
+          _accounts = accounts;
+          _filtered = accounts;
+          _isLoading = false;
+        });
+        // Фокус на поиске
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _searchFocus.requestFocus();
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _error = '$e'; _isLoading = false; });
+    }
+  }
+
+  void _onSearch(String q) {
+    final accounts = _accounts;
+    if (accounts == null) return;
+
+    final terms = q.toLowerCase().split(RegExp(r'[\s,;.]+'))
+        .where((t) => t.isNotEmpty).toList();
+
+    setState(() => _filtered = accounts.where((a) {
+      final addr = (a['address'] as String? ?? '').toLowerCase();
+      final haystack = '${a['fio']} ${a['account_number']} $addr'.toLowerCase();
+
+      final houseMatch = RegExp(r'д\.\s*(\S+)').firstMatch(addr);
+      final aptMatch = RegExp(r'кв\.\s*(\S+)').firstMatch(addr);
+      final houseNum = houseMatch?.group(1)?.replaceAll(',', '') ?? '';
+      final aptNum = aptMatch?.group(1)?.replaceAll(',', '') ?? '';
+
+      final numTerms = <String>[];
+      final textTerms = <String>[];
+      for (final t in terms) {
+        if (RegExp(r'^\d+$').hasMatch(t)) {
+          numTerms.add(t);
+        } else {
+          textTerms.add(t);
+        }
+      }
+
+      for (final t in textTerms) {
+        if (!haystack.contains(t)) return false;
+      }
+
+      if (numTerms.length == 1) {
+        final n = numTerms[0];
+        if (houseNum != n && aptNum != n && !(a['account_number']?.toString().contains(n) ?? false)) {
+          return false;
+        }
+      } else if (numTerms.length >= 2) {
+        if (houseNum != numTerms[0]) return false;
+        if (aptNum != numTerms[1]) return false;
+      }
+
+      return true;
+    }).toList());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Выбор ЛС'),
+      content: SizedBox(
+        width: 400,
+        height: 400,
+        child: _isLoading
+            ? const Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Загрузка списка ЛС...', style: TextStyle(fontSize: 13)),
+                ]),
+              )
+            : _error != null
+                ? Center(child: Text('Ошибка: $_error', style: const TextStyle(color: Colors.red)))
+                : Column(children: [
+                    TextField(
+                      controller: _searchCtrl,
+                      focusNode: _searchFocus,
+                      decoration: const InputDecoration(
+                        hintText: 'Поиск (ФИО, адрес, дом, кв)...',
+                        prefixIcon: Icon(Icons.search),
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: _onSearch,
+                    ),
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        '${_filtered.length} из ${_accounts?.length ?? 0}',
+                        style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Expanded(child: ListView.builder(
+                      itemCount: _filtered.length,
+                      itemBuilder: (_, i) {
+                        final a = _filtered[i];
+                        return ListTile(
+                          dense: true,
+                          title: Text('${a['fio'] ?? ''} (ЛС: ${a['account_number'] ?? ''})', style: const TextStyle(fontSize: 13)),
+                          subtitle: Text(a['address'] ?? '', style: const TextStyle(fontSize: 11)),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            double debt = 0;
+                            try {
+                              final pdResp = await widget.dio.get('/payment-documents/', queryParameters: {
+                                'account_id': a['id'],
+                                'limit': 1,
+                              });
+                              if (pdResp.statusCode == 200) {
+                                final docs = pdResp.data is List ? pdResp.data as List : (pdResp.data['items'] ?? []) as List;
+                                if (docs.isNotEmpty) {
+                                  final doc = docs.last as Map<String, dynamic>;
+                                  debt = [
+                                    'debt_heating_end', 'debt_hot_water_end', 'debt_maintenance_end',
+                                    'debt_waste_end', 'debt_odn_electricity_end', 'debt_odn_water_end',
+                                  ].fold<double>(0, (sum, key) => sum + ((doc[key] as num?)?.toDouble() ?? 0));
+                                }
+                              }
+                            } catch (_) {}
+                            widget.onPick(a['id'] as int, '${a['fio']} (ЛС: ${a['account_number']})', debt);
+                          },
+                        );
+                      },
+                    )),
+                  ]),
+      ),
+    );
   }
 }
