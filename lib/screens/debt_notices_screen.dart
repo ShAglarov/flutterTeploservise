@@ -1262,13 +1262,52 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
               border: OutlineInputBorder(),
             ),
             onChanged: (q) {
-              // Умный поиск: разделяем по пробелам, запятым, точкам, точке с запятой
-              // "37,42" "37 42" "37.42" "красноярская 37 42" — всё работает
+              // Умный структурный поиск:
+              // Числа сопоставляются с номером дома/квартиры из адреса
+              // Текст ищется по ФИО, ЛС, адресу
               final terms = q.toLowerCase().split(RegExp(r'[\s,;.]+'))
                   .where((t) => t.isNotEmpty).toList();
+
               ss(() => filtered = accounts.where((a) {
-                final haystack = '${a['fio']} ${a['account_number']} ${a['address']}'.toLowerCase();
-                return terms.every((term) => haystack.contains(term));
+                final addr = (a['address'] as String? ?? '').toLowerCase();
+                final haystack = '${a['fio']} ${a['account_number']} $addr'.toLowerCase();
+
+                // Извлекаем дом и квартиру из адреса
+                final houseMatch = RegExp(r'д\.\s*(\S+)').firstMatch(addr);
+                final aptMatch = RegExp(r'кв\.\s*(\S+)').firstMatch(addr);
+                final houseNum = houseMatch?.group(1)?.replaceAll(',', '') ?? '';
+                final aptNum = aptMatch?.group(1)?.replaceAll(',', '') ?? '';
+
+                // Разделяем термины на числовые и текстовые
+                final numTerms = <String>[];
+                final textTerms = <String>[];
+                for (final t in terms) {
+                  if (RegExp(r'^\d+$').hasMatch(t)) {
+                    numTerms.add(t);
+                  } else {
+                    textTerms.add(t);
+                  }
+                }
+
+                // Текстовые термины — ищем везде (ФИО, адрес, ЛС)
+                for (final t in textTerms) {
+                  if (!haystack.contains(t)) return false;
+                }
+
+                // Числовые термины — первый = дом, второй = квартира
+                if (numTerms.length == 1) {
+                  // Одно число — ищем в доме ИЛИ квартире ИЛИ ЛС
+                  final n = numTerms[0];
+                  if (houseNum != n && aptNum != n && !(a['account_number']?.toString().contains(n) ?? false)) {
+                    return false;
+                  }
+                } else if (numTerms.length >= 2) {
+                  // Два числа — первый = дом, второй = квартира
+                  if (houseNum != numTerms[0]) return false;
+                  if (aptNum != numTerms[1]) return false;
+                }
+
+                return true;
               }).toList());
             },
           ),
