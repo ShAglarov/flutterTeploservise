@@ -41,6 +41,7 @@ import 'debt_notices_screen.dart';
 import 'subsidies_screen.dart';
 import 'receipt_generation_screen.dart';
 import 'archives_screen.dart';
+import 'custom_report_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -538,6 +539,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ReportsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.auto_graph,
+            iconColor: Colors.deepPurple,
+            title: 'Конструктор отчётов',
+            subtitle: 'Настраиваемые аналитические отчёты',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CustomReportScreen()),
               );
             },
           ),
