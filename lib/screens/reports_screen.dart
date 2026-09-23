@@ -1633,14 +1633,29 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required List<List<String>> rows,
     List<String>? totals,
   }) {
-    const rowsPerPage = 35;
+    // Первая страница содержит title/subtitle → меньше строк
+    const firstPageRows = 25;
+    const otherPageRows = 35;
     final pages = <pw.Page>[];
-    final totalPages = (rows.length / rowsPerPage).ceil().clamp(1, 999);
+
+    // Вычисляем разбивку по страницам
+    int remaining = rows.length;
+    int offset = 0;
+    int pageIdx = 0;
+    final pageSlices = <List<List<String>>>[];
+    while (remaining > 0 || pageSlices.isEmpty) {
+      final capacity = pageIdx == 0 ? firstPageRows : otherPageRows;
+      final take = min(capacity, remaining);
+      pageSlices.add(rows.sublist(offset, offset + take));
+      offset += take;
+      remaining -= take;
+      pageIdx++;
+      if (remaining <= 0) break;
+    }
+    final totalPages = pageSlices.length;
 
     for (var pageIdx = 0; pageIdx < totalPages; pageIdx++) {
-      final start = pageIdx * rowsPerPage;
-      final end = min(start + rowsPerPage, rows.length);
-      final pageRows = rows.sublist(start, end);
+      final pageRows = pageSlices[pageIdx];
       final isLastPage = pageIdx == totalPages - 1;
 
       pages.add(pw.Page(
