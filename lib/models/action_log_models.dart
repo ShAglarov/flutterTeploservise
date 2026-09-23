@@ -84,6 +84,7 @@ class ActionLogEntry {
       case 'account': return 'лицевого счёта';
       case 'user': return 'пользователя';
       case 'management_company': return 'управляющей компании';
+      case 'payment_document': return 'платёжного документа';
       case 'incident_photo': return 'фото инцидента';
       case 'saved_location_photo': return 'фото дома';
       case 'boiler_house_photo': return 'фото котельной';

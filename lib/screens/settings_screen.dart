@@ -42,6 +42,7 @@ import 'subsidies_screen.dart';
 import 'receipt_generation_screen.dart';
 import 'archives_screen.dart';
 import 'custom_report_screen.dart';
+import 'audit_finance_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -458,6 +459,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ImportXlsScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.history_edu,
+            iconColor: Colors.amber,
+            title: 'Аудит операций',
+            subtitle: 'История изменений лицевых счетов и платёжных документов',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AuditFinanceScreen()),
               );
             },
           ),
