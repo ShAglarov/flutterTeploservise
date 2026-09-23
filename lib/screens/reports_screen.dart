@@ -1440,6 +1440,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   void _showPeriodPicker() {
     if (_periods.isEmpty) return;
+    final oldPeriod = _selectedPeriod;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1460,7 +1461,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
         ),
       ),
-    );
+    ).then((_) {
+      // Перезагрузить отчёт если период изменился и отчёт уже открыт
+      if (_selectedPeriod != oldPeriod && _reportData != null) {
+        final type = _reportData!['type'] as String?;
+        if (type != null) {
+          _loadReport(type);
+        }
+      }
+    });
   }
 
   String _formatPeriodString(String s) {
@@ -1489,6 +1498,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       }
 
       if (!mounted) return;
+      final oldLocationId = _selectedLocationId;
       await showDialog(
         context: context,
         builder: (ctx) {
@@ -1555,6 +1565,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           );
         },
       );
+
+      // Перезагрузить отчёт если дом изменился и отчёт уже открыт
+      if (_selectedLocationId != oldLocationId && _reportData != null) {
+        final type = _reportData!['type'] as String?;
+        if (type != null) {
+          _loadReport(type);
+        }
+      }
     } catch (e) {
       debugPrint('❌ Ошибка загрузки домов: $e');
     }
