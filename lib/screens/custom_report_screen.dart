@@ -2017,21 +2017,32 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   pw.Widget _pdfPaymentsTable() {
     final items = (_reportResult['last_payments'] as List?) ?? [];
     return pw.TableHelper.fromTextArray(
-      headers: ['#', 'ФИО', 'ЛС', 'Начислено', 'Оплачено'],
+      headers: ['#', 'ФИО', 'Дом', 'Адрес', 'ЛС', 'Оплачено', 'Долг/Переплата', 'Мес.'],
       data: items.asMap().entries.map((e) {
         final d = e.value as Map<String, dynamic>;
+        final paid = (d['total_paid'] as num?)?.toDouble() ?? 0;
+        final debt = (d['total_debt_end'] as num?)?.toDouble() ?? 0;
+        final charged = (d['total_charged'] as num?)?.toDouble() ?? 0;
+        final isOverpaid = debt < -0.01;
+        final debtStr = isOverpaid
+            ? '+${debt.abs().toStringAsFixed(2)} (переплата)'
+            : debt.toStringAsFixed(2);
+        final months = charged > 0 ? (paid / charged).floor() : 0;
         return [
           '${e.key + 1}',
           d['fio'] ?? '',
+          d['location_name'] ?? '',
+          d['address'] ?? '',
           d['account_number'] ?? '',
-          '${((d['total_charged'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-          '${((d['total_paid'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+          paid.toStringAsFixed(2),
+          debtStr,
+          months >= 1 ? '$months' : '-',
         ];
       }).toList(),
-      cellStyle: const pw.TextStyle(fontSize: 8),
-      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+      cellStyle: const pw.TextStyle(fontSize: 7),
+      headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.green50),
-      cellAlignments: {0: pw.Alignment.center, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
+      cellAlignments: {0: pw.Alignment.center, 5: pw.Alignment.centerRight, 6: pw.Alignment.centerRight, 7: pw.Alignment.center},
     );
   }
 
@@ -2177,10 +2188,16 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       if (_reportResult.containsKey('last_payments')) {
         final items = (_reportResult['last_payments'] as List?) ?? [];
         buf.writeln('=== ПОСЛЕДНИЕ ОПЛАТЫ ===');
-        buf.writeln('#;ФИО;ЛС;Начислено;Оплачено');
+        buf.writeln('#;ФИО;Дом;Адрес;ЛС;Оплачено;Долг/Переплата;Мес.');
         for (var i = 0; i < items.length; i++) {
           final d = items[i] as Map<String, dynamic>;
-          buf.writeln('${i + 1};${d['fio']};${d['account_number']};${d['total_charged']};${d['total_paid']}');
+          final paid = (d['total_paid'] as num?)?.toDouble() ?? 0;
+          final debt = (d['total_debt_end'] as num?)?.toDouble() ?? 0;
+          final charged = (d['total_charged'] as num?)?.toDouble() ?? 0;
+          final isOverpaid = debt < -0.01;
+          final debtStr = isOverpaid ? '+${debt.abs().toStringAsFixed(2)} (переплата)' : debt.toStringAsFixed(2);
+          final months = charged > 0 ? (paid / charged).floor() : 0;
+          buf.writeln('${i + 1};${d['fio']};${d['location_name'] ?? ''};${d['address'] ?? ''};${d['account_number']};${paid.toStringAsFixed(2)};$debtStr;${months >= 1 ? '$months' : '-'}');
         }
         buf.writeln();
       }
