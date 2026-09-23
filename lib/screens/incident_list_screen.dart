@@ -202,33 +202,43 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
       );
     }
 
+    final unreadCounts = ref.watch(unreadCountsProvider);
+    
+    // Сортируем: непрочитанные наверх (stable sort сохраняет порядок внутри групп)
+    final sorted = List<IncidentViewModel>.from(viewModels);
+    sorted.sort((a, b) {
+      final aUnread = (unreadCounts[a.raw.id] ?? 0) > 0 ? 0 : 1;
+      final bUnread = (unreadCounts[b.raw.id] ?? 0) > 0 ? 0 : 1;
+      return aUnread.compareTo(bUnread);
+    });
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: viewModels.length,
+      itemCount: sorted.length,
       itemBuilder: (context, index) {
-        final vm = viewModels[index];
-        final inc = vm.raw;
+        final sortedVm = sorted[index];
+        final sortedInc = sortedVm.raw;
 
         return Slidable(
-          key: ValueKey(inc.id),
+          key: ValueKey(sortedInc.id),
           endActionPane: ActionPane(
             motion: const ScrollMotion(),
             extentRatio: 0.65, // Adjust based on 3 buttons width
             children: [
               if (ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate)) ...[
-                if (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed)
+                if (sortedInc.status == IncidentStatus.resolved || sortedInc.status == IncidentStatus.closed)
                   _buildCustomSlidableAction(
                     label: 'Возобновить',
                     icon: Icons.refresh,
                     color: Colors.orange,
-                    onPressed: (_) => _resumeIncident(inc.id),
+                    onPressed: (_) => _resumeIncident(sortedInc.id),
                   )
                 else
                   _buildCustomSlidableAction(
                     label: 'Завершить',
                     icon: Icons.check_circle_outline,
                     color: Colors.green,
-                    onPressed: (_) => _completeIncident(inc.id),
+                    onPressed: (_) => _completeIncident(sortedInc.id),
                   ),
               ],
               if (ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentDelete))
@@ -236,51 +246,51 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
                   label: 'Удалить',
                   icon: Icons.delete_outline,
                   color: Colors.redAccent,
-                  onPressed: (_) => _deleteIncident(inc.id, inc.title),
+                  onPressed: (_) => _deleteIncident(sortedInc.id, sortedInc.title),
                 ),
               if (ref.read(permissionStateProvider).hasPermission(PermissionKey.incidentUpdate))
                 _buildCustomSlidableAction(
                   label: 'Редакт.',
                   icon: Icons.edit,
                   color: Colors.orange,
-                  onPressed: (_) => _editIncident(inc),
+                  onPressed: (_) => _editIncident(sortedInc),
                 ),
             ],
           ),
           child: IncidentCard(
-            title: inc.title ?? 'Инцидент №${inc.id}',
-            location: inc.boilerHouse?.address != null
-                ? '📍 Котельная: ${inc.boilerHouse!.address}'
+            title: sortedInc.title ?? 'Инцидент №${sortedInc.id}',
+            location: sortedInc.boilerHouse?.address != null
+                ? '📍 Котельная: ${sortedInc.boilerHouse!.address}'
                 : 'Неизвестная локация',
-            timestamp: vm.formattedTimestamp,
-            statusText: inc.isScheduledLocal
+            timestamp: sortedVm.formattedTimestamp,
+            statusText: sortedInc.isScheduledLocal
                 ? 'ЗАПЛАНИРОВАН'
-                : inc.isOverdue
+                : sortedInc.isOverdue
                     ? 'ПРОСРОЧЕН'
-                    : (inc.status == IncidentStatus.resolved || inc.status == IncidentStatus.closed)
+                    : (sortedInc.status == IncidentStatus.resolved || sortedInc.status == IncidentStatus.closed)
                         ? 'ЗАВЕРШЁН'
                         : 'АКТИВЕН',
-            isStatusActive: !inc.isScheduledLocal && !inc.isOverdue && inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed,
-            statusColor: inc.isScheduledLocal ? Colors.grey : inc.isOverdue ? Colors.orange : null,
-            colorStatus: vm.resolvedColorStatus,
-            assigneeName: vm.assigneeName,
-            affectedPopulationCount: vm.totalResidents,
-            stoppedServicesText: vm.stoppedServicesText,
-            broadcastText: vm.broadcastText,
-            boilersInfoText: vm.boilersInfoText,
-            inactiveBoilerNumbers: vm.inactiveBoilerNumbers,
-            totalBoilersCount: vm.totalBoilersCount,
-            supplyFullyStopped: vm.supplyFullyStopped,
-            isUnsynced: inc.localPendingAck == true,
-            isOverdue: inc.isOverdue,
-            boilerHouseDetail: vm.boilerHouseDetail,
-            unreadChatCount: ref.watch(unreadCountsProvider)[inc.id] ?? 0,
-            incidentId: inc.id,
+            isStatusActive: !sortedInc.isScheduledLocal && !sortedInc.isOverdue && sortedInc.status != IncidentStatus.resolved && sortedInc.status != IncidentStatus.closed,
+            statusColor: sortedInc.isScheduledLocal ? Colors.grey : sortedInc.isOverdue ? Colors.orange : null,
+            colorStatus: sortedVm.resolvedColorStatus,
+            assigneeName: sortedVm.assigneeName,
+            affectedPopulationCount: sortedVm.totalResidents,
+            stoppedServicesText: sortedVm.stoppedServicesText,
+            broadcastText: sortedVm.broadcastText,
+            boilersInfoText: sortedVm.boilersInfoText,
+            inactiveBoilerNumbers: sortedVm.inactiveBoilerNumbers,
+            totalBoilersCount: sortedVm.totalBoilersCount,
+            supplyFullyStopped: sortedVm.supplyFullyStopped,
+            isUnsynced: sortedInc.localPendingAck == true,
+            isOverdue: sortedInc.isOverdue,
+            boilerHouseDetail: sortedVm.boilerHouseDetail,
+            unreadChatCount: unreadCounts[sortedInc.id] ?? 0,
+            incidentId: sortedInc.id,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => IncidentDetailScreen(incidentId: inc.id),
+                  builder: (context) => IncidentDetailScreen(incidentId: sortedInc.id),
                 ),
               );
             },

@@ -4,6 +4,7 @@ import '../widgets/connectivity_banner.dart';
 import 'map_screen.dart';
 import 'incident_list_screen.dart';
 import '../utils/app_theme.dart';
+import '../services/chat_read_service.dart';
 
 class MainTabsScreen extends ConsumerStatefulWidget {
   const MainTabsScreen({super.key});
@@ -22,7 +23,18 @@ class _MainTabsScreenState extends ConsumerState<MainTabsScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // Загружаем счётчики непрочитанных при старте приложения
+    Future.microtask(() {
+      ref.read(unreadCountsProvider.notifier).fetchAll();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final unreadCounts = ref.watch(unreadCountsProvider);
+    final hasUnread = unreadCounts.values.any((c) => c > 0);
 
     return Scaffold(
       body: Column(
@@ -52,18 +64,28 @@ class _MainTabsScreenState extends ConsumerState<MainTabsScreen> {
           selectedItemColor: Theme.of(context).colorScheme.primary,
           unselectedItemColor: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.map_outlined),
               activeIcon: Icon(Icons.map),
               label: 'Карта',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined),
-              activeIcon: Icon(Icons.article),
+              icon: Badge(
+                isLabelVisible: hasUnread,
+                backgroundColor: Colors.blue,
+                smallSize: 8,
+                child: const Icon(Icons.article_outlined),
+              ),
+              activeIcon: Badge(
+                isLabelVisible: hasUnread,
+                backgroundColor: Colors.blue,
+                smallSize: 8,
+                child: const Icon(Icons.article),
+              ),
               label: 'Журнал',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.settings_outlined),
               activeIcon: Icon(Icons.settings),
               label: 'Профиль',

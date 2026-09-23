@@ -28,6 +28,7 @@ import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
 import '../providers/theme_provider.dart';
 import '../providers/map_tile_provider.dart';
+import '../services/chat_read_service.dart';
 import '../utils/constants.dart';
 import '../widgets/base_card.dart';
 import '../widgets/fullscreen_image_viewer.dart';
@@ -398,7 +399,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           return s != IncidentStatus.resolved && s != IncidentStatus.closed;
                         }).length,
                       ) ?? 0;
-                      return _buildTopButton(
+                      
+                      final unreadCounts = ref.watch(unreadCountsProvider);
+                      final totalUnread = unreadCounts.values.fold(0, (a, b) => a + b);
+                      
+                      Widget button = _buildTopButton(
                         label: 'Инциденты',
                         icon: Icons.chat_outlined,
                         color: activeCount > 0 ? AppTheme.errorRed : AppTheme.successGreen,
@@ -410,6 +415,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           );
                         },
                       );
+                      
+                      if (totalUnread > 0) {
+                        button = _UnreadShakeWrapper(child: button);
+                      }
+                      
+                      return button;
                     },
                   ),
                 ],
@@ -2939,4 +2950,62 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return url;
   }
 
+}
+
+/// Shake-обёртка для кнопки при наличии непрочитанных сообщений
+class _UnreadShakeWrapper extends StatefulWidget {
+  final Widget child;
+  const _UnreadShakeWrapper({required this.child});
+
+  @override
+  State<_UnreadShakeWrapper> createState() => _UnreadShakeWrapperState();
+}
+
+class _UnreadShakeWrapperState extends State<_UnreadShakeWrapper>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _animation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0, end: -3), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -3, end: 3), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 3, end: -2), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -2, end: 2), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 2, end: 0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    _controller.forward(from: 0);
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted) _controller.forward(from: 0);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_animation.value, 0),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
 }

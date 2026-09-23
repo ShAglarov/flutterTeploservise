@@ -10,6 +10,8 @@ import 'realtime_service.dart';
 import 'device_id_service.dart';
 
 import '../providers/incident_providers.dart';
+import '../providers/auth_provider.dart';
+import 'chat_read_service.dart';
 
 final dataSyncServiceProvider = Provider<DataSyncService>((ref) {
   ref.keepAlive();
@@ -354,6 +356,15 @@ class DataSyncService {
       try {
         final comment = IncidentComment.fromJson(entityData);
         await _syncRepo.upsertComments(comment.incidentId, [comment]);
+        
+        // Обновляем счётчик непрочитанных (только для чужих сообщений)
+        if (actionType == 'create' && comment.userId != null) {
+          final authState = _ref.read(authProvider);
+          final myId = int.tryParse(authState.user?.id ?? '');
+          if (myId == null || comment.userId != myId) {
+            _ref.read(unreadCountsProvider.notifier).incrementUnread(comment.incidentId);
+          }
+        }
       } catch (e) {
         dev.log('[DataSync] Failed to parse comment entity_data: $e', name: 'SYNC');
       }

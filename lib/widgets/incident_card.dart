@@ -61,10 +61,15 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   
-  // Shake animation
+  // Shake animation for overdue
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
   Timer? _shakeTimer;
+  
+  // Shake animation for unread chat badge
+  late AnimationController _unreadShakeController;
+  late Animation<double> _unreadShakeAnimation;
+  Timer? _unreadShakeTimer;
 
   @override
   void initState() {
@@ -91,9 +96,26 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
       TweenSequenceItem(tween: Tween(begin: -1.5, end: 0), weight: 1),
     ]).animate(CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut));
     
+    // Unread shake controller
+    _unreadShakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _unreadShakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0, end: -3), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -3, end: 3), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 3, end: -2), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -2, end: 2), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 2, end: 0), weight: 1),
+    ]).animate(CurvedAnimation(parent: _unreadShakeController, curve: Curves.easeInOut));
+    
     if (widget.isOverdue) {
       _pulseController.repeat(reverse: true);
       _startShakeLoop();
+    }
+    
+    if (widget.unreadChatCount > 0) {
+      _startUnreadShakeLoop();
     }
   }
 
@@ -112,6 +134,22 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
     _shakeTimer = null;
     _shakeController.reset();
   }
+  
+  void _startUnreadShakeLoop() {
+    _unreadShakeController.forward(from: 0);
+    _unreadShakeTimer?.cancel();
+    _unreadShakeTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted && widget.unreadChatCount > 0) {
+        _unreadShakeController.forward(from: 0);
+      }
+    });
+  }
+  
+  void _stopUnreadShakeLoop() {
+    _unreadShakeTimer?.cancel();
+    _unreadShakeTimer = null;
+    _unreadShakeController.reset();
+  }
 
   @override
   void didUpdateWidget(covariant IncidentCard oldWidget) {
@@ -124,12 +162,21 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
       _pulseController.reset();
       _stopShakeLoop();
     }
+    
+    // Unread shake
+    if (widget.unreadChatCount > 0 && oldWidget.unreadChatCount == 0) {
+      _startUnreadShakeLoop();
+    } else if (widget.unreadChatCount == 0 && oldWidget.unreadChatCount > 0) {
+      _stopUnreadShakeLoop();
+    }
   }
 
   @override
   void dispose() {
     _shakeTimer?.cancel();
     _shakeController.dispose();
+    _unreadShakeTimer?.cancel();
+    _unreadShakeController.dispose();
     _pulseController.dispose();
     super.dispose();
   }
@@ -189,28 +236,44 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Бейдж непрочитанных сообщений
+                          // Бейдж непрочитанных сообщений с shake-анимацией
                           if (widget.unreadChatCount > 0) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.chat_bubble, size: 10, color: Colors.white),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    '${widget.unreadChatCount}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
+                            AnimatedBuilder(
+                              animation: _unreadShakeAnimation,
+                              builder: (context, child) {
+                                return Transform.translate(
+                                  offset: Offset(_unreadShakeAnimation.value, 0),
+                                  child: child,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.blue.withAlpha(80),
+                                      blurRadius: 6,
+                                      spreadRadius: 1,
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.chat_bubble, size: 10, color: Colors.white),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      '${widget.unreadChatCount}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                             const SizedBox(width: 4),
