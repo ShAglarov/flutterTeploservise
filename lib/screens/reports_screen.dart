@@ -1415,7 +1415,21 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       final pdf = pw.Document(
         theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
       );
-      final pages = _buildPdfPages(type, title);
+
+      // Проверка: если данных нет — сообщаем вместо пустого PDF
+      final hasData = _reportDataHasRows(type);
+      if (!hasData) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('⚠️ Нет данных для экспорта в PDF'), backgroundColor: Colors.orange),
+          );
+        }
+        setState(() => _isExporting = false);
+        return;
+      }
+
+      final pages = _buildPdfPages(type, title, ttf);
+
       for (final page in pages) {
         pdf.addPage(page);
       }
@@ -1448,30 +1462,31 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     setState(() => _isExporting = false);
   }
 
-  List<pw.Page> _buildPdfPages(String type, String title) {
+  List<pw.Page> _buildPdfPages(String type, String title, pw.Font ttf) {
     switch (type) {
       case 'turnover':
-        return _buildTurnoverPdf(title);
+        return _buildTurnoverPdf(title, ttf);
       case 'debtors':
-        return _buildDebtorsPdf(title);
+        return _buildDebtorsPdf(title, ttf);
       case 'house_summary':
-        return _buildHouseSummaryPdf(title);
+        return _buildHouseSummaryPdf(title, ttf);
       case 'monthly':
-        return _buildMonthlyPdf(title);
+        return _buildMonthlyPdf(title, ttf);
       case 'receipts':
-        return _buildReceiptsPdf(title);
+        return _buildReceiptsPdf(title, ttf);
       case 'benefit_stats':
-        return _buildBenefitsPdf(title);
+        return _buildBenefitsPdf(title, ttf);
       default:
         return [];
     }
   }
 
   // ─── PDF: Оборотная ведомость ───
-  List<pw.Page> _buildTurnoverPdf(String title) {
+  List<pw.Page> _buildTurnoverPdf(String title, pw.Font ttf) {
     final docs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     return _paginatedTable(
+      ttf: ttf,
       title: title,
       subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $_selectedLocationName • ${docs.length} Л/С',
       headers: ['#', 'ФИО', 'Л/С', 'Начисл.', 'Оплач.', 'Долг'],
@@ -1492,12 +1507,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   // ─── PDF: Неплательщики ───
-  List<pw.Page> _buildDebtorsPdf(String title) {
+  List<pw.Page> _buildDebtorsPdf(String title, pw.Font ttf) {
     final allDocs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final debtors = allDocs.where((d) => (_n(d['total_debt_end'])) > 0).toList();
     debtors.sort((a, b) => _n(b['total_debt_end']).compareTo(_n(a['total_debt_end'])));
 
     return _paginatedTable(
+      ttf: ttf,
       title: title,
       subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $_selectedLocationName • ${debtors.length} должников',
       headers: ['#', 'ФИО', 'Адрес', 'Л/С', 'Начисл.', 'Долг'],
@@ -1518,9 +1534,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   // ─── PDF: Сводка по домам ───
-  List<pw.Page> _buildHouseSummaryPdf(String title) {
+  List<pw.Page> _buildHouseSummaryPdf(String title, pw.Font ttf) {
     final houses = (_reportData?['houses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     return _paginatedTable(
+      ttf: ttf,
       title: title,
       subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • ${houses.length} домов',
       headers: ['#', 'Дом', 'Л/С', 'Начисл.', 'Оплач.', 'Долг', 'Собир.%'],
@@ -1544,9 +1561,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   // ─── PDF: Помесячная динамика ───
-  List<pw.Page> _buildMonthlyPdf(String title) {
+  List<pw.Page> _buildMonthlyPdf(String title, pw.Font ttf) {
     final periods = (_reportData?['periods'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     return _paginatedTable(
+      ttf: ttf,
       title: title,
       subtitle: '$_selectedLocationName • ${periods.length} периодов',
       headers: ['Период', 'Л/С', 'Начисл.', 'Оплач.', 'Долг', 'Собир.%'],
@@ -1563,9 +1581,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   // ─── PDF: Реестр квитанций ───
-  List<pw.Page> _buildReceiptsPdf(String title) {
+  List<pw.Page> _buildReceiptsPdf(String title, pw.Font ttf) {
     final docs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     return _paginatedTable(
+      ttf: ttf,
       title: title,
       subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $_selectedLocationName • ${docs.length} документов',
       headers: ['#', 'ФИО', 'Адрес', 'Л/С', 'Начисл.', 'Оплач.', 'Долг'],
@@ -1586,9 +1605,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   // ─── PDF: Льготы ───
-  List<pw.Page> _buildBenefitsPdf(String title) {
+  List<pw.Page> _buildBenefitsPdf(String title, pw.Font ttf) {
     final items = (_reportData?['benefits'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     return _paginatedTable(
+      ttf: ttf,
       title: title,
       subtitle: '$_selectedLocationName • ${items.length} льготников',
       headers: ['#', 'ФИО', 'Категория', 'Скидка %'],
@@ -1605,6 +1625,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   // ─── Универсальный генератор постраничных таблиц ───
   List<pw.Page> _paginatedTable({
+    required pw.Font ttf,
     required String title,
     String? subtitle,
     required List<String> headers,
@@ -1625,19 +1646,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       pages.add(pw.Page(
         pageFormat: PdfPageFormat.a4.landscape,
         margin: const pw.EdgeInsets.all(24),
+        theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
         build: (pw.Context ctx) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               // Заголовок только на первой странице
               if (pageIdx == 0) ...[
-                pw.Text(title, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                pw.Text(title, style: pw.TextStyle(font: ttf, fontSize: 16, fontWeight: pw.FontWeight.bold)),
                 if (subtitle != null)
-                  pw.Text(subtitle, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  pw.Text(subtitle, style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
                 pw.SizedBox(height: 12),
               ],
               if (totalPages > 1)
-                pw.Text('Стр. ${pageIdx + 1} из $totalPages', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
+                pw.Text('Стр. ${pageIdx + 1} из $totalPages', style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.grey)),
               pw.SizedBox(height: 4),
               // Таблица
               pw.Table(
@@ -1649,14 +1671,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                     children: headers.map((h) => pw.Padding(
                       padding: const pw.EdgeInsets.all(4),
-                      child: pw.Text(h, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                      child: pw.Text(h, style: pw.TextStyle(font: ttf, fontSize: 8, fontWeight: pw.FontWeight.bold)),
                     )).toList(),
                   ),
                   // Строки
                   ...pageRows.map((row) => pw.TableRow(
                     children: row.map((cell) => pw.Padding(
                       padding: const pw.EdgeInsets.all(3),
-                      child: pw.Text(cell, style: const pw.TextStyle(fontSize: 7), maxLines: 2),
+                      child: pw.Text(cell, style: pw.TextStyle(font: ttf, fontSize: 7), maxLines: 2),
                     )).toList(),
                   )),
                   // Итого на последней странице
@@ -1665,7 +1687,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       decoration: const pw.BoxDecoration(color: PdfColors.grey100),
                       children: totals.map((cell) => pw.Padding(
                         padding: const pw.EdgeInsets.all(4),
-                        child: pw.Text(cell, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                        child: pw.Text(cell, style: pw.TextStyle(font: ttf, fontSize: 8, fontWeight: pw.FontWeight.bold)),
                       )).toList(),
                     ),
                 ],
@@ -1680,6 +1702,28 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   double _n(dynamic v) => (v as num?)?.toDouble() ?? 0;
   String _f(dynamic v) => _n(v).toStringAsFixed(0);
+
+  bool _reportDataHasRows(String type) {
+    if (_reportData == null) return false;
+    switch (type) {
+      case 'turnover':
+      case 'debtors':
+      case 'receipts':
+        final docs = (_reportData?['docs'] as List?) ?? [];
+        return docs.isNotEmpty;
+      case 'house_summary':
+        final houses = (_reportData?['houses'] as List?) ?? [];
+        return houses.isNotEmpty;
+      case 'monthly':
+        final periods = (_reportData?['periods'] as List?) ?? [];
+        return periods.isNotEmpty;
+      case 'benefit_stats':
+        final benefits = (_reportData?['benefits'] as List?) ?? [];
+        return benefits.isNotEmpty;
+      default:
+        return false;
+    }
+  }
 
   Future<void> _exportXlsx() async {
     if (_selectedPeriod == null) return;

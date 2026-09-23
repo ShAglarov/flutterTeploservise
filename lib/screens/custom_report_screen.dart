@@ -62,6 +62,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   Map<String, dynamic> _reportResult = {};
   String? _error;
   bool _isExporting = false;
+  pw.Font? _pdfFont;
 
   // Поиск в результатах
   final TextEditingController _searchController = TextEditingController();
@@ -1904,6 +1905,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       // Загружаем кириллический шрифт
       final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
       final ttf = pw.Font.ttf(fontData);
+      _pdfFont = ttf;
 
       final pdf = pw.Document(
         theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
@@ -1913,22 +1915,23 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       pdf.addPage(pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
+        theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
         header: (ctx) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('Аналитический отчёт', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Аналитический отчёт', style: pw.TextStyle(font: ttf, fontSize: 20, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 4),
             pw.Text('Период: $periodLabel • Дом: $_selectedLocationName',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
             pw.Divider(),
           ],
         ),
         footer: (ctx) => pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('TeploService', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+            pw.Text('TeploService', style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.grey500)),
             pw.Text('Стр. ${ctx.pageNumber}/${ctx.pagesCount}',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+                style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.grey500)),
           ],
         ),
         build: (ctx) => [
@@ -2015,7 +2018,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   pw.Widget _pdfSectionTitle(String title) {
     return pw.Padding(
       padding: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Text(title, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey800)),
+      child: pw.Text(title, style: pw.TextStyle(font: _pdfFont, fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey800)),
     );
   }
 

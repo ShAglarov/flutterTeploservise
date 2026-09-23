@@ -833,6 +833,7 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
         pw.Page(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(40),
+          theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
           build: (pw.Context context) {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -843,14 +844,14 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
                     type == 'warning' ? 'УВЕДОМЛЕНИЕ О ЗАДОЛЖЕННОСТИ'
                       : type == 'pretrial' ? 'ДОСУДЕБНАЯ ПРЕТЕНЗИЯ'
                       : 'СУДЕБНОЕ УВЕДОМЛЕНИЕ',
-                    style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(font: ttf, fontSize: 18, fontWeight: pw.FontWeight.bold),
                   ),
                 ),
                 pw.SizedBox(height: 6),
                 pw.Center(
                   child: pw.Text(
                     'от ${n['issued_date'] ?? '—'}',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                    style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700),
                   ),
                 ),
                 pw.SizedBox(height: 20),
@@ -858,25 +859,25 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
                 pw.SizedBox(height: 14),
 
                 // Данные
-                _pdfInfoRow('Кому:', n['fio'] ?? '—'),
-                _pdfInfoRow('Лицевой счёт:', n['account_number'] ?? '—'),
-                _pdfInfoRow('Адрес:', n['address'] ?? '—'),
-                _pdfInfoRow('Период:', _periodText(n)),
+                _pdfInfoRow('Кому:', n['fio'] ?? '—', ttf),
+                _pdfInfoRow('Лицевой счёт:', n['account_number'] ?? '—', ttf),
+                _pdfInfoRow('Адрес:', n['address'] ?? '—', ttf),
+                _pdfInfoRow('Период:', _periodText(n), ttf),
                 pw.SizedBox(height: 14),
 
                 // Сумма
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('ОБЩАЯ ЗАДОЛЖЕННОСТЬ:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                    pw.Text('${debt.toStringAsFixed(2)} руб.', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('ОБЩАЯ ЗАДОЛЖЕННОСТЬ:', style: pw.TextStyle(font: ttf, fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('${debt.toStringAsFixed(2)} руб.', style: pw.TextStyle(font: ttf, fontSize: 14, fontWeight: pw.FontWeight.bold)),
                   ],
                 ),
                 pw.SizedBox(height: 12),
 
                 // Разбивка для pretrial и court
                 if ((type == 'pretrial' || type == 'court') && breakdown.isNotEmpty) ...[
-                  pw.Text('Разбивка по услугам:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Разбивка по услугам:', style: pw.TextStyle(font: ttf, fontSize: 11, fontWeight: pw.FontWeight.bold)),
                   pw.SizedBox(height: 6),
                   pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
@@ -888,14 +889,14 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
                       pw.TableRow(
                         decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                         children: [
-                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Услуга', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
-                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Долг', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10), textAlign: pw.TextAlign.right)),
+                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Услуга', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Долг', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 10), textAlign: pw.TextAlign.right)),
                         ],
                       ),
                       ...breakdown.entries.where((e) => (e.value as num?)?.toDouble() != null && (e.value as num).toDouble() > 0).map((e) => pw.TableRow(
                         children: [
-                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_serviceLabels[e.key] ?? e.key, style: const pw.TextStyle(fontSize: 10))),
-                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(e.value as num).toDouble().toStringAsFixed(2)} р.', style: const pw.TextStyle(fontSize: 10), textAlign: pw.TextAlign.right)),
+                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_serviceLabels[e.key] ?? e.key, style: pw.TextStyle(font: ttf, fontSize: 10))),
+                          pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${(e.value as num).toDouble().toStringAsFixed(2)} р.', style: pw.TextStyle(font: ttf, fontSize: 10), textAlign: pw.TextAlign.right)),
                         ],
                       )),
                     ],
@@ -907,7 +908,7 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
                 if (textContent != null && textContent.isNotEmpty) ...[
                   pw.Divider(),
                   pw.SizedBox(height: 8),
-                  pw.Text(textContent, style: const pw.TextStyle(fontSize: 10, lineSpacing: 4)),
+                  pw.Text(textContent, style: pw.TextStyle(font: ttf, fontSize: 10, lineSpacing: 4)),
                 ],
               ],
             );
@@ -925,14 +926,14 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
     return file;
   }
 
-  pw.Widget _pdfInfoRow(String label, String value) {
+  pw.Widget _pdfInfoRow(String label, String value, pw.Font ttf) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 2),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.SizedBox(width: 120, child: pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700))),
-          pw.Expanded(child: pw.Text(value, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold))),
+          pw.SizedBox(width: 120, child: pw.Text(label, style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700))),
+          pw.Expanded(child: pw.Text(value, style: pw.TextStyle(font: ttf, fontSize: 10, fontWeight: pw.FontWeight.bold))),
         ],
       ),
     );

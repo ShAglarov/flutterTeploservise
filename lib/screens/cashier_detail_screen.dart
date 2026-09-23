@@ -1205,34 +1205,35 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         pw.Page(
           pageFormat: PdfPageFormat.a5,
           margin: const pw.EdgeInsets.all(24),
+          theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
           build: (pw.Context context) {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 // Заголовок
                 pw.Center(
-                  child: pw.Text('ЧЕК ОБ ОПЛАТЕ', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                  child: pw.Text('ЧЕК ОБ ОПЛАТЕ', style: pw.TextStyle(font: ttf, fontSize: 20, fontWeight: pw.FontWeight.bold)),
                 ),
                 pw.Center(
-                  child: pw.Text('$date  $time', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  child: pw.Text('$date  $time', style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
                 ),
                 pw.SizedBox(height: 16),
                 pw.Divider(thickness: 1.5),
                 pw.SizedBox(height: 10),
 
                 // Данные плательщика
-                _pdfInfoRow('Плательщик:', d['fio'] ?? '—'),
-                _pdfInfoRow('Лицевой счёт:', d['account_number'] ?? '—'),
-                _pdfInfoRow('Адрес:', d['address'] ?? '—'),
-                _pdfInfoRow('Период:', _formatPeriod(d['period_date'])),
-                if (d['area'] != null) _pdfInfoRow('Площадь:', '${d['area']} м²'),
+                _pdfInfoRow('Плательщик:', d['fio'] ?? '—', ttf),
+                _pdfInfoRow('Лицевой счёт:', d['account_number'] ?? '—', ttf),
+                _pdfInfoRow('Адрес:', d['address'] ?? '—', ttf),
+                _pdfInfoRow('Период:', _formatPeriod(d['period_date']), ttf),
+                if (d['area'] != null) _pdfInfoRow('Площадь:', '${d['area']} м²', ttf),
                 
                 pw.SizedBox(height: 12),
                 pw.Divider(),
                 pw.SizedBox(height: 8),
 
                 // Таблица услуг
-                pw.Text('Оплаченные услуги:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                pw.Text('Оплаченные услуги:', style: pw.TextStyle(font: ttf, fontSize: 12, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 6),
                 
                 pw.Table(
@@ -1245,14 +1246,14 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                     pw.TableRow(
                       decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                       children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Услуга', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Сумма', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10), textAlign: pw.TextAlign.right)),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Услуга', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 10))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Сумма', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 10), textAlign: pw.TextAlign.right)),
                       ],
                     ),
                     ...paidServices.map((s) => pw.TableRow(
                       children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(s['label'] ?? s['key'] ?? '', style: const pw.TextStyle(fontSize: 10))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${_fmt(s['paid'])} р.', style: const pw.TextStyle(fontSize: 10), textAlign: pw.TextAlign.right)),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(s['label'] ?? s['key'] ?? '', style: pw.TextStyle(font: ttf, fontSize: 10))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${_fmt(s['paid'])} р.', style: pw.TextStyle(font: ttf, fontSize: 10), textAlign: pw.TextAlign.right)),
                       ],
                     )),
                   ],
@@ -1266,16 +1267,16 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('ИТОГО ОПЛАЧЕНО:', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                    pw.Text('${_fmt(totalPaid)} р.', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('ИТОГО ОПЛАЧЕНО:', style: pw.TextStyle(font: ttf, fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('${_fmt(totalPaid)} р.', style: pw.TextStyle(font: ttf, fontSize: 14, fontWeight: pw.FontWeight.bold)),
                   ],
                 ),
                 pw.SizedBox(height: 4),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Остаток долга:', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
-                    pw.Text('${_fmt(debtEnd)} р.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                    pw.Text('Остаток долга:', style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
+                    pw.Text('${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
                   ],
                 ),
 
@@ -1283,7 +1284,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 pw.Divider(),
                 pw.SizedBox(height: 8),
                 pw.Center(
-                  child: pw.Text('Спасибо за оплату!', style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
+                  child: pw.Text('Спасибо за оплату!', style: pw.TextStyle(font: ttf, fontSize: 11, color: PdfColors.grey600)),
                 ),
               ],
             );
@@ -1320,14 +1321,14 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     }
   }
 
-  pw.Widget _pdfInfoRow(String label, String value) {
+  pw.Widget _pdfInfoRow(String label, String value, pw.Font ttf) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 2),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.SizedBox(width: 100, child: pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700))),
-          pw.Expanded(child: pw.Text(value, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold))),
+          pw.SizedBox(width: 100, child: pw.Text(label, style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700))),
+          pw.Expanded(child: pw.Text(value, style: pw.TextStyle(font: ttf, fontSize: 10, fontWeight: pw.FontWeight.bold))),
         ],
       ),
     );
