@@ -116,13 +116,110 @@ class _ImportXlsScreenState extends ConsumerState<ImportXlsScreen> {
         });
       }
     } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map<String, dynamic> && data['error_code'] == 'MISSING_DEPENDENCY') {
+        setState(() => _isImporting = false);
+        final packageName = data['package_name']?.toString() ?? 'xlrd';
+        _showInstallDialog(packageName);
+      } else {
+        setState(() {
+          _error = 'Ошибка: ${data is Map ? data['detail'] : e.message}';
+          _isImporting = false;
+        });
+      }
+    } catch (e) {
       setState(() {
-        _error = 'Ошибка: ${e.response?.data?['detail'] ?? e.message}';
+        _error = 'Ошибка импорта: $e';
+        _isImporting = false;
+      });
+    }
+  }
+
+  void _showInstallDialog(String packageName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: const Icon(Icons.download_rounded, size: 40, color: Colors.orange),
+        title: const Text('Зависимость не установлена'),
+        content: Text(
+          'На сервере отсутствует библиотека "$packageName".\n\nУстановить автоматически?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _installDependency(packageName);
+            },
+            icon: const Icon(Icons.install_desktop, size: 18),
+            label: const Text('Установить'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _installDependency(String packageName) async {
+    setState(() {
+      _isImporting = true;
+      _error = null;
+    });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final formData = FormData.fromMap({'package_name': packageName});
+      
+      final response = await dio.post(
+        '/import/install-dependency',
+        data: formData,
+        options: Options(receiveTimeout: const Duration(seconds: 130)),
+      );
+
+      if (response.statusCode == 200 && response.data?['status'] == 'success') {
+        setState(() => _isImporting = false);
+        if (!mounted) return;
+        
+        final retry = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            icon: const Icon(Icons.check_circle, size: 40, color: Colors.green),
+            title: const Text('Установлено!'),
+            content: Text('Пакет "$packageName" успешно установлен.\n\nПовторить импорт?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Позже'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Повторить импорт'),
+              ),
+            ],
+          ),
+        );
+        
+        if (retry == true) {
+          _startImport();
+        }
+      } else {
+        setState(() {
+          _error = 'Не удалось установить $packageName';
+          _isImporting = false;
+        });
+      }
+    } on DioException catch (e) {
+      setState(() {
+        _error = 'Ошибка установки: ${e.response?.data?['detail'] ?? e.message}';
         _isImporting = false;
       });
     } catch (e) {
       setState(() {
-        _error = 'Ошибка импорта: $e';
+        _error = 'Ошибка установки: $e';
         _isImporting = false;
       });
     }

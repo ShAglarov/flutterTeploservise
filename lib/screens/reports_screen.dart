@@ -443,55 +443,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      // Получаем список домов
-      final locResp = await dio.get('/locations/', queryParameters: {'limit': 1000, 'assigned_only': true});
-      final locData = locResp.data;
-      List<Map<String, dynamic>> locations;
-      if (locData is List) {
-        locations = locData.cast<Map<String, dynamic>>();
-      } else if (locData is Map && locData.containsKey('items')) {
-        locations = (locData['items'] as List).cast<Map<String, dynamic>>();
-      } else {
-        locations = [];
-      }
+      final params = <String, dynamic>{
+        'period_date': _selectedPeriod,
+      };
+      if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
 
-      // Фильтруем по выбранному дому
-      if (_selectedLocationId != null) {
-        locations = locations.where((l) => l['id'] == _selectedLocationId).toList();
-      }
-
-      // Для каждого дома запрашиваем статистику
-      final housesData = <Map<String, dynamic>>[];
-      for (final loc in locations) {
-        try {
-          final statsResp = await dio.get('/payment-documents/statistics', queryParameters: {
-            'period_date': _selectedPeriod,
-            'location_id': loc['id'],
-          });
-          final stats = statsResp.data as Map<String, dynamic>? ?? {};
-          final count = stats['count'] as int? ?? 0;
-          if (count == 0) continue; // Пропускаем дома без документов
-
-          housesData.add({
-            'id': loc['id'],
-            'name': loc['name'] ?? 'ID: ${loc['id']}',
-            'address': loc['address'] ?? loc['name'] ?? '',
-            'count': count,
-            'total_charged': (stats['total_charged'] as num?)?.toDouble() ?? 0,
-            'total_paid': (stats['total_paid'] as num?)?.toDouble() ?? 0,
-            'total_debt': (stats['total_debt'] as num?)?.toDouble() ?? 0,
-            'debtors_count': stats['debtors_count'] as int? ?? 0,
-          });
-        } catch (_) {
-          // Пропускаем дом при ошибке
-        }
-      }
-
-      // Сортируем по долгу (макс. долг первый)
-      housesData.sort((a, b) => ((b['total_debt'] as double) - (a['total_debt'] as double)).sign.toInt());
+      final resp = await dio.get('/payment-documents/collection-analytics', queryParameters: params);
+      final data = resp.data as Map<String, dynamic>? ?? {};
+      final houses = (data['houses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final totals = data['totals'] as Map<String, dynamic>? ?? {};
 
       setState(() {
-        _reportData = {'houses': housesData, 'type': 'house_summary'};
+        _reportData = {'houses': houses, 'totals': totals, 'type': 'house_summary'};
       });
     } catch (e) {
       setState(() => _error = '$e');
@@ -875,60 +838,100 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // 3. СВОДКА ПО ДОМАМ (с процентом собираемости)
+  // 3. СВОДКА ПО ДОМАМ (с аналитикой собираемости)
   // ═══════════════════════════════════════════════════════════════════
 
-  Widget _buildHouseSummaryResult(ThemeData theme, bool isDark) {
-    final houses = (_reportData?['houses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+  String _houseSummarySearch = '';
 
-    // Общие итоги
-    double totalCharged = 0, totalPaid = 0, totalDebt = 0;
-    int totalAccounts = 0;
-    for (final h in houses) {
-      totalCharged += (h['total_charged'] as num?)?.toDouble() ?? 0;
-      totalPaid += (h['total_paid'] as num?)?.toDouble() ?? 0;
-      totalDebt += (h['total_debt'] as num?)?.toDouble() ?? 0;
-      totalAccounts += (h['count'] as int?) ?? 0;
+  Widget _buildHouseSummaryResult(ThemeData theme, bool isDark) {
+    final allHouses = (_reportData?['houses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final totals = _reportData?['totals'] as Map<String, dynamic>? ?? {};
+
+    // Фильтрация по поиску
+    List<Map<String, dynamic>> houses;
+    if (_houseSummarySearch.isEmpty) {
+      houses = allHouses;
+    } else {
+      final q = _houseSummarySearch.toLowerCase();
+      houses = allHouses.where((h) {
+        final name = (h['name'] ?? '').toString().toLowerCase();
+        return name.contains(q);
+      }).toList();
     }
-    final avgCollection = totalCharged > 0 ? (totalPaid / totalCharged * 100) : 0.0;
+
+    final totalAccounts = totals['total_accounts'] as int? ?? 0;
+    final totalPaidAccounts = totals['paid_accounts'] as int? ?? 0;
+    final totalUnpaid = totals['unpaid_accounts'] as int? ?? 0;
+    final collPct = (totals['collection_percent'] as num?)?.toDouble() ?? 0.0;
+    final totalCharged = (totals['total_charged'] as num?)?.toDouble() ?? 0.0;
+    final totalPaidSum = (totals['total_paid'] as num?)?.toDouble() ?? 0.0;
+    final totalDebt = (totals['total_debt'] as num?)?.toDouble() ?? 0.0;
 
     return Column(
       children: [
-        _reportHeader('Сводка по домам',
-          subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • ${houses.length} домов, $totalAccounts Л/С'),
+        _reportHeader('Аналитика собираемости',
+          subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • ${allHouses.length} домов, $totalAccounts Л/С'),
         const Divider(height: 1),
-        // Итоговая строка
+        // Итоги
         Container(
           padding: const EdgeInsets.all(12),
           color: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: Column(
             children: [
-              _statChip('Начислено', '${totalCharged.toStringAsFixed(0)} ₽', Colors.blue),
-              _statChip('Оплачено', '${totalPaid.toStringAsFixed(0)} ₽', Colors.green),
-              _statChip('Долг', '${totalDebt.toStringAsFixed(0)} ₽', totalDebt > 0 ? Colors.red : Colors.green),
-              _statChip('Собираемость', '${avgCollection.toStringAsFixed(1)}%',
-                  avgCollection >= 80 ? Colors.green : avgCollection >= 50 ? Colors.orange : Colors.red),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _statChip('Оплатили', '$totalPaidAccounts из $totalAccounts', Colors.green),
+                  _statChip('Не оплатили', '$totalUnpaid', totalUnpaid > 0 ? Colors.red : Colors.green),
+                  _statChip('Собираемость', '${collPct.toStringAsFixed(1)}%',
+                      collPct >= 80 ? Colors.green : collPct >= 50 ? Colors.orange : Colors.red),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _statChip('Начислено', '${totalCharged.toStringAsFixed(0)} ₽', Colors.blue),
+                  _statChip('Оплачено', '${totalPaidSum.toStringAsFixed(0)} ₽', Colors.green),
+                  _statChip('Долг', '${totalDebt.toStringAsFixed(0)} ₽', totalDebt > 0 ? Colors.red : Colors.green),
+                ],
+              ),
             ],
           ),
         ),
         const Divider(height: 1),
+        // Поиск
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Поиск по дому (например: 35 или Ленина)',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            onChanged: (q) => setState(() => _houseSummarySearch = q),
+          ),
+        ),
         // Дома
         Expanded(
           child: houses.isEmpty
-              ? const Center(child: Text('Нет данных'))
+              ? Center(child: Text(_houseSummarySearch.isNotEmpty ? 'Ничего не найдено' : 'Нет данных'))
               : ListView.builder(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   itemCount: houses.length,
                   itemBuilder: (_, i) {
                     final h = houses[i];
                     final name = h['name'] as String? ?? '';
-                    final count = h['count'] as int? ?? 0;
+                    final totalAcc = h['total_accounts'] as int? ?? 0;
+                    final paidAcc = h['paid_accounts'] as int? ?? 0;
+                    final unpaidAcc = h['unpaid_accounts'] as int? ?? 0;
                     final charged = (h['total_charged'] as num?)?.toDouble() ?? 0;
                     final paid = (h['total_paid'] as num?)?.toDouble() ?? 0;
                     final debt = (h['total_debt'] as num?)?.toDouble() ?? 0;
-                    final debtorsCount = h['debtors_count'] as int? ?? 0;
-                    final collection = charged > 0 ? (paid / charged * 100) : 0.0;
+                    final collection = (h['collection_percent'] as num?)?.toDouble() ?? 0;
+                    final locationId = h['location_id'] as int?;
 
                     final Color collectionColor;
                     if (collection >= 80) {
@@ -942,69 +945,84 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 6),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Адрес + кол-во ЛС
-                            Row(
-                              children: [
-                                const Icon(Icons.home, size: 18, color: Colors.indigo),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                                    maxLines: 2, overflow: TextOverflow.ellipsis)),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.indigo.shade50,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text('$count Л/С', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.indigo.shade700)),
-                                ),
-                              ],
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: locationId != null ? () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => _HouseDetailView(
+                              locationId: locationId,
+                              locationName: name,
+                              periodDate: _selectedPeriod,
+                              dioProvider: dioProvider,
+                              ref: ref,
                             ),
-                            const SizedBox(height: 10),
-                            // Начислено / Оплачено / Долг
-                            Row(
-                              children: [
-                                Expanded(child: Column(children: [
-                                  Text('${charged.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
-                                  const Text('Начислено', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                ])),
-                                Expanded(child: Column(children: [
-                                  Text('${paid.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
-                                  const Text('Оплачено', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                ])),
-                                Expanded(child: Column(children: [
-                                  Text('${debt.toStringAsFixed(0)}₽', style: TextStyle(color: debt > 0 ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
-                                  Text('Долг ($debtorsCount)', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                                ])),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            // Процент собираемости — прогресс-бар
-                            Row(
-                              children: [
-                                Text('Собираемость:', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: LinearProgressIndicator(
-                                      value: collection / 100,
-                                      backgroundColor: Colors.grey.shade200,
-                                      color: collectionColor,
-                                      minHeight: 8,
+                          ));
+                        } : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.home, size: 18, color: Colors.indigo),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                      maxLines: 2, overflow: TextOverflow.ellipsis)),
+                                  const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              // Бейджи
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  _badge('✅ $paidAcc опл.', Colors.green),
+                                  if (unpaidAcc > 0) _badge('❌ $unpaidAcc не опл.', Colors.red),
+                                  _badge('$totalAcc Л/С', Colors.indigo),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(child: Column(children: [
+                                    Text('${charged.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const Text('Начислено', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ])),
+                                  Expanded(child: Column(children: [
+                                    Text('${paid.toStringAsFixed(0)}₽', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const Text('Оплачено', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ])),
+                                  Expanded(child: Column(children: [
+                                    Text('${debt.toStringAsFixed(0)}₽', style: TextStyle(color: debt > 0 ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const Text('Долг', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ])),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Text('Собираемость:', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: collection / 100,
+                                        backgroundColor: Colors.grey.shade200,
+                                        color: collectionColor,
+                                        minHeight: 8,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text('${collection.toStringAsFixed(1)}%',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: collectionColor)),
-                              ],
-                            ),
-                          ],
+                                  const SizedBox(width: 8),
+                                  Text('${collection.toStringAsFixed(1)}%',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: collectionColor)),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -1012,6 +1030,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
         ),
       ],
+    );
+  }
+
+  Widget _badge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
     );
   }
 
@@ -1533,29 +1562,33 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  // ─── PDF: Сводка по домам ───
+  // ─── PDF: Аналитика собираемости ───
   List<pw.Page> _buildHouseSummaryPdf(String title, pw.Font ttf) {
     final houses = (_reportData?['houses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final totals = _reportData?['totals'] as Map<String, dynamic>? ?? {};
     return _paginatedTable(
       ttf: ttf,
       title: title,
       subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • ${houses.length} домов',
-      headers: ['#', 'Дом', 'Л/С', 'Начисл.', 'Оплач.', 'Долг', 'Собир.%'],
-      columnWidths: {0: const pw.FixedColumnWidth(25), 1: const pw.FlexColumnWidth(3), 2: const pw.FixedColumnWidth(35),
-        3: const pw.FlexColumnWidth(1.2), 4: const pw.FlexColumnWidth(1.2), 5: const pw.FlexColumnWidth(1.2), 6: const pw.FixedColumnWidth(45)},
+      headers: ['#', 'Дом', 'Л/С', 'Опл.', 'Не опл.', 'Начисл.', 'Оплач.', 'Долг', 'Собир.%'],
+      columnWidths: {0: const pw.FixedColumnWidth(20), 1: const pw.FlexColumnWidth(3), 2: const pw.FixedColumnWidth(30),
+        3: const pw.FixedColumnWidth(30), 4: const pw.FixedColumnWidth(35),
+        5: const pw.FlexColumnWidth(1.1), 6: const pw.FlexColumnWidth(1.1), 7: const pw.FlexColumnWidth(1.1), 8: const pw.FixedColumnWidth(40)},
       rows: houses.asMap().entries.map((e) {
         final i = e.key;
         final h = e.value;
-        final ch = _n(h['total_charged']);
-        final pd = _n(h['total_paid']);
-        final coll = ch > 0 ? (pd / ch * 100).toStringAsFixed(1) : '—';
-        return <String>['${i + 1}', h['name'] ?? '', '${h['count'] ?? 0}', _f(h['total_charged']), _f(h['total_paid']), _f(h['total_debt']), '$coll%'];
+        final coll = (h['collection_percent'] as num?)?.toDouble() ?? 0;
+        return <String>['${i + 1}', h['name'] ?? '', '${h['total_accounts'] ?? 0}',
+          '${h['paid_accounts'] ?? 0}', '${h['unpaid_accounts'] ?? 0}',
+          _f(h['total_charged']), _f(h['total_paid']), _f(h['total_debt']), '${coll.toStringAsFixed(1)}%'];
       }).toList(),
       totals: () {
-        double tc = 0, tp = 0, td = 0; int cnt = 0;
-        for (final h in houses) { tc += _n(h['total_charged']); tp += _n(h['total_paid']); td += _n(h['total_debt']); cnt += (h['count'] as int?) ?? 0; }
-        final avg = tc > 0 ? (tp / tc * 100).toStringAsFixed(1) : '—';
-        return <String>['', 'ИТОГО', '$cnt', _f(tc), _f(tp), _f(td), '$avg%'];
+        final tAcc = totals['total_accounts'] ?? 0;
+        final tPaid = totals['paid_accounts'] ?? 0;
+        final tUnpaid = totals['unpaid_accounts'] ?? 0;
+        final coll = (totals['collection_percent'] as num?)?.toDouble() ?? 0;
+        return <String>['', 'ИТОГО', '$tAcc', '$tPaid', '$tUnpaid',
+          _f(totals['total_charged']), _f(totals['total_paid']), _f(totals['total_debt']), '${coll.toStringAsFixed(1)}%'];
       }(),
     );
   }
@@ -1926,6 +1959,321 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     } catch (e) {
       debugPrint('❌ Ошибка загрузки домов: $e');
     }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ДЕТАЛЬНЫЙ ЭКРАН ДОМА — drill-down по собираемости
+// ═══════════════════════════════════════════════════════════════════
+
+class _HouseDetailView extends ConsumerStatefulWidget {
+  final int locationId;
+  final String locationName;
+  final String? periodDate;
+  final Provider<Dio> dioProvider;
+  final WidgetRef ref;
+
+  const _HouseDetailView({
+    required this.locationId,
+    required this.locationName,
+    required this.periodDate,
+    required this.dioProvider,
+    required this.ref,
+  });
+
+  @override
+  ConsumerState<_HouseDetailView> createState() => _HouseDetailViewState();
+}
+
+class _HouseDetailViewState extends ConsumerState<_HouseDetailView> {
+  bool _isLoading = true;
+  String? _error;
+  Map<String, dynamic>? _data;
+  String _filter = 'all'; // all, paid, unpaid
+  String _search = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _isLoading = true; _error = null; });
+    try {
+      final dio = widget.ref.read(widget.dioProvider);
+      final params = <String, dynamic>{};
+      if (widget.periodDate != null) params['period_date'] = widget.periodDate;
+      if (_search.isNotEmpty) params['search'] = _search;
+
+      final resp = await dio.get(
+        '/payment-documents/collection-analytics/${widget.locationId}',
+        queryParameters: params,
+      );
+      setState(() => _data = resp.data as Map<String, dynamic>?);
+    } catch (e) {
+      setState(() => _error = '$e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatPeriod(String? s) {
+    if (s == null) return '';
+    final dt = DateTime.tryParse(s);
+    if (dt == null) return s;
+    const months = ['', 'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    return '${months[dt.month]} ${dt.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.locationName, style: const TextStyle(fontSize: 16)),
+        centerTitle: true,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('❌ $_error', style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 12),
+                    ElevatedButton(onPressed: _load, child: const Text('Повторить')),
+                  ],
+                ))
+              : _buildContent(theme),
+    );
+  }
+
+  Widget _buildContent(ThemeData theme) {
+    final months = (_data?['months'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final allAccounts = (_data?['accounts'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final summary = _data?['summary'] as Map<String, dynamic>? ?? {};
+
+    // Фильтр ЛС
+    List<Map<String, dynamic>> accounts;
+    switch (_filter) {
+      case 'paid':
+        accounts = allAccounts.where((a) => a['is_paid'] == true).toList();
+        break;
+      case 'unpaid':
+        accounts = allAccounts.where((a) => a['is_paid'] != true).toList();
+        break;
+      default:
+        accounts = allAccounts;
+    }
+
+    final totalAcc = summary['total_accounts'] as int? ?? 0;
+    final paidAcc = summary['paid_accounts'] as int? ?? 0;
+    final unpaidAcc = summary['unpaid_accounts'] as int? ?? 0;
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          // Сводка
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _stat('Всего ЛС', '$totalAcc', Colors.indigo),
+                  _stat('Оплатили', '$paidAcc', Colors.green),
+                  _stat('Не оплатили', '$unpaidAcc', unpaidAcc > 0 ? Colors.red : Colors.green),
+                  _stat('% собир.', totalAcc > 0 ? '${(paidAcc / totalAcc * 100).toStringAsFixed(0)}%' : '—',
+                      paidAcc >= totalAcc * 0.8 ? Colors.green : Colors.orange),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Помесячная динамика
+          if (months.isNotEmpty) ...[
+            Text('📊 Помесячная динамика', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 110,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: months.length,
+                itemBuilder: (_, i) {
+                  final m = months[i];
+                  final mTotal = m['total_accounts'] as int? ?? 0;
+                  final mPaid = m['paid_accounts'] as int? ?? 0;
+                  final mUnpaid = m['unpaid_accounts'] as int? ?? 0;
+                  final mColl = (m['collection_percent'] as num?)?.toDouble() ?? 0;
+                  final collColor = mColl >= 80 ? Colors.green : mColl >= 50 ? Colors.orange : Colors.red;
+
+                  return Card(
+                    margin: const EdgeInsets.only(right: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    child: Container(
+                      width: 130,
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(m['period_label'] ?? _formatPeriod(m['period']),
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                          const Spacer(),
+                          Text('$mPaid/$mTotal опл.', style: const TextStyle(fontSize: 11)),
+                          if (mUnpaid > 0) Text('$mUnpaid не опл.', style: TextStyle(fontSize: 11, color: Colors.red.shade700)),
+                          const SizedBox(height: 4),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: LinearProgressIndicator(
+                              value: mColl / 100,
+                              backgroundColor: Colors.grey.shade200,
+                              color: collColor,
+                              minHeight: 6,
+                            ),
+                          ),
+                          Text('${mColl.toStringAsFixed(0)}%', style: TextStyle(fontSize: 10, color: collColor, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Поиск + фильтр
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Поиск ЛС...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    isDense: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                  onChanged: (q) {
+                    _search = q;
+                    _load();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'all', label: Text('Все', style: TextStyle(fontSize: 11))),
+                  ButtonSegment(value: 'paid', label: Text('Опл', style: TextStyle(fontSize: 11))),
+                  ButtonSegment(value: 'unpaid', label: Text('Долг', style: TextStyle(fontSize: 11))),
+                ],
+                selected: {_filter},
+                onSelectionChanged: (v) => setState(() => _filter = v.first),
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Список ЛС
+          Text('📋 Лицевые счета (${accounts.length})',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...accounts.map((a) {
+            final isPaid = a['is_paid'] == true;
+            final debt = (a['total_debt'] as num?)?.toDouble() ?? 0;
+            final paid = (a['total_paid'] as num?)?.toDouble() ?? 0;
+            final charged = (a['total_charged'] as num?)?.toDouble() ?? 0;
+            final unpaidMonths = a['unpaid_months'] as int? ?? 0;
+            final partial = !isPaid && paid > 0;
+
+            final Color statusColor;
+            if (isPaid) {
+              statusColor = Colors.green;
+            } else if (partial) {
+              statusColor = Colors.orange;
+            } else {
+              statusColor = Colors.red;
+            }
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(isPaid ? Icons.check_circle : partial ? Icons.warning : Icons.cancel,
+                            size: 16, color: statusColor),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(a['fio'] ?? '—', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                        if (a['account_number'] != null)
+                          Text(a['account_number'], style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                    if (a['address'] != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2, left: 22),
+                        child: Text(a['address'], style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      ),
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 22),
+                      child: Row(
+                        children: [
+                          Text('Нач: ${charged.toStringAsFixed(0)}₽', style: const TextStyle(fontSize: 11, color: Colors.blue)),
+                          const SizedBox(width: 12),
+                          Text('Опл: ${paid.toStringAsFixed(0)}₽', style: const TextStyle(fontSize: 11, color: Colors.green)),
+                          const SizedBox(width: 12),
+                          Text('Долг: ${debt.toStringAsFixed(0)}₽',
+                              style: TextStyle(fontSize: 11, color: debt > 0 ? Colors.red : Colors.green, fontWeight: FontWeight.w600)),
+                          if (unpaidMonths > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text('$unpaidMonths мес.', style: TextStyle(fontSize: 9, color: Colors.red.shade700)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
+        const SizedBox(height: 2),
+        Text(label, style: TextStyle(fontSize: 10, color: color.withAlpha(180))),
+      ],
+    );
   }
 }
 

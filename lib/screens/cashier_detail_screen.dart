@@ -607,6 +607,42 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     );
   }
 
+  Widget _datePickerRow(String label, DateTime date, void Function(DateTime) onChanged) {
+    final formatted = '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: date,
+            firstDate: DateTime(2020),
+            lastDate: DateTime.now(),
+            locale: const Locale('ru'),
+          );
+          if (picked != null) onChanged(picked);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(40),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withAlpha(80)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.calendar_today, size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+              Text(formatted, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _serviceSelector(List services, String? selected, void Function(String?) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,6 +696,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     final controllers = <String, TextEditingController>{};
     for (final s in services) { controllers[s['key']] = TextEditingController(); }
     final noteCtrl = TextEditingController();
+    DateTime paymentDate = DateTime.now();
 
     _showStyledSheet(
       title: 'Оплата по услуге',
@@ -673,12 +710,14 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
           if (val != null && val > 0) body['paid_$key'] = val;
         });
         if (noteCtrl.text.isNotEmpty) body['note'] = noteCtrl.text;
-        if (body.isEmpty) return;
+        body['payment_date'] = '${paymentDate.year}-${paymentDate.month.toString().padLeft(2, '0')}-${paymentDate.day.toString().padLeft(2, '0')}';
+        if (body.length <= 1) return; // only payment_date, no amounts
         await _executeOperation('/payment-documents/${widget.docId}/pay', body, '💰 Оплата');
       },
-      bodyBuilder: (ctx, _) => Column(mainAxisSize: MainAxisSize.min, children: [
+      bodyBuilder: (ctx, setSheetState) => Column(mainAxisSize: MainAxisSize.min, children: [
         ...services.map((s) => _styledInput(controllers[s['key']]!, '${s['label']} (долг: ${_fmt(s['debt_end'])}₽)', suffix: '₽')),
         _styledInput(noteCtrl, 'Комментарий', decimal: false),
+        _datePickerRow('Дата платежа', paymentDate, (d) => setSheetState(() => paymentDate = d)),
       ]),
     );
   }
@@ -724,6 +763,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     String? selectedService;
     final amountCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
+    DateTime paymentDate = DateTime.now();
 
     _showStyledSheet(
       title: title,
@@ -738,12 +778,15 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
           'service': selectedService,
           'amount': amount,
           if (noteCtrl.text.isNotEmpty) 'note': noteCtrl.text,
+          'payment_date': '${paymentDate.year}-${paymentDate.month.toString().padLeft(2, '0')}-${paymentDate.day.toString().padLeft(2, '0')}',
         }, '$title');
       },
       bodyBuilder: (ctx, setSheetState) => Column(mainAxisSize: MainAxisSize.min, children: [
         _serviceSelector(services, selectedService, (v) => setSheetState(() => selectedService = v)),
         _styledInput(amountCtrl, hint, suffix: '₽', signed: allowNegative),
         _styledInput(noteCtrl, 'Комментарий', decimal: false),
+        // Дата платежа
+        _datePickerRow('Дата платежа', paymentDate, (d) => setSheetState(() => paymentDate = d)),
       ]),
     );
   }
@@ -759,6 +802,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     }
     final amountCtrl = TextEditingController();
     final noteCtrl = TextEditingController();
+    DateTime paymentDate = DateTime.now();
 
     _showStyledSheet(
       title: 'Авто-оплата',
@@ -771,9 +815,10 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         await _executeOperation('/payment-documents/${widget.docId}/pay-auto', {
           'total_amount': amount,
           if (noteCtrl.text.isNotEmpty) 'note': noteCtrl.text,
+          'payment_date': '${paymentDate.year}-${paymentDate.month.toString().padLeft(2, '0')}-${paymentDate.day.toString().padLeft(2, '0')}',
         }, '🔄 Авто-оплата');
       },
-      bodyBuilder: (ctx, _) => Column(mainAxisSize: MainAxisSize.min, children: [
+      bodyBuilder: (ctx, setSheetState) => Column(mainAxisSize: MainAxisSize.min, children: [
         Container(
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 16),
@@ -794,6 +839,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         ),
         _styledInput(amountCtrl, 'Общая сумма оплаты', suffix: '₽'),
         _styledInput(noteCtrl, 'Комментарий', decimal: false),
+        _datePickerRow('Дата платежа', paymentDate, (d) => setSheetState(() => paymentDate = d)),
       ]),
     );
   }
