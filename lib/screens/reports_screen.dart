@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../services/base_api_service.dart';
+import '../services/file_export_helper.dart';
 
 /// Экран отчётов и реестров — 6 уникальных отчётов + экспорт.
 /// Каждый отчёт показывает принципиально разную аналитику,
@@ -450,6 +450,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         locations = (locData['items'] as List).cast<Map<String, dynamic>>();
       } else {
         locations = [];
+      }
+
+      // Фильтруем по выбранному дому
+      if (_selectedLocationId != null) {
+        locations = locations.where((l) => l['id'] == _selectedLocationId).toList();
       }
 
       // Для каждого дома запрашиваем статистику
@@ -1404,19 +1409,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       );
 
       if (resp.statusCode == 200) {
-        // Сохраняем во временную папку и сразу открываем диалог выбора
         final dir = await getTemporaryDirectory();
         final filename = 'report_${_selectedPeriod ?? 'all'}.xlsx';
         final file = File('${dir.path}/$filename');
         await file.writeAsBytes(resp.data as List<int>);
 
         if (mounted) {
-          await SharePlus.instance.share(
-            ShareParams(
-              files: [XFile(file.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
-              subject: 'Отчёт ЖКУ $_selectedPeriod',
-            ),
+          final savedPath = await FileExportHelper.exportFile(
+            sourceFile: file,
+            fileName: filename,
+            mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            subject: 'Отчёт ЖКУ $_selectedPeriod',
           );
+          if (savedPath != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('✅ Сохранено: $savedPath'), backgroundColor: Colors.green),
+            );
+          }
         }
       }
     } catch (e) {

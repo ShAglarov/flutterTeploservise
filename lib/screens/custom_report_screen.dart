@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../services/base_api_service.dart';
+import '../services/file_export_helper.dart';
 
 /// ═══════════════════════════════════════════════════════════════════════
 /// Конструктор аналитических отчётов
@@ -62,6 +63,10 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   String? _error;
   bool _isExporting = false;
 
+  // Поиск в результатах
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   // Анимация
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -84,6 +89,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   void dispose() {
     _fadeController.dispose();
     _pulseController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -131,6 +137,8 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                 onPressed: () => setState(() {
                   _showResult = false;
                   _fadeController.reset();
+                  _searchQuery = '';
+                  _searchController.clear();
                 }),
               )
             : null,
@@ -840,6 +848,12 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
     }
 
     final housesData = <Map<String, dynamic>>[];
+
+    // Фильтруем по выбранному дому
+    if (_selectedLocationId != null) {
+      locations = locations.where((l) => l['id'] == _selectedLocationId).toList();
+    }
+
     for (final loc in locations) {
       try {
         final statsResp = await dio.get('/payment-documents/statistics', queryParameters: {
@@ -990,7 +1004,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
     final scored = items.map((d) {
       final charged = (d['total_charged'] as num?)?.toDouble() ?? 0;
       final paid = (d['total_paid'] as num?)?.toDouble() ?? 0;
-      final pct = charged > 0 ? (paid / charged * 100) : 0.0;
+      final pct = charged > 0 ? (paid / charged * 100).clamp(0.0, 100.0) : 0.0;
       return {...(d as Map<String, dynamic>), '_pay_percent': pct};
     }).where((d) => (d['total_charged'] as num?)?.toDouble() != null && (d['total_charged'] as num).toDouble() > 0)
     .toList();
@@ -1082,6 +1096,10 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Поиск
+          _buildSearchBar(theme, isDark),
+          const SizedBox(height: 12),
+
           // Фильтры (applied)
           _buildAppliedFilters(theme, isDark),
           const SizedBox(height: 16),
@@ -1219,7 +1237,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
     final totalDebt = (data['total_debt'] as num?)?.toDouble() ?? 0;
     final debtorsCount = data['debtors_count'] as int? ?? 0;
     final overpaidCount = data['overpaid_count'] as int? ?? 0;
-    final collection = totalCharged > 0 ? (totalPaid / totalCharged * 100) : 0.0;
+    final collection = totalCharged > 0 ? (totalPaid / totalCharged * 100).clamp(0.0, 100.0) : 0.0;
 
     return _reportSectionCard(theme, isDark,
       icon: Icons.pie_chart, title: 'Общая сводка', color: Colors.blue,
@@ -1313,7 +1331,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                 final debt = (h['total_debt'] as num?)?.toDouble() ?? 0;
                 final charged = (h['total_charged'] as num?)?.toDouble() ?? 0;
                 final paid = (h['total_paid'] as num?)?.toDouble() ?? 0;
-                final collection = charged > 0 ? (paid / charged * 100) : 0.0;
+                final collection = charged > 0 ? (paid / charged * 100).clamp(0.0, 100.0) : 0.0;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -1375,19 +1393,25 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   // ═══════════════════════════════════════════════════════════════════════
 
   Widget _buildTopDebtorsCard(ThemeData theme, bool isDark) {
-    final items = (_reportResult['top_debtors'] as List?) ?? [];
+    final allItems = (_reportResult['top_debtors'] as List?) ?? [];
+    final items = _filterItems<dynamic>(allItems,
+      (d) => (d as Map<String, dynamic>)['fio']?.toString() ?? '',
+      getLocationName: (d) => (d as Map<String, dynamic>)['location_name']?.toString() ?? '',
+      getAddress: (d) => (d as Map<String, dynamic>)['address']?.toString() ?? '',
+      getAccountNumber: (d) => (d as Map<String, dynamic>)['account_number']?.toString() ?? '',
+    );
     return _reportSectionCard(theme, isDark,
       icon: Icons.person_off, title: 'Топ должников', color: Colors.red,
       subtitle: '${items.length} абонентов',
       child: items.isEmpty
-          ? const Center(child: Text('Нет должников 🎉', style: TextStyle(fontSize: 13)))
+          ? Center(child: Text(_searchQuery.isNotEmpty ? 'Не найдено' : 'Нет должников 🎉', style: const TextStyle(fontSize: 13)))
           : Column(
               children: items.asMap().entries.map((e) {
                 final i = e.key;
                 final d = e.value as Map<String, dynamic>;
                 final debt = (d['total_debt_end'] as num?)?.toDouble() ?? 0;
                 final charged = (d['total_charged'] as num?)?.toDouble() ?? 0;
-                final pct = charged > 0 ? (debt / charged * 100) : 0.0;
+                final pct = charged > 0 ? (debt / charged * 100).clamp(0.0, 100.0) : 0.0;
 
                 final Color sevColor;
                 final String sevIcon;
@@ -1395,58 +1419,62 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                 else if (debt > 1000) { sevColor = Colors.orange; sevIcon = '🟠'; }
                 else { sevColor = Colors.amber.shade700; sevIcon = '🟡'; }
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: sevColor.withAlpha(50)),
-                    color: sevColor.withAlpha(isDark ? 10 : 6),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 36, child: Column(children: [
-                        Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
-                        Text(sevIcon, style: const TextStyle(fontSize: 14)),
-                      ])),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(d['fio'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                            Text('${d['address'] ?? ''} • ЛС: ${d['account_number'] ?? ''}',
-                                style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 60,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(3),
-                                    child: LinearProgressIndicator(
-                                      value: charged > 0 ? min(debt / charged, 1.0) : 0,
-                                      backgroundColor: Colors.grey.shade200,
-                                      color: sevColor, minHeight: 5,
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _showPersonDetail(d),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: sevColor.withAlpha(50)),
+                      color: sevColor.withAlpha(isDark ? 10 : 6),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 36, child: Column(children: [
+                          Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                          Text(sevIcon, style: const TextStyle(fontSize: 14)),
+                        ])),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(d['fio'] ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text('${d['address'] ?? ''} • ЛС: ${d['account_number'] ?? ''}',
+                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 60,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(3),
+                                      child: LinearProgressIndicator(
+                                        value: charged > 0 ? min(debt / charged, 1.0) : 0,
+                                        backgroundColor: Colors.grey.shade200,
+                                        color: sevColor, minHeight: 5,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text('${pct.toStringAsFixed(0)}%', style: TextStyle(fontSize: 10, color: sevColor)),
-                              ],
-                            ),
+                                  const SizedBox(width: 6),
+                                  Text('${pct.toStringAsFixed(0)}%', style: TextStyle(fontSize: 10, color: sevColor)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text('${_fmtMoney(debt)}₽', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: sevColor)),
+                            Text('из ${_fmtMoney(charged)}₽', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
                           ],
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('${_fmtMoney(debt)}₽', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: sevColor)),
-                          Text('из ${_fmtMoney(charged)}₽', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -1459,12 +1487,18 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   // ═══════════════════════════════════════════════════════════════════════
 
   Widget _buildLastPaymentsCard(ThemeData theme, bool isDark) {
-    final items = (_reportResult['last_payments'] as List?) ?? [];
+    final allItems = (_reportResult['last_payments'] as List?) ?? [];
+    final items = _filterItems<dynamic>(allItems,
+      (d) => (d as Map<String, dynamic>)['fio']?.toString() ?? '',
+      getLocationName: (d) => (d as Map<String, dynamic>)['location_name']?.toString() ?? '',
+      getAddress: (d) => (d as Map<String, dynamic>)['address']?.toString() ?? '',
+      getAccountNumber: (d) => (d as Map<String, dynamic>)['account_number']?.toString() ?? '',
+    );
     return _reportSectionCard(theme, isDark,
       icon: Icons.payment, title: 'Последние оплаты', color: Colors.green,
       subtitle: '${items.length} абонентов',
       child: items.isEmpty
-          ? const Center(child: Text('Нет оплат', style: TextStyle(fontSize: 13)))
+          ? Center(child: Text(_searchQuery.isNotEmpty ? 'Не найдено' : 'Нет оплат', style: const TextStyle(fontSize: 13)))
           : Column(
               children: items.asMap().entries.map((e) {
                 final i = e.key;
@@ -1475,61 +1509,61 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                 final address = d['address'] as String? ?? '';
                 final locationName = d['location_name'] as String? ?? '';
 
-                // Расчёт: за сколько месяцев хватает оплаты (при текущем тарифе)
                 String paidMonthsLabel = '';
                 if (charged > 0 && paid > 0) {
                   final months = (paid / charged).floor();
-                  if (months >= 1) {
-                    paidMonthsLabel = '≈$months мес.';
-                  }
+                  if (months >= 1) paidMonthsLabel = '≈$months мес.';
                 }
 
-                // Долг или переплата
                 final bool isOverpaid = debt < -0.01;
                 final String debtLabel = isOverpaid
                     ? 'переплата: ${_fmtMoney(debt.abs())}₽'
                     : 'долг: ${_fmtMoney(debt)}₽';
                 final Color debtColor = isOverpaid ? Colors.teal : (debt > 0.01 ? Colors.red : Colors.green);
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 30 : 20),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 24, child: Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant))),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                return InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => _showPersonDetail(d),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: theme.colorScheme.surfaceContainerHighest.withAlpha(isDark ? 30 : 20),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 24, child: Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant))),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(d['fio'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                              if (locationName.isNotEmpty)
+                                Text('🏠 $locationName',
+                                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                              if (address.isNotEmpty)
+                                Text('📍 $address',
+                                    style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                              Text('ЛС: ${d['account_number'] ?? ''}',
+                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(d['fio'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                maxLines: 2, overflow: TextOverflow.ellipsis),
-                            if (locationName.isNotEmpty)
-                              Text('🏠 $locationName',
-                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
-                                  maxLines: 2, overflow: TextOverflow.ellipsis),
-                            if (address.isNotEmpty)
-                              Text('📍 $address',
-                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
-                                  maxLines: 2, overflow: TextOverflow.ellipsis),
-                            Text('ЛС: ${d['account_number'] ?? ''}',
-                                style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                            Text('+${_fmtMoney(paid)}₽', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.green)),
+                            Text(debtLabel, style: TextStyle(fontSize: 10, color: debtColor)),
+                            if (paidMonthsLabel.isNotEmpty)
+                              Text(paidMonthsLabel, style: TextStyle(fontSize: 9, color: theme.colorScheme.onSurfaceVariant)),
                           ],
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('+${_fmtMoney(paid)}₽', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.green)),
-                          Text(debtLabel, style: TextStyle(fontSize: 10, color: debtColor)),
-                          if (paidMonthsLabel.isNotEmpty)
-                            Text(paidMonthsLabel, style: TextStyle(fontSize: 9, color: theme.colorScheme.onSurfaceVariant)),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -1561,7 +1595,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                 final charged = (p['total_charged'] as num?)?.toDouble() ?? 0;
                 final paid = (p['total_paid'] as num?)?.toDouble() ?? 0;
                 final debt = (p['total_debt'] as num?)?.toDouble() ?? 0;
-                final collection = charged > 0 ? (paid / charged * 100) : 0.0;
+                final collection = charged > 0 ? (paid / charged * 100).clamp(0.0, 100.0) : 0.0;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
@@ -1717,42 +1751,60 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   // ═══════════════════════════════════════════════════════════════════════
 
   Widget _buildOverpaymentsCard(ThemeData theme, bool isDark) {
-    final items = (_reportResult['overpayments'] as List?) ?? [];
+    final allItems = (_reportResult['overpayments'] as List?) ?? [];
+    final items = _filterItems<dynamic>(allItems,
+      (d) => (d as Map<String, dynamic>)['fio']?.toString() ?? '',
+      getLocationName: (d) => (d as Map<String, dynamic>)['location_name']?.toString() ?? '',
+      getAddress: (d) => (d as Map<String, dynamic>)['address']?.toString() ?? '',
+      getAccountNumber: (d) => (d as Map<String, dynamic>)['account_number']?.toString() ?? '',
+    );
     return _reportSectionCard(theme, isDark,
       icon: Icons.trending_down, title: 'Переплаты', color: Colors.teal,
       subtitle: '${items.length} абонентов',
       child: items.isEmpty
-          ? const Center(child: Text('Нет переплат', style: TextStyle(fontSize: 13)))
+          ? Center(child: Text(_searchQuery.isNotEmpty ? 'Не найдено' : 'Нет переплат', style: const TextStyle(fontSize: 13)))
           : Column(
               children: items.asMap().entries.map((e) {
                 final i = e.key;
                 final d = e.value as Map<String, dynamic>;
                 final debt = (d['total_debt_end'] as num?)?.toDouble() ?? 0;
                 final overpay = debt.abs();
+                final locationName = d['location_name']?.toString() ?? '';
+                final address = d['address']?.toString() ?? '';
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.teal.withAlpha(isDark ? 12 : 6),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 24, child: Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant))),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(d['fio'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                            Text('ЛС: ${d['account_number'] ?? ''}',
-                                style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
-                          ],
+                return InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => _showPersonDetail(d),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.teal.withAlpha(isDark ? 12 : 6),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 24, child: Text('${i + 1}', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant))),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(d['fio'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                              if (locationName.isNotEmpty)
+                                Text('🏠 $locationName', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                              if (address.isNotEmpty)
+                                Text('📍 $address', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text('ЛС: ${d['account_number'] ?? ''}',
+                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                            ],
+                          ),
                         ),
-                      ),
-                      Text('+${_fmtMoney(overpay)}₽', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.teal)),
-                    ],
+                        Text('+${_fmtMoney(overpay)}₽', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.teal)),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -1765,59 +1817,76 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   // ═══════════════════════════════════════════════════════════════════════
 
   Widget _buildBestPayersCard(ThemeData theme, bool isDark) {
-    final items = (_reportResult['best_payers'] as List?) ?? [];
+    final allItems = (_reportResult['best_payers'] as List?) ?? [];
+    final items = _filterItems<dynamic>(allItems,
+      (d) => (d as Map<String, dynamic>)['fio']?.toString() ?? '',
+      getLocationName: (d) => (d as Map<String, dynamic>)['location_name']?.toString() ?? '',
+      getAddress: (d) => (d as Map<String, dynamic>)['address']?.toString() ?? '',
+      getAccountNumber: (d) => (d as Map<String, dynamic>)['account_number']?.toString() ?? '',
+    );
     return _reportSectionCard(theme, isDark,
       icon: Icons.star, title: 'Лучшие плательщики', color: Colors.purple,
       subtitle: '${items.length} абонентов',
       child: items.isEmpty
-          ? const Center(child: Text('Нет данных', style: TextStyle(fontSize: 13)))
+          ? Center(child: Text(_searchQuery.isNotEmpty ? 'Не найдено' : 'Нет данных', style: const TextStyle(fontSize: 13)))
           : Column(
               children: items.asMap().entries.map((e) {
                 final i = e.key;
                 final d = e.value as Map<String, dynamic>;
                 final pct = (d['_pay_percent'] as num?)?.toDouble() ?? 0;
                 final paid = (d['total_paid'] as num?)?.toDouble() ?? 0;
+                final locationName = d['location_name']?.toString() ?? '';
+                final address = d['address']?.toString() ?? '';
 
-                // Медаль для топ-3
                 String medal = '';
                 if (i == 0) medal = '🥇';
                 if (i == 1) medal = '🥈';
                 if (i == 2) medal = '🥉';
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 4),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: i < 3 ? Colors.purple.withAlpha(isDark ? 15 : 8) : Colors.transparent,
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 30, child: Text(
-                        medal.isNotEmpty ? medal : '${i + 1}',
-                        style: TextStyle(fontSize: medal.isNotEmpty ? 18 : 11, color: theme.colorScheme.onSurfaceVariant),
-                      )),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(d['fio'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                            Text('Оплачено: ${_fmtMoney(paid)}₽',
-                                style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
-                          ],
+                return InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => _showPersonDetail(d),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: i < 3 ? Colors.purple.withAlpha(isDark ? 15 : 8) : Colors.transparent,
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 30, child: Text(
+                          medal.isNotEmpty ? medal : '${i + 1}',
+                          style: TextStyle(fontSize: medal.isNotEmpty ? 18 : 11, color: theme.colorScheme.onSurfaceVariant),
+                        )),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(d['fio'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                              if (locationName.isNotEmpty)
+                                Text('🏠 $locationName', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                              if (address.isNotEmpty)
+                                Text('📍 $address', style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text('Оплачено: ${_fmtMoney(paid)}₽',
+                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
+                            ],
+                          ),
                         ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.withAlpha(20),
-                          borderRadius: BorderRadius.circular(12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withAlpha(20),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text('${pct.toStringAsFixed(0)}%',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.purple)),
                         ),
-                        child: Text('${pct.toStringAsFixed(0)}%',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.purple)),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -1914,16 +1983,22 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       ));
 
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/report_${DateTime.now().millisecondsSinceEpoch}.pdf');
+      final fileName = 'report_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(await pdf.save());
 
       if (mounted) {
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(file.path, mimeType: 'application/pdf')],
-            subject: 'Аналитический отчёт TeploService',
-          ),
+        final savedPath = await FileExportHelper.exportFile(
+          sourceFile: file,
+          fileName: fileName,
+          mimeType: 'application/pdf',
+          subject: 'Аналитический отчёт TeploService',
         );
+        if (savedPath != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ Сохранено: $savedPath'), backgroundColor: Colors.green),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -1951,7 +2026,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
     final totalDebt = (data['total_debt'] as num?)?.toDouble() ?? 0;
     final count = data['count'] as int? ?? 0;
     final debtorsCount = data['debtors_count'] as int? ?? 0;
-    final collection = totalCharged > 0 ? (totalPaid / totalCharged * 100) : 0.0;
+    final collection = totalCharged > 0 ? (totalPaid / totalCharged * 100).clamp(0.0, 100.0) : 0.0;
 
     return pw.TableHelper.fromTextArray(
       headers: ['Показатель', 'Значение'],
@@ -2054,7 +2129,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
         final charged = (p['total_charged'] as num?)?.toDouble() ?? 0;
         final paid = (p['total_paid'] as num?)?.toDouble() ?? 0;
         final debt = (p['total_debt'] as num?)?.toDouble() ?? 0;
-        final coll = charged > 0 ? (paid / charged * 100) : 0.0;
+        final coll = charged > 0 ? (paid / charged * 100).clamp(0.0, 100.0) : 0.0;
         return [
           p['period_label'] ?? p['period'] ?? '',
           '${p['count'] ?? 0}',
@@ -2093,13 +2168,15 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
   pw.Widget _pdfOverpaymentsTable() {
     final items = (_reportResult['overpayments'] as List?) ?? [];
     return pw.TableHelper.fromTextArray(
-      headers: ['#', 'ФИО', 'ЛС', 'Переплата'],
+      headers: ['#', 'ФИО', 'Дом', 'Адрес', 'ЛС', 'Переплата'],
       data: items.asMap().entries.map((e) {
         final d = e.value as Map<String, dynamic>;
         final debt = (d['total_debt_end'] as num?)?.toDouble() ?? 0;
         return [
           '${e.key + 1}',
           d['fio'] ?? '',
+          d['location_name'] ?? '',
+          d['address'] ?? '',
           d['account_number'] ?? '',
           '${debt.abs().toStringAsFixed(2)}',
         ];
@@ -2107,14 +2184,14 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       cellStyle: const pw.TextStyle(fontSize: 8),
       headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.teal50),
-      cellAlignments: {0: pw.Alignment.center, 3: pw.Alignment.centerRight},
+      cellAlignments: {0: pw.Alignment.center, 5: pw.Alignment.centerRight},
     );
   }
 
   pw.Widget _pdfBestPayersTable() {
     final items = (_reportResult['best_payers'] as List?) ?? [];
     return pw.TableHelper.fromTextArray(
-      headers: ['#', 'ФИО', 'ЛС', 'Оплачено', '% оплаты'],
+      headers: ['#', 'ФИО', 'Дом', 'Адрес', 'ЛС', 'Оплачено', '% оплаты'],
       data: items.asMap().entries.map((e) {
         final d = e.value as Map<String, dynamic>;
         final paid = (d['total_paid'] as num?)?.toDouble() ?? 0;
@@ -2122,15 +2199,17 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
         return [
           '${e.key + 1}',
           d['fio'] ?? '',
+          d['location_name'] ?? '',
+          d['address'] ?? '',
           d['account_number'] ?? '',
           paid.toStringAsFixed(2),
           '${pct.toStringAsFixed(1)}%',
         ];
       }).toList(),
-      cellStyle: const pw.TextStyle(fontSize: 8),
-      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+      cellStyle: const pw.TextStyle(fontSize: 7),
+      headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.purple50),
-      cellAlignments: {0: pw.Alignment.center, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
+      cellAlignments: {0: pw.Alignment.center, 5: pw.Alignment.centerRight, 6: pw.Alignment.centerRight},
     );
   }
 
@@ -2228,11 +2307,11 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       if (_reportResult.containsKey('overpayments')) {
         final items = (_reportResult['overpayments'] as List?) ?? [];
         buf.writeln('=== ПЕРЕПЛАТЫ ===');
-        buf.writeln('#;ФИО;ЛС;Переплата');
+        buf.writeln('#;ФИО;Дом;Адрес;ЛС;Переплата');
         for (var i = 0; i < items.length; i++) {
           final d = items[i] as Map<String, dynamic>;
           final debt = (d['total_debt_end'] as num?)?.toDouble() ?? 0;
-          buf.writeln('${i + 1};${d['fio']};${d['account_number']};${debt.abs()}');
+          buf.writeln('${i + 1};${d['fio']};${d['location_name'] ?? ''};${d['address'] ?? ''};${d['account_number']};${debt.abs()}');
         }
         buf.writeln();
       }
@@ -2241,24 +2320,30 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       if (_reportResult.containsKey('best_payers')) {
         final items = (_reportResult['best_payers'] as List?) ?? [];
         buf.writeln('=== ЛУЧШИЕ ПЛАТЕЛЬЩИКИ ===');
-        buf.writeln('#;ФИО;ЛС;Оплачено;% оплаты');
+        buf.writeln('#;ФИО;Дом;Адрес;ЛС;Оплачено;% оплаты');
         for (var i = 0; i < items.length; i++) {
           final d = items[i] as Map<String, dynamic>;
-          buf.writeln('${i + 1};${d['fio']};${d['account_number']};${d['total_paid']};${(d['_pay_percent'] as num?)?.toDouble().toStringAsFixed(1) ?? '0'}%');
+          buf.writeln('${i + 1};${d['fio']};${d['location_name'] ?? ''};${d['address'] ?? ''};${d['account_number']};${d['total_paid']};${(d['_pay_percent'] as num?)?.toDouble().toStringAsFixed(1) ?? '0'}%');
         }
       }
 
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/report_${DateTime.now().millisecondsSinceEpoch}.csv');
+      final fileName = 'report_${DateTime.now().millisecondsSinceEpoch}.csv';
+      final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(utf8.encode(buf.toString()), flush: true);
 
       if (mounted) {
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(file.path, mimeType: 'text/csv')],
-            subject: 'Аналитический отчёт TeploService (CSV)',
-          ),
+        final savedPath = await FileExportHelper.exportFile(
+          sourceFile: file,
+          fileName: fileName,
+          mimeType: 'text/csv',
+          subject: 'Аналитический отчёт TeploService (CSV)',
         );
+        if (savedPath != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ Сохранено: $savedPath'), backgroundColor: Colors.green),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -2268,6 +2353,253 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       }
     }
     setState(() => _isExporting = false);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ПОИСК В РЕЗУЛЬТАТАХ
+  // ═══════════════════════════════════════════════════════════════════════
+
+  Widget _buildSearchBar(ThemeData theme, bool isDark) {
+    return TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        hintText: 'Поиск: ФИО или дом,кв (напр. 33,4)',
+        hintStyle: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant.withAlpha(150)),
+        prefixIcon: const Icon(Icons.search, size: 20),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }),
+              )
+            : null,
+        isDense: true,
+        filled: true,
+        fillColor: isDark ? theme.colorScheme.surfaceContainerHigh : Colors.grey.shade100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+      onChanged: (v) => setState(() => _searchQuery = v.trim()),
+    );
+  }
+
+  /// Фильтрует список документов по поисковому запросу.
+  /// Формат "33,4" → дом содержит "33" И адрес содержит "4".
+  /// Иначе — поиск по ФИО, адресу, ЛС.
+  List<T> _filterItems<T>(List<T> items, String Function(T) getFio,
+      {String Function(T)? getLocationName, String Function(T)? getAddress,
+      String Function(T)? getAccountNumber}) {
+    if (_searchQuery.isEmpty) return items;
+    final q = _searchQuery.toLowerCase();
+
+    // Формат "дом,кв"
+    if (q.contains(',')) {
+      final parts = q.split(',');
+      final housePart = parts[0].trim();
+      final aptPart = parts.length > 1 ? parts[1].trim() : '';
+      return items.where((item) {
+        final loc = (getLocationName?.call(item) ?? '').toLowerCase();
+        final addr = (getAddress?.call(item) ?? '').toLowerCase();
+        final matchHouse = housePart.isEmpty || loc.contains(housePart) || addr.contains(housePart);
+        final matchApt = aptPart.isEmpty || addr.contains(aptPart);
+        return matchHouse && matchApt;
+      }).toList();
+    }
+
+    // Обычный поиск
+    return items.where((item) {
+      final fio = getFio(item).toLowerCase();
+      final loc = (getLocationName?.call(item) ?? '').toLowerCase();
+      final addr = (getAddress?.call(item) ?? '').toLowerCase();
+      final acc = (getAccountNumber?.call(item) ?? '').toLowerCase();
+      return fio.contains(q) || loc.contains(q) || addr.contains(q) || acc.contains(q);
+    }).toList();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ДЕТАЛИ СОБСТВЕННИКА (bottom sheet)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  void _showPersonDetail(Map<String, dynamic> doc) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    const services = ['heating', 'hot_water', 'maintenance', 'waste', 'odn_electricity', 'odn_water'];
+    const serviceLabels = {
+      'heating': 'Отопление', 'hot_water': 'ГВС', 'maintenance': 'Содержание',
+      'waste': 'ТБО', 'odn_electricity': 'ОДН (эл)', 'odn_water': 'ОДН (вода)',
+    };
+
+    final totalCharged = (doc['total_charged'] as num?)?.toDouble() ?? 0;
+    final totalPaid = (doc['total_paid'] as num?)?.toDouble() ?? 0;
+    final totalDebt = (doc['total_debt_end'] as num?)?.toDouble() ?? 0;
+    final collection = totalCharged > 0 ? (totalPaid / totalCharged * 100).clamp(0.0, 100.0) : 0.0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollCtrl) => ListView(
+          controller: scrollCtrl,
+          padding: const EdgeInsets.all(20),
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // ФИО
+            Text(doc['fio'] ?? 'Без имени',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+
+            // Дом, адрес, ЛС
+            if ((doc['location_name'] ?? '').toString().isNotEmpty)
+              _detailRow(Icons.apartment, 'Дом', doc['location_name']),
+            if ((doc['address'] ?? '').toString().isNotEmpty)
+              _detailRow(Icons.place, 'Адрес', doc['address']),
+            _detailRow(Icons.badge, 'Лицевой счёт', doc['account_number'] ?? '—'),
+
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            // Финансы
+            Text('Финансы', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _detailMetric('Начислено', totalCharged, Colors.blue),
+                const SizedBox(width: 8),
+                _detailMetric('Оплачено', totalPaid, Colors.green),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _detailMetric('Долг', totalDebt, totalDebt > 0 ? Colors.red : Colors.green),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: (collection >= 80 ? Colors.green : Colors.red).withAlpha(isDark ? 20 : 12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${collection.toStringAsFixed(1)}%',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800,
+                                color: collection >= 80 ? Colors.green : Colors.red)),
+                        Text('Собираемость', style: TextStyle(fontSize: 10,
+                            color: theme.colorScheme.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            // Детализация по услугам
+            Text('По услугам', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary)),
+            const SizedBox(height: 8),
+
+            ...services.where((svc) {
+              final ch = (doc['charged_$svc'] as num?)?.toDouble() ?? 0;
+              final de = (doc['debt_${svc}_end'] as num?)?.toDouble() ?? 0;
+              return ch != 0 || de != 0;
+            }).map((svc) {
+              final ch = (doc['charged_$svc'] as num?)?.toDouble() ?? 0;
+              final pd = (doc['paid_$svc'] as num?)?.toDouble() ?? 0;
+              final de = (doc['debt_${svc}_end'] as num?)?.toDouble() ?? 0;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: isDark ? theme.colorScheme.surfaceContainerHigh : Colors.grey.shade50,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(flex: 3, child: Text(serviceLabels[svc] ?? svc,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+                    Expanded(flex: 2, child: Text('${ch.toStringAsFixed(0)}₽',
+                        style: const TextStyle(fontSize: 11, color: Colors.blue), textAlign: TextAlign.right)),
+                    Expanded(flex: 2, child: Text('${pd.toStringAsFixed(0)}₽',
+                        style: const TextStyle(fontSize: 11, color: Colors.green), textAlign: TextAlign.right)),
+                    Expanded(flex: 2, child: Text('${de.toStringAsFixed(0)}₽',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+                            color: de > 0 ? Colors.red : Colors.green), textAlign: TextAlign.right)),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Text('$label: ', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailMetric(String label, double value, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: color.withAlpha(isDark ? 20 : 12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${_fmtMoney(value)}₽',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
+            Text(label, style: TextStyle(fontSize: 10,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════
