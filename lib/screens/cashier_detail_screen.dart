@@ -1191,8 +1191,13 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
   Future<void> _generateAndSharePdf(Map<String, dynamic> d, List services, double totalPaid, String date, String time) async {
     try {
-      final pdf = pw.Document();
-      
+      // Загружаем кириллический шрифт
+      final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+      final ttf = pw.Font.ttf(fontData);
+
+      final pdf = pw.Document(
+        theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
+      );
       final paidServices = services.where((s) => ((s['paid'] as num?)?.toDouble() ?? 0) > 0).toList();
       final debtEnd = services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
 

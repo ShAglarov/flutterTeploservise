@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import '../services/base_api_service.dart';
 import '../services/file_export_helper.dart';
@@ -515,7 +518,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     };
   }
 
-  // ─── Кнопка «Назад» (общая) ───
+  // ─── Кнопка «Назад» + PDF (общая) ───
   Widget _reportHeader(String title, {String? subtitle}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -534,6 +537,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   Text(subtitle, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: Colors.red),
+            tooltip: 'Экспорт в PDF',
+            onPressed: _isExporting ? null : () => _exportReportPdf(title),
           ),
         ],
       ),
@@ -1389,6 +1397,289 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       ],
     );
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PDF ЭКСПОРТ ТЕКУЩЕГО ОТЧЁТА
+  // ═══════════════════════════════════════════════════════════════════
+
+  Future<void> _exportReportPdf(String title) async {
+    final type = _reportData?['type'] as String?;
+    if (type == null) return;
+
+    setState(() => _isExporting = true);
+    try {
+      // Загружаем кириллический шрифт
+      final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
+      final ttf = pw.Font.ttf(fontData);
+
+      final pdf = pw.Document(
+        theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
+      );
+      final pages = _buildPdfPages(type, title);
+      for (final page in pages) {
+        pdf.addPage(page);
+      }
+
+      final dir = await getTemporaryDirectory();
+      final fileName = 'report_${type}_${_selectedPeriod ?? 'all'}.pdf';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(await pdf.save());
+
+      if (mounted) {
+        final savedPath = await FileExportHelper.exportFile(
+          sourceFile: file,
+          fileName: fileName,
+          mimeType: 'application/pdf',
+          subject: '$title — $_selectedLocationName',
+        );
+        if (savedPath != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ PDF сохранён: $savedPath'), backgroundColor: Colors.green),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Ошибка PDF: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+    setState(() => _isExporting = false);
+  }
+
+  List<pw.Page> _buildPdfPages(String type, String title) {
+    switch (type) {
+      case 'turnover':
+        return _buildTurnoverPdf(title);
+      case 'debtors':
+        return _buildDebtorsPdf(title);
+      case 'house_summary':
+        return _buildHouseSummaryPdf(title);
+      case 'monthly':
+        return _buildMonthlyPdf(title);
+      case 'receipts':
+        return _buildReceiptsPdf(title);
+      case 'benefit_stats':
+        return _buildBenefitsPdf(title);
+      default:
+        return [];
+    }
+  }
+
+  // ─── PDF: Оборотная ведомость ───
+  List<pw.Page> _buildTurnoverPdf(String title) {
+    final docs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    return _paginatedTable(
+      title: title,
+      subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $_selectedLocationName • ${docs.length} Л/С',
+      headers: ['#', 'ФИО', 'Л/С', 'Начисл.', 'Оплач.', 'Долг'],
+      columnWidths: {0: const pw.FixedColumnWidth(25), 1: const pw.FlexColumnWidth(3), 2: const pw.FlexColumnWidth(1.5),
+        3: const pw.FlexColumnWidth(1.2), 4: const pw.FlexColumnWidth(1.2), 5: const pw.FlexColumnWidth(1.2)},
+      rows: docs.asMap().entries.map((e) {
+        final i = e.key;
+        final doc = e.value;
+        return <String>['${i + 1}', doc['fio'] ?? '', doc['account_number'] ?? '',
+          _f(doc['total_charged']), _f(doc['total_paid']), _f(doc['total_debt_end'])];
+      }).toList(),
+      totals: () {
+        double tc = 0, tp = 0, td = 0;
+        for (final d in docs) { tc += _n(d['total_charged']); tp += _n(d['total_paid']); td += _n(d['total_debt_end']); }
+        return <String>['', 'ИТОГО', '${docs.length}', _f(tc), _f(tp), _f(td)];
+      }(),
+    );
+  }
+
+  // ─── PDF: Неплательщики ───
+  List<pw.Page> _buildDebtorsPdf(String title) {
+    final allDocs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final debtors = allDocs.where((d) => (_n(d['total_debt_end'])) > 0).toList();
+    debtors.sort((a, b) => _n(b['total_debt_end']).compareTo(_n(a['total_debt_end'])));
+
+    return _paginatedTable(
+      title: title,
+      subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $_selectedLocationName • ${debtors.length} должников',
+      headers: ['#', 'ФИО', 'Адрес', 'Л/С', 'Начисл.', 'Долг'],
+      columnWidths: {0: const pw.FixedColumnWidth(25), 1: const pw.FlexColumnWidth(2.5), 2: const pw.FlexColumnWidth(2.5),
+        3: const pw.FlexColumnWidth(1.2), 4: const pw.FlexColumnWidth(1.2), 5: const pw.FlexColumnWidth(1.2)},
+      rows: debtors.asMap().entries.map((e) {
+        final i = e.key;
+        final doc = e.value;
+        return <String>['${i + 1}', doc['fio'] ?? '', doc['address'] ?? '', doc['account_number'] ?? '',
+          _f(doc['total_charged']), _f(doc['total_debt_end'])];
+      }).toList(),
+      totals: () {
+        double tc = 0, td = 0;
+        for (final d in debtors) { tc += _n(d['total_charged']); td += _n(d['total_debt_end']); }
+        return <String>['', 'ИТОГО', '', '${debtors.length}', _f(tc), _f(td)];
+      }(),
+    );
+  }
+
+  // ─── PDF: Сводка по домам ───
+  List<pw.Page> _buildHouseSummaryPdf(String title) {
+    final houses = (_reportData?['houses'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return _paginatedTable(
+      title: title,
+      subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • ${houses.length} домов',
+      headers: ['#', 'Дом', 'Л/С', 'Начисл.', 'Оплач.', 'Долг', 'Собир.%'],
+      columnWidths: {0: const pw.FixedColumnWidth(25), 1: const pw.FlexColumnWidth(3), 2: const pw.FixedColumnWidth(35),
+        3: const pw.FlexColumnWidth(1.2), 4: const pw.FlexColumnWidth(1.2), 5: const pw.FlexColumnWidth(1.2), 6: const pw.FixedColumnWidth(45)},
+      rows: houses.asMap().entries.map((e) {
+        final i = e.key;
+        final h = e.value;
+        final ch = _n(h['total_charged']);
+        final pd = _n(h['total_paid']);
+        final coll = ch > 0 ? (pd / ch * 100).toStringAsFixed(1) : '—';
+        return <String>['${i + 1}', h['name'] ?? '', '${h['count'] ?? 0}', _f(h['total_charged']), _f(h['total_paid']), _f(h['total_debt']), '$coll%'];
+      }).toList(),
+      totals: () {
+        double tc = 0, tp = 0, td = 0; int cnt = 0;
+        for (final h in houses) { tc += _n(h['total_charged']); tp += _n(h['total_paid']); td += _n(h['total_debt']); cnt += (h['count'] as int?) ?? 0; }
+        final avg = tc > 0 ? (tp / tc * 100).toStringAsFixed(1) : '—';
+        return <String>['', 'ИТОГО', '$cnt', _f(tc), _f(tp), _f(td), '$avg%'];
+      }(),
+    );
+  }
+
+  // ─── PDF: Помесячная динамика ───
+  List<pw.Page> _buildMonthlyPdf(String title) {
+    final periods = (_reportData?['periods'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return _paginatedTable(
+      title: title,
+      subtitle: '$_selectedLocationName • ${periods.length} периодов',
+      headers: ['Период', 'Л/С', 'Начисл.', 'Оплач.', 'Долг', 'Собир.%'],
+      columnWidths: {0: const pw.FlexColumnWidth(2), 1: const pw.FixedColumnWidth(35),
+        2: const pw.FlexColumnWidth(1.2), 3: const pw.FlexColumnWidth(1.2), 4: const pw.FlexColumnWidth(1.2), 5: const pw.FixedColumnWidth(45)},
+      rows: periods.map((p) {
+        final ch = _n(p['total_charged']);
+        final pd = _n(p['total_paid']);
+        final coll = ch > 0 ? (pd / ch * 100).toStringAsFixed(1) : '—';
+        return <String>[p['period_label'] ?? p['period'] ?? '', '${p['count'] ?? 0}',
+          _f(p['total_charged']), _f(p['total_paid']), _f(p['total_debt']), '$coll%'];
+      }).toList(),
+    );
+  }
+
+  // ─── PDF: Реестр квитанций ───
+  List<pw.Page> _buildReceiptsPdf(String title) {
+    final docs = (_reportData?['docs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return _paginatedTable(
+      title: title,
+      subtitle: '${_formatPeriodString(_selectedPeriod ?? '')} • $_selectedLocationName • ${docs.length} документов',
+      headers: ['#', 'ФИО', 'Адрес', 'Л/С', 'Начисл.', 'Оплач.', 'Долг'],
+      columnWidths: {0: const pw.FixedColumnWidth(25), 1: const pw.FlexColumnWidth(2.5), 2: const pw.FlexColumnWidth(2.5),
+        3: const pw.FlexColumnWidth(1.2), 4: const pw.FlexColumnWidth(1), 5: const pw.FlexColumnWidth(1), 6: const pw.FlexColumnWidth(1)},
+      rows: docs.asMap().entries.map((e) {
+        final i = e.key;
+        final d = e.value;
+        return <String>['${i + 1}', d['fio'] ?? '', d['address'] ?? '', d['account_number'] ?? '',
+          _f(d['total_charged']), _f(d['total_paid']), _f(d['total_debt_end'])];
+      }).toList(),
+      totals: () {
+        double tc = 0, tp = 0, td = 0;
+        for (final d in docs) { tc += _n(d['total_charged']); tp += _n(d['total_paid']); td += _n(d['total_debt_end']); }
+        return <String>['', 'ИТОГО', '', '${docs.length}', _f(tc), _f(tp), _f(td)];
+      }(),
+    );
+  }
+
+  // ─── PDF: Льготы ───
+  List<pw.Page> _buildBenefitsPdf(String title) {
+    final items = (_reportData?['benefits'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return _paginatedTable(
+      title: title,
+      subtitle: '$_selectedLocationName • ${items.length} льготников',
+      headers: ['#', 'ФИО', 'Категория', 'Скидка %'],
+      columnWidths: {0: const pw.FixedColumnWidth(25), 1: const pw.FlexColumnWidth(3),
+        2: const pw.FlexColumnWidth(2), 3: const pw.FixedColumnWidth(55)},
+      rows: items.asMap().entries.map((e) {
+        final i = e.key;
+        final b = e.value;
+        return <String>['${i + 1}', b['resident_name'] ?? b['fio'] ?? '', b['category'] ?? '',
+          '${(b['discount_percent'] as num?)?.toStringAsFixed(1) ?? '—'}%'];
+      }).toList(),
+    );
+  }
+
+  // ─── Универсальный генератор постраничных таблиц ───
+  List<pw.Page> _paginatedTable({
+    required String title,
+    String? subtitle,
+    required List<String> headers,
+    required Map<int, pw.TableColumnWidth> columnWidths,
+    required List<List<String>> rows,
+    List<String>? totals,
+  }) {
+    const rowsPerPage = 35;
+    final pages = <pw.Page>[];
+    final totalPages = (rows.length / rowsPerPage).ceil().clamp(1, 999);
+
+    for (var pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+      final start = pageIdx * rowsPerPage;
+      final end = min(start + rowsPerPage, rows.length);
+      final pageRows = rows.sublist(start, end);
+      final isLastPage = pageIdx == totalPages - 1;
+
+      pages.add(pw.Page(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(24),
+        build: (pw.Context ctx) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Заголовок только на первой странице
+              if (pageIdx == 0) ...[
+                pw.Text(title, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                if (subtitle != null)
+                  pw.Text(subtitle, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                pw.SizedBox(height: 12),
+              ],
+              if (totalPages > 1)
+                pw.Text('Стр. ${pageIdx + 1} из $totalPages', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
+              pw.SizedBox(height: 4),
+              // Таблица
+              pw.Table(
+                border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+                columnWidths: columnWidths,
+                children: [
+                  // Заголовок
+                  pw.TableRow(
+                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                    children: headers.map((h) => pw.Padding(
+                      padding: const pw.EdgeInsets.all(4),
+                      child: pw.Text(h, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                    )).toList(),
+                  ),
+                  // Строки
+                  ...pageRows.map((row) => pw.TableRow(
+                    children: row.map((cell) => pw.Padding(
+                      padding: const pw.EdgeInsets.all(3),
+                      child: pw.Text(cell, style: const pw.TextStyle(fontSize: 7), maxLines: 2),
+                    )).toList(),
+                  )),
+                  // Итого на последней странице
+                  if (isLastPage && totals != null)
+                    pw.TableRow(
+                      decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+                      children: totals.map((cell) => pw.Padding(
+                        padding: const pw.EdgeInsets.all(4),
+                        child: pw.Text(cell, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                      )).toList(),
+                    ),
+                ],
+              ),
+            ],
+          );
+        },
+      ));
+    }
+    return pages;
+  }
+
+  double _n(dynamic v) => (v as num?)?.toDouble() ?? 0;
+  String _f(dynamic v) => _n(v).toStringAsFixed(0);
 
   Future<void> _exportXlsx() async {
     if (_selectedPeriod == null) return;
