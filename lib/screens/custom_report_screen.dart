@@ -1506,11 +1506,15 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(d['fio'] ?? '', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                            if (locationName.isNotEmpty || address.isNotEmpty)
-                              Text([locationName, address].where((s) => s.isNotEmpty).join(' • '),
+                                maxLines: 2, overflow: TextOverflow.ellipsis),
+                            if (locationName.isNotEmpty)
+                              Text('🏠 $locationName',
                                   style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
-                                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                            if (address.isNotEmpty)
+                              Text('📍 $address',
+                                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                                  maxLines: 2, overflow: TextOverflow.ellipsis),
                             Text('ЛС: ${d['account_number'] ?? ''}',
                                 style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant)),
                           ],
