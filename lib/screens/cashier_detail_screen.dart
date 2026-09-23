@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../services/base_api_service.dart';
+import '../services/file_export_helper.dart';
 import 'cashier_help_screen.dart';
 
 /// Экран деталей платёжного документа — рабочее место кассира
@@ -1291,13 +1292,20 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(await pdf.save());
 
-      // Шарим через системный диалог
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
+      // Экспорт: на десктопе — "Сохранить как", на мобильных — share
+      if (mounted) {
+        final savedPath = await FileExportHelper.exportFile(
+          sourceFile: file,
+          fileName: fileName,
+          mimeType: 'application/pdf',
           subject: 'Чек об оплате — ${d['fio'] ?? ''}',
-        ),
-      );
+        );
+        if (savedPath != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('✅ Чек сохранён: $savedPath'), backgroundColor: Colors.green),
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
