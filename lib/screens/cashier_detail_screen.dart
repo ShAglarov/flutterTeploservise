@@ -1456,16 +1456,22 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     final org = receiptData?['org'] as Map<String, dynamic>? ?? {};
     final periodLabel = receiptData?['period_label'] as String? ?? _formatPeriod(d['period_date']);
 
+    // Долг из карточки документа (fallback если receipt-data вернул 0)
+    final cardDebt = (d['totals'] as Map?)?['debt_end'] as num? ?? 0;
+    final effectiveDebt = totalDebt > 0.01 ? totalDebt : (cardDebt > 0.01 ? cardDebt.toDouble() : 0.0);
+
     // Fallback QR: если backend не вернул — генерим локально
-    if ((qrString == null || qrString.isEmpty) && totalDebt > 0) {
+    if ((qrString == null || qrString.isEmpty) && effectiveDebt > 0) {
       final accNum = d['account_number'] ?? '';
-      final sumKopecks = (totalDebt * 100).toInt();
+      final sumKopecks = (effectiveDebt * 100).toInt();
       qrString = 'ST00012'
           '|Purpose=Оплата ЖКУ л/с $accNum за $periodLabel'
           '|Sum=$sumKopecks';
     }
 
-    if (totalPaid <= 0 && totalDebt <= 0) {
+    final hasData = totalPaid > 0.01 || effectiveDebt > 0.01 || overpayment > 0.01;
+
+    if (!hasData) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Нет данных для формирования чека')),
@@ -1567,13 +1573,13 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                   const SizedBox(height: 4),
 
                   // Долг ИЛИ переплата — одновременно быть не может
-                  if (totalDebt > 0.01)
+                  if (effectiveDebt > 0.01)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Остаток долга:', style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
                         Text(
-                          '${_fmt(totalDebt)} ₽',
+                          '${_fmt(effectiveDebt)} ₽',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade700),
                         ),
                       ],
@@ -1733,7 +1739,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                           onPressed: () => _generateAndSharePdf(
                             receiptData ?? d, services, totalPaid, dateStr, timeStr,
                             qrString: qrString, periodCoverage: periodCoverage,
-                            totalDebt: totalDebt, overpayment: overpayment, org: org,
+                            totalDebt: effectiveDebt, overpayment: overpayment, org: org,
                           ),
                           icon: const Icon(Icons.picture_as_pdf, size: 16),
                           label: const Text('PDF'),
