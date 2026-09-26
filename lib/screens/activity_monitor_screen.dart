@@ -100,7 +100,11 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
         final tempFile = File('${tempDir.path}/$defaultName');
         await tempFile.writeAsBytes(bytes);
         if (!mounted) return;
-        await Share.shareXFiles([XFile(tempFile.path, mimeType: 'application/pdf')], subject: defaultName);
+        final box = context.findRenderObject() as RenderBox?;
+        final shareOrigin = box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : const Rect.fromLTWH(0, 0, 100, 100);
+        await Share.shareXFiles([XFile(tempFile.path, mimeType: 'application/pdf')], subject: defaultName, sharePositionOrigin: shareOrigin);
         return;
       }
 

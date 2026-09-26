@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -51,11 +52,13 @@ class FileExportHelper {
   }
 
   /// Мобильный: share sheet.
+  /// sharePositionOrigin нужен для iPad — без него crash.
   static Future<void> _shareMobile(File sourceFile, String? mimeType, String? subject) async {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(sourceFile.path, mimeType: mimeType)],
         subject: subject,
+        sharePositionOrigin: const Rect.fromLTWH(0, 0, 100, 100),
       ),
     );
   }

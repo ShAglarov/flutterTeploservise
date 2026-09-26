@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../services/base_api_service.dart';
 import '../services/file_export_helper.dart';
 import 'cashier_help_screen.dart';
@@ -83,6 +85,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       final residentCard = _buildResidentCard(theme, d);
       final tableCard = _buildServiceTable(theme, services, totals, isWide);
       final actionsCard = _buildActions(theme, isWide);
+      final periodHistoryCard = _buildPeriodHistory(theme, d);
 
       if (isWide) {
         // ═══ Desktop: 2 колонки ═══
@@ -97,8 +100,12 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Левая — таблица
-                  Expanded(flex: 3, child: tableCard),
+                  // Левая — таблица + история
+                  Expanded(flex: 3, child: Column(children: [
+                    tableCard,
+                    const SizedBox(height: 16),
+                    periodHistoryCard,
+                  ])),
                   const SizedBox(width: 16),
                   // Правая — действия
                   Expanded(flex: 2, child: actionsCard),
@@ -120,6 +127,8 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
               tableCard,
               const SizedBox(height: 12),
               actionsCard,
+              const SizedBox(height: 12),
+              periodHistoryCard,
               const SizedBox(height: 24),
             ],
           ),
@@ -410,6 +419,117 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     color: color, fontFeatures: const [FontFeature.tabularFigures()],
   );
 
+  // ═══════ История по месяцам ═══════
+
+  Widget _buildPeriodHistory(ThemeData theme, Map<String, dynamic> d) {
+    final history = d['period_history'] as List? ?? [];
+    if (history.length <= 1) return const SizedBox.shrink();
+
+    const months = ['', 'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
+    String formatPeriod(String? iso) {
+      if (iso == null) return '—';
+      try {
+        final dt = DateTime.parse(iso);
+        return '${months[dt.month]} ${dt.year}';
+      } catch (_) {
+        return iso;
+      }
+    }
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.history, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text('История по месяцам', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text('${history.length} пер.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            ]),
+            const SizedBox(height: 12),
+            // Заголовок
+            Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(children: [
+                const Expanded(flex: 3, child: Text('Период', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+                const Expanded(flex: 2, child: Text('Начис.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                const Expanded(flex: 2, child: Text('Оплач.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                const Expanded(flex: 2, child: Text('Долг', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+              ]),
+            ),
+            const SizedBox(height: 4),
+            // Строки
+            ...history.map((p) {
+              final isCurrent = p['is_current'] == true;
+              final debtEnd = (p['debt_end'] as num?)?.toDouble() ?? 0;
+              final debtColor = debtEnd > 0 ? Colors.red : (debtEnd < 0 ? Colors.green : null);
+
+              return InkWell(
+                onTap: isCurrent ? null : () {
+                  // Навигация к карточке другого периода
+                  final periodDocId = p['id'] as int?;
+                  if (periodDocId != null) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => CashierDetailScreen(docId: periodDocId)),
+                    );
+                  }
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isCurrent ? theme.colorScheme.primaryContainer.withAlpha(60) : null,
+                    borderRadius: BorderRadius.circular(8),
+                    border: isCurrent ? Border.all(color: theme.colorScheme.primary.withAlpha(40)) : null,
+                  ),
+                  child: Row(children: [
+                    Expanded(flex: 3, child: Row(children: [
+                      if (isCurrent) Icon(Icons.arrow_right, size: 16, color: theme.colorScheme.primary),
+                      Text(
+                        formatPeriod(p['period_date'] as String?),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                          color: isCurrent ? theme.colorScheme.primary : null,
+                        ),
+                      ),
+                    ])),
+                    Expanded(flex: 2, child: Text(
+                      _fmt(p['charged']),
+                      style: TextStyle(fontSize: 12, color: Colors.orange.shade700, fontFeatures: const [FontFeature.tabularFigures()]),
+                      textAlign: TextAlign.right,
+                    )),
+                    Expanded(flex: 2, child: Text(
+                      _fmt(p['paid']),
+                      style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontFeatures: const [FontFeature.tabularFigures()]),
+                      textAlign: TextAlign.right,
+                    )),
+                    Expanded(flex: 2, child: Text(
+                      _fmt(debtEnd),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: debtColor, fontFeatures: const [FontFeature.tabularFigures()]),
+                      textAlign: TextAlign.right,
+                    )),
+                  ]),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ═══════ Панель действий ═══════
 
   Widget _buildActions(ThemeData theme, bool isWide) {
@@ -607,6 +727,75 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     );
   }
 
+  static const _monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+  Widget _monthYearPickerRow(String label, DateTime date, void Function(DateTime) onChanged, {void Function(StateSetter)? setSheetStateRef}) {
+    final formatted = '${_monthNames[date.month - 1]} ${date.year}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          int selectedMonth = date.month;
+          int selectedYear = date.year;
+          final now = DateTime.now();
+          final result = await showDialog<DateTime>(
+            context: context,
+            builder: (ctx) => StatefulBuilder(
+              builder: (ctx, setDialogState) => AlertDialog(
+                title: Text(label),
+                content: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: DropdownButton<int>(
+                        isExpanded: true,
+                        value: selectedMonth,
+                        items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(_monthNames[i]))),
+                        onChanged: (v) => setDialogState(() => selectedMonth = v!),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButton<int>(
+                        isExpanded: true,
+                        value: selectedYear,
+                        items: List.generate(now.year - 2019, (i) => DropdownMenuItem(value: 2020 + i, child: Text('${2020 + i}'))),
+                        onChanged: (v) => setDialogState(() => selectedYear = v!),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+                  FilledButton(onPressed: () => Navigator.pop(ctx, DateTime(selectedYear, selectedMonth)), child: const Text('ОК')),
+                ],
+              ),
+            ),
+          );
+          if (result != null) onChanged(result);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(40),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withAlpha(80)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.date_range, size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 10),
+              Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant))),
+              Text(formatted, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _datePickerRow(String label, DateTime date, void Function(DateTime) onChanged) {
     final formatted = '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
     return Padding(
@@ -688,15 +877,72 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
   // ═══════ Диалог оплаты ═══════
 
   void _showPayDialog() {
-    final services = (_details?['services'] as List?)?.where((s) => (s['debt_end'] ?? 0) > 0).toList() ?? [];
-    if (services.isEmpty) {
+    final currentServices = (_details?['services'] as List?)?.where((s) => (s['debt_end'] ?? 0) > 0).toList() ?? [];
+    if (currentServices.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет долгов для оплаты')));
       return;
     }
     final controllers = <String, TextEditingController>{};
-    for (final s in services) { controllers[s['key']] = TextEditingController(); }
+    for (final s in currentServices) { controllers[s['key']] = TextEditingController(); }
     final noteCtrl = TextEditingController();
     DateTime paymentDate = DateTime.now();
+
+    // Период из текущего документа
+    final periodStr = _details?['period_date'] as String?;
+    DateTime docPeriod;
+    if (periodStr != null) {
+      docPeriod = DateTime.tryParse(periodStr) ?? DateTime.now();
+    } else {
+      docPeriod = DateTime.now();
+    }
+    // Дефолт period_from из estimated_period_from (рассчитан по долгу/площади/тарифу)
+    final estimatedStr = _details?['estimated_period_from'] as String?;
+    DateTime periodFrom;
+    if (estimatedStr != null) {
+      periodFrom = DateTime.tryParse(estimatedStr) ?? DateTime(docPeriod.year, docPeriod.month);
+    } else {
+      periodFrom = DateTime(docPeriod.year, docPeriod.month);
+    }
+    DateTime periodTo = DateTime(docPeriod.year, docPeriod.month);
+
+    // Долги за выбранный период (обновляются динамически)
+    List<Map<String, dynamic>> periodServices = List<Map<String, dynamic>>.from(currentServices);
+    double periodTotalDebt = periodServices.fold(0.0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
+    bool loading = false;
+
+    Future<void> _loadPeriodDebt(StateSetter setSheetState) async {
+      setSheetState(() => loading = true);
+      try {
+        final dio = ref.read(dioProvider);
+        final fromStr = '${periodFrom.year}-${periodFrom.month.toString().padLeft(2, '0')}-01';
+        final toStr = '${periodTo.year}-${periodTo.month.toString().padLeft(2, '0')}-01';
+        final resp = await dio.get('/payment-documents/${widget.docId}/period-debt', queryParameters: {
+          'period_from': fromStr,
+          'period_to': toStr,
+        });
+        final data = resp.data as Map<String, dynamic>;
+        final svcs = (data['services'] as List?) ?? [];
+        // Обновляем контроллеры — убираем старые, добавляем новые
+        final newServices = <Map<String, dynamic>>[];
+        for (final s in svcs) {
+          final debt = (s['debt'] as num?)?.toDouble() ?? 0;
+          if (debt > 0) {
+            newServices.add(s);
+            final key = s['key'] as String;
+            if (!controllers.containsKey(key)) {
+              controllers[key] = TextEditingController();
+            }
+          }
+        }
+        setSheetState(() {
+          periodServices = newServices;
+          periodTotalDebt = (data['total_debt'] as num?)?.toDouble() ?? 0;
+          loading = false;
+        });
+      } catch (e) {
+        setSheetState(() => loading = false);
+      }
+    }
 
     _showStyledSheet(
       title: 'Оплата по услуге',
@@ -711,14 +957,45 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         });
         if (noteCtrl.text.isNotEmpty) body['note'] = noteCtrl.text;
         body['payment_date'] = '${paymentDate.year}-${paymentDate.month.toString().padLeft(2, '0')}-${paymentDate.day.toString().padLeft(2, '0')}';
-        if (body.length <= 1) return; // only payment_date, no amounts
+        body['period_from'] = '${periodFrom.year}-${periodFrom.month.toString().padLeft(2, '0')}-01';
+        body['period_to'] = '${periodTo.year}-${periodTo.month.toString().padLeft(2, '0')}-01';
+        if (body.length <= 3) return;
         await _executeOperation('/payment-documents/${widget.docId}/pay', body, '💰 Оплата');
       },
-      bodyBuilder: (ctx, setSheetState) => Column(mainAxisSize: MainAxisSize.min, children: [
-        ...services.map((s) => _styledInput(controllers[s['key']]!, '${s['label']} (долг: ${_fmt(s['debt_end'])}₽)', suffix: '₽')),
+      bodyBuilder: (ctx, setSheetState) {
+        // Загрузить долг за estimated период при первом открытии
+        if (!loading && estimatedStr != null && periodServices == currentServices) {
+          Future.microtask(() => _loadPeriodDebt(setSheetState));
+        }
+        return Column(mainAxisSize: MainAxisSize.min, children: [
+        _monthYearPickerRow('Период от', periodFrom, (d) {
+          setSheetState(() => periodFrom = d);
+          _loadPeriodDebt(setSheetState);
+        }),
+        _monthYearPickerRow('Период до', periodTo, (d) {
+          setSheetState(() => periodTo = d);
+          _loadPeriodDebt(setSheetState);
+        }),
+        if (loading)
+          const Padding(padding: EdgeInsets.all(8), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
+        else ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Общий долг за период: ${_fmt(periodTotalDebt)}₽',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: periodTotalDebt > 0 ? Colors.red : Colors.green)),
+          ),
+          const Divider(height: 16),
+          ...periodServices.map((s) {
+            final key = s['key'] as String;
+            final label = s['label'] ?? key;
+            final debt = (s['debt'] as num?)?.toDouble() ?? (s['debt_end'] as num?)?.toDouble() ?? 0;
+            if (!controllers.containsKey(key)) controllers[key] = TextEditingController();
+            return _styledInput(controllers[key]!, '$label (долг: ${_fmt(debt)}₽)', suffix: '₽');
+          }),
+        ],
         _styledInput(noteCtrl, 'Комментарий', decimal: false),
         _datePickerRow('Дата платежа', paymentDate, (d) => setSheetState(() => paymentDate = d)),
-      ]),
+      ]);},
     );
   }
 
@@ -1057,19 +1334,50 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     }
   }
 
-  // ═══════ Чек об оплате ═══════
+  // ═══════ Чек об оплате с расчётом периодов + QR ═══════
 
-  void _showReceipt() {
+  void _showReceipt() async {
     final d = _details;
     if (d == null) return;
 
-    final services = (d['services'] as List?) ?? [];
-    final totalPaid = services.fold<double>(0, (sum, s) => sum + ((s['paid'] as num?)?.toDouble() ?? 0));
-    
-    if (totalPaid <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Нет оплат для формирования чека')),
-      );
+    // Загружаем данные чека с backend
+    Map<String, dynamic>? receiptData;
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get('/payment-documents/${widget.docId}/receipt-data');
+      receiptData = resp.data as Map<String, dynamic>;
+    } catch (e) {
+      // Fallback — используем локальные данные
+      receiptData = null;
+    }
+
+    final services = (receiptData?['services'] ?? d['services']) as List? ?? [];
+    final totalPaid = (receiptData?['total_paid'] as num?)?.toDouble() ??
+        services.fold<double>(0, (sum, s) => sum + ((s['paid'] as num?)?.toDouble() ?? 0));
+    final totalDebt = (receiptData?['total_debt'] as num?)?.toDouble() ??
+        services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
+    var qrString = receiptData?['qr_string'] as String?;
+    final periodSummary = receiptData?['period_summary'] as String? ?? '';
+    final periodCoverage = receiptData?['period_coverage'] as List? ?? [];
+    final overpayment = (receiptData?['overpayment'] as num?)?.toDouble() ?? 0;
+    final org = receiptData?['org'] as Map<String, dynamic>? ?? {};
+    final periodLabel = receiptData?['period_label'] as String? ?? _formatPeriod(d['period_date']);
+
+    // Fallback QR: если backend не вернул — генерим локально
+    if ((qrString == null || qrString.isEmpty) && totalDebt > 0) {
+      final accNum = d['account_number'] ?? '';
+      final sumKopecks = (totalDebt * 100).toInt();
+      qrString = 'ST00012'
+          '|Purpose=Оплата ЖКУ л/с $accNum за $periodLabel'
+          '|Sum=$sumKopecks';
+    }
+
+    if (totalPaid <= 0 && totalDebt <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Нет данных для формирования чека')),
+        );
+      }
       return;
     }
 
@@ -1077,95 +1385,235 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     final dateStr = '${now.day.toString().padLeft(2, '0')}.${now.month.toString().padLeft(2, '0')}.${now.year}';
     final timeStr = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (ctx) {
-        final theme = Theme.of(ctx);
         return Dialog(
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
-            width: 360,
+            width: 380,
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
             padding: const EdgeInsets.all(24),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Заголовок
+                  // === Заголовок ===
                   const Icon(Icons.receipt_long, size: 40, color: Colors.indigo),
                   const SizedBox(height: 8),
                   const Text('ЧЕК ОБ ОПЛАТЕ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
                   Text('$dateStr  $timeStr', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+
+                  // Организация
+                  if (org['name'] != null && (org['name'] as String).isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(org['name'], style: TextStyle(fontSize: 11, color: Colors.grey.shade700), textAlign: TextAlign.center),
+                  ],
                   const SizedBox(height: 16),
-                  
-                  // Разделитель
+
                   _receiptDivider(),
-                  
-                  // Данные плательщика
-                  _receiptRow('Плательщик:', d['fio'] ?? '—'),
-                  _receiptRow('Лицевой счёт:', d['account_number'] ?? '—'),
-                  _receiptRow('Адрес:', d['address'] ?? '—'),
-                  _receiptRow('Период:', _formatPeriod(d['period_date'])),
-                  if (d['area'] != null) _receiptRow('Площадь:', '${d['area']} м²'),
-                  
+
+                  // === Данные плательщика ===
+                  _receiptRow('Плательщик:', receiptData?['fio'] ?? d['fio'] ?? '—'),
+                  _receiptRow('Лицевой счёт:', receiptData?['account_number'] ?? d['account_number'] ?? '—'),
+                  _receiptRow('Адрес:', receiptData?['address'] ?? d['address'] ?? '—'),
+                  _receiptRow('Период:', periodLabel),
+                  if ((receiptData?['area'] ?? d['area']) != null)
+                    _receiptRow('Площадь:', '${receiptData?['area'] ?? d['area']} м²'),
+
                   _receiptDivider(),
-                  
-                  // Услуги
+
+                  // === Услуги ===
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text('Услуги:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
                   ),
                   const SizedBox(height: 6),
-                  ...services.where((s) => ((s['paid'] as num?)?.toDouble() ?? 0) > 0).map((s) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            s['label'] ?? s['key'] ?? '',
-                            style: const TextStyle(fontSize: 12, color: Colors.black87),
+                  ...services.where((s) => ((s['paid'] as num?)?.toDouble() ?? 0) > 0 || ((s['charged'] as num?)?.toDouble() ?? 0) > 0).map((s) {
+                    final paid = (s['paid'] as num?)?.toDouble() ?? 0;
+                    final charged = (s['charged'] as num?)?.toDouble() ?? 0;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              s['label'] ?? s['key'] ?? '',
+                              style: const TextStyle(fontSize: 12, color: Colors.black87),
+                            ),
                           ),
-                        ),
-                        Text(
-                          '${_fmt(s['paid'])} ₽',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
-                        ),
+                          if (paid > 0)
+                            Text(
+                              '${_fmt(paid)} ₽',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+                            )
+                          else
+                            Text(
+                              'начисл. ${_fmt(charged)} ₽',
+                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  _receiptDivider(),
+
+                  // === Итого ===
+                  if (totalPaid > 0)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('ИТОГО ОПЛАЧЕНО:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        Text('${_fmt(totalPaid)} ₽', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
                       ],
                     ),
-                  )),
-                  
-                  _receiptDivider(),
-                  
-                  // Итого
+
+                  const SizedBox(height: 4),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('ИТОГО ОПЛАЧЕНО:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      Text('${_fmt(totalPaid)} ₽', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Остаток долга
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Остаток долга:', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                      Text(totalDebt > 0 ? 'Остаток долга:' : 'Долг:', style: TextStyle(fontSize: 12, color: totalDebt > 0 ? Colors.red : Colors.grey.shade700)),
                       Text(
-                        '${_fmt(services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0)))} ₽',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                        '${_fmt(totalDebt)} ₽',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: totalDebt > 0 ? Colors.red : Colors.green),
                       ),
                     ],
                   ),
-                  
+
+                  if (overpayment > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Переплата:', style: TextStyle(fontSize: 12, color: Colors.green.shade700)),
+                        Text('${_fmt(overpayment)} ₽', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
+                      ],
+                    ),
+                  ],
+
+                  // === Покрытие периодов ===
+                  if (periodCoverage.isNotEmpty) ...[
+                    _receiptDivider(),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Расчёт по периодам:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87)),
+                    ),
+                    const SizedBox(height: 6),
+                    Builder(builder: (_) {
+                      // Группируем последовательные периоды с одинаковым статусом
+                      final filtered = periodCoverage.where((c) => c['status'] != 'no_charges').toList();
+                      final groups = <Map<String, dynamic>>[];
+                      for (final c in filtered) {
+                        final status = c['status'] as String? ?? '';
+                        // partial — всегда отдельная строка (суммы разные)
+                        if (status == 'partial' || groups.isEmpty || groups.last['status'] != status) {
+                          groups.add({
+                            'status': status,
+                            'status_label': c['status_label'],
+                            'first_label': c['period_label'],
+                            'last_label': c['period_label'],
+                            'count': 1,
+                            'has_current': c['is_current'] == true,
+                          });
+                        } else {
+                          final g = groups.last;
+                          g['last_label'] = c['period_label'];
+                          g['count'] = (g['count'] as int) + 1;
+                          if (c['is_current'] == true) g['has_current'] = true;
+                        }
+                      }
+
+                      return Column(
+                        children: groups.map((g) {
+                          final status = g['status'] as String;
+                          Color statusColor;
+                          IconData statusIcon;
+                          switch (status) {
+                            case 'paid':
+                              statusColor = Colors.green;
+                              statusIcon = Icons.check_circle;
+                              break;
+                            case 'partial':
+                              statusColor = Colors.orange;
+                              statusIcon = Icons.warning_amber;
+                              break;
+                            default:
+                              statusColor = Colors.red;
+                              statusIcon = Icons.cancel;
+                          }
+                          final count = g['count'] as int;
+                          final label = count == 1
+                              ? (g['first_label'] as String? ?? '')
+                              : 'с ${g['first_label']} по ${g['last_label']}';
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              children: [
+                                Icon(statusIcon, size: 14, color: statusColor),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    label,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.black87,
+                                      fontWeight: g['has_current'] == true ? FontWeight.bold : null,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  g['status_label'] as String? ?? '',
+                                  style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    }),
+                  ],
+
+                  // === QR код для оплаты ===
+                  if (qrString != null && qrString.isNotEmpty && totalDebt > 0) ...[
+                    _receiptDivider(),
+                    const Text('Оплата по QR-коду', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const SizedBox(height: 4),
+                    Text('Отсканируйте для оплаты', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: QrImageView(
+                        data: qrString,
+                        version: QrVersions.auto,
+                        size: 160,
+                        backgroundColor: Colors.white,
+                        errorCorrectionLevel: QrErrorCorrectLevel.M,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Сумма: ${_fmt(totalDebt)} ₽', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+                  ],
+
                   _receiptDivider(),
-                  
+
+                  // Банковские реквизиты
+                  if (org['bank_name'] != null && (org['bank_name'] as String).isNotEmpty) ...[
+                    Text(
+                      'Банк: ${org['bank_name']}  БИК: ${org['bik'] ?? ''}  р/с: ${org['account_number'] ?? ''}',
+                      style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
                   Text('Спасибо за оплату!', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
-                  
+
                   const SizedBox(height: 20),
-                  
-                  // Кнопки
+
+                  // === Кнопки ===
                   Row(
                     children: [
                       Expanded(
@@ -1182,7 +1630,11 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _generateAndSharePdf(d, services, totalPaid, dateStr, timeStr),
+                          onPressed: () => _generateAndSharePdf(
+                            receiptData ?? d, services, totalPaid, dateStr, timeStr,
+                            qrString: qrString, periodCoverage: periodCoverage,
+                            totalDebt: totalDebt, overpayment: overpayment, org: org,
+                          ),
                           icon: const Icon(Icons.picture_as_pdf, size: 16),
                           label: const Text('PDF'),
                           style: ElevatedButton.styleFrom(
@@ -1235,9 +1687,24 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     );
   }
 
-  Future<void> _generateAndSharePdf(Map<String, dynamic> d, List services, double totalPaid, String date, String time) async {
+  /// Генерация QR-кода как PNG байтов (для вставки в PDF)
+  Future<Uint8List> _generateQrPng(String data, {double size = 200}) async {
+    final qrPainter = QrPainter(
+      data: data,
+      version: QrVersions.auto,
+      errorCorrectionLevel: QrErrorCorrectLevel.M,
+      gapless: true,
+    );
+    final imageData = await qrPainter.toImageData(size);
+    return imageData!.buffer.asUint8List();
+  }
+
+  Future<void> _generateAndSharePdf(
+    Map<String, dynamic> d, List services, double totalPaid, String date, String time, {
+    String? qrString, List? periodCoverage, double totalDebt = 0,
+    double overpayment = 0, Map<String, dynamic>? org,
+  }) async {
     try {
-      // Загружаем кириллический шрифт
       final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
       final ttf = pw.Font.ttf(fontData);
 
@@ -1245,7 +1712,22 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
       );
       final paidServices = services.where((s) => ((s['paid'] as num?)?.toDouble() ?? 0) > 0).toList();
-      final debtEnd = services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
+      final debtEnd = totalDebt > 0 ? totalDebt :
+          services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
+
+      // Генерируем QR PNG если есть строка и долг
+      pw.MemoryImage? qrImage;
+      if (qrString != null && qrString.isNotEmpty && debtEnd > 0) {
+        try {
+          final qrPng = await _generateQrPng(qrString, size: 300);
+          qrImage = pw.MemoryImage(qrPng);
+        } catch (_) {}
+      }
+
+      // Покрытие периодов для PDF
+      final coverage = (periodCoverage ?? [])
+          .where((c) => c['status'] != 'no_charges')
+          .toList();
 
       pdf.addPage(
         pw.Page(
@@ -1263,74 +1745,148 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 pw.Center(
                   child: pw.Text('$date  $time', style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
                 ),
-                pw.SizedBox(height: 16),
+                if (org != null && (org['name'] ?? '').toString().isNotEmpty)
+                  pw.Center(
+                    child: pw.Text(org['name'], style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.grey600)),
+                  ),
+                pw.SizedBox(height: 12),
                 pw.Divider(thickness: 1.5),
-                pw.SizedBox(height: 10),
+                pw.SizedBox(height: 8),
 
                 // Данные плательщика
                 _pdfInfoRow('Плательщик:', d['fio'] ?? '—', ttf),
                 _pdfInfoRow('Лицевой счёт:', d['account_number'] ?? '—', ttf),
                 _pdfInfoRow('Адрес:', d['address'] ?? '—', ttf),
-                _pdfInfoRow('Период:', _formatPeriod(d['period_date']), ttf),
+                _pdfInfoRow('Период:', d['period_label'] ?? _formatPeriod(d['period_date']), ttf),
                 if (d['area'] != null) _pdfInfoRow('Площадь:', '${d['area']} м²', ttf),
-                
-                pw.SizedBox(height: 12),
+
+                pw.SizedBox(height: 10),
                 pw.Divider(),
-                pw.SizedBox(height: 8),
+                pw.SizedBox(height: 6),
 
                 // Таблица услуг
-                pw.Text('Оплаченные услуги:', style: pw.TextStyle(font: ttf, fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 6),
-                
-                pw.Table(
-                  border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
-                  columnWidths: {
-                    0: const pw.FlexColumnWidth(3),
-                    1: const pw.FlexColumnWidth(1),
-                  },
-                  children: [
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-                      children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Услуга', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 10))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Сумма', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 10), textAlign: pw.TextAlign.right)),
-                      ],
-                    ),
-                    ...paidServices.map((s) => pw.TableRow(
-                      children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(s['label'] ?? s['key'] ?? '', style: pw.TextStyle(font: ttf, fontSize: 10))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${_fmt(s['paid'])} р.', style: pw.TextStyle(font: ttf, fontSize: 10), textAlign: pw.TextAlign.right)),
-                      ],
-                    )),
-                  ],
-                ),
+                if (paidServices.isNotEmpty) ...[
+                  pw.Text('Оплаченные услуги:', style: pw.TextStyle(font: ttf, fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 4),
+                  pw.Table(
+                    border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+                    columnWidths: {0: const pw.FlexColumnWidth(3), 1: const pw.FlexColumnWidth(1)},
+                    children: [
+                      pw.TableRow(
+                        decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                        children: [
+                          pw.Padding(padding: const pw.EdgeInsets.all(5), child: pw.Text('Услуга', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 9))),
+                          pw.Padding(padding: const pw.EdgeInsets.all(5), child: pw.Text('Сумма', style: pw.TextStyle(font: ttf, fontWeight: pw.FontWeight.bold, fontSize: 9), textAlign: pw.TextAlign.right)),
+                        ],
+                      ),
+                      ...paidServices.map((s) => pw.TableRow(
+                        children: [
+                          pw.Padding(padding: const pw.EdgeInsets.all(5), child: pw.Text(s['label'] ?? s['key'] ?? '', style: pw.TextStyle(font: ttf, fontSize: 9))),
+                          pw.Padding(padding: const pw.EdgeInsets.all(5), child: pw.Text('${_fmt(s['paid'])} р.', style: pw.TextStyle(font: ttf, fontSize: 9), textAlign: pw.TextAlign.right)),
+                        ],
+                      )),
+                    ],
+                  ),
+                  pw.SizedBox(height: 8),
+                ],
 
-                pw.SizedBox(height: 12),
                 pw.Divider(thickness: 1.5),
-                pw.SizedBox(height: 8),
+                pw.SizedBox(height: 6),
 
                 // Итого
+                if (totalPaid > 0)
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('ИТОГО ОПЛАЧЕНО:', style: pw.TextStyle(font: ttf, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('${_fmt(totalPaid)} р.', style: pw.TextStyle(font: ttf, fontSize: 13, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                pw.SizedBox(height: 3),
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('ИТОГО ОПЛАЧЕНО:', style: pw.TextStyle(font: ttf, fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                    pw.Text('${_fmt(totalPaid)} р.', style: pw.TextStyle(font: ttf, fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Остаток долга:', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.grey700)),
+                    pw.Text('${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.grey700)),
                   ],
                 ),
-                pw.SizedBox(height: 4),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Остаток долга:', style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
-                    pw.Text('${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700)),
-                  ],
-                ),
+                if (overpayment > 0)
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Переплата:', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.green700)),
+                      pw.Text('${_fmt(overpayment)} р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.green700)),
+                    ],
+                  ),
 
-                pw.SizedBox(height: 20),
+                // Покрытие периодов — группируем в диапазоны
+                if (coverage.isNotEmpty) ...[
+                  pw.SizedBox(height: 8),
+                  pw.Divider(),
+                  pw.SizedBox(height: 4),
+                  pw.Text('Расчёт по периодам:', style: pw.TextStyle(font: ttf, fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  pw.SizedBox(height: 3),
+                  ...() {
+                    final groups = <Map<String, dynamic>>[];
+                    for (final c in coverage) {
+                      final status = c['status'] as String? ?? '';
+                      if (status == 'partial' || groups.isEmpty || groups.last['status'] != status) {
+                        groups.add({'status': status, 'status_label': c['status_label'], 'first_label': c['period_label'], 'last_label': c['period_label'], 'count': 1});
+                      } else {
+                        groups.last['last_label'] = c['period_label'];
+                        groups.last['count'] = (groups.last['count'] as int) + 1;
+                      }
+                    }
+                    return groups.map((g) {
+                      final status = g['status'] as String;
+                      final color = status == 'paid' ? PdfColors.green700
+                          : status == 'partial' ? PdfColors.orange700
+                          : PdfColors.red700;
+                      final marker = status == 'paid' ? '✓' : status == 'partial' ? '◐' : '✗';
+                      final count = g['count'] as int;
+                      final label = count == 1
+                          ? (g['first_label'] as String? ?? '')
+                          : 'с ${g['first_label']} по ${g['last_label']}';
+                      return pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(vertical: 1),
+                        child: pw.Row(children: [
+                          pw.Text('$marker ', style: pw.TextStyle(font: ttf, fontSize: 9, color: color)),
+                          pw.Expanded(child: pw.Text(label, style: pw.TextStyle(font: ttf, fontSize: 9))),
+                          pw.Text(g['status_label'] as String? ?? '', style: pw.TextStyle(font: ttf, fontSize: 8, color: color)),
+                        ]),
+                      );
+                    }).toList();
+                  }(),
+                ],
+
+                // QR код
+                if (qrImage != null) ...[
+                  pw.SizedBox(height: 8),
+                  pw.Divider(),
+                  pw.SizedBox(height: 4),
+                  pw.Center(child: pw.Text('Оплата по QR-коду', style: pw.TextStyle(font: ttf, fontSize: 10, fontWeight: pw.FontWeight.bold))),
+                  pw.SizedBox(height: 4),
+                  pw.Center(child: pw.Image(qrImage, width: 80, height: 80)),
+                  pw.SizedBox(height: 2),
+                  pw.Center(child: pw.Text('Отсканируйте для оплаты • ${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.grey600))),
+                ],
+
+                pw.SizedBox(height: 10),
                 pw.Divider(),
-                pw.SizedBox(height: 8),
+                pw.SizedBox(height: 4),
+
+                // Банковские реквизиты
+                if (org != null && (org['bank_name'] ?? '').toString().isNotEmpty)
+                  pw.Center(
+                    child: pw.Text(
+                      'Банк: ${org['bank_name']}  БИК: ${org['bik'] ?? ''}  р/с: ${org['account_number'] ?? ''}',
+                      style: pw.TextStyle(font: ttf, fontSize: 7, color: PdfColors.grey500),
+                    ),
+                  ),
+
+                pw.SizedBox(height: 4),
                 pw.Center(
-                  child: pw.Text('Спасибо за оплату!', style: pw.TextStyle(font: ttf, fontSize: 11, color: PdfColors.grey600)),
+                  child: pw.Text('Спасибо за оплату!', style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey600)),
                 ),
               ],
             );
@@ -1338,13 +1894,11 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         ),
       );
 
-      // Сохраняем PDF во временную папку
       final dir = await getTemporaryDirectory();
       final fileName = 'check_${d['account_number'] ?? 'receipt'}_${date.replaceAll('.', '')}.pdf';
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(await pdf.save());
 
-      // Экспорт: на десктопе — "Сохранить как", на мобильных — share
       if (mounted) {
         final savedPath = await FileExportHelper.exportFile(
           sourceFile: file,

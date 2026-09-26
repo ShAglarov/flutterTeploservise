@@ -209,9 +209,14 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
         await tempFile.writeAsBytes(bytes);
 
         if (!mounted) return;
+        final box = context.findRenderObject() as RenderBox?;
+        final shareOrigin = box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : const Rect.fromLTWH(0, 0, 100, 100);
         await Share.shareXFiles(
           [XFile(tempFile.path, mimeType: ext == 'pdf' ? 'application/pdf' : ext == 'xml' ? 'application/xml' : ext == 'json' ? 'application/json' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
           subject: defaultName,
+          sharePositionOrigin: shareOrigin,
         );
         return;
       }
@@ -337,6 +342,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
 
     bool excludePromises = true;
     bool excludePayers = true;
+    final excludeFioCtrl = TextEditingController();
 
     return showDialog<Map<String, String>>(
       context: context,
@@ -601,6 +607,18 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                         subtitle: const Text('💰 Кто ежемесячно платит', style: TextStyle(fontSize: 11)),
                         onChanged: (v) => setDialogState(() => excludePayers = v ?? true),
                       ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: excludeFioCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Исключить по ФИО',
+                          hintText: 'Амирбеков Г Г, Иванов',
+                          prefixIcon: Icon(Icons.person_off),
+                          border: OutlineInputBorder(),
+                          helperText: 'Через запятую. Частичное совпадение.',
+                          helperMaxLines: 2,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -623,6 +641,8 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                   if (isPersonal) 'requisites': requisitesCtrl.text,
                   'exclude_promises': excludePromises.toString(),
                   'exclude_payers': excludePayers.toString(),
+                  if (excludeFioCtrl.text.trim().isNotEmpty)
+                    'exclude_fio': excludeFioCtrl.text.trim(),
                 });
               },
             ),
