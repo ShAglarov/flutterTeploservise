@@ -27,6 +27,8 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
   Map<String, dynamic>? _details;
   bool _isLoading = true;
   String? _error;
+  /// id документов, у которых раскрыта расшифровка баланса в истории
+  final Set<int> _expandedPeriods = {};
 
   @override
   void initState() {
@@ -463,18 +465,28 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
               child: Row(children: [
                 const Expanded(flex: 3, child: Text('Период', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
                 const Expanded(flex: 2, child: Text('Начис.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                const Expanded(flex: 2, child: Text('Перерасч.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
                 const Expanded(flex: 2, child: Text('Оплач.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
-                const Expanded(flex: 2, child: Text('Долг', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                const Expanded(flex: 2, child: Text('Баланс', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                const SizedBox(width: 24),
               ]),
             ),
             const SizedBox(height: 4),
             // Строки
             ...history.map((p) {
               final isCurrent = p['is_current'] == true;
-              final debtEnd = (p['debt_end'] as num?)?.toDouble() ?? 0;
-              final debtColor = debtEnd > 0 ? Colors.red : (debtEnd < 0 ? Colors.green : null);
+              final docId = p['id'] as int?;
+              // Баланс: > 0 — долг, < 0 — переплата, 0 — расчёт закрыт
+              final balance = (p['balance'] as num?)?.toDouble()
+                  ?? (p['debt_end'] as num?)?.toDouble() ?? 0;
+              final recalc = (p['recalc'] as num?)?.toDouble() ?? 0;
+              final isExpanded = docId != null && _expandedPeriods.contains(docId);
+              final Color? balanceColor = balance > 0.01
+                  ? Colors.red.shade700
+                  : (balance < -0.01 ? Colors.green.shade700 : null);
 
-              return InkWell(
+              return Column(children: [
+              InkWell(
                 onTap: isCurrent ? null : () {
                   // Навигация к карточке другого периода
                   final periodDocId = p['id'] as int?;
@@ -511,22 +523,103 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                       textAlign: TextAlign.right,
                     )),
                     Expanded(flex: 2, child: Text(
+                      recalc.abs() < 0.01 ? '—' : _fmt(recalc),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: recalc.abs() < 0.01 ? Colors.grey.shade500 : Colors.blue.shade700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                      textAlign: TextAlign.right,
+                    )),
+                    Expanded(flex: 2, child: Text(
                       _fmt(p['paid']),
                       style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontFeatures: const [FontFeature.tabularFigures()]),
                       textAlign: TextAlign.right,
                     )),
                     Expanded(flex: 2, child: Text(
-                      _fmt(debtEnd),
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: debtColor, fontFeatures: const [FontFeature.tabularFigures()]),
+                      _fmt(balance),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: balanceColor, fontFeatures: const [FontFeature.tabularFigures()]),
                       textAlign: TextAlign.right,
                     )),
+                    SizedBox(
+                      width: 24,
+                      child: docId == null ? null : IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        iconSize: 18,
+                        icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.grey.shade600),
+                        tooltip: 'Расшифровка баланса',
+                        onPressed: () => setState(() {
+                          isExpanded ? _expandedPeriods.remove(docId) : _expandedPeriods.add(docId);
+                        }),
+                      ),
+                    ),
                   ]),
                 ),
-              );
+              ),
+              if (isExpanded) _buildBalanceBreakdown(theme, p, balance, recalc),
+              ]);
             }),
           ],
         ),
       ),
+    );
+  }
+
+  /// Расшифровка баланса периода:
+  /// Баланс пред. + Начислено + Перерасчёт − Оплачено = Баланс
+  Widget _buildBalanceBreakdown(
+      ThemeData theme, Map<dynamic, dynamic> p, double balance, double recalc) {
+    final charged = (p['charged'] as num?)?.toDouble() ?? 0;
+    final paid = (p['paid'] as num?)?.toDouble() ?? 0;
+    // prev_balance приходит с backend; если нет — восстанавливаем из уравнения
+    final prevBalance = (p['prev_balance'] as num?)?.toDouble()
+        ?? (balance - charged - recalc + paid);
+
+    Widget line(String label, double value, {Color? color, bool bold = false, String? sign}) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(children: [
+          SizedBox(width: 14, child: Text(sign ?? '', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
+          Expanded(child: Text(label, style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey.shade800,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+          ))),
+          Text('${_fmt(value)} ₽', style: TextStyle(
+            fontSize: 12,
+            color: color,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          )),
+        ]),
+      );
+    }
+
+    final String verdict = balance > 0.01
+        ? 'Долг'
+        : (balance < -0.01 ? 'Переплата' : 'Расчёт закрыт');
+    final Color verdictColor = balance > 0.01
+        ? Colors.red.shade700
+        : (balance < -0.01 ? Colors.green.shade700 : Colors.grey.shade700);
+
+    return Container(
+      margin: const EdgeInsets.only(left: 12, right: 12, bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(90),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        line('Баланс на начало периода', prevBalance,
+            color: prevBalance > 0.01 ? Colors.red.shade700 : (prevBalance < -0.01 ? Colors.green.shade700 : null)),
+        line('Начислено', charged, color: Colors.orange.shade700, sign: '+'),
+        if (recalc.abs() >= 0.01)
+          line('Перерасчёт', recalc, color: Colors.blue.shade700, sign: recalc >= 0 ? '+' : '−'),
+        line('Оплачено', paid, color: Colors.green.shade700, sign: '−'),
+        Divider(height: 12, color: Colors.grey.shade400),
+        line('$verdict на конец периода', balance, color: verdictColor, bold: true, sign: '='),
+      ]),
     );
   }
 
@@ -1473,27 +1566,34 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
                   const SizedBox(height: 4),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(totalDebt > 0 ? 'Остаток долга:' : 'Долг:', style: TextStyle(fontSize: 12, color: totalDebt > 0 ? Colors.red : Colors.grey.shade700)),
-                      Text(
-                        '${_fmt(totalDebt)} ₽',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: totalDebt > 0 ? Colors.red : Colors.green),
-                      ),
-                    ],
-                  ),
-
-                  if (overpayment > 0) ...[
-                    const SizedBox(height: 4),
+                  // Долг ИЛИ переплата — одновременно быть не может
+                  if (totalDebt > 0.01)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Остаток долга:', style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+                        Text(
+                          '${_fmt(totalDebt)} ₽',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade700),
+                        ),
+                      ],
+                    )
+                  else if (overpayment > 0.01)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Переплата:', style: TextStyle(fontSize: 12, color: Colors.green.shade700)),
                         Text('${_fmt(overpayment)} ₽', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
                       ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Задолженности нет', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
+                        Text('0.00 ₽', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
+                      ],
                     ),
-                  ],
 
                   // === Покрытие периодов ===
                   if (periodCoverage.isNotEmpty) ...[
@@ -1712,8 +1812,9 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         theme: pw.ThemeData.withFont(base: ttf, bold: ttf),
       );
       final paidServices = services.where((s) => ((s['paid'] as num?)?.toDouble() ?? 0) > 0).toList();
-      final debtEnd = totalDebt > 0 ? totalDebt :
-          services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
+      // totalDebt уже посчитан по накопительному балансу (backend).
+      // Fallback по sum(debt_end) недопустим: при переплате он даёт ложный долг.
+      final debtEnd = totalDebt;
 
       // Генерируем QR PNG если есть строка и долг
       pw.MemoryImage? qrImage;
@@ -1803,19 +1904,29 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                     ],
                   ),
                 pw.SizedBox(height: 3),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('Остаток долга:', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.grey700)),
-                    pw.Text('${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.grey700)),
-                  ],
-                ),
-                if (overpayment > 0)
+                // Долг ИЛИ переплата — одновременно быть не может
+                if (debtEnd > 0.01)
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Остаток долга:', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.red700)),
+                      pw.Text('${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.red700)),
+                    ],
+                  )
+                else if (overpayment > 0.01)
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
                       pw.Text('Переплата:', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.green700)),
                       pw.Text('${_fmt(overpayment)} р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.green700)),
+                    ],
+                  )
+                else
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Задолженности нет', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.green700)),
+                      pw.Text('0.00 р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.green700)),
                     ],
                   ),
 
