@@ -238,30 +238,67 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
         );
       }
 
-      // Save and share PDF
-      final dir = await getTemporaryDirectory();
+      // Save PDF
       final filename = _generationType == 'by_account'
           ? 'receipt_${_accountIdCtrl.text}.pdf'
           : 'receipts_${_selectedLocation?['address'] ?? 'house'}.pdf';
-      final file = File('${dir.path}/$filename');
-      await file.writeAsBytes(resp.data);
+      // Sanitize filename
+      final safeName = filename.replaceAll(RegExp(r'[^\w\-. а-яА-ЯёЁ]'), '_');
 
-      // Сбрасываем индикатор ДО share — share_plus может не вернуть Future
+      // Сбрасываем индикатор ДО share/open
       if (mounted) setState(() => _isGenerating = false);
 
-      final box = context.findRenderObject() as RenderBox?;
-      final origin = box != null
-          ? box.localToGlobal(Offset.zero) & box.size
-          : const Rect.fromLTWH(0, 0, 100, 100);
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        // Desktop: сохраняем в Загрузки и открываем
+        String downloadsPath;
+        if (Platform.isWindows) {
+          downloadsPath = '${Platform.environment['USERPROFILE']}\\Downloads';
+        } else {
+          downloadsPath = '${Platform.environment['HOME']}/Downloads';
+        }
+        final outFile = File('$downloadsPath/$safeName');
+        await outFile.writeAsBytes(resp.data);
 
-      // Не await — share_plus на macOS/iPad зависает при "Сохранить в файлы"
-      SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          subject: 'Квитанции ЖКУ',
-          sharePositionOrigin: origin,
-        ),
-      );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ Сохранено: ${outFile.path}'),
+              backgroundColor: Colors.green,
+              action: SnackBarAction(
+                label: 'Открыть',
+                textColor: Colors.white,
+                onPressed: () {
+                  if (Platform.isWindows) {
+                    Process.run('explorer', [outFile.path]);
+                  } else if (Platform.isMacOS) {
+                    Process.run('open', [outFile.path]);
+                  } else {
+                    Process.run('xdg-open', [outFile.path]);
+                  }
+                },
+              ),
+            ),
+          );
+        }
+      } else {
+        // Mobile: share
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/$safeName');
+        await file.writeAsBytes(resp.data);
+
+        final box = context.findRenderObject() as RenderBox?;
+        final origin = box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : const Rect.fromLTWH(0, 0, 100, 100);
+
+        SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path)],
+            subject: 'Квитанции ЖКУ',
+            sharePositionOrigin: origin,
+          ),
+        );
+      }
     } catch (e) {
       _showError('$e');
     } finally {
