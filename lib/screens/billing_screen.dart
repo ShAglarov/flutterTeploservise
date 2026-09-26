@@ -37,7 +37,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
   static const Map<String, String> serviceLabels = {
     'heating': 'Отопление',
     'hot_water': 'Горячая вода',
-    'maintenance': 'Теплообслуживание',
+    'maintenance': 'Техобслуживание',
     'waste': 'ТБО',
     'odn_electricity': 'ОДН Электричество',
     'odn_water': 'ОДН Вода',

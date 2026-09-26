@@ -1384,7 +1384,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
 
               _buildServiceSection('🔥 Отопление', {'Долг на начало': doc['debt_heating_start'], 'Начислено': doc['charged_heating'], 'Оплачено': doc['paid_heating'], 'Перерасчёт': doc['recalc_heating'], 'Долг на конец': doc['debt_heating_end']}),
               _buildServiceSection('💧 ГВС', {'Долг на начало': doc['debt_hot_water_start'], 'Начислено': doc['charged_hot_water'], 'Оплачено': doc['paid_hot_water'], 'Перерасчёт': doc['recalc_hot_water'], 'Долг на конец': doc['debt_hot_water_end']}),
-              _buildServiceSection('🏠 Теплообслуживание', {'Долг на начало': doc['debt_maintenance_start'], 'Начислено': doc['charged_maintenance'], 'Оплачено': doc['paid_maintenance'], 'Перерасчёт': doc['recalc_maintenance'], 'Долг на конец': doc['debt_maintenance_end']}),
+              _buildServiceSection('🏠 Техобслуживание', {'Долг на начало': doc['debt_maintenance_start'], 'Начислено': doc['charged_maintenance'], 'Оплачено': doc['paid_maintenance'], 'Перерасчёт': doc['recalc_maintenance'], 'Долг на конец': doc['debt_maintenance_end']}),
               _buildServiceSection('🗑 ТБО', {'Долг на начало': doc['debt_waste_start'], 'Начислено': doc['charged_waste'], 'Оплачено': doc['paid_waste'], 'Перерасчёт': doc['recalc_waste'], 'Долг на конец': doc['debt_waste_end']}),
               _buildServiceSection('⚡ ОДН Электричество', {'Долг на начало': doc['debt_odn_electricity_start'], 'Начислено': doc['charged_odn_electricity'], 'Оплачено': doc['paid_odn_electricity'], 'Перерасчёт': doc['recalc_odn_electricity'], 'Долг на конец': doc['debt_odn_electricity_end']}),
               _buildServiceSection('💧 ОДН Вода', {'Долг на начало': doc['debt_odn_water_start'], 'Начислено': doc['charged_odn_water'], 'Оплачено': doc['paid_odn_water'], 'Перерасчёт': doc['recalc_odn_water'], 'Долг на конец': doc['debt_odn_water_end']}),
@@ -1823,7 +1823,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
         _EditField('recalc_hot_water', 'Перерасчёт', doc['recalc_hot_water']),
         _EditField('debt_hot_water_end', 'Долг на конец', doc['debt_hot_water_end']),
       ],
-      '🏠 Теплообслуживание': [
+      '🏠 Техобслуживание': [
         _EditField('debt_maintenance_start', 'Долг на начало', doc['debt_maintenance_start']),
         _EditField('charged_maintenance', 'Начислено', doc['charged_maintenance']),
         _EditField('paid_maintenance', 'Оплачено', doc['paid_maintenance']),

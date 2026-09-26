@@ -65,7 +65,7 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
   static const Map<String, String> _serviceLabels = {
     'heating': 'Отопление',
     'hot_water': 'Горячая вода',
-    'maintenance': 'Теплообслуживание',
+    'maintenance': 'Техобслуживание',
     'waste': 'ТБО',
     'odn_electricity': 'ОДН электр.',
     'odn_water': 'ОДН вода',

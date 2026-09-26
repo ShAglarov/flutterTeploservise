@@ -358,7 +358,7 @@ class PaymentDocumentsLocal extends Table {
   RealColumn get recalcHotWater => real().nullable().withDefault(const Constant(0.0))();
   RealColumn get debtHotWaterEnd => real().nullable().withDefault(const Constant(0.0))();
   
-  // Теплообслуживание
+  // Техобслуживание
   RealColumn get debtMaintenanceStart => real().nullable().withDefault(const Constant(0.0))();
   RealColumn get chargedMaintenance => real().nullable().withDefault(const Constant(0.0))();
   RealColumn get paidMaintenance => real().nullable().withDefault(const Constant(0.0))();

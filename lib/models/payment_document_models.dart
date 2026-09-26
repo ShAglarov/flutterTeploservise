@@ -34,7 +34,7 @@ class PaymentDocument {
   @JsonKey(name: 'debt_hot_water_end')
   final double debtHotWaterEnd;
 
-  // Теплообслуживание
+  // Техобслуживание
   @JsonKey(name: 'debt_maintenance_start')
   final double debtMaintenanceStart;
   @JsonKey(name: 'charged_maintenance')
