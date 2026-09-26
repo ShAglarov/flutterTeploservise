@@ -1936,45 +1936,8 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                     ],
                   ),
 
-                // Покрытие периодов — группируем в диапазоны
-                if (coverage.isNotEmpty) ...[
-                  pw.SizedBox(height: 8),
-                  pw.Divider(),
-                  pw.SizedBox(height: 4),
-                  pw.Text('Расчёт по периодам:', style: pw.TextStyle(font: ttf, fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                  pw.SizedBox(height: 3),
-                  ...() {
-                    final groups = <Map<String, dynamic>>[];
-                    for (final c in coverage) {
-                      final status = c['status'] as String? ?? '';
-                      if (status == 'partial' || groups.isEmpty || groups.last['status'] != status) {
-                        groups.add({'status': status, 'status_label': c['status_label'], 'first_label': c['period_label'], 'last_label': c['period_label'], 'count': 1});
-                      } else {
-                        groups.last['last_label'] = c['period_label'];
-                        groups.last['count'] = (groups.last['count'] as int) + 1;
-                      }
-                    }
-                    return groups.map((g) {
-                      final status = g['status'] as String;
-                      final color = status == 'paid' ? PdfColors.green700
-                          : status == 'partial' ? PdfColors.orange700
-                          : PdfColors.red700;
-                      final marker = status == 'paid' ? '✓' : status == 'partial' ? '◐' : '✗';
-                      final count = g['count'] as int;
-                      final label = count == 1
-                          ? (g['first_label'] as String? ?? '')
-                          : 'с ${g['first_label']} по ${g['last_label']}';
-                      return pw.Padding(
-                        padding: const pw.EdgeInsets.symmetric(vertical: 1),
-                        child: pw.Row(children: [
-                          pw.Text('$marker ', style: pw.TextStyle(font: ttf, fontSize: 9, color: color)),
-                          pw.Expanded(child: pw.Text(label, style: pw.TextStyle(font: ttf, fontSize: 9))),
-                          pw.Text(g['status_label'] as String? ?? '', style: pw.TextStyle(font: ttf, fontSize: 8, color: color)),
-                        ]),
-                      );
-                    }).toList();
-                  }(),
-                ],
+
+                // Покрытие периодов — скрыто в PDF (отображается только в приложении)
 
                 // QR код
                 if (qrImage != null) ...[
