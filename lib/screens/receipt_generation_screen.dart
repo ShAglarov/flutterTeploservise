@@ -26,6 +26,9 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
   bool _isGenerating = false;
   String _generationType = 'by_house'; // by_house, by_account
 
+  List<Map<String, dynamic>> _orgs = [];
+  Map<String, dynamic>? _selectedOrg;
+
   final _accountIdCtrl = TextEditingController();
 
   @override
@@ -33,6 +36,7 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
     super.initState();
     _loadLocations();
     _loadPeriods();
+    _loadOrgs();
   }
 
   @override
@@ -67,6 +71,27 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
       }
     } catch (e) {
       debugPrint('Error loading locations: $e');
+    }
+  }
+
+  Future<void> _loadOrgs() async {
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get('/org-requisites/');
+      if (mounted) {
+        final list = List<Map<String, dynamic>>.from(resp.data);
+        setState(() {
+          _orgs = list;
+          // Выбрать дефолтную или первую
+          _selectedOrg = list.firstWhere(
+            (o) => o['is_default'] == 1,
+            orElse: () => list.isNotEmpty ? list.first : <String, dynamic>{},
+          );
+          if (_selectedOrg != null && _selectedOrg!.isEmpty) _selectedOrg = null;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading orgs: $e');
     }
   }
 
@@ -184,20 +209,32 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
           _showError('Укажите номер лицевого счёта');
           return;
         }
+        final params = <String, dynamic>{};
+        if (_selectedPeriod != null) params['period'] = _selectedPeriod;
+        if (_selectedOrg != null) params['org_id'] = _selectedOrg!['id'];
         resp = await dio.get(
           '/receipts/by-account/$accountId',
-          queryParameters: _selectedPeriod != null ? {'period': _selectedPeriod} : null,
-          options: Options(responseType: ResponseType.bytes),
+          queryParameters: params.isNotEmpty ? params : null,
+          options: Options(
+            responseType: ResponseType.bytes,
+            receiveTimeout: const Duration(minutes: 5),
+          ),
         );
       } else {
         if (_selectedLocation == null) {
           _showError('Выберите дом');
           return;
         }
+        final params = <String, dynamic>{};
+        if (_selectedPeriod != null) params['period'] = _selectedPeriod;
+        if (_selectedOrg != null) params['org_id'] = _selectedOrg!['id'];
         resp = await dio.get(
           '/receipts/by-location/${_selectedLocation!['id']}',
-          queryParameters: _selectedPeriod != null ? {'period': _selectedPeriod} : null,
-          options: Options(responseType: ResponseType.bytes),
+          queryParameters: params.isNotEmpty ? params : null,
+          options: Options(
+            responseType: ResponseType.bytes,
+            receiveTimeout: const Duration(minutes: 5),
+          ),
         );
       }
 
@@ -209,8 +246,21 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
       final file = File('${dir.path}/$filename');
       await file.writeAsBytes(resp.data);
 
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(file.path)], subject: 'Квитанции ЖКУ'),
+      // Сбрасываем индикатор ДО share — share_plus может не вернуть Future
+      if (mounted) setState(() => _isGenerating = false);
+
+      final box = context.findRenderObject() as RenderBox?;
+      final origin = box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : const Rect.fromLTWH(0, 0, 100, 100);
+
+      // Не await — share_plus на macOS/iPad зависает при "Сохранить в файлы"
+      SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'Квитанции ЖКУ',
+          sharePositionOrigin: origin,
+        ),
       );
     } catch (e) {
       _showError('$e');
@@ -306,6 +356,25 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
                     },
                   ),
                   const SizedBox(height: 12),
+
+                  // Организация
+                  if (_orgs.isNotEmpty)
+                    DropdownButtonFormField<int>(
+                      value: _selectedOrg?['id'] as int?,
+                      decoration: InputDecoration(
+                        labelText: 'Организация',
+                        prefixIcon: const Icon(Icons.business),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: _orgs.map((o) => DropdownMenuItem<int>(
+                        value: o['id'] as int,
+                        child: Text(o['org_name'] ?? 'Без имени', overflow: TextOverflow.ellipsis),
+                      )).toList(),
+                      onChanged: (v) {
+                        setState(() => _selectedOrg = _orgs.firstWhere((o) => o['id'] == v));
+                      },
+                    ),
+                  if (_orgs.isNotEmpty) const SizedBox(height: 12),
 
                   if (_generationType == 'by_house') ...[
                     // Дом — с поиском
