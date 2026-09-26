@@ -79,6 +79,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Future<void> _confirmDeleteAllDocs() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Row(children: [
+          Icon(Icons.warning_amber, color: Colors.red, size: 28),
+          const SizedBox(width: 8),
+          Text('Удалить ВСЕ документы?', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 18)),
+        ]),
+        content: Text(
+          'Будут удалены ВСЕ платёжные документы и кассирские операции. '
+          'Это действие необратимо!\n\n'
+          'После удаления загрузите данные заново через Импорт XLS.',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('УДАЛИТЬ ВСЁ', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.delete('/payment-documents/delete-all', queryParameters: {'confirm': 'YES'});
+      final data = resp.data as Map<String, dynamic>? ?? {};
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('🗑️ Удалено: ${data['deleted_documents'] ?? 0} документов, ${data['deleted_operations'] ?? 0} операций'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('❌ Ошибка: $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
   Future<void> _handleLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -474,6 +524,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 MaterialPageRoute(builder: (_) => const AuditFinanceScreen()),
               );
             },
+          ),
+          _buildDivider(),
+          _buildNavRow(
+            icon: Icons.delete_forever,
+            iconColor: Colors.red,
+            title: 'Удалить все документы',
+            subtitle: 'Полная очистка платёжных документов и операций',
+            onTap: () => _confirmDeleteAllDocs(),
           ),
         ]),
         _buildSectionFooter('Просмотр, анализ и загрузка платёжных документов'),
