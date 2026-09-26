@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/base_api_service.dart';
@@ -24,7 +25,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
 
   // Результат
   bool _isCharging = false;
+  bool _isUndoing = false;
   Map<String, dynamic>? _result;
+  Map<String, dynamic>? _undoResult;
   String? _error;
 
   // История начислений (последние)
@@ -163,10 +166,99 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
       if (resp.statusCode == 200) {
         setState(() => _result = resp.data as Map<String, dynamic>);
       }
+    } on DioException catch (e) {
+      final detail = e.response?.data;
+      String msg;
+      if (detail is Map && detail.containsKey('detail')) {
+        msg = detail['detail'].toString();
+      } else if (detail is String && detail.isNotEmpty) {
+        msg = detail;
+      } else {
+        msg = 'Ошибка сервера: ${e.response?.statusCode ?? "нет ответа"}';
+      }
+      setState(() => _error = msg);
     } catch (e) {
       setState(() => _error = e.toString());
     }
     setState(() => _isCharging = false);
+  }
+
+  Future<void> _undoMassCharge() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.undo, size: 48, color: Colors.red),
+        title: const Text('Отмена начислений'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _infoRow(Icons.calendar_today, 'Период', _formatPeriod(_selectedDate)),
+            const SizedBox(height: 8),
+            _infoRow(Icons.home, 'Дом', _selectedLocationName),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.withAlpha(80)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.red, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Будут отменены все начисления из последнего массового начисления за выбранный период.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Нет')),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.undo, size: 18),
+            label: const Text('Отменить начисления'),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() { _isUndoing = true; _undoResult = null; _error = null; });
+
+    try {
+      final dio = ref.read(dioProvider);
+      final body = <String, dynamic>{
+        'period_date': _selectedDate.toIso8601String().substring(0, 10),
+      };
+      if (_selectedLocationId != null) body['location_id'] = _selectedLocationId;
+
+      final resp = await dio.post('/tariffs/mass-charge/undo', data: body);
+      if (resp.statusCode == 200) {
+        setState(() => _undoResult = resp.data as Map<String, dynamic>);
+      }
+    } on DioException catch (e) {
+      final detail = e.response?.data;
+      String msg;
+      if (detail is Map && detail.containsKey('detail')) {
+        msg = detail['detail'].toString();
+      } else if (detail is String && detail.isNotEmpty) {
+        msg = detail;
+      } else {
+        msg = 'Ошибка сервера: ${e.response?.statusCode ?? "нет ответа"}';
+      }
+      setState(() => _error = msg);
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+    setState(() => _isUndoing = false);
   }
 
   String _formatPeriod(DateTime d) {
@@ -237,10 +329,37 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
               ),
             ),
 
+            const SizedBox(height: 12),
+
+            // ═══════ Кнопка отмены ═══════
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: (_isUndoing || _isCharging) ? null : _undoMassCharge,
+                icon: _isUndoing
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.undo, size: 20),
+                label: Text(
+                  _isUndoing ? 'Отмена...' : 'Отменить последнее начисление',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+
             // ═══════ Результат ═══════
             if (_result != null) ...[
               const SizedBox(height: 24),
               _buildResultCard(theme, isDark),
+            ],
+            if (_undoResult != null) ...[
+              const SizedBox(height: 24),
+              _buildUndoResultCard(theme),
             ],
             if (_error != null) ...[
               const SizedBox(height: 24),
@@ -471,6 +590,55 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 );
               }),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUndoResultCard(ThemeData theme) {
+    final r = _undoResult!;
+    final undoneCount = r['undone_count'] as int? ?? 0;
+    final totalUndone = (r['total_undone'] as num?)?.toDouble() ?? 0;
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.orange, width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withAlpha(30),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.undo, color: Colors.orange, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Начисления отменены', style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700, color: Colors.orange,
+                  )),
+                  Text(
+                    '$undoneCount операций отменено',
+                    style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '-${totalUndone.toStringAsFixed(2)} ₽',
+              style: const TextStyle(
+                fontSize: 20, fontWeight: FontWeight.w800, color: Colors.orange,
+              ),
+            ),
           ],
         ),
       ),

@@ -93,19 +93,10 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
         limit: _pageSize,
         offset: _offset,
         userId: _selectedUserId,
-        entityType: _selectedCategory,
+        entityType: _selectedCategory ?? 'account,payment_document',
         actionType: _selectedActionType,
         search: _searchQuery.isEmpty ? null : _searchQuery,
       );
-
-  /// Фильтрует записи, оставляя только account и payment_document
-  List<ActionLogEntry> _filterFinanceOnly(List<ActionLogEntry> logs) {
-    if (_selectedCategory != null) return logs;
-    return logs
-        .where((l) =>
-            l.entityType == 'account' || l.entityType == 'payment_document')
-        .toList();
-  }
 
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore) return;
@@ -116,14 +107,13 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
         limit: _pageSize,
         offset: _offset + _pageSize,
         userId: _selectedUserId,
-        entityType: _selectedCategory,
+        entityType: _selectedCategory ?? 'account,payment_document',
         actionType: _selectedActionType,
         search: _searchQuery.isEmpty ? null : _searchQuery,
       );
-      final filtered = _filterFinanceOnly(newLogs);
       setState(() {
         _offset += _pageSize;
-        _allLogs.addAll(filtered);
+        _allLogs.addAll(newLogs);
         _hasMore = newLogs.length >= _pageSize;
         _isLoadingMore = false;
       });
@@ -222,7 +212,7 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
         skipLoadingOnReload: true,
         data: (firstPage) {
           if (_offset == 0 && _allLogs.isEmpty) {
-            _allLogs = List.from(_filterFinanceOnly(firstPage));
+            _allLogs = List.from(firstPage);
             _hasMore = firstPage.length >= _pageSize;
           }
           return _buildLogList();
