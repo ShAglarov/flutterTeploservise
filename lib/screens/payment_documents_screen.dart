@@ -82,13 +82,21 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     if (widget.accountId != null) params['account_id'] = widget.accountId;
     if (_selectedPeriod != null) params['period_date'] = _selectedPeriod;
     if (_selectedLocationId != null) params['location_id'] = _selectedLocationId;
-    if (_searchController.text.trim().isNotEmpty) params['search'] = _searchController.text.trim();
+    if (_searchController.text.trim().isNotEmpty) {
+      params['search'] = _searchController.text.trim();
+      // При поиске дом,кв — сортировать по квартире
+      if (RegExp(r'^\d+\s*[,.]\s*\d+$').hasMatch(_searchController.text.trim())) {
+        params['sort_by'] = 'apartment';
+        params['sort_order'] = 'asc';
+      }
+    } else {
+      params['sort_by'] = _sortBy;
+      params['sort_order'] = _sortOrder;
+    }
     if (_hasDebt) params['has_debt'] = true;
     if (_hasOverpayment) params['has_overpayment'] = true;
     if (_minDebt != null) params['min_debt'] = _minDebt;
     if (_maxDebt != null) params['max_debt'] = _maxDebt;
-    params['sort_by'] = _sortBy;
-    params['sort_order'] = _sortOrder;
     return params;
   }
 
@@ -1041,7 +1049,6 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                     Text(
                       '${doc['account_number'] ?? '-'}  •  ${doc['address'] ?? ''}',
                       style: TextStyle(fontSize: isWide ? 12 : 11, color: theme.colorScheme.onSurfaceVariant),
-                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 6),
                     // Мини-баланс

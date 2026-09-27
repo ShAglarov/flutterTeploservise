@@ -1518,7 +1518,21 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                   _receiptRow('Плательщик:', receiptData?['fio'] ?? d['fio'] ?? '—'),
                   _receiptRow('Лицевой счёт:', receiptData?['account_number'] ?? d['account_number'] ?? '—'),
                   _receiptRow('Адрес:', receiptData?['address'] ?? d['address'] ?? '—'),
-                  _receiptRow('Период:', periodLabel),
+                  // Период оплаты — только периоды покрытые ЭТОЙ оплатой
+                  ...() {
+                    if (periodCoverage.isNotEmpty) {
+                      final paidPeriods = periodCoverage.where((c) =>
+                        c['covered_by_payment'] == true
+                      ).toList();
+                      if (paidPeriods.isNotEmpty) {
+                        final first = paidPeriods.first['period_label'] as String? ?? '';
+                        final last = paidPeriods.last['period_label'] as String? ?? '';
+                        final label = first == last ? first : 'от $first по $last';
+                        return [_receiptRow('Период:', label)];
+                      }
+                    }
+                    return [_receiptRow('Период:', periodLabel)];
+                  }(),
                   if ((receiptData?['area'] ?? d['area']) != null)
                     _receiptRow('Площадь:', '${receiptData?['area'] ?? d['area']} м²'),
 
@@ -1864,7 +1878,17 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 _pdfInfoRow('Плательщик:', d['fio'] ?? '—', ttf),
                 _pdfInfoRow('Лицевой счёт:', d['account_number'] ?? '—', ttf),
                 _pdfInfoRow('Адрес:', d['address'] ?? '—', ttf),
-                _pdfInfoRow('Период:', d['period_label'] ?? _formatPeriod(d['period_date']), ttf),
+                // Период оплаты — только периоды покрытые ЭТОЙ оплатой
+                ...() {
+                  final paidP = coverage.where((c) => c['covered_by_payment'] == true).toList();
+                  if (paidP.isNotEmpty) {
+                    final first = paidP.first['period_label'] as String? ?? '';
+                    final last = paidP.last['period_label'] as String? ?? '';
+                    final lbl = first == last ? first : 'от $first по $last';
+                    return [_pdfInfoRow('Период:', lbl, ttf)];
+                  }
+                  return [_pdfInfoRow('Период:', d['period_label'] ?? _formatPeriod(d['period_date']), ttf)];
+                }(),
                 if (d['area'] != null) _pdfInfoRow('Площадь:', '${d['area']} м²', ttf),
 
                 pw.SizedBox(height: 10),
