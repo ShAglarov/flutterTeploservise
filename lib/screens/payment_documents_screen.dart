@@ -173,6 +173,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
   Future<void> _exportFile(String format) async {
     // Для досудебных — показываем диалог настроек
     final isDosudebnoye = format == 'dosudebnoye' || format == 'obshee-dosudebnoye';
+    final isCourtOrder = format == 'court-order';
     Map<String, String> extraParams = {};
 
     if (isDosudebnoye) {
@@ -181,8 +182,16 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
       extraParams = result;
     }
 
+    if (isCourtOrder) {
+      final result = await _showCourtOrderSettings();
+      if (result == null) return;
+      extraParams = result;
+    }
+
     final extMap = {'excel': 'xlsx', 'baosna-xml': 'xml', 'baosna-json': 'json', 'baosna-xls': 'xlsx'};
-    final ext = extMap[format] ?? 'pdf';
+    final ext = isCourtOrder
+        ? (extraParams['output_format'] == 'single' ? 'docx' : 'zip')
+        : (extMap[format] ?? 'pdf');
     final namePrefix = {
       'excel': 'payment_docs',
       'baosna-xml': 'baosna',
@@ -191,6 +200,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
       'pdf': 'payment_docs',
       'dosudebnoye': 'dosudebnoye',
       'obshee-dosudebnoye': 'obshee_dosudebnoye',
+      'court-order': 'court_orders',
     }[format] ?? 'export';
     final defaultName = '${namePrefix}_${DateTime.now().millisecondsSinceEpoch}.$ext';
 
@@ -660,6 +670,241 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     );
   }
 
+  Future<Map<String, String>?> _showCourtOrderSettings() async {
+    // Загружаем реквизиты организации
+    List<Map<String, dynamic>> allRequisites = [];
+    Map<String, dynamic> defaults = {};
+    final dio = ref.read(dioProvider);
+
+    try {
+      final resp = await dio.get('/org-requisites/');
+      if (resp.statusCode == 200 && resp.data is List) {
+        allRequisites = (resp.data as List).map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (_) {}
+
+    for (final r in allRequisites) {
+      if (r['is_default'] == 1) { defaults = r; break; }
+    }
+    if (defaults.isEmpty && allRequisites.isNotEmpty) defaults = allRequisites.first;
+
+    final orgNameCtrl = TextEditingController(text: (defaults['org_name'] as String?) ?? 'ООО УК «Стандарт-Сервис»');
+    final directorTitleCtrl = TextEditingController(text: (defaults['director_title'] as String?) ?? 'Генеральный директор');
+    final directorNameCtrl = TextEditingController(text: (defaults['director_name'] as String?) ?? 'Агларов Ш.Р.');
+    final cityCtrl = TextEditingController(text: (defaults['city'] as String?) ?? 'г. Махачкала');
+    final orgAddressCtrl = TextEditingController(text: (defaults['address'] as String?) ?? '');
+    final orgInnCtrl = TextEditingController(text: (defaults['inn'] as String?) ?? '');
+    final orgOgrnCtrl = TextEditingController(text: (defaults['ogrn'] as String?) ?? '');
+    final bankNameCtrl = TextEditingController(text: (defaults['bank_name'] as String?) ?? '');
+    final bikCtrl = TextEditingController(text: (defaults['bik'] as String?) ?? '');
+    final bankAccountCtrl = TextEditingController(text: (defaults['account_number'] as String?) ?? '');
+    final corrAccountCtrl = TextEditingController(text: (defaults['corr_account'] as String?) ?? '');
+    final courtNameCtrl = TextEditingController(text: 'судебного участка №11');
+    final courtAddressCtrl = TextEditingController(text: 'г. Махачкала');
+    final contractDateCtrl = TextEditingController(text: '23.07.2022');
+    final tariffCtrl = TextEditingController(text: '12.00');
+    final periodFromCtrl = TextEditingController(text: '23.07.2022');
+    final periodToCtrl = TextEditingController(text: '30.04.2026');
+    final representativeCtrl = TextEditingController(text: 'Амирбеков М.Г.');
+
+    int? selectedReqId = defaults.isNotEmpty ? (defaults['id'] as int?) : null;
+    String outputFormat = 'zip';
+    bool excludePromises = true;
+    bool excludePayers = true;
+    final excludeFioCtrl = TextEditingController();
+
+    void _fillFromRequisites(Map<String, dynamic> r, void Function(void Function()) setState) {
+      orgNameCtrl.text = (r['org_name'] as String?) ?? '';
+      directorTitleCtrl.text = (r['director_title'] as String?) ?? '';
+      directorNameCtrl.text = (r['director_name'] as String?) ?? '';
+      cityCtrl.text = (r['city'] as String?) ?? '';
+      orgAddressCtrl.text = (r['address'] as String?) ?? '';
+      orgInnCtrl.text = (r['inn'] as String?) ?? '';
+      orgOgrnCtrl.text = (r['ogrn'] as String?) ?? '';
+      bankNameCtrl.text = (r['bank_name'] as String?) ?? '';
+      bikCtrl.text = (r['bik'] as String?) ?? '';
+      bankAccountCtrl.text = (r['account_number'] as String?) ?? '';
+      corrAccountCtrl.text = (r['corr_account'] as String?) ?? '';
+      selectedReqId = r['id'] as int?;
+      setState(() {});
+    }
+
+    return showDialog<Map<String, String>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('⚖️ Судебный приказ'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Выбор организации
+                  const Text('Взыскатель', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  if (allRequisites.length > 1) ...[
+                    DropdownButtonFormField<int>(
+                      initialValue: selectedReqId,
+                      decoration: const InputDecoration(
+                        labelText: 'Выбрать организацию',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        prefixIcon: Icon(Icons.business, size: 18),
+                      ),
+                      items: allRequisites.map((r) => DropdownMenuItem<int>(
+                        value: r['id'] as int,
+                        child: Text(
+                          (r['org_name'] as String?) ?? '—',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )).toList(),
+                      onChanged: (id) {
+                        if (id == null) return;
+                        final r = allRequisites.firstWhere((e) => e['id'] == id, orElse: () => {});
+                        if (r.isNotEmpty) _fillFromRequisites(r, setDialogState);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  TextField(controller: orgNameCtrl, decoration: const InputDecoration(labelText: 'Название (по ЕГРЮЛ)', border: OutlineInputBorder(), isDense: true)),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(controller: orgInnCtrl, decoration: const InputDecoration(labelText: 'ИНН', border: OutlineInputBorder(), isDense: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: orgOgrnCtrl, decoration: const InputDecoration(labelText: 'ОГРН', border: OutlineInputBorder(), isDense: true))),
+                  ]),
+                  const SizedBox(height: 8),
+                  TextField(controller: orgAddressCtrl, decoration: const InputDecoration(labelText: 'Юр. адрес', border: OutlineInputBorder(), isDense: true)),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(controller: bankNameCtrl, decoration: const InputDecoration(labelText: 'Банк', border: OutlineInputBorder(), isDense: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: bikCtrl, decoration: const InputDecoration(labelText: 'БИК', border: OutlineInputBorder(), isDense: true))),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(controller: bankAccountCtrl, decoration: const InputDecoration(labelText: 'Р/с', border: OutlineInputBorder(), isDense: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: corrAccountCtrl, decoration: const InputDecoration(labelText: 'К/с', border: OutlineInputBorder(), isDense: true))),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(controller: directorTitleCtrl, decoration: const InputDecoration(labelText: 'Должность', border: OutlineInputBorder(), isDense: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: directorNameCtrl, decoration: const InputDecoration(labelText: 'ФИО руководителя', border: OutlineInputBorder(), isDense: true))),
+                  ]),
+
+                  const SizedBox(height: 16),
+                  const Text('Суд', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  TextField(controller: courtNameCtrl, decoration: const InputDecoration(labelText: 'Судебный участок', border: OutlineInputBorder(), isDense: true)),
+                  const SizedBox(height: 8),
+                  TextField(controller: courtAddressCtrl, decoration: const InputDecoration(labelText: 'Адрес суда', border: OutlineInputBorder(), isDense: true)),
+
+                  const SizedBox(height: 16),
+                  const Text('Параметры расчёта', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Expanded(child: TextField(controller: contractDateCtrl, decoration: const InputDecoration(labelText: 'Дата договора', border: OutlineInputBorder(), isDense: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: tariffCtrl, decoration: const InputDecoration(labelText: 'Тариф ₽/м²', border: OutlineInputBorder(), isDense: true), keyboardType: TextInputType.number)),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(controller: periodFromCtrl, decoration: const InputDecoration(labelText: 'Период с', border: OutlineInputBorder(), isDense: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: periodToCtrl, decoration: const InputDecoration(labelText: 'Период по', border: OutlineInputBorder(), isDense: true))),
+                  ]),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(controller: representativeCtrl, decoration: const InputDecoration(labelText: 'Представитель', border: OutlineInputBorder(), isDense: true))),
+                    const SizedBox(width: 8),
+                    Expanded(child: TextField(controller: cityCtrl, decoration: const InputDecoration(labelText: 'Город', border: OutlineInputBorder(), isDense: true))),
+                  ]),
+
+                  const SizedBox(height: 16),
+                  const Text('Формат выгрузки', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    ChoiceChip(
+                      label: const Text('ZIP (отдельные файлы)'),
+                      selected: outputFormat == 'zip',
+                      onSelected: (_) => setDialogState(() => outputFormat = 'zip'),
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('Один DOCX'),
+                      selected: outputFormat == 'single',
+                      onSelected: (_) => setDialogState(() => outputFormat = 'single'),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 16),
+                  const Text('Фильтры', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  CheckboxListTile(
+                    dense: true, contentPadding: EdgeInsets.zero,
+                    title: const Text('Исключить с обещаниями', style: TextStyle(fontSize: 13)),
+                    value: excludePromises,
+                    onChanged: (v) => setDialogState(() => excludePromises = v ?? false),
+                  ),
+                  CheckboxListTile(
+                    dense: true, contentPadding: EdgeInsets.zero,
+                    title: const Text('Исключить платящих', style: TextStyle(fontSize: 13)),
+                    value: excludePayers,
+                    onChanged: (v) => setDialogState(() => excludePayers = v ?? false),
+                  ),
+                  TextField(
+                    controller: excludeFioCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Исключить ФИО (через запятую)',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+            FilledButton.icon(
+              icon: const Icon(Icons.balance),
+              label: const Text('Сформировать'),
+              onPressed: () {
+                Navigator.pop(ctx, {
+                  'org_name': orgNameCtrl.text,
+                  'director_title': directorTitleCtrl.text,
+                  'director_name': directorNameCtrl.text,
+                  'city': cityCtrl.text,
+                  'org_address': orgAddressCtrl.text,
+                  'org_inn': orgInnCtrl.text,
+                  'org_ogrn': orgOgrnCtrl.text,
+                  'court_name': courtNameCtrl.text,
+                  'court_address': courtAddressCtrl.text,
+                  'contract_date': contractDateCtrl.text,
+                  'tariff_per_sqm': tariffCtrl.text,
+                  'period_from': periodFromCtrl.text,
+                  'period_to': periodToCtrl.text,
+                  'representative_name': representativeCtrl.text,
+                  'bank_name': bankNameCtrl.text,
+                  'bik': bikCtrl.text,
+                  'bank_account': bankAccountCtrl.text,
+                  'corr_account': corrAccountCtrl.text,
+                  'output_format': outputFormat,
+                  'exclude_promises': excludePromises.toString(),
+                  'exclude_payers': excludePayers.toString(),
+                  if (excludeFioCtrl.text.trim().isNotEmpty)
+                    'exclude_fio': excludeFioCtrl.text.trim(),
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -683,6 +928,7 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'dosudebnoye', child: ListTile(leading: Icon(Icons.gavel, color: Colors.orange), title: Text('Досудебное (личное)'))),
               const PopupMenuItem(value: 'obshee-dosudebnoye', child: ListTile(leading: Icon(Icons.list_alt, color: Colors.deepOrange), title: Text('Досудебное (общее)'))),
+              const PopupMenuItem(value: 'court-order', child: ListTile(leading: Icon(Icons.balance, color: Colors.indigo), title: Text('Судебный приказ (DOCX)'))),
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'baosna-xml', child: ListTile(leading: Icon(Icons.code, color: Colors.teal), title: Text('БАОСНА (XML)'))),
               const PopupMenuItem(value: 'baosna-json', child: ListTile(leading: Icon(Icons.data_object, color: Colors.indigo), title: Text('БАОСНА (JSON)'))),

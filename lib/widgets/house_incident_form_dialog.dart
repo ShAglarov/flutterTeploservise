@@ -527,7 +527,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
       'Предписание надзорного органа',
       'Стихийное бедствие',
       // Всегда последним
-      'Иное',
+      'Другое (свой вариант)',
     ];
 
     showModalBottomSheet(
@@ -549,7 +549,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                   itemCount: incidentTypes.length,
                   itemBuilder: (context, index) {
                     final type = incidentTypes[index];
-                    final isSelected = state.title == type || (state.title.isEmpty && type == 'Иное');
+                    final isSelected = state.title == type || (state.title.isNotEmpty && !incidentTypes.contains(state.title) && type == 'Другое (свой вариант)');
                     return ListTile(
                       title: Text(
                         type,
@@ -557,8 +557,13 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                         textAlign: TextAlign.center,
                       ),
                       onTap: () {
-                        controller.updateTitle(type);
-                        Navigator.pop(context);
+                        if (type == 'Другое (свой вариант)') {
+                          Navigator.pop(context);
+                          _showCustomIncidentInput(context, controller, state);
+                        } else {
+                          controller.updateTitle(type);
+                          Navigator.pop(context);
+                        }
                       },
                     );
                   },
@@ -568,6 +573,46 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
           ),
         );
       },
+    );
+  }
+
+  void _showCustomIncidentInput(
+    BuildContext context,
+    IncidentFormController controller,
+    IncidentFormState state,
+  ) {
+    final textCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Свой тип инцидента'),
+        content: TextField(
+          controller: textCtrl,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Опишите тип инцидента...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final text = textCtrl.text.trim();
+              if (text.isNotEmpty) {
+                controller.updateTitle(text);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Сохранить'),
+          ),
+        ],
+      ),
     );
   }
 

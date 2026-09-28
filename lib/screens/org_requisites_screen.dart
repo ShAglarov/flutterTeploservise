@@ -103,6 +103,7 @@ class _OrgRequisitesScreenState extends ConsumerState<OrgRequisitesScreen> {
     final bikCtrl = TextEditingController(text: existing?['bik'] ?? '');
     final accCtrl = TextEditingController(text: existing?['account_number'] ?? '');
     final innCtrl = TextEditingController(text: existing?['inn'] ?? '');
+    final ogrnCtrl = TextEditingController(text: existing?['ogrn'] ?? '');
     final kppCtrl = TextEditingController(text: existing?['kpp'] ?? '');
     final bankCtrl = TextEditingController(text: existing?['bank_name'] ?? '');
     final corrCtrl = TextEditingController(text: existing?['corr_account'] ?? '');
@@ -126,6 +127,7 @@ class _OrgRequisitesScreenState extends ConsumerState<OrgRequisitesScreen> {
                 _field(bikCtrl, 'БИК', Icons.numbers),
                 _field(accCtrl, 'Расчётный счёт', Icons.account_balance),
                 _field(innCtrl, 'ИНН', Icons.badge),
+                _field(ogrnCtrl, 'ОГРН', Icons.verified),
                 _field(kppCtrl, 'КПП', Icons.badge_outlined),
                 _field(bankCtrl, 'Название банка', Icons.account_balance_wallet),
                 _field(corrCtrl, 'Корр. счёт', Icons.swap_horiz),
@@ -156,6 +158,7 @@ class _OrgRequisitesScreenState extends ConsumerState<OrgRequisitesScreen> {
       'bik': bikCtrl.text,
       'account_number': accCtrl.text,
       'inn': innCtrl.text,
+      'ogrn': ogrnCtrl.text,
       'kpp': kppCtrl.text,
       'bank_name': bankCtrl.text,
       'corr_account': corrCtrl.text,
