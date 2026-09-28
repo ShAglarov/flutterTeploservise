@@ -1521,14 +1521,39 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                   // Период оплаты — только периоды покрытые ЭТОЙ оплатой
                   ...() {
                     if (periodCoverage.isNotEmpty) {
-                      final paidPeriods = periodCoverage.where((c) =>
+                      final coveredPeriods = periodCoverage.where((c) =>
                         c['covered_by_payment'] == true
                       ).toList();
-                      if (paidPeriods.isNotEmpty) {
-                        final first = paidPeriods.first['period_label'] as String? ?? '';
-                        final last = paidPeriods.last['period_label'] as String? ?? '';
-                        final label = first == last ? first : 'от $first по $last';
-                        return [_receiptRow('Период:', label)];
+                      if (coveredPeriods.isNotEmpty) {
+                        // Полностью оплаченные
+                        final fullPeriods = coveredPeriods.where((c) =>
+                          c['payment_covers_full'] == true
+                        ).toList();
+                        // Частично оплаченный (последний)
+                        final partialPeriod = coveredPeriods.where((c) =>
+                          c['payment_covers_full'] == false
+                        ).toList();
+
+                        final widgets = <Widget>[];
+
+                        if (fullPeriods.isNotEmpty) {
+                          final first = fullPeriods.first['period_label'] as String? ?? '';
+                          final last = fullPeriods.last['period_label'] as String? ?? '';
+                          final label = first == last ? first : 'от $first по $last';
+                          widgets.add(_receiptRow('Период (оплачен):', label));
+                        }
+
+                        if (partialPeriod.isNotEmpty) {
+                          final p = partialPeriod.first;
+                          final partialAmt = (p['payment_partial_amount'] as num?)?.toDouble() ?? 0;
+                          final ch = (p['charged'] as num?)?.toDouble() ?? 0;
+                          widgets.add(_receiptRow(
+                            'Частично:',
+                            '${p['period_label']} (${partialAmt.toStringAsFixed(2)}₽ из ${ch.toStringAsFixed(2)}₽)',
+                          ));
+                        }
+
+                        if (widgets.isNotEmpty) return widgets;
                       }
                     }
                     return [_receiptRow('Период:', periodLabel)];
@@ -1880,12 +1905,24 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 _pdfInfoRow('Адрес:', d['address'] ?? '—', ttf),
                 // Период оплаты — только периоды покрытые ЭТОЙ оплатой
                 ...() {
-                  final paidP = coverage.where((c) => c['covered_by_payment'] == true).toList();
-                  if (paidP.isNotEmpty) {
-                    final first = paidP.first['period_label'] as String? ?? '';
-                    final last = paidP.last['period_label'] as String? ?? '';
-                    final lbl = first == last ? first : 'от $first по $last';
-                    return [_pdfInfoRow('Период:', lbl, ttf)];
+                  final coveredP = coverage.where((c) => c['covered_by_payment'] == true).toList();
+                  if (coveredP.isNotEmpty) {
+                    final fullP = coveredP.where((c) => c['payment_covers_full'] == true).toList();
+                    final partialP = coveredP.where((c) => c['payment_covers_full'] == false).toList();
+                    final rows = <pw.Widget>[];
+                    if (fullP.isNotEmpty) {
+                      final first = fullP.first['period_label'] as String? ?? '';
+                      final last = fullP.last['period_label'] as String? ?? '';
+                      final lbl = first == last ? first : 'от $first по $last';
+                      rows.add(_pdfInfoRow('Период (оплачен):', lbl, ttf));
+                    }
+                    if (partialP.isNotEmpty) {
+                      final p = partialP.first;
+                      final amt = (p['payment_partial_amount'] as num?)?.toDouble() ?? 0;
+                      final ch = (p['charged'] as num?)?.toDouble() ?? 0;
+                      rows.add(_pdfInfoRow('Частично:', '${p['period_label']} (${amt.toStringAsFixed(2)}₽ из ${ch.toStringAsFixed(2)}₽)', ttf));
+                    }
+                    if (rows.isNotEmpty) return rows;
                   }
                   return [_pdfInfoRow('Период:', d['period_label'] ?? _formatPeriod(d['period_date']), ttf)];
                 }(),
