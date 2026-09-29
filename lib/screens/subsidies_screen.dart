@@ -1,8 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/base_api_service.dart';
-import '../utils/app_theme.dart';
 
 /// Экран управления субсидиями — аналог vvodapr / SUBSID.PRG из FoxPro.
 /// Позволяет просматривать, создавать, редактировать и удалять субсидии абонентов.
@@ -20,7 +18,6 @@ class _SubsidiesScreenState extends ConsumerState<SubsidiesScreen> {
   String? _error;
   String _searchQuery = '';
   String? _statusFilter;
-  int _total = 0;
 
   final _searchController = TextEditingController();
 
@@ -50,7 +47,6 @@ class _SubsidiesScreenState extends ConsumerState<SubsidiesScreen> {
       if (mounted) {
         setState(() {
           _items = List<Map<String, dynamic>>.from(resp.data['items']);
-          _total = resp.data['total'];
           _stats = Map<String, dynamic>.from(statsResp.data);
           _isLoading = false;
         });
@@ -339,12 +335,16 @@ class _SubsidiesScreenState extends ConsumerState<SubsidiesScreen> {
                             'family_members': int.tryParse(membersCtrl.text),
                             'note': noteCtrl.text.isNotEmpty ? noteCtrl.text : null,
                           });
-                          if (mounted) Navigator.pop(ctx);
+                          // `mounted` прикрывал только pop; ScaffoldMessenger
+                          // ниже обращался к context уже без проверки.
+                          if (!mounted) return;
+                          if (ctx.mounted) Navigator.pop(ctx);
                           _load();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('✅ Субсидия создана'), backgroundColor: Colors.green),
                           );
                         } catch (e) {
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e'), backgroundColor: Colors.red));
                         }
                       },
@@ -390,7 +390,7 @@ class _SubsidiesScreenState extends ConsumerState<SubsidiesScreen> {
                     const SizedBox(height: 16),
                     // Источник
                     DropdownButtonFormField<String>(
-                      value: source,
+                      initialValue: source,
                       decoration: InputDecoration(
                         labelText: 'Источник',
                         prefixIcon: const Icon(Icons.account_balance),
@@ -468,9 +468,11 @@ class _SubsidiesScreenState extends ConsumerState<SubsidiesScreen> {
                           try {
                             final dio = ref.read(dioProvider);
                             await dio.delete('/subsidies/${item['id']}');
-                            if (mounted) Navigator.pop(ctx);
+                            if (!mounted) return;
+                            if (ctx.mounted) Navigator.pop(ctx);
                             _load();
                           } catch (e) {
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
                           }
                         }
@@ -490,7 +492,7 @@ class _SubsidiesScreenState extends ConsumerState<SubsidiesScreen> {
                     _formField(amountCtrl, 'Сумма (₽)', Icons.monetization_on, keyboard: TextInputType.number),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: status,
+                      initialValue: status,
                       decoration: InputDecoration(
                         labelText: 'Статус',
                         prefixIcon: const Icon(Icons.flag),
@@ -519,12 +521,14 @@ class _SubsidiesScreenState extends ConsumerState<SubsidiesScreen> {
                               'status': status,
                               'note': noteCtrl.text.isNotEmpty ? noteCtrl.text : null,
                             });
-                            if (mounted) Navigator.pop(ctx);
+                            if (!mounted) return;
+                            if (ctx.mounted) Navigator.pop(ctx);
                             _load();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('✅ Обновлено'), backgroundColor: Colors.green),
                             );
                           } catch (e) {
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e')));
                           }
                         },

@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/incident_models.dart';
 import '../providers/incident_form_controller.dart';
 import '../providers/map_providers.dart';
-import '../utils/app_theme.dart';
 import '../widgets/base_card.dart';
 import '../services/user_service.dart';
-import '../models/api_models.dart';
 import '../models/user_role.dart';
 import 'package:intl/intl.dart';
 
@@ -54,7 +52,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
                   final success = await controller.save();
-                  if (success && mounted) {
+                  if (success && context.mounted) {
                     Navigator.pop(context);
                   }
                 }
@@ -88,7 +86,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
-                      value: state.boilerHouseId,
+                      initialValue: state.boilerHouseId,
                       isExpanded: true,
                       dropdownColor: Theme.of(context).colorScheme.surface,
                       decoration: _inputDecoration('Котельная'),
@@ -110,7 +108,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<IncidentStatus>(
-                            value: state.status,
+                            initialValue: state.status,
                             isExpanded: true,
                             dropdownColor: Theme.of(context).colorScheme.surface,
                             decoration: _inputDecoration('Статус'),
@@ -128,7 +126,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         const SizedBox(width: 16),
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: state.severity,
+                            initialValue: state.severity,
                             isExpanded: true,
                             dropdownColor: Theme.of(context).colorScheme.surface,
                             decoration: _inputDecoration('Серьезность'),
@@ -158,7 +156,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     usersAsync.when(
                       data: (users) {
                         return DropdownButtonFormField<int>(
-                          value: state.assignedTo,
+                          initialValue: state.assignedTo,
                           isExpanded: true,
                           dropdownColor: Theme.of(context).colorScheme.surface,
                           decoration: _inputDecoration('Ответственный'),
@@ -197,7 +195,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           firstDate: DateTime(2000),
                           lastDate: DateTime.now().add(const Duration(days: 365)),
                         );
-                        if (date != null && mounted) {
+                        if (date != null && context.mounted) {
                           final time = await showTimePicker(
                             context: context,
                             initialTime: TimeOfDay.fromDateTime(state.createdAt),
@@ -234,7 +232,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           firstDate: DateTime(2000),
                           lastDate: DateTime.now().add(const Duration(days: 365)),
                         );
-                        if (date != null && mounted) {
+                        if (date != null && context.mounted) {
                           final time = await showTimePicker(
                             context: context,
                             initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -277,7 +275,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                           firstDate: DateTime(2000),
                           lastDate: DateTime.now().add(const Duration(days: 365)),
                         );
-                        if (date != null && mounted) {
+                        if (date != null && context.mounted) {
                           final time = await showTimePicker(
                             context: context,
                             initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -308,7 +306,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         ),
                         value: state.autoResolveOnFinish,
                         onChanged: (value) => controller.updateAutoResolveOnFinish(value),
-                        activeColor: Colors.green,
+                        activeThumbColor: Colors.green,
                       ),
                     ],
                     if (state.status == IncidentStatus.resolved || state.status == IncidentStatus.closed) ...[
@@ -330,7 +328,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                             firstDate: DateTime(2000),
                             lastDate: DateTime.now().add(const Duration(days: 365)),
                           );
-                          if (date != null && mounted) {
+                          if (date != null && context.mounted) {
                             final time = await showTimePicker(
                               context: context,
                               initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -356,13 +354,13 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                       title: Text('Остановить ГВС', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       value: state.stopHotWater,
                       onChanged: controller.updateStopHotWater,
-                      activeColor: Colors.blue,
+                      activeThumbColor: Colors.blue,
                     ),
                     SwitchListTile(
                       title: Text('Остановить отопление', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                       value: state.stopHeating,
                       onChanged: controller.updateStopHeating,
-                      activeColor: Colors.red,
+                      activeThumbColor: Colors.red,
                     ),
                     Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
                     ListTile(
@@ -390,7 +388,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                 child: Column(
                   children: [
                     DropdownButtonFormField<AudienceType>(
-                      value: state.notificationConfig?.type ?? AudienceType.broadcast,
+                      initialValue: state.notificationConfig?.type ?? AudienceType.broadcast,
                       isExpanded: true,
                       dropdownColor: Theme.of(context).colorScheme.surface,
                       decoration: _inputDecoration('Кому отправить уведомление'),
@@ -508,7 +506,6 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
         ? serverBoilerCount
         : (state.boilerHouseId != null ? _localBoilerCount : 0);
     final boilerHouseNotSelected = state.boilerHouseId == null;
-    final noBoilersConfigured = false; // всегда показываем чипы если котельная выбрана
     final usingLocalCount = serverBoilerCount == null || serverBoilerCount == 0;
 
     return _buildSection(
@@ -685,7 +682,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
             onChanged: ((state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0) || state.stopHotWater || state.stopHeating)
                 ? null
                 : (value) => controller.updateSupplyFullyStopped(!value, totalBoilers: totalBoilers),
-            activeColor: Colors.green,
+            activeThumbColor: Colors.green,
             inactiveThumbColor: Colors.red.shade400,
             inactiveTrackColor: Colors.red.shade900.withAlpha(100),
           ),

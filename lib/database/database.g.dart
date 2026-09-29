@@ -14608,6 +14608,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncMetadataTable syncMetadata = $SyncMetadataTable(this);
   late final $PaymentDocumentsLocalTable paymentDocumentsLocal =
       $PaymentDocumentsLocalTable(this);
+  late final Index affectedHousesIncidentId = Index(
+    'affected_houses_incident_id',
+    'CREATE INDEX affected_houses_incident_id ON affected_houses (incident_id)',
+  );
+  late final Index incidentPhotosIncidentId = Index(
+    'incident_photos_incident_id',
+    'CREATE INDEX incident_photos_incident_id ON incident_photos (incident_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14628,6 +14636,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingChanges,
     syncMetadata,
     paymentDocumentsLocal,
+    affectedHousesIncidentId,
+    incidentPhotosIncidentId,
   ];
 }
 

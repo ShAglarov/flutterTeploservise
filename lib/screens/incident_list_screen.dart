@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import '../services/incident_schedule_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/incident_providers.dart';
-import '../providers/map_providers.dart';
 import '../widgets/incident_card.dart';
 import '../utils/app_theme.dart';
 import '../models/incident_models.dart';
-import '../models/boiler_house_models.dart';
 import '../models/permission_key.dart';
 import '../services/incident_service.dart';
-import '../services/user_service.dart';
 import '../services/permission_service.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
@@ -49,7 +46,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     ref.watch(incidentScheduleManagerProvider);
 
     // 1. Listen for global refresh events from WebSocket (safely now that we're on AsyncValue)
-    ref.listen(globalRefreshEventProvider, (_, __) {
+    ref.listen(globalRefreshEventProvider, (_, _) {
       ref.invalidate(allIncidentsProvider);
     });
 

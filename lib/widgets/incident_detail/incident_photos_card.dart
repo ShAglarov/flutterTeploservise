@@ -146,7 +146,7 @@ class _IncidentPhotosCardState extends ConsumerState<IncidentPhotosCard> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.photo_library_outlined, color: Colors.blue.withOpacity(0.7), size: 20),
+                  Icon(Icons.photo_library_outlined, color: Colors.blue.withValues(alpha: 0.7), size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'Фотографии инцидента',
@@ -167,7 +167,7 @@ class _IncidentPhotosCardState extends ConsumerState<IncidentPhotosCard> {
               else
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
+                    color: Colors.blue.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(

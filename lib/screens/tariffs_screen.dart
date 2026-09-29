@@ -437,7 +437,7 @@ class _TariffsScreenState extends ConsumerState<TariffsScreen> {
                     const Text('Услуга', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
-                      value: selectedService,
+                      initialValue: selectedService,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         isDense: true,
@@ -491,7 +491,7 @@ class _TariffsScreenState extends ConsumerState<TariffsScreen> {
                   const Text('Единица', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
-                    value: selectedUnit,
+                    initialValue: selectedUnit,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       isDense: true,

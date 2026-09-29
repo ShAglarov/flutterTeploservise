@@ -84,7 +84,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
           Container(
             height: 300,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: chatState.when(
@@ -130,7 +130,7 @@ class _IncidentChatCardState extends ConsumerState<IncidentChatCard> {
                 onPressed: _send,
                 icon: const Icon(Icons.send, color: Colors.blue),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.blue.withOpacity(0.1),
+                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
                 ),
               ),
             ],

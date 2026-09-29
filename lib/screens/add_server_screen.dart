@@ -227,7 +227,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.primaryBlue,
-                    backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+                    backgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.1),
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -249,8 +249,8 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                       color: _checkResult == null
                           ? colorScheme.onSurface.withAlpha(13)
                           : _checkResult!
-                              ? AppTheme.successGreen.withOpacity(0.15)
-                              : AppTheme.errorRed.withOpacity(0.15),
+                              ? AppTheme.successGreen.withValues(alpha: 0.15)
+                              : AppTheme.errorRed.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -297,7 +297,7 @@ class _AddServerScreenState extends ConsumerState<AddServerScreen> {
                     backgroundColor: AppTheme.primaryBlue,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor:
-                        AppTheme.primaryBlue.withOpacity(0.3),
+                        AppTheme.primaryBlue.withValues(alpha: 0.3),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

@@ -9,6 +9,7 @@ import '../models/incident_models.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 final syncRepositoryProvider = Provider<SyncRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -331,7 +332,7 @@ class SyncRepository {
           createdAt: Value(DateTime.now()),
           startedAt: Value(isCreate
               ? (create.startedAt != null ? DateTime.parse(create.startedAt!) : DateTime.now())
-              : (update!.startedAt != null ? DateTime.parse(update!.startedAt!) : DateTime.now())),
+              : (update!.startedAt != null ? DateTime.parse(update.startedAt!) : DateTime.now())),
           lastLocalEditAt: Value(DateTime.now()),
           assignedTo: Value(isCreate ? create.assignedTo : update!.assignedTo),
           localPendingAck: const Value(true),
@@ -438,7 +439,7 @@ class SyncRepository {
       await _db.delete(_db.savedLocations).go();
       await _db.delete(_db.boilerHouses).go();
     });
-    print('🗑️ [SyncRepo] Cleared all cached locations and boiler houses');
+    logDebug('🗑️ [SyncRepo] Cleared all cached locations and boiler houses');
   }
 
   Future<void> upsertSavedLocations(List<SavedLocationResponse> locations) async {
@@ -513,7 +514,11 @@ class SyncRepository {
                   url: Value(photo.url),
                   thumbnailUrl: Value(photo.thumbnailUrl),
                   createdAt: DateTime.parse(photo.createdAt ?? DateTime.now().toIso8601String()),
-                  fileName: photo.url?.split('/').last ?? 'photo.jpg',
+                  // url не nullable — `?.` и fallback были недостижимы.
+                  // Пустая строка даёт '' у .last, поэтому подстраховка остаётся.
+                  fileName: photo.url.split('/').last.isEmpty
+                      ? 'photo.jpg'
+                      : photo.url.split('/').last,
                   id: photo.id.toString(),
                   sha256: '',
                   houseId: Value(loc.id),
@@ -1038,16 +1043,16 @@ class _DebounceStreamTransformer<T> extends StreamTransformerBase<T, T> {
         subscription = stream.listen((event) {
           if (leading && isFirstEvent) {
             isFirstEvent = false;
-            if (controller != null && !controller!.isClosed) {
-              controller!.add(event);
+            if (controller != null && !controller.isClosed) {
+              controller.add(event);
             }
             return;
           }
           isFirstEvent = false;
           timer?.cancel();
           timer = Timer(duration, () {
-            if (controller != null && !controller!.isClosed) {
-              controller!.add(event);
+            if (controller != null && !controller.isClosed) {
+              controller.add(event);
             }
           });
         });

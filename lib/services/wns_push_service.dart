@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'base_api_service.dart';
 import 'device_id_service.dart';
-import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 final wnsPushServiceProvider = Provider<WnsPushService>((ref) {
   final dio = ref.watch(dioProvider);
@@ -27,16 +27,16 @@ class WnsPushService {
     if (!Platform.isWindows) return;
 
     try {
-      print('🪟 [WnsPush] Requesting WNS channel URI...');
+      logDebug('🪟 [WnsPush] Requesting WNS channel URI...');
       final String? channelUri =
           await _channel.invokeMethod<String>('getWnsChannelUri');
 
       if (channelUri == null || channelUri.isEmpty) {
-        print('⚠️ [WnsPush] Channel URI is empty, skipping registration');
+        logDebug('⚠️ [WnsPush] Channel URI is empty, skipping registration');
         return;
       }
 
-      print('✅ [WnsPush] Got channel URI (${channelUri.length} chars)');
+      logDebug('✅ [WnsPush] Got channel URI (${channelUri.length} chars)');
 
       final deviceId = await _deviceIdService.getDeviceId();
 
@@ -51,13 +51,13 @@ class WnsPushService {
         },
       );
 
-      print('✅ [WnsPush] Channel URI registered with backend');
+      logDebug('✅ [WnsPush] Channel URI registered with backend');
     } on PlatformException catch (e) {
-      print('❌ [WnsPush] Platform error: ${e.code} - ${e.message}');
+      logDebug('❌ [WnsPush] Platform error: ${e.code} - ${e.message}');
     } on DioException catch (e) {
-      print('❌ [WnsPush] API error: ${e.response?.statusCode} - ${e.message}');
+      logDebug('❌ [WnsPush] API error: ${e.response?.statusCode} - ${e.message}');
     } catch (e) {
-      print('❌ [WnsPush] Unexpected error: $e');
+      logDebug('❌ [WnsPush] Unexpected error: $e');
     }
   }
 }

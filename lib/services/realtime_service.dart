@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 import '../utils/constants.dart';
+import '../utils/secure_http.dart';
 import 'secure_storage_service.dart';
 import 'device_id_service.dart';
 import 'dart:developer' as dev;
 import 'package:geolocator/geolocator.dart';
+import '../utils/app_logger.dart';
 
 final realtimeServiceProvider = Provider<RealtimeService>((ref) {
   ref.keepAlive();
@@ -155,17 +157,19 @@ class RealtimeService {
       }
 
       String url = '${AppConstants.wsBaseUrl}/$deviceId?token=$token';
-      
+
       // NOTE: wss:// is used for all environments.
-      // IOWebSocketChannel.connect uses a custom HttpClient that accepts
-      // bad/self-signed certificates (VPN proxies, corporate firewalls).
-      // Also sets a connection timeout to avoid indefinite hangs on VPN.
+      // SECURITY: сертификат проверяется в release-сборках. Обход
+      // (для self-signed/корпоративных прокси) доступен только в debug —
+      // см. utils/secure_http.dart. Раньше любой сертификат принимался
+      // всегда, что позволяло MITM читать WS-трафик и сам JWT из URL.
 
-      dev.log('RealtimeService: Connecting to $url', name: 'WS');
+      // SECURITY: не логируем URL — он содержит access token в query-параметре
+      dev.log('RealtimeService: Connecting to WS for device $deviceId', name: 'WS');
 
-      final wsClient = HttpClient();
-      wsClient.badCertificateCallback = (cert, host, port) => true;
-      wsClient.connectionTimeout = const Duration(seconds: 15);
+      final wsClient = SecureHttp.createClient(
+        connectionTimeout: const Duration(seconds: 15),
+      );
 
       _channel = IOWebSocketChannel.connect(
         Uri.parse(url),
@@ -246,7 +250,7 @@ class RealtimeService {
       final decoded = jsonDecode(data as String);
       
       if (decoded is Map<String, dynamic>) {
-        print('🚀 [WS] MESSAGE RECEIVED: $decoded');
+        logDebug('🚀 [WS] MESSAGE RECEIVED: $decoded');
         
         // КРИТИЧНО: Обработка принудительного выхода (деактивация/блокировка)
         if (decoded['type'] == 'force_logout') {
@@ -395,7 +399,7 @@ class RealtimeService {
       pongData['device_model'] = deviceInfo.deviceModel;
       pongData['device_model_id'] = deviceInfo.deviceModelId;
     } catch (e) {
-      print('⚠️ [Pong] getDeviceInfo FAILED: $e');
+      logDebug('⚠️ [Pong] getDeviceInfo FAILED: $e');
       // Отправляем pong без device info — но хотя бы не теряем pong
     }
 
@@ -407,14 +411,14 @@ class RealtimeService {
         pongData['longitude'] = position.longitude;
       }
     } catch (e) {
-      print('⚠️ [Pong] GPS FAILED (non-critical): $e');
+      logDebug('⚠️ [Pong] GPS FAILED (non-critical): $e');
     }
 
     // 3. Отправляем
     try {
       _channel?.sink.add(jsonEncode(pongData));
     } catch (e) {
-      print('⚠️ [Pong] WebSocket send FAILED: $e');
+      logDebug('⚠️ [Pong] WebSocket send FAILED: $e');
     }
   }
 
@@ -462,7 +466,7 @@ class RealtimeService {
         ),
       );
     } catch (e) {
-      print('⚠️ [GPS] _doGetPosition error: $e');
+      logDebug('⚠️ [GPS] _doGetPosition error: $e');
       return null;
     }
   }

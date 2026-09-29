@@ -43,7 +43,6 @@ class IncidentActivityFeed extends _$IncidentActivityFeed {
     }
 
     final entityType = data['entity_type'];
-    final actionType = data['action_type'];
     
     // Check if this action log belongs to our incident
     bool isRelevantLog = false;

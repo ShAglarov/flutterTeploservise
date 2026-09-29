@@ -82,7 +82,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           onPressed: () async {
                             if (_formKey.currentState?.validate() ?? false) {
                               final success = await controller.save();
-                              if (success && mounted) {
+                              if (success && context.mounted) {
                                 Navigator.pop(context, true);
                               }
                             }
@@ -107,7 +107,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           margin: const EdgeInsets.only(bottom: 16.0),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.errorRed.withOpacity(0.1),
+                            color: AppTheme.errorRed.withValues(alpha: 0.1),
                             border: Border.all(color: AppTheme.errorRed),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -175,7 +175,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                                   firstDate: DateTime(2000),
                                   lastDate: DateTime.now().add(const Duration(days: 365)),
                                 );
-                                if (date != null && mounted) {
+                                if (date != null && context.mounted) {
                                   final time = await showTimePicker(
                                     context: context,
                                     initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -197,7 +197,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                                   firstDate: DateTime(2000),
                                   lastDate: DateTime.now().add(const Duration(days: 365)),
                                 );
-                                if (date != null && mounted) {
+                                if (date != null && context.mounted) {
                                   final time = await showTimePicker(
                                     context: context,
                                     initialTime: TimeOfDay.fromDateTime(initialDate),
@@ -289,7 +289,6 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                           children: [
                             usersAsync.when(
                               data: (users) {
-                                final assignedUserName = users.where((u) => u.id == state.assignedTo).map((u) => u.formattedDisplayName.split(' • ').first).firstOrNull ?? 'Не назначен';
                                 return _buildDropdownRow<int?>(
                                   'Исполнитель',
                                   state.assignedTo,
@@ -394,7 +393,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
       child: Text(
         title,
         style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
           fontSize: 13,
           fontWeight: FontWeight.w600,
         ),
@@ -455,9 +454,9 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Theme.of(context).colorScheme.surface,
+            activeThumbColor: Theme.of(context).colorScheme.surface,
             activeTrackColor: Colors.blue,
-            inactiveTrackColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+            inactiveTrackColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
           ),
         ],
       ),
@@ -800,7 +799,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Icon(Icons.add_a_photo, color: Colors.blue.withOpacity(0.7), size: 20),
+                  Icon(Icons.add_a_photo, color: Colors.blue.withValues(alpha: 0.7), size: 20),
                   const SizedBox(width: 12),
                   Text('Добавить фото', style: TextStyle(color: Colors.blue, fontSize: 15, fontWeight: FontWeight.w500)),
                   const Spacer(),
@@ -808,7 +807,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.15),
+                        color: Colors.blue.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -1023,7 +1022,7 @@ class _HouseIncidentFormDialogState extends ConsumerState<HouseIncidentFormDialo
                       onChanged: (state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0)
                           ? null
                           : (value) => controller.updateSupplyFullyStopped(!value, totalBoilers: totalBoilers),
-                      activeColor: Theme.of(context).colorScheme.surface,
+                      activeThumbColor: Theme.of(context).colorScheme.surface,
                       activeTrackColor: Colors.green,
                       inactiveThumbColor: Colors.red.shade400,
                       inactiveTrackColor: Colors.red.shade900.withAlpha(100),

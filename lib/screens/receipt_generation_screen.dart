@@ -16,13 +16,11 @@ class ReceiptGenerationScreen extends ConsumerStatefulWidget {
 }
 
 class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScreen> {
-  List<Map<String, dynamic>> _locations = [];
   List<Map<String, dynamic>> _allLocations = [];
   Map<String, dynamic>? _selectedLocation;
   String? _selectedPeriod;
   List<String> _periods = [];
   Map<String, dynamic> _stats = {};
-  bool _isLoading = false;
   bool _isGenerating = false;
   String _generationType = 'by_house'; // by_house, by_account
 
@@ -66,7 +64,6 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
         locs.sort((a, b) => (a['address'] as String).compareTo(b['address'] as String));
         setState(() {
           _allLocations = locs;
-          _locations = locs;
         });
       }
     } catch (e) {
@@ -286,6 +283,9 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
         final file = File('${dir.path}/$safeName');
         await file.writeAsBytes(resp.data);
 
+        // Запись файла — await, после него context может быть уже не в дереве,
+        // тогда findRenderObject вернёт мусор либо упадёт.
+        if (!mounted) return;
         final box = context.findRenderObject() as RenderBox?;
         final origin = box != null
             ? box.localToGlobal(Offset.zero) & box.size
@@ -380,7 +380,7 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
 
                   // Период
                   DropdownButtonFormField<String>(
-                    value: _selectedPeriod,
+                    initialValue: _selectedPeriod,
                     decoration: InputDecoration(
                       labelText: 'Период',
                       prefixIcon: const Icon(Icons.calendar_month),
@@ -397,7 +397,7 @@ class _ReceiptGenerationScreenState extends ConsumerState<ReceiptGenerationScree
                   // Организация
                   if (_orgs.isNotEmpty)
                     DropdownButtonFormField<int>(
-                      value: _selectedOrg?['id'] as int?,
+                      initialValue: _selectedOrg?['id'] as int?,
                       decoration: InputDecoration(
                         labelText: 'Организация',
                         prefixIcon: const Icon(Icons.business),

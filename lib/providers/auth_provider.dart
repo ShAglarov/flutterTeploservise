@@ -11,6 +11,7 @@ import '../services/event_service.dart';
 import '../services/permission_service.dart';
 import '../services/realtime_service.dart';
 import '../database/database.dart';
+import '../utils/app_logger.dart';
 
 part 'auth_provider.g.dart';
 
@@ -145,7 +146,7 @@ class Auth extends _$Auth {
         final version = payload['version'] as int? ?? 0;
 
         ref.read(permissionStateProvider.notifier).applyDelta(changes, full, version);
-        print('🔐 [Auth] Permission delta applied (v$version, ${changes.length} changes)');
+        logDebug('🔐 [Auth] Permission delta applied (v$version, ${changes.length} changes)');
       });
     } catch (_) {
       // RealtimeService может быть недоступен
@@ -207,7 +208,7 @@ class Auth extends _$Auth {
       }
     } catch (e) {
       // Не блокируем авторизацию из-за ошибки кэширования
-      print('⚠️ [Auth] Failed to cache user locally: $e');
+      logDebug('⚠️ [Auth] Failed to cache user locally: $e');
     }
   }
 
@@ -232,7 +233,7 @@ class Auth extends _$Auth {
         lastLoginAt: cachedUser.lastLoginAt,
       );
     } catch (e) {
-      print('⚠️ [Auth] Failed to load cached user: $e');
+      logDebug('⚠️ [Auth] Failed to load cached user: $e');
       return null;
     }
   }

@@ -64,7 +64,7 @@ class IncidentActivityCard extends ConsumerWidget {
     // Получаем avatarUrl из usersMap по userId
     final activityUserId = activity.userId;
     String? avatarUrl;
-    if (activityUserId != null && usersMap.containsKey(activityUserId)) {
+    if (usersMap.containsKey(activityUserId)) {
       avatarUrl = usersMap[activityUserId]?.avatarUrl;
     }
     return Padding(

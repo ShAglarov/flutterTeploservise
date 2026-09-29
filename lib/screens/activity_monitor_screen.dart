@@ -104,7 +104,7 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
         final shareOrigin = box != null
             ? box.localToGlobal(Offset.zero) & box.size
             : const Rect.fromLTWH(0, 0, 100, 100);
-        await Share.shareXFiles([XFile(tempFile.path, mimeType: 'application/pdf')], subject: defaultName, sharePositionOrigin: shareOrigin);
+        await SharePlus.instance.share(ShareParams(files: [XFile(tempFile.path, mimeType: 'application/pdf')], subject: defaultName, sharePositionOrigin: shareOrigin));
         return;
       }
 
@@ -332,7 +332,7 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
       child: ListView.separated(
         padding: EdgeInsets.symmetric(horizontal: isWide ? pad : 12, vertical: 8),
         itemCount: items.length,
-        separatorBuilder: (_, __) => Divider(height: 1, color: Theme.of(context).dividerColor.withAlpha(30)),
+        separatorBuilder: (_, _) => Divider(height: 1, color: Theme.of(context).dividerColor.withAlpha(30)),
         itemBuilder: (context, index) => _buildResidentCard(items[index], color, emoji, isWide),
       ),
     );
@@ -345,7 +345,6 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
     final payRatio = (item['pay_ratio'] as num?)?.toDouble() ?? 0;
     final totalPeriods = item['total_periods'] ?? 0;
     final paidPeriods = item['paid_periods'] ?? 0;
-    final promises = (item['promises'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final hasPromise = item['has_active_promise'] == true;
     final debtColor = debt > 0 ? Colors.red : Colors.green;
 
@@ -764,7 +763,7 @@ class _ActivityMonitorScreenState extends ConsumerState<ActivityMonitorScreen> w
       } else {
         await dio.put('/activity-monitor/promises/$promiseId', data: {'status': action});
       }
-      Navigator.pop(ctx);
+      if (ctx.mounted) Navigator.pop(ctx);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Обновлено'), backgroundColor: Colors.green));
       }

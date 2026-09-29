@@ -5,6 +5,7 @@ import 'package:dio_cache_interceptor_hive_store/dio_cache_interceptor_hive_stor
 import 'package:flutter_map_cache/flutter_map_cache.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:path_provider/path_provider.dart';
+import '../utils/app_logger.dart';
 
 /// Singleton that provides a cached [TileProvider] for flutter_map.
 ///
@@ -44,7 +45,7 @@ class CachedTileProviderManager {
       _initialized = true;
     } catch (e) {
       // Hive box corrupted at init — удаляем и пересоздаём
-      print('⚠️ [TileCache] Hive init failed, clearing corrupted cache: $e');
+      logDebug('⚠️ [TileCache] Hive init failed, clearing corrupted cache: $e');
       await _clearAndReinit();
     }
   }
@@ -66,9 +67,9 @@ class CachedTileProviderManager {
         hitCacheOnErrorExcept: [401, 403],
       );
       _initialized = true;
-      print('✅ [TileCache] Cache recreated successfully');
+      logDebug('✅ [TileCache] Cache recreated successfully');
     } catch (e) {
-      print('❌ [TileCache] Failed to recreate cache: $e');
+      logDebug('❌ [TileCache] Failed to recreate cache: $e');
       // Fallback — используем NetworkTileProvider без кэша
       _initialized = false;
     }
@@ -99,7 +100,7 @@ class CachedTileProviderManager {
     } catch (e) {
       // HiveError при чтении — кэш повреждён
       if (e.toString().contains('HiveError') || e.toString().contains('corrupted')) {
-        print('⚠️ [TileCache] Corrupted cache detected, clearing...');
+        logDebug('⚠️ [TileCache] Corrupted cache detected, clearing...');
         _clearAndReinit(); // fire-and-forget
       }
       // Молча игнорируем остальные ошибки предзагрузки

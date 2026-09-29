@@ -14,7 +14,6 @@ import 'profile_screen.dart';
 import 'settings_screen.dart';
 import 'management_company_list_screen.dart';
 import 'accounts_list_screen.dart';
-import '../providers/connectivity_provider.dart';
 import '../providers/offline_edit_permission.dart';
 import '../widgets/connectivity_banner.dart';
 import '../providers/map_providers.dart';
@@ -26,10 +25,8 @@ import '../models/permission_key.dart';
 import '../services/location_service.dart';
 import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
-import '../providers/theme_provider.dart';
 import '../providers/map_tile_provider.dart';
 import '../services/chat_read_service.dart';
-import '../utils/constants.dart';
 import '../widgets/base_card.dart';
 import '../widgets/fullscreen_image_viewer.dart';
 import '../widgets/boiler_house_form_dialog.dart';
@@ -60,7 +57,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   final DraggableScrollableController _sheetController = DraggableScrollableController();
   bool _isSheetHidden = false;
-  bool _showSuccessAnimation = false;
   bool _isMenuOpen = false;
 
   /// Предзагрузка тайлов соседних уровней зума
@@ -268,7 +264,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final sections = ref.watch(mapSectionsProvider);
 
 
-    final isDark = ref.watch(isDarkModeProvider);
     final tileConfig = ref.watch(resolvedMapTileSourceProvider);
     final usersState = ref.watch(usersWithPresenceProvider);
 
@@ -319,7 +314,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       interactionOptions: const InteractionOptions(
                         flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                       ),
-                      onTap: (_, __) => _onMapTap(),
+                      onTap: (_, _) => _onMapTap(),
                       onLongPress: _onMapLongPress,
                     ),
                     children: [
@@ -458,9 +453,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: Container(
         padding: label.isNotEmpty ? const EdgeInsets.symmetric(horizontal: 10, vertical: 4) : const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(isCircle ? 24 : 8),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -513,7 +508,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: (_isMenuOpen ? const Color(0xFFFF6B6B) : AppTheme.primaryBlue).withOpacity(0.4),
+                  color: (_isMenuOpen ? const Color(0xFFFF6B6B) : AppTheme.primaryBlue).withValues(alpha: 0.4),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -548,19 +543,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             child: Container(
               margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withOpacity(0.92),
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: Theme.of(context).colorScheme.onSurface.withAlpha(15),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.25),
+                    color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -641,8 +636,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           onTap();
         },
         borderRadius: BorderRadius.circular(12),
-        splashColor: accentColor.withOpacity(0.1),
-        highlightColor: accentColor.withOpacity(0.05),
+        splashColor: accentColor.withValues(alpha: 0.1),
+        highlightColor: accentColor.withValues(alpha: 0.05),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: Row(
@@ -652,7 +647,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.12),
+                  color: accentColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: accentColor, size: 19),
@@ -710,7 +705,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             color: Theme.of(context).scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20),
             ],
           ),
           child: SingleChildScrollView(
@@ -879,7 +874,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         if (loc.boilerHouseId == bh.id && loc.latitude != 0 && loc.longitude != 0) {
           polylines.add(Polyline(
             points: [bhPoint, LatLng(loc.latitude, loc.longitude)],
-            color: Colors.green.withOpacity(0.6),
+            color: Colors.green.withValues(alpha: 0.6),
             strokeWidth: 2.0,
           ));
         }
@@ -1063,7 +1058,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   width: isSelected ? 3 : 2,
                 ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4),
                 ],
               ),
               child: Icon(Icons.factory, color: Theme.of(context).colorScheme.onSurface, size: 18),
@@ -1105,7 +1100,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   width: isSelected ? 2.5 : 1.5,
                 ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4),
                 ],
               ),
               child: Icon(Icons.home, color: Theme.of(context).colorScheme.onSurface, size: 14),
@@ -1183,7 +1178,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                   ),
                   child: Text(
@@ -1199,7 +1194,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
                     borderRadius: const BorderRadius.only(
                       topRight: Radius.circular(10),
                       bottomLeft: Radius.circular(10),
@@ -1207,7 +1202,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
+                        color: Colors.black.withValues(alpha: 0.4),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -1314,7 +1309,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
                   ),
                   child: Text(
@@ -1334,14 +1329,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     Container(
                       padding: const EdgeInsets.only(left: 10, right: 36, top: 8, bottom: 10),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(10),
                           bottomRight: Radius.circular(10),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -1477,9 +1472,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppTheme.primaryBlue.withOpacity(0.15),
+          color: AppTheme.primaryBlue.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.3)),
+          border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1833,50 +1828,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Map Action Buttons
-  // --------------------------------------------------------------------------
-  Widget _buildMapActions() {
-    return Column(
-      children: [
-        _mapActionButton(
-          icon: Icons.my_location,
-          onPressed: () {
-            // TODO: Use geolocator to get current pos
-          },
-        ),
-        const SizedBox(height: 12),
-        _mapActionButton(
-          icon: Icons.layers,
-          onPressed: () {
-            // Show map type dialog
-          },
-        ),
-      ],
-    );
-  }
 
-  Widget _mapActionButton({required IconData icon, required VoidCallback onPressed}) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withAlpha(230),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(30)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(80),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: AppTheme.primaryBlue, size: 24),
-        onPressed: onPressed,
-      ),
-    );
-  }
 
   // --------------------------------------------------------------------------
   // Draggable Bottom Sheet
@@ -2078,9 +2030,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onPressed: () async {
                       final result = await showDialog<bool>(
                         context: context,
-                        builder: (context) => HouseIncidentFormDialog(house: loc),
+                        // ctx вместо context: внутренний builder затенял внешний
+                        // context, и проверка context.mounted ниже относилась к
+                        // уже закрытому диалогу, а не к экрану.
+                        builder: (ctx) => HouseIncidentFormDialog(house: loc),
                       );
-                      if (result == true && context.mounted) {
+                      if (result == true && mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Инцидент создан')),
                         );
@@ -2430,7 +2385,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFF14223A),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2507,7 +2462,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               scrollDirection: Axis.horizontal,
               itemCount: photos.length,
               itemBuilder: (context, index) {
-                final photo = photos[index];
                 return _buildPhotoThumbnail(loc.id, photos, index);
               },
             ),
@@ -2524,7 +2478,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         image: DecorationImage(
-          image: NetworkImage(photo.thumbnailUrl ?? photo.url ?? ''),
+          image: NetworkImage(photo.thumbnailUrl ?? photo.url),
           fit: BoxFit.cover,
         ),
       ),
@@ -2605,7 +2559,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF14223A) : color.withAlpha(20),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -2805,7 +2759,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       if (action != 'detach_delete') return;
     } else {
-      // Обычный диалог подтверждения без инцидентов
+      // Обычный диалог подтверждения без инцидентов.
+      // Проверка mounted нужна и здесь: getIncidentsForLocation выше — await,
+      // в ветке с инцидентами такая проверка есть, в этой её забыли.
+      if (!mounted) return;
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(

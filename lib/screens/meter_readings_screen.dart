@@ -109,18 +109,22 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
 
   Widget _buildBody(ThemeData theme) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    if (_error != null) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       const Icon(Icons.error_outline, size: 48, color: Colors.red),
       const SizedBox(height: 8), Text(_error!, style: const TextStyle(fontSize: 13)),
       const SizedBox(height: 12), FilledButton(onPressed: _load, child: const Text('Повторить')),
     ]));
-    if (_readings.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    }
+    if (_readings.isEmpty) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       Icon(Icons.speed, size: 64, color: Colors.grey.shade400),
       const SizedBox(height: 12),
       const Text('Нет показаний', style: TextStyle(fontSize: 16, color: Colors.grey)),
       const SizedBox(height: 12),
       FilledButton.icon(onPressed: () => _edit(null), icon: const Icon(Icons.add), label: const Text('Внести показание')),
     ]));
+    }
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -329,7 +333,7 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: meterType,
+                  initialValue: meterType,
                   decoration: const InputDecoration(labelText: 'Тип счётчика', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.speed, size: 20)),
                   items: meterLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Row(children: [
                     Icon(meterIcons[e.key], size: 18, color: meterColors[e.key]),
@@ -460,10 +464,12 @@ class _MeterReadingsScreenState extends ConsumerState<MeterReadingsScreen> {
         final resp = await dio.post('/meter-readings/', data: body);
         final consumption = resp.data?['consumption'];
         final amount = resp.data?['amount'];
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('✅ Показание внесено${consumption != null ? ' • Расход: $consumption' : ''}${amount != null ? ' • ${amount}₽' : ''}'),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('✅ Показание внесено${consumption != null ? ' • Расход: $consumption' : ''}${amount != null ? ' • $amount₽' : ''}'),
           backgroundColor: Colors.green,
         ));
+        }
       } else {
         await dio.put('/meter-readings/${existing['id']}', data: body);
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Обновлено'), backgroundColor: Colors.green));

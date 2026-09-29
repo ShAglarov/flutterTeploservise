@@ -304,30 +304,16 @@ class _ResidentsManagementScreenState extends ConsumerState<ResidentsManagementS
     }
   }
 
-  Widget _f(TextEditingController ctrl, String label, IconData icon, {bool obscure = false, int maxLines = 1}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: TextField(
-        controller: ctrl,
-        obscureText: obscure,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, size: 20),
-          border: const OutlineInputBorder(),
-          isDense: true,
-        ),
-      ),
-    );
-  }
 
   Future<void> _blockResident(int id, bool block) async {
     try {
       final dio = ref.read(dioProvider);
       await dio.post('/residents/$id/${block ? "block" : "unblock"}');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(block ? '🚫 Заблокирован' : '✅ Разблокирован'), backgroundColor: block ? Colors.red : Colors.green,
       ));
+      }
       _load();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ $e'), backgroundColor: Colors.red));
@@ -562,7 +548,7 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
                   child: _loadingLocations
                       ? const LinearProgressIndicator()
                       : DropdownButtonFormField<int>(
-                          value: _selectedLocationId,
+                          initialValue: _selectedLocationId,
                           isExpanded: true,
                           decoration: const InputDecoration(
                             labelText: '🏠 Дом',
@@ -591,7 +577,7 @@ class _ResidentEditDialogState extends State<_ResidentEditDialog> {
                       : _apartments.isEmpty
                           ? _field(widget.apartmentCtrl, 'Квартира', Icons.door_front_door)
                           : DropdownButtonFormField<String>(
-                              value: _selectedApartment,
+                              initialValue: _selectedApartment,
                               isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: '🚪 Квартира',

@@ -7,6 +7,7 @@ import '../services/secure_storage_service.dart';
 import '../services/realtime_service.dart';
 import '../services/event_service.dart';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 part 'auth_providers.g.dart';
 
@@ -51,7 +52,7 @@ class Auth extends _$Auth {
     _eventSubscription?.cancel();
     _eventSubscription = eventService.events.listen((event) {
       if (event == AppEvent.logout) {
-        print('🔑 [Auth] Received logout event — redirecting to login');
+        logDebug('🔑 [Auth] Received logout event — redirecting to login');
         state = AuthState(status: AuthStatus.unauthenticated);
       }
     });
@@ -85,13 +86,13 @@ class Auth extends _$Auth {
         if (exp != null) {
           final expiresAt = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
           tokenExpired = DateTime.now().toUtc().isAfter(expiresAt);
-          print('🔑 [Auth] Token exp: $expiresAt, expired: $tokenExpired');
+          logDebug('🔑 [Auth] Token exp: $expiresAt, expired: $tokenExpired');
         }
       }
     } catch (_) {}
 
     if (tokenExpired) {
-      print('⚠️ [Auth] Access token expired — trying refresh...');
+      logDebug('⚠️ [Auth] Access token expired — trying refresh...');
       final refreshToken = await storage.getRefreshToken();
       if (refreshToken != null && refreshToken.isNotEmpty) {
         try {
@@ -109,16 +110,16 @@ class Auth extends _$Auth {
             final newRefresh = response.data['refresh_token'] as String?;
             if (newAccess != null) await storage.saveAccessToken(newAccess);
             if (newRefresh != null) await storage.saveRefreshToken(newRefresh);
-            print('✅ [Auth] Token refreshed at startup');
+            logDebug('✅ [Auth] Token refreshed at startup');
             state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
             return;
           }
         } catch (e) {
-          print('❌ [Auth] Refresh failed: $e');
+          logDebug('❌ [Auth] Refresh failed: $e');
         }
       }
       // Refresh не помог — очищаем и на логин
-      print('❌ [Auth] Forcing re-login');
+      logDebug('❌ [Auth] Forcing re-login');
       await storage.clearAuthData();
       state = state.copyWith(status: AuthStatus.unauthenticated, isLoading: false);
       return;
@@ -135,7 +136,7 @@ class Auth extends _$Auth {
       await authService.login(username, password);
       state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
     } catch (e) {
-      print('🔥 [AuthProvider] Caught error: $e, type: ${e.runtimeType}');
+      logDebug('🔥 [AuthProvider] Caught error: $e, type: ${e.runtimeType}');
       String errorMessage = 'Произошла непредвиденная ошибка: $e';
       
       if (e is DioException) {

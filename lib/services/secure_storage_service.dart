@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 const String _deviceIdKey = 'device_unique_id';
 
@@ -20,7 +21,7 @@ class SecureStorageService {
     try {
       await _storage.write(key: key, value: value);
     } on PlatformException catch (e) {
-      print('⚠️ [SecureStorageService] Write failed ($key): ${e.message}.');
+      logDebug('⚠️ [SecureStorageService] Write failed ($key): ${e.message}.');
     }
   }
 
@@ -28,7 +29,7 @@ class SecureStorageService {
     try {
       return await _storage.read(key: key);
     } on PlatformException catch (e) {
-      print('⚠️ [SecureStorageService] Read failed ($key): ${e.message}.');
+      logDebug('⚠️ [SecureStorageService] Read failed ($key): ${e.message}.');
       return null;
     }
   }
@@ -37,7 +38,7 @@ class SecureStorageService {
     try {
       await _storage.delete(key: key);
     } on PlatformException catch (e) {
-      print('⚠️ [SecureStorageService] Delete failed ($key): ${e.message}.');
+      logDebug('⚠️ [SecureStorageService] Delete failed ($key): ${e.message}.');
     }
   }
 

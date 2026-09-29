@@ -12,6 +12,7 @@ import 'device_id_service.dart';
 import '../providers/incident_providers.dart';
 import '../providers/auth_provider.dart';
 import 'chat_read_service.dart';
+import '../utils/app_logger.dart';
 
 final dataSyncServiceProvider = Provider<DataSyncService>((ref) {
   ref.keepAlive();
@@ -142,9 +143,9 @@ class DataSyncService {
     // НЕ дедуплицируем photo-related entities: они редкие и критически важны для sync.
     // Без этого исключения фото, добавленное на одном устройстве, может не появиться
     // на другом, если entity_data инцидента (включая photos[]) хешируется одинаково.
-    final _photoEntityTypes = const {'incident_photo', 'saved_location_photo', 'boiler_house_photo'};
-    if (actionType == 'update' && entityData != null && !_photoEntityTypes.contains(entityType)) {
-      final cacheKey = '${entityType}_${entityIdRaw}';
+    final photoEntityTypes = const {'incident_photo', 'saved_location_photo', 'boiler_house_photo'};
+    if (actionType == 'update' && entityData != null && !photoEntityTypes.contains(entityType)) {
+      final cacheKey = '${entityType}_$entityIdRaw';
       final dataHash = jsonEncode(entityData);
       final now = DateTime.now();
       
@@ -164,7 +165,7 @@ class DataSyncService {
     }
 
     try {
-      print('💾 [DataSyncService] Начинаю запись в БД для: $actionType $entityType (id: $entityIdRaw)');
+      logDebug('💾 [DataSyncService] Начинаю запись в БД для: $actionType $entityType (id: $entityIdRaw)');
       switch (entityType) {
         case 'incident':
           await _handleIncident(actionType, entityIdRaw, entityData);

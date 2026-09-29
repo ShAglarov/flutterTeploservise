@@ -22,21 +22,16 @@ import 'services/incident_service.dart';
 import 'services/secure_storage_service.dart';
 import 'services/permission_service.dart';
 import 'providers/incident_providers.dart';
-import 'providers/map_providers.dart';
+import 'utils/secure_http.dart';
+import 'utils/app_logger.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
-class MyHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  HttpOverrides.global = MyHttpOverrides();
+  // SECURITY: в release проверка TLS-сертификата обязательна.
+  // Обход доступен только в debug-сборках — см. utils/secure_http.dart
+  HttpOverrides.global = SecureHttpOverrides();
 
   // Увеличиваем ImageCache — декодированные тайлы карты остаются
   // в оперативной памяти и при зуме показываются мгновенно
@@ -199,7 +194,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
       // 1.5 КРИТИЧНО: Слушаем force_logout (деактивация/блокировка админом)
       realtimeService.onForceLogout.listen((reason) async {
-        print('⛔ [Main] Force logout received: $reason');
+        logDebug('⛔ [Main] Force logout received: $reason');
         
         // Очищаем сохраненные токены
         final storage = ref.read(secureStorageServiceProvider);
@@ -239,9 +234,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       try {
         final incidentService = ref.read(incidentServiceProvider);
         await incidentService.getAllIncidents();
-        print('✅ [Main] Full incident refresh completed');
+        logDebug('✅ [Main] Full incident refresh completed');
       } catch (e) {
-        print('⚠️ [Main] Full incident refresh failed: $e');
+        logDebug('⚠️ [Main] Full incident refresh failed: $e');
       }
 
       // 4. Listen for WS reconnects → gap detection (debounced)
@@ -250,11 +245,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         final now = DateTime.now();
         if (lastReconnectHandled != null &&
             now.difference(lastReconnectHandled!).inSeconds < 10) {
-          print('🔄 [Main] WS reconnected — skipping gap check (cooldown)');
+          logDebug('🔄 [Main] WS reconnected — skipping gap check (cooldown)');
           return;
         }
         lastReconnectHandled = now;
-        print('🔄 [Main] WS reconnected — checking for gap');
+        logDebug('🔄 [Main] WS reconnected — checking for gap');
         await syncService.checkAndFillGap(dataSyncService.lastWSActionLogId);
         
         // КРИТИЧНО: Полный reconcile инцидентов при reconnect.
@@ -264,9 +259,9 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         try {
           final incidentService = ref.read(incidentServiceProvider);
           await incidentService.getAllIncidents();
-          print('✅ [Main] Incident reconcile on reconnect completed');
+          logDebug('✅ [Main] Incident reconcile on reconnect completed');
         } catch (e) {
-          print('⚠️ [Main] Incident reconcile on reconnect failed: $e');
+          logDebug('⚠️ [Main] Incident reconcile on reconnect failed: $e');
         }
         
         // Drift watch streams are reactive — data from incrementalSync + getAllIncidents
@@ -275,7 +270,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         ref.invalidate(allIncidentsProvider);
       });
 
-      print('✅ [Main] Sync pipeline initialized');
+      logDebug('✅ [Main] Sync pipeline initialized');
 
       // 5. Register WNS channel for Windows push notifications
       if (Platform.isWindows) {

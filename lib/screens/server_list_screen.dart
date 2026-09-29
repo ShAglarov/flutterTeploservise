@@ -249,7 +249,7 @@ class _ServerTile extends StatelessWidget {
           ),
           child: Material(
             color: isActive
-                ? AppTheme.primaryBlue.withOpacity(0.12)
+                ? AppTheme.primaryBlue.withValues(alpha: 0.12)
                 : colorScheme.surface,
             child: InkWell(
               onTap: onTap,
@@ -263,8 +263,8 @@ class _ServerTile extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         color: isActive
-                            ? AppTheme.successGreen.withOpacity(0.15)
-                            : AppTheme.primaryBlue.withOpacity(0.15),
+                            ? AppTheme.successGreen.withValues(alpha: 0.15)
+                            : AppTheme.primaryBlue.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Icon(

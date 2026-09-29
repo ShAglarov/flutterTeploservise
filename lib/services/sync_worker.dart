@@ -15,6 +15,7 @@ import 'incident_service.dart';
 import 'location_service.dart';
 import 'management_company_service.dart';
 import '../models/incident_models.dart';
+import '../utils/app_logger.dart';
 
 final syncWorkerProvider = Provider<SyncWorker>((ref) {
   final repository = ref.watch(syncRepositoryProvider);
@@ -42,14 +43,14 @@ class SyncWorker {
   SyncWorker(this._repository, this._incidentService, this._boilerHouseService, this._locationService, this._mcService);
 
   void start() {
-    print('🚀 [SyncWorker] Starting...');
+    logDebug('🚀 [SyncWorker] Starting...');
 
     // 1. Listen to connectivity changes — sync when network comes back
     _connectivitySub?.cancel();
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       final hasConnection = results.any((r) => r != ConnectivityResult.none);
       if (hasConnection) {
-        print('🌐 [SyncWorker] Network available, triggering sync');
+        logDebug('🌐 [SyncWorker] Network available, triggering sync');
         syncPending();
       }
     });
@@ -63,7 +64,7 @@ class SyncWorker {
   }
 
   void stop() {
-    print('🛑 [SyncWorker] Stopping...');
+    logDebug('🛑 [SyncWorker] Stopping...');
     _timer?.cancel();
     _timer = null;
     _connectivitySub?.cancel();
@@ -78,13 +79,13 @@ class SyncWorker {
       final pendingChanges = await _repository.getPendingChanges();
       if (pendingChanges.isEmpty) return;
 
-      print('🔄 [SyncWorker] Processing ${pendingChanges.length} pending changes');
+      logDebug('🔄 [SyncWorker] Processing ${pendingChanges.length} pending changes');
 
       for (final change in pendingChanges) {
         await _processChange(change);
       }
     } catch (e) {
-      print('❌ [SyncWorker] Sync loop failed: $e');
+      logDebug('❌ [SyncWorker] Sync loop failed: $e');
     } finally {
       _isSyncing = false;
     }
@@ -116,9 +117,9 @@ class SyncWorker {
       }
 
       await _repository.updatePendingStatus(change.id, 'synced');
-      print('✅ [SyncWorker] Synced ${change.entityType} ${change.actionType} (ID: ${change.id})');
+      logDebug('✅ [SyncWorker] Synced ${change.entityType} ${change.actionType} (ID: ${change.id})');
     } catch (e) {
-      print('⚠️ [SyncWorker] Failed ${change.entityType} ${change.actionType} (ID: ${change.id}): $e');
+      logDebug('⚠️ [SyncWorker] Failed ${change.entityType} ${change.actionType} (ID: ${change.id}): $e');
       final newRetryCount = (change.retryCount ?? 0) + 1;
 
       // Exponential backoff — fail after 5 retries
@@ -129,7 +130,7 @@ class SyncWorker {
         await _repository.updatePendingStatus(change.id, 'pending', retryCount: newRetryCount);
         // Calculate backoff delay (1s, 2s, 4s, 8s, 16s)
         final backoffMs = min(1000 * pow(2, newRetryCount - 1).toInt(), 30000);
-        print('⏳ [SyncWorker] Retry #$newRetryCount in ${backoffMs}ms');
+        logDebug('⏳ [SyncWorker] Retry #$newRetryCount in ${backoffMs}ms');
       }
     }
   }
@@ -139,7 +140,7 @@ class SyncWorker {
       scaffoldMessengerKey.currentState!.showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: Colors.red.withOpacity(0.9),
+          backgroundColor: Colors.red.withValues(alpha: 0.9),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -153,7 +154,7 @@ class SyncWorker {
         final result = await _incidentService.createIncident(incidentCreate);
         if (change.entityId != null && change.entityId! < 0 && result.id > 0) {
           await _repository.resolveTemporaryId('incident', change.entityId!, result.id);
-          print('🔗 [SyncWorker] Resolved temp ID ${change.entityId} → ${result.id}');
+          logDebug('🔗 [SyncWorker] Resolved temp ID ${change.entityId} → ${result.id}');
         }
         break;
       case 'update':
@@ -182,7 +183,7 @@ class SyncWorker {
           siteManagerId: payload['site_manager_id'] as int?,
         );
         final result = await _boilerHouseService.createBoilerHouse(create);
-        print('🔗 [SyncWorker] Created boiler house: ${result.id}');
+        logDebug('🔗 [SyncWorker] Created boiler house: ${result.id}');
         break;
       case 'update':
         if (change.entityId != null) {

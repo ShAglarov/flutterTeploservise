@@ -6,7 +6,6 @@ import '../models/location_models.dart';
 import '../services/location_service.dart';
 import '../database/database.dart';
 import '../utils/address_search_helper.dart';
-import '../utils/app_theme.dart';
 
 class HouseSelectionDialog extends ConsumerStatefulWidget {
   const HouseSelectionDialog({super.key});

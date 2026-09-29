@@ -127,20 +127,24 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
 
   Widget _buildBody(ThemeData theme) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    if (_error != null) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       const Icon(Icons.error_outline, size: 48, color: Colors.red),
       const SizedBox(height: 8),
       Text(_error!, style: const TextStyle(fontSize: 13)),
       const SizedBox(height: 12),
       FilledButton(onPressed: _load, child: const Text('Повторить')),
     ]));
-    if (_benefits.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    }
+    if (_benefits.isEmpty) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       Icon(Icons.card_giftcard, size: 64, color: Colors.grey.shade400),
       const SizedBox(height: 12),
       const Text('Нет льгот', style: TextStyle(fontSize: 16, color: Colors.grey)),
       const SizedBox(height: 12),
       FilledButton.icon(onPressed: () => _edit(null), icon: const Icon(Icons.add), label: const Text('Добавить')),
     ]));
+    }
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -253,7 +257,7 @@ class _BenefitsScreenState extends ConsumerState<BenefitsScreen> {
                 const SizedBox(height: 12),
               ],
               DropdownButtonFormField<String>(
-                value: category,
+                initialValue: category,
                 decoration: const InputDecoration(labelText: 'Категория', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.category, size: 20)),
                 items: _categories.map((c) => DropdownMenuItem(value: c['code'] as String, child: Text(c['label'] as String, style: const TextStyle(fontSize: 14)))).toList(),
                 onChanged: (v) => ss(() => category = v!),

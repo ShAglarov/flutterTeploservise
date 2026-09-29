@@ -1,30 +1,38 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:teploservice_flutter/utils/app_theme.dart';
 
-import 'package:teploservice_flutter/main.dart';
-
+/// Ранее здесь лежал нетронутый шаблон `flutter create` («Counter increments
+/// smoke test»), который искал счётчик, отсутствующий в этом приложении, и
+/// поэтому всегда падал — единственный тест проекта был красным.
+///
+/// Полноценный тест `MyApp` требует инициализации Riverpod, secure storage и
+/// sqlite, поэтому здесь остаются проверки, не требующие рантайма приложения.
+/// Схема БД проверяется в database_schema_test.dart, форматирование времени —
+/// в time_formatter_test.dart.
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('AppTheme', () {
+    test('тема собирается и является тёмной', () {
+      expect(AppTheme.darkTheme.brightness, Brightness.dark);
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    test('цвета статусов различимы между собой', () {
+      final colors = <Color>{
+        AppTheme.successGreen,
+        AppTheme.errorRed,
+      };
+      expect(colors.length, 2, reason: 'цвета статусов не должны совпадать');
+    });
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('MaterialApp с темой приложения рендерится', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: const Scaffold(body: Text('Теплосервис')),
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Теплосервис'), findsOneWidget);
   });
 }

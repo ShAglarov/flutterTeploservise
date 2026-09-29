@@ -293,18 +293,22 @@ class _DebtNoticesScreenState extends ConsumerState<DebtNoticesScreen> {
 
   Widget _buildBody(ThemeData theme) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    if (_error != null) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       const Icon(Icons.error_outline, size: 48, color: Colors.red),
       const SizedBox(height: 8), Text(_error!, style: const TextStyle(fontSize: 13)),
       const SizedBox(height: 12), FilledButton(onPressed: _load, child: const Text('Повторить')),
     ]));
-    if (_notices.isEmpty) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    }
+    if (_notices.isEmpty) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
       Icon(Icons.mark_email_read, size: 64, color: Colors.grey.shade400),
       const SizedBox(height: 12),
       const Text('Нет уведомлений', style: TextStyle(fontSize: 16, color: Colors.grey)),
       const SizedBox(height: 12),
       FilledButton.icon(onPressed: _massCreate, icon: const Icon(Icons.flash_on), label: const Text('Массовое формирование')),
     ]));
+    }
 
     return RefreshIndicator(
       onRefresh: _load,

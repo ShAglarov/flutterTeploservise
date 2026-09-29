@@ -360,43 +360,6 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
     );
   }
 
-  Widget _buildActionRow(String label, String value, {VoidCallback? onTap}) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: Text(
-                label,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 16),
-              ),
-            ),
-            Expanded(
-              flex: 3,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      color: value == 'Не выбрано' ? Theme.of(context).colorScheme.onSurface.withAlpha(97) : Theme.of(context).colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, size: 20, color: Theme.of(context).colorScheme.onSurface.withAlpha(60)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildManagerDropdown() {
     return Consumer(
@@ -420,7 +383,7 @@ class _BoilerHouseFormDialogState extends ConsumerState<BoilerHouseFormDialog> {
                     flex: 3,
                     child: DropdownButtonHideUnderline(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedSiteManager,
+                        initialValue: _selectedSiteManager,
                         dropdownColor: Theme.of(context).colorScheme.surface,
                         icon: const SizedBox.shrink(),
                         alignment: Alignment.centerRight,

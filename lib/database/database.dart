@@ -185,6 +185,12 @@ class Incidents extends Table {
 }
 
 // Intersect table for AffectedHouses relationship (Incident <-> SavedLocation)
+// Индекс по incident_id ускоряет join и удаление по инциденту.
+// BUGFIX: раньше индекс объявлялся через `@override List<Index> get indexes`,
+// но у drift Table такого геттера нет — код компилировался как обычный
+// неиспользуемый метод, и индекс НЕ попадал в схему (проверено: имени не было
+// в database.g.dart). Правильный API — аннотация @TableIndex.
+@TableIndex(name: 'affected_houses_incident_id', columns: {#incidentId})
 @DataClassName('AffectedHouseDb')
 class AffectedHouses extends Table {
   IntColumn get incidentId => integer().references(Incidents, #backendId)();
@@ -192,10 +198,6 @@ class AffectedHouses extends Table {
 
   @override
   Set<Column> get primaryKey => {incidentId, savedLocationId};
-
-  // ADDED: Index for faster joins and deletion per incident
-  @override
-  List<Index> get indexes => [Index('affected_houses_incident_id', 'CREATE INDEX affected_houses_incident_id ON affected_houses (incident_id)')];
 }
 
 @DataClassName('IncidentCommentDb')
@@ -217,6 +219,9 @@ class IncidentComments extends Table {
   Set<Column> get primaryKey => {backendId};
 }
 
+// Индекс по incident_id — см. комментарий у AffectedHouses: предыдущее
+// объявление через геттер indexes не создавало индекс.
+@TableIndex(name: 'incident_photos_incident_id', columns: {#incidentId})
 @DataClassName('IncidentPhotoDb')
 class IncidentPhotos extends Table {
   IntColumn get backendId => integer().withDefault(const Constant(0))();
@@ -236,10 +241,6 @@ class IncidentPhotos extends Table {
 
   @override
   Set<Column> get primaryKey => {backendId};
-
-  // ADDED: Index for faster joins and deletion per incident
-  @override
-  List<Index> get indexes => [Index('incident_photos_incident_id', 'CREATE INDEX incident_photos_incident_id ON incident_photos (incident_id)')];
 }
 
 @DataClassName('ManagementCompanyDb')
@@ -433,8 +434,15 @@ class PaymentDocumentsLocal extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Конструктор для тестов: позволяет подсунуть in-memory sqlite вместо файла
+  /// в каталоге документов, который в тестовой среде недоступен.
+  AppDatabase.forTesting(super.executor);
+
   @override
-  int get schemaVersion => 14;
+  // 15: добавлены индексы affected_houses_incident_id и
+  // incident_photos_incident_id. Бамп нужен, чтобы уже установленные копии
+  // прошли onUpgrade и пересоздали схему с индексами.
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

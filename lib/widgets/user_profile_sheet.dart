@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/api_models.dart';
 import '../services/avatar_cache_service.dart';
-import '../utils/app_theme.dart';
 import 'user_avatar_widget.dart';
 
 class UserProfileSheet extends StatelessWidget {
@@ -73,7 +72,7 @@ class UserProfileSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: user.isActive ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                color: user.isActive ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(

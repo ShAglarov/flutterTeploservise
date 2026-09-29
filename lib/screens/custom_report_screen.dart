@@ -7,7 +7,6 @@ import 'package:dio/dio.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../services/base_api_service.dart';
 import '../services/file_export_helper.dart';
@@ -290,27 +289,35 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                                   if (_allPeriods.isNotEmpty) setState(() { _periodFrom = _allPeriods.first; _periodTo = _allPeriods.first; });
                                 }),
                                 _buildPresetChip(theme, isDark, 'Последние 3', () {
-                                  if (_allPeriods.isNotEmpty) setState(() {
+                                  if (_allPeriods.isNotEmpty) {
+                                    setState(() {
                                     _periodTo = _allPeriods.first;
                                     _periodFrom = _allPeriods.length >= 3 ? _allPeriods[2] : _allPeriods.last;
                                   });
+                                  }
                                 }),
                                 _buildPresetChip(theme, isDark, 'Полгода', () {
-                                  if (_allPeriods.isNotEmpty) setState(() {
+                                  if (_allPeriods.isNotEmpty) {
+                                    setState(() {
                                     _periodTo = _allPeriods.first;
                                     _periodFrom = _allPeriods.length >= 6 ? _allPeriods[5] : _allPeriods.last;
                                   });
+                                  }
                                 }),
                                 _buildPresetChip(theme, isDark, 'Год', () {
-                                  if (_allPeriods.isNotEmpty) setState(() {
+                                  if (_allPeriods.isNotEmpty) {
+                                    setState(() {
                                     _periodTo = _allPeriods.first;
                                     _periodFrom = _allPeriods.length >= 12 ? _allPeriods[11] : _allPeriods.last;
                                   });
+                                  }
                                 }),
                                 _buildPresetChip(theme, isDark, 'Все', () {
-                                  if (_allPeriods.isNotEmpty) setState(() {
+                                  if (_allPeriods.isNotEmpty) {
+                                    setState(() {
                                     _periodFrom = _allPeriods.last; _periodTo = _allPeriods.first;
                                   });
+                                  }
                                 }),
                               ],
                             ),
@@ -2058,9 +2065,9 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
           '${e.key + 1}',
           h['name'] ?? '',
           '${h['count'] ?? 0}',
-          '${((h['total_charged'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-          '${((h['total_paid'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-          '${((h['total_debt'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+          (((h['total_charged'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
+          (((h['total_paid'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
+          (((h['total_debt'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
         ];
       }).toList(),
       cellStyle: const pw.TextStyle(fontSize: 8),
@@ -2081,8 +2088,8 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
           d['fio'] ?? '',
           d['address'] ?? '',
           d['account_number'] ?? '',
-          '${((d['total_charged'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-          '${((d['total_debt_end'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+          (((d['total_charged'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
+          (((d['total_debt_end'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
         ];
       }).toList(),
       cellStyle: const pw.TextStyle(fontSize: 8),
@@ -2156,9 +2163,9 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
       data: services.map((s) {
         return [
           s['label'] ?? '',
-          '${((s['charged'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-          '${((s['paid'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
-          '${((s['debt'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}',
+          (((s['charged'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
+          (((s['paid'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
+          (((s['debt'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)),
         ];
       }).toList(),
       cellStyle: const pw.TextStyle(fontSize: 8),
@@ -2181,7 +2188,7 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
           d['location_name'] ?? '',
           d['address'] ?? '',
           d['account_number'] ?? '',
-          '${debt.abs().toStringAsFixed(2)}',
+          (debt.abs().toStringAsFixed(2)),
         ];
       }).toList(),
       cellStyle: const pw.TextStyle(fontSize: 8),

@@ -5,6 +5,7 @@ import 'secure_storage_service.dart';
 import 'device_id_service.dart';
 import '../models/api_models.dart';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   final dio = ref.watch(dioProvider);
@@ -26,7 +27,7 @@ class AuthService {
     await _storage.deleteRefreshToken();
 
     try {
-      print('🚀 [AuthService] Attempting login to: ${AppConstants.baseUrl}${AppConstants.login}');
+      logDebug('🚀 [AuthService] Attempting login to: ${AppConstants.baseUrl}${AppConstants.login}');
       final response = await _dio.post(
         AppConstants.login,
         data: {
@@ -38,7 +39,7 @@ class AuthService {
         ),
       );
 
-      print('✅ [AuthService] Login successful for: $username');
+      logDebug('✅ [AuthService] Login successful for: $username');
       final loginResponse = APILoginResponse.fromJson(response.data);
       
       await _storage.saveAccessToken(loginResponse.accessToken);
@@ -51,14 +52,14 @@ class AuthService {
       
       return loginResponse;
     } on DioException catch (e) {
-      print('❌ [AuthService] Login failed: ${e.message}');
+      logDebug('❌ [AuthService] Login failed: ${e.message}');
       if (e.response != null) {
-        print('    Status: ${e.response?.statusCode}');
-        print('    Data: ${e.response?.data}');
+        logDebug('    Status: ${e.response?.statusCode}');
+        logDebug('    Data: ${e.response?.data}');
       }
       rethrow;
     } catch (e) {
-      print('❌ [AuthService] Unexpected login error: $e');
+      logDebug('❌ [AuthService] Unexpected login error: $e');
       rethrow;
     }
   }
@@ -111,11 +112,11 @@ class AuthService {
         ...deviceInfo.toJson(),
       });
       
-      print('📋 [AuthService] Session event "$event" sent '
+      logDebug('📋 [AuthService] Session event "$event" sent '
           '(lat: ${position?.latitude ?? "null"}, '
           'lon: ${position?.longitude ?? "null"})');
     } catch (e) {
-      print('⚠️ [AuthService] Session event "$event" failed: $e');
+      logDebug('⚠️ [AuthService] Session event "$event" failed: $e');
       // Best-effort: не прокидываем ошибку — login/logout не должен блокироваться
     }
   }

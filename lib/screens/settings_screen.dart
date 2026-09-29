@@ -847,7 +847,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: mapTileDisplayOptions.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final option = mapTileDisplayOptions[index];
                 return _buildTileOption(option, currentSource);
@@ -1029,17 +1029,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
     return user.username;
   }
 
-  String _getInitials(APIUserResponse user) {
-    final first = user.firstName?.trim() ?? '';
-    final last = user.lastName?.trim() ?? '';
-    if (first.isNotEmpty && last.isNotEmpty) {
-      return '${first[0]}${last[0]}'.toUpperCase();
-    }
-    if (user.username.isNotEmpty) {
-      return user.username.substring(0, user.username.length >= 2 ? 2 : 1).toUpperCase();
-    }
-    return '?';
-  }
 
   String _getLastSeenText(int userId, UsersState usersState) {
     final isOnline = usersState.isUserOnline(userId);
@@ -1050,13 +1039,6 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
     );
   }
 
-  Color _getAvatarColor(APIUserResponse user) {
-    final colors = [
-      Colors.blue, Colors.purple, Colors.teal, Colors.orange,
-      Colors.pink, Colors.indigo, Colors.green, Colors.red,
-    ];
-    return colors[user.id % colors.length];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1425,6 +1407,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                   }
                 } catch (_) {}
 
+                // Проверка выше делает сетевой запрос — экран мог закрыться.
+                if (!mounted) return;
+
                 if (!newValue) {
                   // Confirm deactivation
                   final confirmed = await showDialog<bool>(
@@ -1596,7 +1581,9 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                     // Refresh the user list
                     ref.read(usersWithPresenceProvider.notifier).refresh();
 
-                    if (mounted) {
+                    // context здесь — параметр _showCreateUserDialog, а не
+                    // State.context, поэтому проверять нужно именно его.
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Пользователь $username создан'),
@@ -1684,25 +1671,7 @@ class UserProfileScreen extends ConsumerWidget {
     return user.username;
   }
 
-  String _getInitials() {
-    final first = user.firstName?.trim() ?? '';
-    final last = user.lastName?.trim() ?? '';
-    if (first.isNotEmpty && last.isNotEmpty) {
-      return '${first[0]}${last[0]}'.toUpperCase();
-    }
-    if (user.username.isNotEmpty) {
-      return user.username.substring(0, user.username.length >= 2 ? 2 : 1).toUpperCase();
-    }
-    return '?';
-  }
 
-  Color _getAvatarColor() {
-    final colors = [
-      Colors.blue, Colors.purple, Colors.teal, Colors.orange,
-      Colors.pink, Colors.indigo, Colors.green, Colors.red,
-    ];
-    return colors[user.id % colors.length];
-  }
 
   String _formatDate(String? dateStr) {
     if (dateStr == null) return '—';
@@ -1714,20 +1683,14 @@ class UserProfileScreen extends ConsumerWidget {
     }
   }
 
-  String _formatDateTime(DateTime? dt) {
-    if (dt == null) return '—';
-    final day = dt.day.toString().padLeft(2, '0');
-    final month = dt.month.toString().padLeft(2, '0');
-    final year = dt.year;
-    final hour = dt.hour.toString().padLeft(2, '0');
-    final minute = dt.minute.toString().padLeft(2, '0');
-    return '$day.$month.$year $hour:$minute';
-  }
 
   void _open2GIS(BuildContext context, double lat, double lng) {
     if (lat == 0 && lng == 0) return;
     final uri = Uri.parse('https://2gis.ru/search/$lat,$lng');
     launchUrl(uri, mode: LaunchMode.externalApplication).catchError((_) {
+      // catchError срабатывает после await внутри launchUrl — экран к тому
+      // моменту может быть уже закрыт, тогда обращение к context упадёт.
+      if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Не удалось открыть 2GIS')),
       );
@@ -2259,7 +2222,7 @@ class UserProfileScreen extends ConsumerWidget {
                         ),
                         Switch(
                           value: canEditOffline,
-                          activeColor: AppTheme.primaryBlue,
+                          activeThumbColor: AppTheme.primaryBlue,
                           onChanged: (v) => setDialogState(() => canEditOffline = v),
                         ),
                       ],
@@ -2490,7 +2453,7 @@ class UserProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<APIUserResponse>(
-                      value: selectedManager,
+                      initialValue: selectedManager,
                       dropdownColor: Theme.of(context).colorScheme.surface,
                       isExpanded: true,
                       decoration: InputDecoration(

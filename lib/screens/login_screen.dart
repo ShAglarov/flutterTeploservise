@@ -127,10 +127,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withOpacity(0.08),
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppTheme.primaryBlue.withOpacity(0.15),
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.15),
                       ),
                     ),
                     child: Row(
@@ -140,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryBlue.withOpacity(0.15),
+                            color: AppTheme.primaryBlue.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Icon(
@@ -245,7 +245,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    disabledBackgroundColor: AppTheme.primaryBlue.withOpacity(0.5),
+                    disabledBackgroundColor: AppTheme.primaryBlue.withValues(alpha: 0.5),
                   ),
                   child: authState.isLoading
                       ? const SizedBox(

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
-import 'base_card.dart';
 
 class IncidentCard extends StatefulWidget {
   final String title;

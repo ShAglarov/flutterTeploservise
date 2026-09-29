@@ -104,7 +104,7 @@ class BoilerHouseService {
     final response = await _dio.post('/boiler-houses/reassign-manager', data: {
       'old_manager_id': oldManagerId,
       'new_manager_id': newManagerId,
-      if (newSiteNumber != null) 'new_site_number': newSiteNumber,
+      'new_site_number': ?newSiteNumber,
     });
     return ReassignManagerResult.fromJson(response.data);
   }

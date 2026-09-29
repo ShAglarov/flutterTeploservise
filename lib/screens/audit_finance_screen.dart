@@ -44,6 +44,11 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
     _FilterOption('Создание', 'create'),
     _FilterOption('Обновление', 'update'),
     _FilterOption('Удаление', 'delete'),
+    _FilterOption('Оплата', 'payment'),
+    _FilterOption('Отмена', 'undo'),
+    _FilterOption('Перерасчёт', 'recalc'),
+    _FilterOption('Начисление', 'charge'),
+    _FilterOption('Корректировка', 'correction'),
   ];
 
   @override
@@ -453,7 +458,7 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.15),
+                    color: iconColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: iconColor, size: 22),
@@ -593,7 +598,7 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
                         height: 36,
                         decoration: BoxDecoration(
                           color: _colorForAction(log.actionType)
-                              .withOpacity(0.15),
+                              .withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -732,7 +737,7 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.errorRed.withOpacity(0.08),
+                    color: AppTheme.errorRed.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -742,7 +747,7 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
                           style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.errorRed.withOpacity(0.7))),
+                              color: AppTheme.errorRed.withValues(alpha: 0.7))),
                       const SizedBox(height: 2),
                       Text(oldVal,
                           style: TextStyle(
@@ -769,7 +774,7 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.successGreen.withOpacity(0.08),
+                    color: AppTheme.successGreen.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
@@ -779,7 +784,7 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
                           style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.successGreen.withOpacity(0.7))),
+                              color: AppTheme.successGreen.withValues(alpha: 0.7))),
                       const SizedBox(height: 2),
                       Text(newVal,
                           style: TextStyle(
@@ -904,6 +909,22 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
       'jku_identifier': 'Идентификатор ЖКУ',
       'open_date': 'Дата открытия',
       'close_date': 'Дата закрытия',
+      // Кассовые операции
+      'service': 'Услуга',
+      'amount': 'Сумма',
+      'total_paid': 'Итого оплачено',
+      'old_value': 'Было',
+      'new_value': 'Стало',
+      'old_debt_end': 'Долг был',
+      'new_debt_end': 'Долг стал',
+      'note': 'Примечание',
+      'operation_type': 'Тип операции',
+      'payment_date': 'Дата платежа',
+      'next_period': 'Следующий период',
+      'created': 'Создано',
+      'skipped': 'Пропущено',
+      'deleted_documents': 'Удалено документов',
+      'deleted_operations': 'Удалено операций',
     };
     return names[field] ?? field;
   }
@@ -915,7 +936,23 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
       case 'update':
         return Icons.edit_outlined;
       case 'delete':
+      case 'delete_all':
         return Icons.delete_outline;
+      case 'payment':
+      case 'pay_auto':
+        return Icons.payments_outlined;
+      case 'undo':
+        return Icons.undo;
+      case 'redo':
+        return Icons.redo;
+      case 'recalc':
+        return Icons.calculate_outlined;
+      case 'charge':
+        return Icons.receipt_long_outlined;
+      case 'correction':
+        return Icons.tune;
+      case 'period_close':
+        return Icons.calendar_today;
       default:
         return Icons.info_outline;
     }
@@ -928,7 +965,23 @@ class _AuditFinanceScreenState extends ConsumerState<AuditFinanceScreen> {
       case 'update':
         return AppTheme.primaryBlue;
       case 'delete':
+      case 'delete_all':
         return AppTheme.errorRed;
+      case 'payment':
+      case 'pay_auto':
+        return const Color(0xFF2E7D32); // тёмно-зелёный
+      case 'undo':
+        return Colors.orange;
+      case 'redo':
+        return Colors.teal;
+      case 'recalc':
+        return Colors.deepPurple;
+      case 'charge':
+        return Colors.indigo;
+      case 'correction':
+        return Colors.brown;
+      case 'period_close':
+        return Colors.blueGrey;
       default:
         return Theme.of(context).colorScheme.onSurface.withAlpha(140);
     }

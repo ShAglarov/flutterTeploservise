@@ -271,7 +271,7 @@ class _ManagementCompanyDetailScreenState
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.15),
+              color: AppTheme.primaryBlue.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.business,
@@ -442,7 +442,7 @@ class _ManagementCompanyDetailScreenState
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),

@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/base_api_service.dart';
 import '../services/file_export_helper.dart';
@@ -700,20 +697,6 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     );
   }
 
-  // keep old _actionButton for compatibility with dialogs that might reference it
-  Widget _actionButton(IconData icon, String label, Color color, VoidCallback onTap) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 18),
-      label: Text(label, style: const TextStyle(fontSize: 13)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
 
   // ═══════ Общий helper для стилизованного bottom sheet ═══════
 
@@ -822,7 +805,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
   static const _monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
 
-  Widget _monthYearPickerRow(String label, DateTime date, void Function(DateTime) onChanged, {void Function(StateSetter)? setSheetStateRef}) {
+  Widget _monthYearPickerRow(String label, DateTime date, void Function(DateTime) onChanged) {
     final formatted = '${_monthNames[date.month - 1]} ${date.year}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -1003,7 +986,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     double periodTotalDebt = periodServices.fold(0.0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
     bool loading = false;
 
-    Future<void> _loadPeriodDebt(StateSetter setSheetState) async {
+    Future<void> loadPeriodDebt(StateSetter setSheetState) async {
       setSheetState(() => loading = true);
       try {
         final dio = ref.read(dioProvider);
@@ -1058,16 +1041,16 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       bodyBuilder: (ctx, setSheetState) {
         // Загрузить долг за estimated период при первом открытии
         if (!loading && estimatedStr != null && periodServices == currentServices) {
-          Future.microtask(() => _loadPeriodDebt(setSheetState));
+          Future.microtask(() => loadPeriodDebt(setSheetState));
         }
         return Column(mainAxisSize: MainAxisSize.min, children: [
         _monthYearPickerRow('Период от', periodFrom, (d) {
           setSheetState(() => periodFrom = d);
-          _loadPeriodDebt(setSheetState);
+          loadPeriodDebt(setSheetState);
         }),
         _monthYearPickerRow('Период до', periodTo, (d) {
           setSheetState(() => periodTo = d);
-          _loadPeriodDebt(setSheetState);
+          loadPeriodDebt(setSheetState);
         }),
         if (loading)
           const Padding(padding: EdgeInsets.all(8), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
@@ -1149,7 +1132,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
           'amount': amount,
           if (noteCtrl.text.isNotEmpty) 'note': noteCtrl.text,
           'payment_date': '${paymentDate.year}-${paymentDate.month.toString().padLeft(2, '0')}-${paymentDate.day.toString().padLeft(2, '0')}',
-        }, '$title');
+        }, title);
       },
       bodyBuilder: (ctx, setSheetState) => Column(mainAxisSize: MainAxisSize.min, children: [
         _serviceSelector(services, selectedService, (v) => setSheetState(() => selectedService = v)),
@@ -1450,7 +1433,6 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     final totalDebt = (receiptData?['total_debt'] as num?)?.toDouble() ??
         services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
     var qrString = receiptData?['qr_string'] as String?;
-    final periodSummary = receiptData?['period_summary'] as String? ?? '';
     final periodCoverage = receiptData?['period_coverage'] as List? ?? [];
     final overpayment = (receiptData?['overpayment'] as num?)?.toDouble() ?? 0;
     final org = receiptData?['org'] as Map<String, dynamic>? ?? {};
@@ -2141,7 +2123,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                     : ListView.separated(
                         controller: scroll,
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        separatorBuilder: (_, __) => const SizedBox(height: 4),
+                        separatorBuilder: (_, _) => const SizedBox(height: 4),
                         itemCount: ops.length,
                         itemBuilder: (ctx, i) => _buildHistoryItem(ops[i] as Map<String, dynamic>),
                       ),

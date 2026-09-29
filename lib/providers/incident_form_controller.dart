@@ -1,12 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/incident_models.dart';
 import '../services/incident_service.dart';
 import '../providers/offline_edit_permission.dart';
-import '../repositories/sync_repository.dart';
 import 'incident_form_state.dart';
+import '../utils/app_logger.dart';
 export 'incident_form_state.dart';
 
 part 'incident_form_controller.g.dart';
@@ -290,7 +289,7 @@ class IncidentFormController extends _$IncidentFormController {
     } on DioException catch (e) {
       final statusCode = e.response?.statusCode;
       final detail = e.response?.data;
-      print('❌ [IncidentFormController] DioException: $statusCode, data: $detail');
+      logDebug('❌ [IncidentFormController] DioException: $statusCode, data: $detail');
       state = state.copyWith(isSaving: false, errorMessage: 'Ошибка $statusCode: $detail');
       return false;
     } catch (e) {
@@ -299,15 +298,9 @@ class IncidentFormController extends _$IncidentFormController {
     }
   }
 
-  /// Сохраняет autoResolveOnFinish в Drift БД после успешного сохранения на сервере.
-  /// Аналогично iOS: incident.setValue(autoResolveOnFinishCaptured, forKey: "autoResolveOnFinish")
-  Future<void> _saveAutoResolveLocally(int incidentId, bool autoResolve) async {
-    try {
-      final syncRepo = ref.read(syncRepositoryProvider);
-      await syncRepo.updateAutoResolveOnFinish(incidentId, autoResolve);
-    } catch (e) {
-      // Не критично — логируем и продолжаем
-      print('⚠️ [IncidentFormController] Failed to save autoResolveOnFinish locally: $e');
-    }
-  }
+  // Удалён _saveAutoResolveLocally: он нигде не вызывался, а autoResolveOnFinish
+  // и так уходит на сервер в IncidentCreate/IncidentUpdate выше, локальная копия
+  // в Drift обновляется при следующей синхронизации.
+  // syncRepo.updateAutoResolveOnFinish остаётся доступен, если понадобится
+  // оптимистичное локальное обновление.
 }

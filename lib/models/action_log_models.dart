@@ -1,5 +1,6 @@
 /// Models for Action Logs (журнал действий).
 /// Matches the backend response from /api/v1/action-logs/
+library;
 
 class ActionLogEntry {
   final int id;
@@ -72,6 +73,15 @@ class ActionLogEntry {
       case 'delete': return 'Удаление';
       case 'login':  return 'Вход';
       case 'logout': return 'Выход';
+      case 'payment': return 'Оплата';
+      case 'pay_auto': return 'Автооплата';
+      case 'undo': return 'Отмена операции';
+      case 'redo': return 'Восстановление';
+      case 'recalc': return 'Перерасчёт';
+      case 'charge': return 'Начисление';
+      case 'correction': return 'Корректировка';
+      case 'period_close': return 'Закрытие периода';
+      case 'delete_all': return 'Массовое удаление';
       default: return actionType;
     }
   }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/connectivity_banner.dart';
 import 'map_screen.dart';
 import 'incident_list_screen.dart';
-import '../utils/app_theme.dart';
 import '../services/chat_read_service.dart';
 
 class MainTabsScreen extends ConsumerStatefulWidget {

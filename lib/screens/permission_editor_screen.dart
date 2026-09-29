@@ -288,7 +288,7 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
                     title: Text(section.items[i].title, style: const TextStyle(fontSize: 14)),
                     subtitle: Text(section.items[i].description, style: const TextStyle(fontSize: 11)),
                     value: _values[section.items[i].key] ?? false,
-                    activeColor: Colors.green,
+                    activeThumbColor: Colors.green,
                     onChanged: (val) {
                       setState(() => _values[section.items[i].key] = val);
                     },

@@ -15,11 +15,11 @@ class TimeFormatter {
     final minutes = totalMinutes % 60;
 
     if (hours > 0 && minutes > 0) {
-      return '${hours}ч ${minutes}м';
+      return '$hoursч $minutesм';
     } else if (hours > 0) {
-      return '${hours}ч';
+      return '$hoursч';
     } else {
-      return '${minutes}м';
+      return '$minutesм';
     }
   }
 

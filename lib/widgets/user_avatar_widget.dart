@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/avatar_cache_service.dart';
-import '../services/secure_storage_service.dart';
 
 /// Универсальный виджет аватарки пользователя.
 /// Показывает фото из кеша (memory → disk → server) или инициалы/иконку.

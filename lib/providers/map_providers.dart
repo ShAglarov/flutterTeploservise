@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import '../models/boiler_house_models.dart';
 import '../models/location_models.dart';
 import '../models/incident_models.dart';
@@ -9,6 +7,7 @@ import '../repositories/sync_repository.dart';
 import '../services/boiler_house_service.dart';
 import '../services/location_service.dart';
 import '../services/incident_service.dart';
+import '../utils/app_logger.dart';
 
 part 'map_providers.g.dart';
 
@@ -207,7 +206,7 @@ class MapData extends _$MapData {
 
   Future<void> _fetchInitialData() async {
     if (_isFetching) {
-      print('⏭️ [MapData] _fetchInitialData already in progress, skipping');
+      logDebug('⏭️ [MapData] _fetchInitialData already in progress, skipping');
       return;
     }
     if (_disposed) return;
@@ -227,14 +226,14 @@ class MapData extends _$MapData {
         incService.getAllIncidents(),
       ]);
       _fetchRetryCount = 0; // Reset on success
-      print('✅ [MapData] Initial data fetch complete');
+      logDebug('✅ [MapData] Initial data fetch complete');
     } catch (e) {
       if (_disposed) return; // Provider уничтожен (logout) — не ретраим
-      print('⚠️ [MapData] Initial data fetch failed: $e');
+      logDebug('⚠️ [MapData] Initial data fetch failed: $e');
       _fetchRetryCount++;
       if (_fetchRetryCount <= _maxFetchRetries) {
         final delay = Duration(seconds: _fetchRetryCount * 5);
-        print('🔄 [MapData] Retry $_fetchRetryCount/$_maxFetchRetries in ${delay.inSeconds}s');
+        logDebug('🔄 [MapData] Retry $_fetchRetryCount/$_maxFetchRetries in ${delay.inSeconds}s');
         _retryTimer?.cancel();
         _retryTimer = Timer(delay, () {
           _isFetching = false;
@@ -242,7 +241,7 @@ class MapData extends _$MapData {
         });
         return; // Don't reset _isFetching yet
       } else {
-        print('❌ [MapData] Max retries reached, giving up');
+        logDebug('❌ [MapData] Max retries reached, giving up');
       }
     } finally {
       if (_fetchRetryCount == 0 || _fetchRetryCount > _maxFetchRetries) {

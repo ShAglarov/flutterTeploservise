@@ -63,8 +63,8 @@ class IncidentActivity {
     changesData!.forEach((key, value) {
       if (key == 'scope' || key == 'type' || key == 'screen') return;
       
-      var oldVal;
-      var newVal;
+      Object? oldVal;
+      Object? newVal;
       if (value is Map) {
         oldVal = value['old'];
         newVal = value['new'];

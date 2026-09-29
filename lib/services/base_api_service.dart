@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'secure_storage_service.dart';
@@ -7,6 +6,7 @@ import 'event_service.dart';
 import 'device_id_service.dart';
 import 'server_manager.dart';
 import '../utils/constants.dart';
+import '../utils/app_logger.dart';
 
 final dioProvider = Provider<Dio>((ref) {
   // КРИТИЧНО: Наблюдаем за serverStateProvider, чтобы Dio пересоздавался при смене сервера
@@ -90,7 +90,8 @@ class AuthInterceptor extends Interceptor {
           final deviceId = await _deviceIdService.getDeviceId();
           final opts = err.requestOptions;
           
-          print('🔄 [AuthInterceptor] Retrying ${opts.method} ${opts.path} with new token (${newToken?.substring(0, 20)}...)');
+          // SECURITY: не логируем содержимое токена
+          logDebug('🔄 [AuthInterceptor] Retrying ${opts.method} ${opts.path} with new token');
 
           final retryDio = Dio(BaseOptions(
             baseUrl: AppConstants.baseUrl,
@@ -121,7 +122,7 @@ class AuthInterceptor extends Interceptor {
           if (retryError is DioException) {
             final path = err.requestOptions.path;
             final detail = retryError.response?.data;
-            print('❌ [AuthInterceptor] Retry STILL ${retryError.response?.statusCode} on $path — server says: $detail');
+            logDebug('❌ [AuthInterceptor] Retry STILL ${retryError.response?.statusCode} on $path — server says: $detail');
             return handler.next(retryError);
           }
           return handler.next(err);
@@ -155,7 +156,7 @@ class AuthInterceptor extends Interceptor {
       }
 
       final refreshUrl = AppConstants.baseUrl;
-      print('🔄 [AuthInterceptor] Refreshing at: $refreshUrl${AppConstants.refresh}');
+      logDebug('🔄 [AuthInterceptor] Refreshing at: $refreshUrl${AppConstants.refresh}');
       
       final dio = Dio(BaseOptions(
         baseUrl: refreshUrl,
@@ -174,25 +175,14 @@ class AuthInterceptor extends Interceptor {
 
         if (newAccessToken != null) {
           await _storageService.saveAccessToken(newAccessToken);
-          // Декодируем payload для диагностики
-          try {
-            final parts = newAccessToken.split('.');
-            if (parts.length == 3) {
-              String payload = parts[1];
-              switch (payload.length % 4) {
-                case 2: payload += '=='; break;
-                case 3: payload += '='; break;
-              }
-              final decoded = String.fromCharCodes(base64Url.decode(payload));
-              print('🔑 [AuthInterceptor] New token payload: $decoded');
-            }
-          } catch (_) {}
+          // SECURITY: payload токена больше не логируется — содержит
+          // session id и claims, по которым можно восстановить сессию.
         }
         if (newRefreshToken != null) {
           await _storageService.saveRefreshToken(newRefreshToken);
         }
 
-        print('🔄 [AuthInterceptor] Token refreshed successfully');
+        logDebug('🔄 [AuthInterceptor] Token refreshed successfully');
         _refreshCompleter!.complete(true);
         return true;
       }
@@ -200,7 +190,7 @@ class AuthInterceptor extends Interceptor {
       _refreshCompleter!.complete(false);
       return false;
     } catch (e) {
-      print('❌ [AuthInterceptor] Token refresh failed: $e');
+      logDebug('❌ [AuthInterceptor] Token refresh failed: $e');
       _refreshCompleter!.complete(false);
       return false;
     } finally {

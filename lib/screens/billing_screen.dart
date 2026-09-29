@@ -468,7 +468,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 _selectAll = v;
                 if (v) _selectedServices.clear();
               }),
-              activeColor: AppTheme.primaryBlue,
+              activeThumbColor: AppTheme.primaryBlue,
             ),
             if (!_selectAll) ...[
               const Divider(),

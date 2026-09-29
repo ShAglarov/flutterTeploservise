@@ -173,7 +173,7 @@ final incidentViewModelsProvider = Provider<AsyncValue<List<IncidentViewModel>>>
     return incidents.map((inc) {
       String? boilerHouseDetail;
       if (inc.boilerHouse != null) {
-        final address = inc.boilerHouse!.address ?? 'Неизвестно';
+        final address = inc.boilerHouse!.address;
         final manager = inc.boilerHouse!.siteManager ?? '?';
         final site = inc.boilerHouse!.siteNumber ?? '?';
         boilerHouseDetail = '📍 Котельная: $address\nНач: $manager | Участок: $site';

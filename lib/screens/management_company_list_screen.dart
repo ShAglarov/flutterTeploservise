@@ -274,7 +274,7 @@ class _ManagementCompanyListScreenState
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withOpacity(0.15),
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.business,
