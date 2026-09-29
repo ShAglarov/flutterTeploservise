@@ -1433,7 +1433,13 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     final totalDebt = (receiptData?['total_debt'] as num?)?.toDouble() ??
         services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
     var qrString = receiptData?['qr_string'] as String?;
-    final periodCoverage = receiptData?['period_coverage'] as List? ?? [];
+    // Период оплаты считает бэкенд (_build_payment_period_lines) — единственный
+    // источник правды. Раньше надпись собиралась в трёх местах (этот диалог,
+    // PDF и period_summary), каждое по-своему, и периоды расходились.
+    final periodLines = (receiptData?['payment_period_lines'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
+    // Периоды, за которые долг остался (уже сгруппированы бэкендом).
+    final debtPeriodLabel = receiptData?['debt_period_label'] as String? ?? '';
     final overpayment = (receiptData?['overpayment'] as num?)?.toDouble() ?? 0;
     final org = receiptData?['org'] as Map<String, dynamic>? ?? {};
     final periodLabel = receiptData?['period_label'] as String? ?? _formatPeriod(d['period_date']);
@@ -1500,46 +1506,16 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                   _receiptRow('Плательщик:', receiptData?['fio'] ?? d['fio'] ?? '—'),
                   _receiptRow('Лицевой счёт:', receiptData?['account_number'] ?? d['account_number'] ?? '—'),
                   _receiptRow('Адрес:', receiptData?['address'] ?? d['address'] ?? '—'),
-                  // Период оплаты — только периоды покрытые ЭТОЙ оплатой
-                  ...() {
-                    if (periodCoverage.isNotEmpty) {
-                      final coveredPeriods = periodCoverage.where((c) =>
-                        c['covered_by_payment'] == true
-                      ).toList();
-                      if (coveredPeriods.isNotEmpty) {
-                        // Полностью оплаченные
-                        final fullPeriods = coveredPeriods.where((c) =>
-                          c['payment_covers_full'] == true
-                        ).toList();
-                        // Частично оплаченный (последний)
-                        final partialPeriod = coveredPeriods.where((c) =>
-                          c['payment_covers_full'] == false
-                        ).toList();
-
-                        final widgets = <Widget>[];
-
-                        if (fullPeriods.isNotEmpty) {
-                          final first = fullPeriods.first['period_label'] as String? ?? '';
-                          final last = fullPeriods.last['period_label'] as String? ?? '';
-                          final label = first == last ? first : 'от $first по $last';
-                          widgets.add(_receiptRow('Период (оплачен):', label));
-                        }
-
-                        if (partialPeriod.isNotEmpty) {
-                          final p = partialPeriod.first;
-                          final partialAmt = (p['payment_partial_amount'] as num?)?.toDouble() ?? 0;
-                          final ch = (p['charged'] as num?)?.toDouble() ?? 0;
-                          widgets.add(_receiptRow(
-                            'Частично:',
-                            '${p['period_label']} (${partialAmt.toStringAsFixed(2)}₽ из ${ch.toStringAsFixed(2)}₽)',
-                          ));
-                        }
-
-                        if (widgets.isNotEmpty) return widgets;
-                      }
-                    }
-                    return [_receiptRow('Период:', periodLabel)];
-                  }(),
+                  // Период оплаты — строки готовит бэкенд.
+                  if (periodLines.isNotEmpty)
+                    ...periodLines.map((l) => _receiptRow(
+                          l['label'] as String? ?? '',
+                          l['value'] as String? ?? '',
+                        ))
+                  else
+                    // Оплаты по документу не было — печатаем период документа,
+                    // иначе в чеке вообще не будет периода.
+                    _receiptRow('Период:', periodLabel),
                   if ((receiptData?['area'] ?? d['area']) != null)
                     _receiptRow('Площадь:', '${receiptData?['area'] ?? d['area']} м²'),
 
@@ -1622,86 +1598,30 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                       ],
                     ),
 
-                  // === Покрытие периодов ===
-                  if (periodCoverage.isNotEmpty) ...[
+                  // === За какие периоды долг остался ===
+                  // Раньше здесь печатался «Расчёт по периодам» — список ВСЕХ
+                  // периодов со статусами. Оплаченные месяцы дублировали
+                  // надпись «Закрыты периоды» выше (жилец видел период дважды),
+                  // а группировка шла по отфильтрованному списку, из-за чего
+                  // месяцы без начислений молча попадали внутрь диапазона
+                  // «с ... по ...». Оставляем только то, чего выше нет: долг.
+                  if (debtPeriodLabel.isNotEmpty) ...[
                     _receiptDivider(),
-                    const Align(
+                    Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Расчёт по периодам:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.black87)),
+                      child: Text(
+                        'Долг за периоды:',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.red.shade700),
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Builder(builder: (_) {
-                      // Группируем последовательные периоды с одинаковым статусом
-                      final filtered = periodCoverage.where((c) => c['status'] != 'no_charges').toList();
-                      final groups = <Map<String, dynamic>>[];
-                      for (final c in filtered) {
-                        final status = c['status'] as String? ?? '';
-                        // partial — всегда отдельная строка (суммы разные)
-                        if (status == 'partial' || groups.isEmpty || groups.last['status'] != status) {
-                          groups.add({
-                            'status': status,
-                            'status_label': c['status_label'],
-                            'first_label': c['period_label'],
-                            'last_label': c['period_label'],
-                            'count': 1,
-                            'has_current': c['is_current'] == true,
-                          });
-                        } else {
-                          final g = groups.last;
-                          g['last_label'] = c['period_label'];
-                          g['count'] = (g['count'] as int) + 1;
-                          if (c['is_current'] == true) g['has_current'] = true;
-                        }
-                      }
-
-                      return Column(
-                        children: groups.map((g) {
-                          final status = g['status'] as String;
-                          Color statusColor;
-                          IconData statusIcon;
-                          switch (status) {
-                            case 'paid':
-                              statusColor = Colors.green;
-                              statusIcon = Icons.check_circle;
-                              break;
-                            case 'partial':
-                              statusColor = Colors.orange;
-                              statusIcon = Icons.warning_amber;
-                              break;
-                            default:
-                              statusColor = Colors.red;
-                              statusIcon = Icons.cancel;
-                          }
-                          final count = g['count'] as int;
-                          final label = count == 1
-                              ? (g['first_label'] as String? ?? '')
-                              : 'с ${g['first_label']} по ${g['last_label']}';
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              children: [
-                                Icon(statusIcon, size: 14, color: statusColor),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    label,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.black87,
-                                      fontWeight: g['has_current'] == true ? FontWeight.bold : null,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  g['status_label'] as String? ?? '',
-                                  style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    }),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        debtPeriodLabel,
+                        style: const TextStyle(fontSize: 11, color: Colors.black87),
+                      ),
+                    ),
                   ],
 
                   // === QR код для оплаты ===
@@ -1759,8 +1679,11 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () => _generateAndSharePdf(
                             receiptData ?? d, services, totalPaid, dateStr, timeStr,
-                            qrString: qrString, periodCoverage: periodCoverage,
+                            qrString: qrString,
                             totalDebt: effectiveDebt, overpayment: overpayment, org: org,
+                            // Те же строки, что в диалоге: PDF и экран обязаны
+                            // показывать жильцу один и тот же период.
+                            periodLines: periodLines, debtPeriodLabel: debtPeriodLabel,
                           ),
                           icon: const Icon(Icons.picture_as_pdf, size: 16),
                           label: const Text('PDF'),
@@ -1828,8 +1751,12 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
   Future<void> _generateAndSharePdf(
     Map<String, dynamic> d, List services, double totalPaid, String date, String time, {
-    String? qrString, List? periodCoverage, double totalDebt = 0,
+    String? qrString, double totalDebt = 0,
     double overpayment = 0, Map<String, dynamic>? org,
+    // Период оплаты и долга приходят готовыми строками с бэкенда, чтобы PDF и
+    // диалог не пересчитывали их по-разному.
+    List<Map<String, dynamic>> periodLines = const [],
+    String debtPeriodLabel = '',
   }) async {
     try {
       final fontData = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
@@ -1851,11 +1778,6 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
           qrImage = pw.MemoryImage(qrPng);
         } catch (_) {}
       }
-
-      // Покрытие периодов для PDF
-      final coverage = (periodCoverage ?? [])
-          .where((c) => c['status'] != 'no_charges')
-          .toList();
 
       pdf.addPage(
         pw.Page(
@@ -1885,29 +1807,15 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 _pdfInfoRow('Плательщик:', d['fio'] ?? '—', ttf),
                 _pdfInfoRow('Лицевой счёт:', d['account_number'] ?? '—', ttf),
                 _pdfInfoRow('Адрес:', d['address'] ?? '—', ttf),
-                // Период оплаты — только периоды покрытые ЭТОЙ оплатой
-                ...() {
-                  final coveredP = coverage.where((c) => c['covered_by_payment'] == true).toList();
-                  if (coveredP.isNotEmpty) {
-                    final fullP = coveredP.where((c) => c['payment_covers_full'] == true).toList();
-                    final partialP = coveredP.where((c) => c['payment_covers_full'] == false).toList();
-                    final rows = <pw.Widget>[];
-                    if (fullP.isNotEmpty) {
-                      final first = fullP.first['period_label'] as String? ?? '';
-                      final last = fullP.last['period_label'] as String? ?? '';
-                      final lbl = first == last ? first : 'от $first по $last';
-                      rows.add(_pdfInfoRow('Период (оплачен):', lbl, ttf));
-                    }
-                    if (partialP.isNotEmpty) {
-                      final p = partialP.first;
-                      final amt = (p['payment_partial_amount'] as num?)?.toDouble() ?? 0;
-                      final ch = (p['charged'] as num?)?.toDouble() ?? 0;
-                      rows.add(_pdfInfoRow('Частично:', '${p['period_label']} (${amt.toStringAsFixed(2)}₽ из ${ch.toStringAsFixed(2)}₽)', ttf));
-                    }
-                    if (rows.isNotEmpty) return rows;
-                  }
-                  return [_pdfInfoRow('Период:', d['period_label'] ?? _formatPeriod(d['period_date']), ttf)];
-                }(),
+                // Период оплаты — те же строки, что в диалоге (считает бэкенд).
+                if (periodLines.isNotEmpty)
+                  ...periodLines.map((l) => _pdfInfoRow(
+                        l['label'] as String? ?? '',
+                        l['value'] as String? ?? '',
+                        ttf,
+                      ))
+                else
+                  _pdfInfoRow('Период:', d['period_label'] ?? _formatPeriod(d['period_date']), ttf),
                 if (d['area'] != null) _pdfInfoRow('Площадь:', '${d['area']} м²', ttf),
 
                 pw.SizedBox(height: 10),
@@ -1980,7 +1888,16 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                   ),
 
 
-                // Покрытие периодов — скрыто в PDF (отображается только в приложении)
+                // За какие периоды долг остался. В PDF этого блока раньше не
+                // было вовсе: жилец получал чек, где сумма долга есть, а за
+                // какие месяцы — не сказано.
+                if (debtPeriodLabel.isNotEmpty) ...[
+                  pw.SizedBox(height: 6),
+                  pw.Text('Долг за периоды:',
+                      style: pw.TextStyle(font: ttf, fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.red700)),
+                  pw.SizedBox(height: 2),
+                  pw.Text(debtPeriodLabel, style: pw.TextStyle(font: ttf, fontSize: 8)),
+                ],
 
                 // QR код
                 if (qrImage != null) ...[
