@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -272,12 +273,36 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Ошибка экспорта: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('❌ Ошибка экспорта: ${_exportErrorText(e)}'), backgroundColor: Colors.red),
         );
       }
     } finally {
       setState(() => _isExporting = false);
     }
+  }
+
+  /// Текст ошибки экспорта.
+  ///
+  /// Запрос идёт с `ResponseType.bytes`, поэтому тело ошибки 400 от бэкенда
+  /// приходит списком байт и в сообщении выглядит как «[123, 34, 100...]».
+  /// Декодируем его, чтобы пользователь видел причину («Неизвестный режим
+  /// ставки», «Укажите дату ставки» и т.п.), а не дамп.
+  String _exportErrorText(Object error) {
+    if (error is! DioException) return error.toString();
+    final data = error.response?.data;
+    try {
+      final decoded = data is List<int>
+          ? jsonDecode(utf8.decode(data))
+          : data is String
+              ? jsonDecode(data)
+              : data;
+      if (decoded is Map && decoded['detail'] != null) {
+        return decoded['detail'].toString();
+      }
+    } catch (_) {
+      // Не JSON — покажем исходное сообщение Dio.
+    }
+    return error.message ?? error.toString();
   }
 
   Future<Map<String, String>?> _showDosudebSettings(String format) async {
@@ -718,6 +743,23 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
     bool excludePayers = true;
     final excludeFioCtrl = TextEditingController();
 
+    // ── Настройки расчёта пени ──
+    // Значения по умолчанию совпадают с эталонным калькулятором
+    // https://etr-torgi.ru/calc/penya300/ : 1/300, ставка по периодам её
+    // действия. Специфика ЖКУ (1/130 с 91-го дня, 30 льготных дней,
+    // мораторий) включается галочками — чтобы расчёт можно было сверить
+    // с калькулятором один-в-один.
+    String penaltyFraction = '1/300';
+    String penaltyRateMode = 'PDS';
+    bool penaltyJkuProgressive = false;
+    bool penaltyGrace = false;
+    bool penaltyMoratorium = false;
+    bool partialAuto = true;
+    final penaltyRateDateCtrl = TextEditingController();
+    final penaltyStartCtrl = TextEditingController();
+    final partialDateCtrl = TextEditingController();
+    final partialAmountCtrl = TextEditingController();
+
     void fillFromRequisites(Map<String, dynamic> r, void Function(void Function()) setState) {
       orgNameCtrl.text = (r['org_name'] as String?) ?? '';
       directorTitleCtrl.text = (r['director_title'] as String?) ?? '';
@@ -833,6 +875,128 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                   ]),
 
                   const SizedBox(height: 16),
+                  const Text('Расчёт пени', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        initialValue: penaltyFraction,
+                        decoration: const InputDecoration(
+                          labelText: 'Доля от ставки ЦБ',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: '1/300', child: Text('1/300')),
+                          DropdownMenuItem(value: '1/130', child: Text('1/130')),
+                          DropdownMenuItem(value: '1/150', child: Text('1/150')),
+                        ],
+                        onChanged: (v) => setDialogState(() => penaltyFraction = v ?? '1/300'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: penaltyStartCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Начало просрочки',
+                          hintText: 'как период с',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: penaltyRateMode,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Применять процентную ставку',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'PDS', child: Text('по периодам действия ставки')),
+                      DropdownMenuItem(value: 'DNO', child: Text('на день наступления обязательств')),
+                      DropdownMenuItem(value: 'KP', child: Text('на конец периода')),
+                      DropdownMenuItem(value: 'DPIS', child: Text('на день подачи иска в суд (сегодня)')),
+                      DropdownMenuItem(value: 'UD', child: Text('на указанную дату')),
+                    ],
+                    onChanged: (v) => setDialogState(() => penaltyRateMode = v ?? 'PDS'),
+                  ),
+                  if (penaltyRateMode == 'UD') ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: penaltyRateDateCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Дата ставки (дд.мм.гггг)',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ],
+                  CheckboxListTile(
+                    dense: true, contentPadding: EdgeInsets.zero,
+                    title: const Text('С 91-го дня считать по 1/130 (п.14 ст.155 ЖК РФ)',
+                        style: TextStyle(fontSize: 13)),
+                    value: penaltyJkuProgressive,
+                    onChanged: (v) => setDialogState(() => penaltyJkuProgressive = v ?? false),
+                  ),
+                  CheckboxListTile(
+                    dense: true, contentPadding: EdgeInsets.zero,
+                    title: const Text('Первые 30 дней без пени (п.14 ст.155 ЖК РФ)',
+                        style: TextStyle(fontSize: 13)),
+                    value: penaltyGrace,
+                    onChanged: (v) => setDialogState(() => penaltyGrace = v ?? false),
+                  ),
+                  CheckboxListTile(
+                    dense: true, contentPadding: EdgeInsets.zero,
+                    title: const Text('Исключить мораторий (ПП РФ № 424/2020, № 497/2022)',
+                        style: TextStyle(fontSize: 13)),
+                    value: penaltyMoratorium,
+                    onChanged: (v) => setDialogState(() => penaltyMoratorium = v ?? false),
+                  ),
+
+                  const SizedBox(height: 8),
+                  const Text('Частичная оплата задолженности',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  CheckboxListTile(
+                    dense: true, contentPadding: EdgeInsets.zero,
+                    title: const Text('Брать из базы автоматически', style: TextStyle(fontSize: 13)),
+                    subtitle: const Text('Даты и суммы оплат из журнала кассира по каждому ЛС',
+                        style: TextStyle(fontSize: 11)),
+                    value: partialAuto,
+                    onChanged: (v) => setDialogState(() => partialAuto = v ?? false),
+                  ),
+                  if (!partialAuto)
+                    Row(children: [
+                      Expanded(
+                        child: TextField(
+                          controller: partialDateCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Дата оплаты',
+                            hintText: 'дд.мм.гггг',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: partialAmountCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Сумма ₽',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
+                      ),
+                    ]),
+
+                  const SizedBox(height: 16),
                   const Text('Формат выгрузки', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 6),
                   Row(children: [
@@ -905,6 +1069,22 @@ class _PaymentDocumentsScreenState extends ConsumerState<PaymentDocumentsScreen>
                   'exclude_payers': excludePayers.toString(),
                   if (excludeFioCtrl.text.trim().isNotEmpty)
                     'exclude_fio': excludeFioCtrl.text.trim(),
+                  // Настройки расчёта пени
+                  'penalty_fraction': penaltyFraction,
+                  'penalty_rate_mode': penaltyRateMode,
+                  if (penaltyRateMode == 'UD' && penaltyRateDateCtrl.text.trim().isNotEmpty)
+                    'penalty_rate_date': penaltyRateDateCtrl.text.trim(),
+                  if (penaltyStartCtrl.text.trim().isNotEmpty)
+                    'penalty_start': penaltyStartCtrl.text.trim(),
+                  'penalty_grace_days': penaltyGrace ? '30' : '0',
+                  'penalty_jku_progressive': penaltyJkuProgressive.toString(),
+                  'penalty_moratorium': penaltyMoratorium.toString(),
+                  'partial_payment_auto': partialAuto.toString(),
+                  if (!partialAuto && partialDateCtrl.text.trim().isNotEmpty)
+                    'partial_payment_date': partialDateCtrl.text.trim(),
+                  if (!partialAuto && partialAmountCtrl.text.trim().isNotEmpty)
+                    'partial_payment_amount':
+                        partialAmountCtrl.text.trim().replaceAll(',', '.'),
                 });
               },
             ),
