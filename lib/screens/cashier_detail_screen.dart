@@ -26,6 +26,10 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
   String? _error;
   /// id документов, у которых раскрыта расшифровка баланса в истории
   final Set<int> _expandedPeriods = {};
+  /// Вид финансовой истории: true — по событиям (выписка), false — по месяцам.
+  /// По событиям по умолчанию: месячная сводка не отвечает на вопрос «откуда
+  /// долг» — баланс в ней это накопительный итог, а не арифметика строки.
+  bool _ledgerView = true;
 
   @override
   void initState() {
@@ -420,10 +424,142 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
   // ═══════ История по месяцам ═══════
 
+  /// Финансовая история ЛС: «По событиям» (выписка) / «По месяцам» (сводка).
+  ///
+  /// Раньше здесь была только месячная таблица, где «Баланс» — это debt_end
+  /// документа, то есть накопительный итог, а не результат арифметики строки.
+  /// Жилец видел «Начислено 1062, Оплачено 0, Баланс 19684» и не понимал,
+  /// откуда 19684. Дат и сумм отдельных платежей не было вовсе.
   Widget _buildPeriodHistory(ThemeData theme, Map<String, dynamic> d) {
     final history = d['period_history'] as List? ?? [];
-    if (history.length <= 1) return const SizedBox.shrink();
+    final ledger = d['ledger'] as List? ?? [];
+    if (history.length <= 1 && ledger.isEmpty) return const SizedBox.shrink();
 
+    final accountingStart = d['accounting_start'] as Map<String, dynamic>?;
+    // Старые сборки бэкенда ledger не отдают — тогда остаётся сводка.
+    final hasLedger = ledger.isNotEmpty;
+    final showLedger = hasLedger && _ledgerView;
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Icons.account_balance_wallet, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Финансовая история',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              ),
+              Text(
+                showLedger ? '${ledger.length} оп.' : '${history.length} пер.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ]),
+            if (hasLedger) ...[
+              const SizedBox(height: 10),
+              _historyViewTabs(theme),
+            ],
+            if (accountingStart != null) _accountingStartNote(theme, accountingStart),
+            const SizedBox(height: 12),
+            if (showLedger)
+              _buildLedgerList(theme, ledger)
+            else
+              _buildMonthlyTable(theme, history),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _historyViewTabs(ThemeData theme) {
+    Widget tab(String label, IconData icon, bool active, VoidCallback onTap) {
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: active ? theme.colorScheme.primary.withAlpha(30) : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icon, size: 15,
+                  color: active ? theme.colorScheme.primary : Colors.grey.shade600),
+              const SizedBox(width: 6),
+              Text(label, style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? theme.colorScheme.primary : Colors.grey.shade700,
+              )),
+            ]),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withAlpha(70),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(children: [
+        tab('По событиям', Icons.receipt_long, _ledgerView,
+            () => setState(() => _ledgerView = true)),
+        tab('По месяцам', Icons.calendar_month, !_ledgerView,
+            () => setState(() => _ledgerView = false)),
+      ]),
+    );
+  }
+
+  /// «Учёт ведётся с …» — честно, вместо выдуманных периодов. Если первый
+  /// документ пришёл с долгом, он объясняется здесь, а не висит необъяснённым.
+  Widget _accountingStartNote(ThemeData theme, Map<String, dynamic> start) {
+    // Знаковое сальдо: ЛС мог прийти и с переплатой.
+    final opening = (start['opening_balance'] as num?)?.toDouble()
+        ?? (start['opening_debt'] as num?)?.toDouble() ?? 0;
+    final label = start['period_label'] as String? ?? '—';
+    final String text;
+    if (opening > 0.01) {
+      text = 'Учёт в системе ведётся с $label. Входящий долг ${_fmt(opening)} ₽ '
+          'накоплен ранее — данные за те периоды в систему не вносились.';
+    } else if (opening < -0.01) {
+      text = 'Учёт в системе ведётся с $label. Входящая переплата '
+          '${_fmt(opening.abs())} ₽ сложилась ранее — данные за те периоды '
+          'в систему не вносились.';
+    } else {
+      text = 'Учёт в системе ведётся с $label.';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.amber.withAlpha(20),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.amber.withAlpha(60)),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.info_outline, size: 15, color: Colors.amber.shade800),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: TextStyle(
+            fontSize: 11.5, height: 1.35, color: Colors.grey.shade800,
+          ))),
+        ]),
+      ),
+    );
+  }
+
+  // ═══════ Вид «По месяцам» (сводка) ═══════
+
+  Widget _buildMonthlyTable(ThemeData theme, List history) {
     const months = ['', 'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
     String formatPeriod(String? iso) {
@@ -436,22 +572,9 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       }
     }
 
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Icon(Icons.history, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('История по месяцам', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-              const Spacer(),
-              Text('${history.length} пер.', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            ]),
-            const SizedBox(height: 12),
             // Заголовок
             Container(
               decoration: BoxDecoration(
@@ -461,10 +584,14 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(children: [
                 const Expanded(flex: 3, child: Text('Период', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+                // Долг на начало — то, что пришло из предыдущего месяца. Без
+                // него формула строки не читается и «Баланс» выглядит
+                // взявшимся из воздуха.
+                const Expanded(flex: 2, child: Text('Долг.нач', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
                 const Expanded(flex: 2, child: Text('Начис.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
                 const Expanded(flex: 2, child: Text('Перерасч.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
                 const Expanded(flex: 2, child: Text('Оплач.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
-                const Expanded(flex: 2, child: Text('Баланс', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+                const Expanded(flex: 2, child: Text('Долг.кон', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
                 const SizedBox(width: 24),
               ]),
             ),
@@ -477,6 +604,8 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
               final balance = (p['balance'] as num?)?.toDouble()
                   ?? (p['debt_end'] as num?)?.toDouble() ?? 0;
               final recalc = (p['recalc'] as num?)?.toDouble() ?? 0;
+              final prevBalance = (p['prev_balance'] as num?)?.toDouble() ?? 0;
+              final isFirst = p['is_first'] == true;
               final isExpanded = docId != null && _expandedPeriods.contains(docId);
               final Color? balanceColor = balance > 0.01
                   ? Colors.red.shade700
@@ -514,6 +643,15 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                         ),
                       ),
                     ])),
+                    Expanded(flex: 2, child: Text(
+                      _fmt(prevBalance),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: prevBalance > 0.01 ? Colors.red.shade400 : Colors.grey.shade600,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                      textAlign: TextAlign.right,
+                    )),
                     Expanded(flex: 2, child: Text(
                       _fmt(p['charged']),
                       style: TextStyle(fontSize: 12, color: Colors.orange.shade700, fontFeatures: const [FontFeature.tabularFigures()]),
@@ -554,24 +692,144 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                   ]),
                 ),
               ),
+              // Самый ранний период с входящим долгом — объясняем строкой,
+              // а не оставляем цифру без происхождения.
+              if (isFirst && prevBalance > 0.01)
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 12, bottom: 6),
+                  child: Row(children: [
+                    Icon(Icons.subdirectory_arrow_right, size: 13, color: Colors.grey.shade500),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(
+                      'Входящий долг ${_fmt(prevBalance)} ₽ — данные за более ранние '
+                      'периоды в систему не вносились',
+                      style: TextStyle(fontSize: 10.5, color: Colors.grey.shade600, height: 1.3),
+                    )),
+                  ]),
+                ),
               if (isExpanded) _buildBalanceBreakdown(theme, p, balance, recalc),
               ]);
             }),
           ],
+        );
+  }
+
+  // ═══════ Вид «По событиям» (банковская выписка) ═══════
+
+  /// Каждая строка — одно событие с датой, суммой и остатком долга ПОСЛЕ него.
+  /// Жилец видит цепочку и может проверить каждый шаг; бухгалтер сверяет
+  /// бегущий остаток с карточкой.
+  Widget _buildLedgerList(ThemeData theme, List ledger) {
+    // От нового к старому: кассира интересует последнее, а не 2019 год.
+    final events = ledger.reversed.toList();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(children: const [
+          Expanded(flex: 5, child: Text('Событие', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+          Expanded(flex: 2, child: Text('Сумма', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+          Expanded(flex: 2, child: Text('Остаток', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700), textAlign: TextAlign.right)),
+        ]),
       ),
+      const SizedBox(height: 2),
+      ...events.map((e) => _ledgerRow(theme, e as Map<String, dynamic>)),
+    ]);
+  }
+
+  Widget _ledgerRow(ThemeData theme, Map<String, dynamic> e) {
+    final kind = e['kind'] as String? ?? '';
+    final amount = (e['amount'] as num?)?.toDouble() ?? 0;
+    final balanceAfter = (e['balance_after'] as num?)?.toDouble() ?? 0;
+    final detail = e['detail'] as String? ?? '';
+    final isCurrent = e['doc_id'] != null && e['doc_id'] == _details?['id'];
+
+    final (IconData icon, Color color) = switch (kind) {
+      'payment' => (Icons.payments, Colors.green.shade700),
+      'charge' => (Icons.receipt_long, Colors.orange.shade800),
+      'recalc' => (Icons.calculate, Colors.blue.shade700),
+      'opening' => (Icons.flag_outlined, Colors.amber.shade800),
+      'adjustment' => (Icons.edit_note, Colors.deepOrange.shade700),
+      _ => (Icons.circle_outlined, Colors.grey.shade600),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: isCurrent ? theme.colorScheme.primaryContainer.withAlpha(40) : null,
+        border: Border(bottom: BorderSide(color: theme.dividerColor.withAlpha(35))),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(flex: 5, child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 8),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              if (e['date'] != null) ...[
+                Text(_formatDate(e['date'] as String?), style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey.shade700,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                )),
+                const SizedBox(width: 6),
+              ],
+              Expanded(child: Text(
+                e['label'] as String? ?? '',
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              )),
+            ]),
+            if (detail.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(detail, style: TextStyle(
+                fontSize: 10.5, color: Colors.grey.shade600, height: 1.3,
+              )),
+            ],
+          ])),
+        ])),
+        Expanded(flex: 2, child: Text(
+          '${amount > 0 ? '+' : (amount < 0 ? '−' : '')}${_fmt(amount.abs())}',
+          style: TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w600, color: color,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+          textAlign: TextAlign.right,
+        )),
+        Expanded(flex: 2, child: Text(
+          _fmt(balanceAfter),
+          style: TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w700,
+            color: balanceAfter > 0.01
+                ? Colors.red.shade700
+                : (balanceAfter < -0.01 ? Colors.green.shade700 : Colors.grey.shade600),
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+          textAlign: TextAlign.right,
+        )),
+      ]),
     );
   }
 
-  /// Расшифровка баланса периода:
-  /// Баланс пред. + Начислено + Перерасчёт − Оплачено = Баланс
+  /// Расшифровка строки месяца:
+  /// Долг.нач + Начислено + Перерасчёт − Оплачено = Долг.кон
+  ///
+  /// prev_balance и computed_balance считает бэкенд. Раньше «баланс на
+  /// начало» восстанавливался здесь из уравнения (balance - charged - recalc
+  /// + paid) — при ручных правках задним числом это давало неверную цифру,
+  /// потому что debt_end документа не равен арифметике строки.
   Widget _buildBalanceBreakdown(
       ThemeData theme, Map<dynamic, dynamic> p, double balance, double recalc) {
     final charged = (p['charged'] as num?)?.toDouble() ?? 0;
     final paid = (p['paid'] as num?)?.toDouble() ?? 0;
-    // prev_balance приходит с backend; если нет — восстанавливаем из уравнения
-    final prevBalance = (p['prev_balance'] as num?)?.toDouble()
-        ?? (balance - charged - recalc + paid);
+    final prevBalance = (p['prev_balance'] as num?)?.toDouble() ?? 0;
+    final computed = (p['computed_balance'] as num?)?.toDouble()
+        ?? (prevBalance + charged + recalc - paid);
+    // Документ объявил долг, не равный арифметике строки — ручная правка
+    // бухгалтерии. Молчать нельзя: иначе расшифровка «не сходится» на глазах.
+    final hasGap = (computed - balance).abs() > 0.01;
 
     Widget line(String label, double value, {Color? color, bool bold = false, String? sign}) {
       return Padding(
@@ -608,13 +866,19 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        line('Баланс на начало периода', prevBalance,
+        line('Долг на начало периода', prevBalance,
             color: prevBalance > 0.01 ? Colors.red.shade700 : (prevBalance < -0.01 ? Colors.green.shade700 : null)),
         line('Начислено', charged, color: Colors.orange.shade700, sign: '+'),
         if (recalc.abs() >= 0.01)
           line('Перерасчёт', recalc, color: Colors.blue.shade700, sign: recalc >= 0 ? '+' : '−'),
         line('Оплачено', paid, color: Colors.green.shade700, sign: '−'),
         Divider(height: 12, color: Colors.grey.shade400),
+        if (hasGap) ...[
+          line('По формуле', computed, color: Colors.grey.shade700, sign: '='),
+          line('Корректировка (правка задним числом)', balance - computed,
+              color: Colors.deepOrange.shade700, sign: '+'),
+          Divider(height: 12, color: Colors.grey.shade400),
+        ],
         line('$verdict на конец периода', balance, color: verdictColor, bold: true, sign: '='),
       ]),
     );
@@ -1432,7 +1696,13 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         services.fold<double>(0, (sum, s) => sum + ((s['paid'] as num?)?.toDouble() ?? 0));
     final totalDebt = (receiptData?['total_debt'] as num?)?.toDouble() ??
         services.fold<double>(0, (sum, s) => sum + ((s['debt_end'] as num?)?.toDouble() ?? 0));
-    var qrString = receiptData?['qr_string'] as String?;
+    final qrString = receiptData?['qr_string'] as String?;
+    // Почему QR не сформирован — текстом кассиру. Локальный fallback убран:
+    // он собирал строку без получателя (Name/PersonalAcc/BankName/BIC/
+    // CorrespAcc по ГОСТ Р 56042-2014), жилец её сканировал, и оплата не
+    // проходила. Лучше честно сказать, что не заполнены реквизиты.
+    final qrError = receiptData?['qr_error'] as String?
+        ?? (receiptData == null ? 'Данные чека недоступны — QR-код не сформирован' : null);
     // Период оплаты считает бэкенд (_build_payment_period_lines) — единственный
     // источник правды. Раньше надпись собиралась в трёх местах (этот диалог,
     // PDF и period_summary), каждое по-своему, и периоды расходились.
@@ -1444,18 +1714,15 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     final org = receiptData?['org'] as Map<String, dynamic>? ?? {};
     final periodLabel = receiptData?['period_label'] as String? ?? _formatPeriod(d['period_date']);
 
-    // Долг из карточки документа (fallback если receipt-data вернул 0)
+    // Долг из карточки документа (fallback если receipt-data недоступен)
     final cardDebt = (d['totals'] as Map?)?['debt_end'] as num? ?? 0;
-    final effectiveDebt = totalDebt > 0.01 ? totalDebt : (cardDebt > 0.01 ? cardDebt.toDouble() : 0.0);
-
-    // Fallback QR: если backend не вернул — генерим локально
-    if ((qrString == null || qrString.isEmpty) && effectiveDebt > 0) {
-      final accNum = d['account_number'] ?? '';
-      final sumKopecks = (effectiveDebt * 100).toInt();
-      qrString = 'ST00012'
-          '|Purpose=Оплата ЖКУ л/с $accNum за $periodLabel'
-          '|Sum=$sumKopecks';
-    }
+    final effectiveDebt = receiptData != null
+        ? totalDebt
+        : (cardDebt > 0.01 ? cardDebt.toDouble() : 0.0);
+    // Сумма в QR — та же, что в строке «Остаток долга»: иначе чек спорит сам
+    // с собой. Раньше QR показывался по totalDebt, а текст по effectiveDebt,
+    // и при расхождении QR просто исчезал при наличии долга.
+    final qrAmount = (receiptData?['qr_amount'] as num?)?.toDouble() ?? effectiveDebt;
 
     final hasData = totalPaid > 0.01 || effectiveDebt > 0.01 || overpayment > 0.01;
 
@@ -1571,16 +1838,32 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
                   // Долг ИЛИ переплата — одновременно быть не может
                   if (effectiveDebt > 0.01)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Остаток долга:', style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
-                        Text(
-                          '${_fmt(effectiveDebt)} ₽',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade700),
+                    Column(children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Остаток долга:', style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+                          Text(
+                            '${_fmt(effectiveDebt)} ₽',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade700),
+                          ),
+                        ],
+                      ),
+                      // За КАКИЕ месяцы — сразу под суммой. Бэкенд выводит
+                      // раскладку из самой суммы долга, поэтому названные
+                      // месяцы складываются в неё.
+                      if (debtPeriodLabel.isNotEmpty)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              'за $debtPeriodLabel',
+                              style: TextStyle(fontSize: 10.5, color: Colors.red.shade400),
+                            ),
+                          ),
                         ),
-                      ],
-                    )
+                    ])
                   else if (overpayment > 0.01)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1598,50 +1881,44 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                       ],
                     ),
 
-                  // === За какие периоды долг остался ===
-                  // Раньше здесь печатался «Расчёт по периодам» — список ВСЕХ
-                  // периодов со статусами. Оплаченные месяцы дублировали
-                  // надпись «Закрыты периоды» выше (жилец видел период дважды),
-                  // а группировка шла по отфильтрованному списку, из-за чего
-                  // месяцы без начислений молча попадали внутрь диапазона
-                  // «с ... по ...». Оставляем только то, чего выше нет: долг.
-                  if (debtPeriodLabel.isNotEmpty) ...[
-                    _receiptDivider(),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Долг за периоды:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.red.shade700),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        debtPeriodLabel,
-                        style: const TextStyle(fontSize: 11, color: Colors.black87),
-                      ),
-                    ),
-                  ],
+                  // Периоды долга печатаются прямо под суммой долга выше.
+                  // Отдельный блок «Долг за периоды» убран: он повторял ту же
+                  // информацию в другом месте чека, и жилец видел период
+                  // дважды.
 
                   // === QR код для оплаты ===
-                  if (qrString != null && qrString.isNotEmpty && totalDebt > 0) ...[
+                  // Показываем ВСЕГДА, когда есть долг. Раньше условие шло по
+                  // totalDebt, а сумма долга в чеке — по effectiveDebt: при
+                  // расхождении жилец получал чек с долгом и без QR.
+                  if (effectiveDebt > 0.01) ...[
                     _receiptDivider(),
                     const Text('Оплата по QR-коду', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
                     const SizedBox(height: 4),
-                    Text('Отсканируйте для оплаты', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
-                    const SizedBox(height: 8),
-                    Center(
-                      child: QrImageView(
-                        data: qrString,
-                        version: QrVersions.auto,
-                        size: 160,
-                        backgroundColor: Colors.white,
-                        errorCorrectionLevel: QrErrorCorrectLevel.M,
+                    if (qrString != null && qrString.isNotEmpty) ...[
+                      Text('Отсканируйте для оплаты', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: QrImageView(
+                          data: qrString,
+                          version: QrVersions.auto,
+                          size: 160,
+                          backgroundColor: Colors.white,
+                          errorCorrectionLevel: QrErrorCorrectLevel.M,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text('Сумма: ${_fmt(totalDebt)} ₽', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+                      const SizedBox(height: 4),
+                      Text('Сумма: ${_fmt(qrAmount)} ₽', style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+                    ] else
+                      // Кассир должен узнать, ЧТО заполнить, а не смотреть на
+                      // пустое место.
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          qrError ?? 'QR-код недоступен',
+                          style: TextStyle(fontSize: 10.5, color: Colors.orange.shade900),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                   ],
 
                   _receiptDivider(),
@@ -1679,7 +1956,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () => _generateAndSharePdf(
                             receiptData ?? d, services, totalPaid, dateStr, timeStr,
-                            qrString: qrString,
+                            qrString: qrString, qrAmount: qrAmount, qrError: qrError,
                             totalDebt: effectiveDebt, overpayment: overpayment, org: org,
                             // Те же строки, что в диалоге: PDF и экран обязаны
                             // показывать жильцу один и тот же период.
@@ -1726,8 +2003,11 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 110,
-            child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            // 150, а не 110: подписи периода оплаты длиннее («В т.ч.
+            // погашение долга за:», «Погашение входящей задолженности:») и
+            // при 110 рвались на три строки.
+            width: 150,
+            child: Text(label, style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600)),
           ),
           Expanded(
             child: Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87)),
@@ -1751,7 +2031,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
   Future<void> _generateAndSharePdf(
     Map<String, dynamic> d, List services, double totalPaid, String date, String time, {
-    String? qrString, double totalDebt = 0,
+    String? qrString, double? qrAmount, String? qrError, double totalDebt = 0,
     double overpayment = 0, Map<String, dynamic>? org,
     // Период оплаты и долга приходят готовыми строками с бэкенда, чтобы PDF и
     // диалог не пересчитывали их по-разному.
@@ -1772,12 +2052,13 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
       // Генерируем QR PNG если есть строка и долг
       pw.MemoryImage? qrImage;
-      if (qrString != null && qrString.isNotEmpty && debtEnd > 0) {
+      if (qrString != null && qrString.isNotEmpty && debtEnd > 0.01) {
         try {
           final qrPng = await _generateQrPng(qrString, size: 300);
           qrImage = pw.MemoryImage(qrPng);
         } catch (_) {}
       }
+      final qrSum = qrAmount ?? debtEnd;
 
       pdf.addPage(
         pw.Page(
@@ -1863,13 +2144,19 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 pw.SizedBox(height: 3),
                 // Долг ИЛИ переплата — одновременно быть не может
                 if (debtEnd > 0.01)
-                  pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                    children: [
-                      pw.Text('Остаток долга:', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.red700)),
-                      pw.Text('${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.red700)),
-                    ],
-                  )
+                  pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text('Остаток долга:', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.red700)),
+                        pw.Text('${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 9, color: PdfColors.red700)),
+                      ],
+                    ),
+                    // За какие месяцы — сразу под суммой, как в диалоге.
+                    if (debtPeriodLabel.isNotEmpty)
+                      pw.Text('за $debtPeriodLabel',
+                          style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.red400)),
+                  ])
                 else if (overpayment > 0.01)
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -1888,27 +2175,22 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                   ),
 
 
-                // За какие периоды долг остался. В PDF этого блока раньше не
-                // было вовсе: жилец получал чек, где сумма долга есть, а за
-                // какие месяцы — не сказано.
-                if (debtPeriodLabel.isNotEmpty) ...[
-                  pw.SizedBox(height: 6),
-                  pw.Text('Долг за периоды:',
-                      style: pw.TextStyle(font: ttf, fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.red700)),
-                  pw.SizedBox(height: 2),
-                  pw.Text(debtPeriodLabel, style: pw.TextStyle(font: ttf, fontSize: 8)),
-                ],
-
-                // QR код
-                if (qrImage != null) ...[
+                // QR код — есть долг, значит есть и чем его заплатить.
+                if (debtEnd > 0.01) ...[
                   pw.SizedBox(height: 8),
                   pw.Divider(),
                   pw.SizedBox(height: 4),
                   pw.Center(child: pw.Text('Оплата по QR-коду', style: pw.TextStyle(font: ttf, fontSize: 10, fontWeight: pw.FontWeight.bold))),
                   pw.SizedBox(height: 4),
-                  pw.Center(child: pw.Image(qrImage, width: 80, height: 80)),
-                  pw.SizedBox(height: 2),
-                  pw.Center(child: pw.Text('Отсканируйте для оплаты • ${_fmt(debtEnd)} р.', style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.grey600))),
+                  if (qrImage != null) ...[
+                    pw.Center(child: pw.Image(qrImage, width: 80, height: 80)),
+                    pw.SizedBox(height: 2),
+                    pw.Center(child: pw.Text('Отсканируйте для оплаты • ${_fmt(qrSum)} р.', style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.grey600))),
+                  ] else
+                    pw.Center(child: pw.Text(
+                      qrError ?? 'QR-код недоступен',
+                      style: pw.TextStyle(font: ttf, fontSize: 8, color: PdfColors.orange800),
+                    )),
                 ],
 
                 pw.SizedBox(height: 10),
@@ -1967,7 +2249,8 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.SizedBox(width: 100, child: pw.Text(label, style: pw.TextStyle(font: ttf, fontSize: 10, color: PdfColors.grey700))),
+          // 140, а не 100: длинные подписи периода оплаты не должны рваться.
+          pw.SizedBox(width: 140, child: pw.Text(label, style: pw.TextStyle(font: ttf, fontSize: 9.5, color: PdfColors.grey700))),
           pw.Expanded(child: pw.Text(value, style: pw.TextStyle(font: ttf, fontSize: 10, fontWeight: pw.FontWeight.bold))),
         ],
       ),
@@ -2146,6 +2429,17 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       return '${months[d.month]} ${d.year}';
     } catch (_) {
       return date;
+    }
+  }
+
+  /// «15.09.2026» — дата события в финансовой истории.
+  String _formatDate(String? iso) {
+    if (iso == null) return '';
+    try {
+      final d = DateTime.parse(iso);
+      return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+    } catch (_) {
+      return iso;
     }
   }
 
