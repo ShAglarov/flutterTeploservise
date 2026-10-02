@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
@@ -165,12 +166,16 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 Expanded(child: _headerInfo(theme, d)),
                 const SizedBox(width: 24),
                 // Правая часть — итог
-                _debtBadge(theme, totalDebt, debtColor, isWide),
+                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  _debtBadge(theme, totalDebt, debtColor, isWide),
+                  _advanceBadge(d),
+                ]),
               ])
             : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 _headerInfo(theme, d),
                 const SizedBox(height: 12),
                 _debtBadge(theme, totalDebt, debtColor, isWide),
+                _advanceBadge(d),
               ]),
       ),
     );
@@ -320,6 +325,43 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
             style: TextStyle(fontSize: isWide ? 28 : 24, fontWeight: FontWeight.w800, color: debtColor),
           ),
         ],
+      ),
+    );
+  }
+
+  /// «Аванс/переплата: X ₽» — деньги, которые зачтутся при следующей оплате.
+  /// Раньше переплата была видна только как отрицательный долг в таблице, и
+  /// кассир не знал, что у жильца уже что-то лежит.
+  Widget _advanceBadge(Map<String, dynamic> d) {
+    final advance = d['advance'] as Map<String, dynamic>?;
+    final available = (advance?['available'] as num?)?.toDouble() ?? 0;
+    final appliedNow = (advance?['applied_now'] as num?)?.toDouble() ?? 0;
+    if (available <= 0.01 && appliedNow <= 0.01) return const SizedBox.shrink();
+
+    final lines = <String>[
+      if (available > 0.01) 'Аванс: ${_fmt(available)} ₽ — зачтётся при следующей оплате',
+      if (appliedNow > 0.01) 'Зачтено авансом в этом периоде: ${_fmt(appliedNow)} ₽',
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.teal.withAlpha(20),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.teal.withAlpha(70)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.savings, size: 16, color: Colors.teal.shade700),
+          const SizedBox(width: 8),
+          Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (final l in lines)
+              Text(l, style: TextStyle(
+                fontSize: 11.5, color: Colors.teal.shade900, fontWeight: FontWeight.w600,
+              )),
+          ])),
+        ]),
       ),
     );
   }
@@ -964,7 +1006,10 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
   // ═══════ Общий helper для стилизованного bottom sheet ═══════
 
-  void _showStyledSheet({
+  /// Возвращает future закрытия листа — вызывающий может отменить по нему
+  /// отложенную работу (debounce-таймер), иначе setSheetState сработает уже
+  /// после dispose и уронит экран.
+  Future<void> _showStyledSheet({
     required String title,
     required IconData icon,
     required Color color,
@@ -973,7 +1018,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     required VoidCallback onAction,
     double initialSize = 0.6,
   }) {
-    showModalBottomSheet(
+    return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1216,16 +1261,33 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
 
   // ═══════ Диалог оплаты ═══════
 
+  /// Диалог оплаты. Два режима:
+  ///
+  ///   * «умный» (по умолчанию) — кассир вводит ОДНУ сумму от жильца, бэкенд
+  ///     считает, какие месяцы она закроет, и сам ставит период от/до;
+  ///   * «ручной» — прежнее поведение: период руками + сумма по каждой услуге.
+  ///
+  /// Раньше был только ручной: кассир должен был сам прикинуть, на сколько
+  /// месяцев хватит денег, и наугад разнести суммы по услугам.
   void _showPayDialog() {
-    final currentServices = (_details?['services'] as List?)?.where((s) => (s['debt_end'] ?? 0) > 0).toList() ?? [];
-    if (currentServices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Нет долгов для оплаты')));
-      return;
-    }
+    final allServices = (_details?['services'] as List?) ?? [];
+    final debtServices = allServices.where((s) => (s['debt_end'] ?? 0) > 0).toList();
+    // Долгов может не быть — это оплата вперёд, её блокировать нельзя.
+    final currentServices = debtServices.isNotEmpty ? debtServices : allServices;
     final controllers = <String, TextEditingController>{};
     for (final s in currentServices) { controllers[s['key']] = TextEditingController(); }
     final noteCtrl = TextEditingController();
+    final totalCtrl = TextEditingController();
     DateTime paymentDate = DateTime.now();
+
+    // Умный режим: расчёт с бэкенда.
+    bool smartMode = true;
+    Map<String, dynamic>? plan;
+    bool planLoading = false;
+    String? planError;
+    Timer? debounce;
+    String lastQueried = '';
+    bool sheetClosed = false;
 
     // Период из текущего документа
     final periodStr = _details?['period_date'] as String?;
@@ -1284,58 +1346,346 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       }
     }
 
-    _showStyledSheet(
-      title: 'Оплата по услуге',
+    // Расчёт покрытия по одной сумме. Debounce: кассир набирает «5000» в
+    // четыре нажатия, запрос нужен один.
+    Future<void> loadPlan(StateSetter setSheetState) async {
+      // Ответ может прийти уже после закрытия листа — setSheetState тогда
+      // работает с мёртвым элементом.
+      void apply(VoidCallback fn) {
+        if (sheetClosed) return;
+        setSheetState(fn);
+      }
+
+      final amount = double.tryParse(totalCtrl.text.replaceAll(',', '.'));
+      if (amount == null || amount <= 0) {
+        apply(() { plan = null; planError = null; planLoading = false; });
+        return;
+      }
+      apply(() { planLoading = true; planError = null; });
+      try {
+        final dio = ref.read(dioProvider);
+        final resp = await dio.post(
+          '/payment-documents/${widget.docId}/calculate-payment',
+          data: {'total_amount': amount},
+        );
+        apply(() {
+          plan = resp.data as Map<String, dynamic>;
+          planLoading = false;
+        });
+      } catch (e) {
+        apply(() {
+          plan = null;
+          planLoading = false;
+          planError = 'Не удалось рассчитать: $e';
+        });
+      }
+    }
+
+    /// Перезапускает таймер на каждое нажатие. Читает `debounce` напрямую:
+    /// если захватывать его значением при build, два нажатия подряд дали бы
+    /// два живых таймера и два запроса.
+    void scheduleRecalc(StateSetter setSheetState) {
+      final text = totalCtrl.text;
+      if (text == lastQueried) return;
+      lastQueried = text;
+      debounce?.cancel();
+      debounce = Timer(const Duration(milliseconds: 500), () {
+        if (!sheetClosed) loadPlan(setSheetState);
+      });
+    }
+
+    final sheet = _showStyledSheet(
+      title: 'Оплата',
       icon: Icons.payments,
       color: Colors.green,
+      initialSize: 0.85,
       actionLabel: 'Оплатить',
       onAction: () async {
         final body = <String, dynamic>{};
-        controllers.forEach((key, ctrl) {
-          final val = double.tryParse(ctrl.text.replaceAll(',', '.'));
-          if (val != null && val > 0) body['paid_$key'] = val;
-        });
+        if (smartMode) {
+          final dist = plan?['distribution'] as Map<String, dynamic>?;
+          if (dist == null || dist.isEmpty) return;
+          dist.forEach((key, value) {
+            final v = (value as num?)?.toDouble() ?? 0;
+            if (v > 0) body[key] = v;
+          });
+          // Период считает бэкенд. null означает «зачёт идёт чистым FIFO»
+          // (деньги уходят в долг до начала учёта, у которого периода нет) —
+          // тогда period_from/period_to не отправляем вовсе.
+          final pFrom = plan?['period_from'] as String?;
+          final pTo = plan?['period_to'] as String?;
+          if (pFrom != null && pTo != null) {
+            body['period_from'] = pFrom;
+            body['period_to'] = pTo;
+          }
+        } else {
+          controllers.forEach((key, ctrl) {
+            final val = double.tryParse(ctrl.text.replaceAll(',', '.'));
+            if (val != null && val > 0) body['paid_$key'] = val;
+          });
+          if (body.isEmpty) return;
+          body['period_from'] = '${periodFrom.year}-${periodFrom.month.toString().padLeft(2, '0')}-01';
+          body['period_to'] = '${periodTo.year}-${periodTo.month.toString().padLeft(2, '0')}-01';
+        }
         if (noteCtrl.text.isNotEmpty) body['note'] = noteCtrl.text;
         body['payment_date'] = '${paymentDate.year}-${paymentDate.month.toString().padLeft(2, '0')}-${paymentDate.day.toString().padLeft(2, '0')}';
-        body['period_from'] = '${periodFrom.year}-${periodFrom.month.toString().padLeft(2, '0')}-01';
-        body['period_to'] = '${periodTo.year}-${periodTo.month.toString().padLeft(2, '0')}-01';
-        if (body.length <= 3) return;
         await _executeOperation('/payment-documents/${widget.docId}/pay', body, '💰 Оплата');
       },
       bodyBuilder: (ctx, setSheetState) {
-        // Загрузить долг за estimated период при первом открытии
-        if (!loading && estimatedStr != null && periodServices == currentServices) {
+        // В ручном режиме — подтянуть долг за estimated период, как раньше.
+        if (!smartMode && !loading && estimatedStr != null && periodServices == currentServices) {
           Future.microtask(() => loadPeriodDebt(setSheetState));
         }
         return Column(mainAxisSize: MainAxisSize.min, children: [
-        _monthYearPickerRow('Период от', periodFrom, (d) {
-          setSheetState(() => periodFrom = d);
-          loadPeriodDebt(setSheetState);
-        }),
-        _monthYearPickerRow('Период до', periodTo, (d) {
-          setSheetState(() => periodTo = d);
-          loadPeriodDebt(setSheetState);
-        }),
-        if (loading)
-          const Padding(padding: EdgeInsets.all(8), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
-        else ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('Общий долг за период: ${_fmt(periodTotalDebt)}₽',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: periodTotalDebt > 0 ? Colors.red : Colors.green)),
+          _payModeToggle(ctx, smartMode, (v) => setSheetState(() => smartMode = v)),
+          const SizedBox(height: 12),
+          if (smartMode) ...[
+            _styledInput(totalCtrl, 'Сумма от жильца', suffix: '₽'),
+            // _styledInput не принимает onChanged — подписываемся отдельным
+            // виджетом, чтобы слушатель не копился на каждый rebuild.
+            _OnceListener(
+              controller: totalCtrl,
+              onChanged: () => scheduleRecalc(setSheetState),
+            ),
+            _advanceHint(ctx),
+            if (planLoading)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+              )
+            else if (planError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(planError!, style: const TextStyle(fontSize: 12, color: Colors.red)),
+              )
+            else if (plan != null)
+              _payPreview(ctx, plan!),
+          ] else ...[
+            _monthYearPickerRow('Период от', periodFrom, (d) {
+              setSheetState(() => periodFrom = d);
+              loadPeriodDebt(setSheetState);
+            }),
+            _monthYearPickerRow('Период до', periodTo, (d) {
+              setSheetState(() => periodTo = d);
+              loadPeriodDebt(setSheetState);
+            }),
+            if (loading)
+              const Padding(padding: EdgeInsets.all(8), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
+            else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text('Общий долг за период: ${_fmt(periodTotalDebt)}₽',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: periodTotalDebt > 0 ? Colors.red : Colors.green)),
+              ),
+              const Divider(height: 16),
+              ...periodServices.map((s) {
+                final key = s['key'] as String;
+                final label = s['label'] ?? key;
+                final debt = (s['debt'] as num?)?.toDouble() ?? (s['debt_end'] as num?)?.toDouble() ?? 0;
+                if (!controllers.containsKey(key)) controllers[key] = TextEditingController();
+                return _styledInput(controllers[key]!, '$label (долг: ${_fmt(debt)}₽)', suffix: '₽');
+              }),
+            ],
+          ],
+          _styledInput(noteCtrl, 'Комментарий', decimal: false),
+          _datePickerRow('Дата платежа', paymentDate, (d) => setSheetState(() => paymentDate = d)),
+        ]);
+      },
+    );
+
+    // Лист закрыли — отложенный расчёт больше не нужен, а его setSheetState
+    // сработал бы уже после dispose.
+    sheet.whenComplete(() {
+      sheetClosed = true;
+      debounce?.cancel();
+    });
+  }
+
+  Widget _payModeToggle(BuildContext ctx, bool smart, ValueChanged<bool> onChanged) {
+    Widget tab(String label, IconData icon, bool active, VoidCallback onTap) {
+      final theme = Theme.of(ctx);
+      return Expanded(
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? Colors.green.withAlpha(35) : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(icon, size: 15, color: active ? Colors.green.shade800 : Colors.grey.shade600),
+              const SizedBox(width: 6),
+              Text(label, style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? Colors.green.shade800 : theme.colorScheme.onSurfaceVariant,
+              )),
+            ]),
           ),
-          const Divider(height: 16),
-          ...periodServices.map((s) {
-            final key = s['key'] as String;
-            final label = s['label'] ?? key;
-            final debt = (s['debt'] as num?)?.toDouble() ?? (s['debt_end'] as num?)?.toDouble() ?? 0;
-            if (!controllers.containsKey(key)) controllers[key] = TextEditingController();
-            return _styledInput(controllers[key]!, '$label (долг: ${_fmt(debt)}₽)', suffix: '₽');
-          }),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Theme.of(ctx).colorScheme.surfaceContainerHighest.withAlpha(70),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(children: [
+        tab('Одной суммой', Icons.auto_awesome, smart, () => onChanged(true)),
+        tab('Ручной ввод', Icons.tune, !smart, () => onChanged(false)),
+      ]),
+    );
+  }
+
+  /// «Имеется аванс X ₽ — будет учтён при расчёте».
+  Widget _advanceHint(BuildContext ctx) {
+    final advance = _details?['advance'] as Map<String, dynamic>?;
+    final available = (advance?['available'] as num?)?.toDouble() ?? 0;
+    if (available <= 0.01) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.teal.withAlpha(20),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.teal.withAlpha(60)),
+      ),
+      child: Row(children: [
+        Icon(Icons.savings, size: 17, color: Colors.teal.shade700),
+        const SizedBox(width: 8),
+        Expanded(child: Text(
+          'Имеется аванс ${_fmt(available)} ₽ — будет учтён при расчёте',
+          style: TextStyle(fontSize: 12, color: Colors.teal.shade900),
+        )),
+      ]),
+    );
+  }
+
+  /// Расшифровка расчёта: что закроется, что останется, куда уйдёт аванс.
+  Widget _payPreview(BuildContext ctx, Map<String, dynamic> plan) {
+    final coverage = (plan['coverage'] as List? ?? []).cast<Map<String, dynamic>>();
+    final months = coverage.where((c) => c['kind'] == 'period').toList();
+    final fullMonths = (plan['fully_covered_months'] as num?)?.toInt() ?? 0;
+    final advance = (plan['advance'] as num?)?.toDouble() ?? 0;
+    final overpayment = (plan['existing_overpayment'] as num?)?.toDouble() ?? 0;
+    final debtAfter = (plan['debt_after'] as num?)?.toDouble() ?? 0;
+    final periodFrom = plan['period_from'] as String?;
+    final periodTo = plan['period_to'] as String?;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(ctx).colorScheme.surfaceContainerHighest.withAlpha(60),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (overpayment > 0.01) ...[
+          Row(children: [
+            Icon(Icons.add_circle, size: 15, color: Colors.teal.shade700),
+            const SizedBox(width: 6),
+            Expanded(child: Text(
+              '+ ${_fmt(overpayment)} ₽ переплата с прошлого раза',
+              style: TextStyle(fontSize: 12, color: Colors.teal.shade800, fontWeight: FontWeight.w600),
+            )),
+          ]),
+          const SizedBox(height: 8),
         ],
-        _styledInput(noteCtrl, 'Комментарий', decimal: false),
-        _datePickerRow('Дата платежа', paymentDate, (d) => setSheetState(() => paymentDate = d)),
-      ]);},
+        if (months.isNotEmpty) ...[
+          _coverageBar(fullMonths, months.length),
+          const SizedBox(height: 4),
+          Text('Закрыто полностью: $fullMonths из ${months.length} мес.',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
+          const SizedBox(height: 10),
+        ],
+        ...coverage.map((c) => _coverageRow(c)),
+        if (advance > 0.01) ...[
+          const SizedBox(height: 8),
+          Row(children: [
+            Icon(Icons.savings, size: 15, color: Colors.teal.shade700),
+            const SizedBox(width: 6),
+            Expanded(child: Text(
+              'Аванс ${_fmt(advance)} ₽ перейдёт на следующий период',
+              style: TextStyle(fontSize: 12, color: Colors.teal.shade800, fontWeight: FontWeight.w600),
+            )),
+          ]),
+        ],
+        if (debtAfter > 0.01) ...[
+          const SizedBox(height: 6),
+          Text('Остаток долга после оплаты: ${_fmt(debtAfter)} ₽',
+              style: TextStyle(fontSize: 12, color: Colors.red.shade700, fontWeight: FontWeight.w600)),
+        ],
+        const Divider(height: 18),
+        // Период кассир больше не ставит руками — показываем, что уйдёт в чек.
+        Row(children: [
+          Icon(Icons.date_range, size: 14, color: Colors.grey.shade600),
+          const SizedBox(width: 6),
+          Expanded(child: Text(
+            periodFrom != null && periodTo != null
+                ? 'Период оплаты: ${_formatPeriod(periodFrom)} — ${_formatPeriod(periodTo)}'
+                : 'Период: зачёт в самый старый долг (входящая задолженность)',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+          )),
+        ]),
+      ]),
+    );
+  }
+
+  /// ████████░░ — сколько месяцев закрывается полностью.
+  Widget _coverageBar(int full, int total) {
+    if (total <= 0) return const SizedBox.shrink();
+    return Row(children: List.generate(total, (i) {
+      return Expanded(child: Container(
+        margin: const EdgeInsets.only(right: 2),
+        height: 7,
+        decoration: BoxDecoration(
+          color: i < full ? Colors.green.shade600 : Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ));
+    }));
+  }
+
+  Widget _coverageRow(Map<String, dynamic> c) {
+    final status = c['status'] as String? ?? 'untouched';
+    final covered = (c['covered'] as num?)?.toDouble() ?? 0;
+    final debtBefore = (c['debt_before'] as num?)?.toDouble() ?? 0;
+    final label = c['period_label'] as String? ?? '—';
+
+    final (String mark, Color color) = switch (status) {
+      'full' => ('✓', Colors.green.shade700),
+      'partial' => ('◐', Colors.orange.shade800),
+      _ => ('○', Colors.grey.shade500),
+    };
+
+    final String value = switch (status) {
+      'full' => '${_fmt(debtBefore)} ₽ закрыт',
+      'partial' => '${_fmt(covered)} из ${_fmt(debtBefore)} ₽',
+      _ => 'не закрыт — ${_fmt(debtBefore)} ₽',
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(children: [
+        SizedBox(width: 18, child: Text(mark, style: TextStyle(fontSize: 13, color: color))),
+        Expanded(child: Text(
+          c['kind'] == 'prior' ? 'Входящая задолженность' : label,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: status == 'untouched' ? FontWeight.w400 : FontWeight.w600,
+            color: status == 'untouched' ? Colors.grey.shade600 : null,
+          ),
+        )),
+        Text(value, style: TextStyle(
+          fontSize: 11.5, color: color,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        )),
+      ]),
     );
   }
 
@@ -2452,4 +2802,39 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
       return dt;
     }
   }
+}
+
+/// Подписка на контроллер, которая живёт ровно столько, сколько виджет.
+///
+/// Нужна, чтобы поле суммы в диалоге оплаты запускало расчёт. Вешать
+/// `addListener` прямо в bodyBuilder нельзя: StatefulBuilder перестраивается
+/// на каждый setSheetState, и слушатели копились бы — один ввод давал бы
+/// N запросов. Здесь подписка одна и снимается в dispose.
+class _OnceListener extends StatefulWidget {
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  const _OnceListener({required this.controller, required this.onChanged});
+
+  @override
+  State<_OnceListener> createState() => _OnceListenerState();
+}
+
+class _OnceListenerState extends State<_OnceListener> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_handle);
+  }
+
+  void _handle() => widget.onChanged();
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handle);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
