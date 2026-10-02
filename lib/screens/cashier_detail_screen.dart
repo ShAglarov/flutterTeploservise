@@ -2058,6 +2058,10 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     // PDF и period_summary), каждое по-своему, и периоды расходились.
     final periodLines = (receiptData?['payment_period_lines'] as List? ?? [])
         .cast<Map<String, dynamic>>();
+    // Списание перерасчётом — отдельным блоком: оно бывает и БЕЗ оплаты, а
+    // тогда periodLines пусты. Без этой строки долг «уменьшается сам собой».
+    final recalcLines = (receiptData?['recalc_lines'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
     // Периоды, за которые долг остался (уже сгруппированы бэкендом).
     final debtPeriodLabel = receiptData?['debt_period_label'] as String? ?? '';
     final overpayment = (receiptData?['overpayment'] as num?)?.toDouble() ?? 0;
@@ -2133,6 +2137,12 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                     // Оплаты по документу не было — печатаем период документа,
                     // иначе в чеке вообще не будет периода.
                     _receiptRow('Период:', periodLabel),
+                  // Перерасчёт печатается всегда, когда он был: и с оплатой, и
+                  // без неё.
+                  ...recalcLines.map((l) => _receiptRow(
+                        l['label'] as String? ?? '',
+                        l['value'] as String? ?? '',
+                      )),
                   if ((receiptData?['area'] ?? d['area']) != null)
                     _receiptRow('Площадь:', '${receiptData?['area'] ?? d['area']} м²'),
 
@@ -2311,6 +2321,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                             // Те же строки, что в диалоге: PDF и экран обязаны
                             // показывать жильцу один и тот же период.
                             periodLines: periodLines, debtPeriodLabel: debtPeriodLabel,
+                            recalcLines: recalcLines,
                           ),
                           icon: const Icon(Icons.picture_as_pdf, size: 16),
                           label: const Text('PDF'),
@@ -2386,6 +2397,7 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     // Период оплаты и долга приходят готовыми строками с бэкенда, чтобы PDF и
     // диалог не пересчитывали их по-разному.
     List<Map<String, dynamic>> periodLines = const [],
+    List<Map<String, dynamic>> recalcLines = const [],
     String debtPeriodLabel = '',
   }) async {
     try {
@@ -2447,6 +2459,12 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                       ))
                 else
                   _pdfInfoRow('Период:', d['period_label'] ?? _formatPeriod(d['period_date']), ttf),
+                // Перерасчёт — и с оплатой, и без неё.
+                ...recalcLines.map((l) => _pdfInfoRow(
+                      l['label'] as String? ?? '',
+                      l['value'] as String? ?? '',
+                      ttf,
+                    )),
                 if (d['area'] != null) _pdfInfoRow('Площадь:', '${d['area']} м²', ttf),
 
                 pw.SizedBox(height: 10),
