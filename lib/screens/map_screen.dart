@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/incident_schedule_manager.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -2575,20 +2578,56 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Future<void> _downloadDocument(String downloadUrl, String title) async {
     if (downloadUrl.isEmpty) return;
     try {
-      final base = AppConstants.baseUrl; // e.g. https://api.teploservis05.ru/api/v1
-      // downloadUrl = /api/v1/house-documents/123/download
-      String fullUrl;
-      if (base.endsWith('/api/v1') && downloadUrl.startsWith('/api/v1/')) {
-        fullUrl = base + downloadUrl.substring('/api/v1'.length);
-      } else {
-        fullUrl = base + downloadUrl;
+      final dio = ref.read(dioProvider);
+      // downloadUrl = /api/v1/house-documents/2/download
+      // Dio baseUrl уже содержит /api/v1, убираем дублирование
+      String endpoint = downloadUrl;
+      if (endpoint.startsWith('/api/v1/')) {
+        endpoint = endpoint.substring('/api/v1'.length);
       }
-      final uri = Uri.parse(fullUrl);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      // Скачиваем через Dio (с авторизацией)
+      final response = await dio.get(
+        endpoint,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      // Определяем путь для сохранения
+      String downloadsPath;
+      if (Platform.isWindows) {
+        downloadsPath = '${Platform.environment['USERPROFILE']}\\Downloads';
+      } else if (Platform.isMacOS) {
+        downloadsPath = '${Platform.environment['HOME']}/Downloads';
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        downloadsPath = dir.path;
+      }
+
+      // Сохраняем файл
+      final safeName = title.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+      final filePath = '$downloadsPath${Platform.pathSeparator}$safeName';
+      final file = File(filePath);
+      await file.writeAsBytes(response.data);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Сохранено: $safeName'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'Открыть',
+              textColor: Colors.white,
+              onPressed: () {
+                launchUrl(Uri.file(filePath));
+              },
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка скачивания: $e')),
+          SnackBar(content: Text('❌ Ошибка скачивания: $e'), backgroundColor: Colors.red),
         );
       }
     }
