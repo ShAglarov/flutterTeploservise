@@ -1927,9 +1927,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 : null;
 
             return DraggableScrollableSheet(
-              initialChildSize: 0.85,
+              initialChildSize: 0.9,
               minChildSize: 0.5,
-              maxChildSize: 0.95,
+              maxChildSize: 1.0,
               builder: (ctx, controller) {
                 return Container(
                   decoration: BoxDecoration(
