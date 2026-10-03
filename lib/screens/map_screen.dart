@@ -2417,63 +2417,121 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   }
 
   Widget _buildHouseDocumentsSection(int locationId) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _loadHouseDocuments(locationId),
-      builder: (context, snapshot) {
-        final docs = snapshot.data ?? [];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return GestureDetector(
+      onTap: () => _showDocumentsSheet(locationId),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.folder_outlined, color: Colors.indigo, size: 22),
+            const SizedBox(width: 10),
+            Text(
+              'Документы',
+              style: TextStyle(color: Colors.indigo, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Colors.indigo, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDocumentsSheet(int locationId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 1.0,
+          builder: (ctx, controller) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+              ),
+              child: Column(
                 children: [
-                  const Icon(Icons.folder_outlined, color: Colors.indigo, size: 24),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Документы',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.arrow_back_ios_new, color: Theme.of(context).colorScheme.onSurface, size: 20),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.folder_outlined, color: Colors.indigo, size: 24),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Документы',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
-                  if (docs.isNotEmpty)
-                    Text(
-                      '${docs.length}',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
-                        fontSize: 14,
-                      ),
+                  Divider(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
+                  // Content
+                  Expanded(
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _loadHouseDocuments(locationId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        final docs = snapshot.data ?? [];
+                        if (docs.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.folder_open, size: 64, color: Colors.grey.shade400),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Нет загруженных документов',
+                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Загрузите документы через\nредактирование дома',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          controller: controller,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          itemCount: docs.length,
+                          separatorBuilder: (_, __) => Divider(
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
+                            height: 1,
+                          ),
+                          itemBuilder: (context, index) => _buildDocumentRow(docs[index]),
+                        );
+                      },
                     ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 12),
-              if (snapshot.connectionState == ConnectionState.waiting)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                ))
-              else if (docs.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    'Нет загруженных документов',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
-                      fontSize: 14,
-                    ),
-                  ),
-                )
-              else
-                ...docs.map((doc) => _buildDocumentRow(doc)),
-            ],
-          ),
+            );
+          },
         );
       },
     );
