@@ -24,7 +24,9 @@ import '../models/incident_models.dart';
 import '../models/permission_key.dart';
 import '../services/location_service.dart';
 import '../services/permission_service.dart';
+import '../services/base_api_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/constants.dart';
 import '../providers/map_tile_provider.dart';
 import '../services/chat_read_service.dart';
 import '../widgets/base_card.dart';
@@ -1958,6 +1960,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             // 4. Photos Section
                             _buildHousePhotosSection(loc),
                             
+                            const SizedBox(height: 16),
+                            
+                            // 5. Documents Section
+                            _buildHouseDocumentsSection(loc.id),
+                            
                             const SizedBox(height: 40),
                           ],
                         ),
@@ -2402,6 +2409,189 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildHouseDocumentsSection(int locationId) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _loadHouseDocuments(locationId),
+      builder: (context, snapshot) {
+        final docs = snapshot.data ?? [];
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.folder_outlined, color: Colors.indigo, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Документы',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (docs.isNotEmpty)
+                    Text(
+                      '${docs.length}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withAlpha(120),
+                        fontSize: 14,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                ))
+              else if (docs.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Нет загруженных документов',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
+                      fontSize: 14,
+                    ),
+                  ),
+                )
+              else
+                ...docs.map((doc) => _buildDocumentRow(doc)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> _loadHouseDocuments(int locationId) async {
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get('/house-documents/by-location/$locationId');
+      return List<Map<String, dynamic>>.from(resp.data);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Widget _buildDocumentRow(Map<String, dynamic> doc) {
+    final contentType = doc['content_type'] as String? ?? '';
+    final title = doc['title'] as String? ?? doc['filename'] as String? ?? 'Документ';
+    final typeLabel = doc['document_type_label'] as String? ?? '';
+    final fileSize = doc['file_size'] as int? ?? 0;
+    final downloadUrl = doc['download_url'] as String? ?? '';
+
+    IconData icon;
+    Color iconColor;
+    if (contentType.contains('pdf')) {
+      icon = Icons.picture_as_pdf;
+      iconColor = Colors.red;
+    } else if (contentType.contains('image')) {
+      icon = Icons.image;
+      iconColor = Colors.green;
+    } else if (contentType.contains('word') || contentType.contains('doc')) {
+      icon = Icons.description;
+      iconColor = Colors.blue;
+    } else if (contentType.contains('excel') || contentType.contains('sheet') || contentType.contains('xls')) {
+      icon = Icons.table_chart;
+      iconColor = Colors.green.shade700;
+    } else {
+      icon = Icons.insert_drive_file;
+      iconColor = Colors.grey;
+    }
+
+    String sizeStr;
+    if (fileSize < 1024) {
+      sizeStr = '$fileSize Б';
+    } else if (fileSize < 1024 * 1024) {
+      sizeStr = '${(fileSize / 1024).toStringAsFixed(1)} КБ';
+    } else {
+      sizeStr = '${(fileSize / (1024 * 1024)).toStringAsFixed(1)} МБ';
+    }
+
+    return InkWell(
+      onTap: () => _downloadDocument(downloadUrl, title),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iconColor.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$typeLabel • $sizeStr',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.download_rounded,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(100),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _downloadDocument(String downloadUrl, String title) async {
+    if (downloadUrl.isEmpty) return;
+    try {
+      final base = AppConstants.baseUrl; // e.g. https://api.teploservis05.ru/api/v1
+      // downloadUrl = /api/v1/house-documents/123/download
+      String fullUrl;
+      if (base.endsWith('/api/v1') && downloadUrl.startsWith('/api/v1/')) {
+        fullUrl = base + downloadUrl.substring('/api/v1'.length);
+      } else {
+        fullUrl = base + downloadUrl;
+      }
+      final uri = Uri.parse(fullUrl);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка скачивания: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildHousePhotosSection(SavedLocationResponse loc) {
