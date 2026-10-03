@@ -155,7 +155,9 @@ class Auth extends _$Auth {
 
   /// Загружает права с сервера.
   void _loadPermissions() {
+    logDebug('🔐 [Auth] _loadPermissions called, scheduling microtask');
     Future.microtask(() {
+      logDebug('🔐 [Auth] microtask executing, calling loadFromServer');
       ref.read(permissionStateProvider.notifier).loadFromServer();
     });
   }

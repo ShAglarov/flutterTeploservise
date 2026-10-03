@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/auth_service.dart';
 import '../services/secure_storage_service.dart';
+import '../services/permission_service.dart';
 import '../services/realtime_service.dart';
 import '../services/event_service.dart';
 import '../utils/constants.dart';
@@ -53,6 +54,8 @@ class Auth extends _$Auth {
     _eventSubscription = eventService.events.listen((event) {
       if (event == AppEvent.logout) {
         logDebug('🔑 [Auth] Received logout event — redirecting to login');
+        // Сессия истекла (401 + неудачный refresh) — права тоже недействительны.
+        ref.read(permissionStateProvider.notifier).clear();
         state = AuthState(status: AuthStatus.unauthenticated);
       }
     });
@@ -112,6 +115,7 @@ class Auth extends _$Auth {
             if (newRefresh != null) await storage.saveRefreshToken(newRefresh);
             logDebug('✅ [Auth] Token refreshed at startup');
             state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
+            _loadPermissions();
             return;
           }
         } catch (e) {
@@ -127,6 +131,27 @@ class Auth extends _$Auth {
 
     // Токен валиден
     state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
+    _loadPermissions();
+  }
+
+  /// Загружает права с сервера — для КАЖДОГО пути, который даёт
+  /// authenticated: логин, валидный токен при старте, refresh при старте.
+  ///
+  /// BUGFIX («Ваши права и доступ» — всё «Запрещено»). В проекте два
+  /// провайдера с именем `Auth`: этот (`auth_providers.dart`) и
+  /// `auth_provider.dart`. UI (main, login, profile, settings) ходит в ЭТОТ, а
+  /// `_loadPermissions()` был только в другом — его подтягивал
+  /// `incident_providers.dart`, то есть права грузились ПОБОЧНЫМ ЭФФЕКТОМ
+  /// инициализации дубля при открытии экрана с инцидентами. Где этот дубль не
+  /// успевал инициализироваться, снэпшот прав оставался пустым, и
+  /// `hasPermission()` возвращал false для всего — включая админа с 52/52
+  /// разрешениями на сервере. Запрос GET /permissions/me при этом вообще не
+  /// уходил, поэтому в серверных логах его не было.
+  ///
+  /// Загрузка прав не должна валить авторизацию: ошибку глотает сам
+  /// `PermissionService`, здесь нужен только запуск.
+  void _loadPermissions() {
+    ref.read(permissionStateProvider.notifier).loadFromServer();
   }
 
   Future<void> login(String username, String password) async {
@@ -135,6 +160,7 @@ class Auth extends _$Auth {
       final authService = ref.read(authServiceProvider);
       await authService.login(username, password);
       state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
+      _loadPermissions();
     } catch (e) {
       logDebug('🔥 [AuthProvider] Caught error: $e, type: ${e.runtimeType}');
       String errorMessage = 'Произошла непредвиденная ошибка: $e';
@@ -180,6 +206,9 @@ class Auth extends _$Auth {
     
     final authService = ref.read(authServiceProvider);
     await authService.logout();
+    // Права — часть сессии: без сброса следующий пользователь на этой машине
+    // получил бы их из кэша предыдущего.
+    ref.read(permissionStateProvider.notifier).clear();
     state = AuthState(status: AuthStatus.unauthenticated);
   }
 }

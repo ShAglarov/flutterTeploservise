@@ -366,6 +366,33 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(height: 8),
           Builder(builder: (context) {
             final perms = ref.watch(permissionStateProvider);
+            // «Запрещено» и «не удалось загрузить» — РАЗНЫЕ состояния.
+            // Раньше они выглядели одинаково, поэтому пустой снэпшот прав
+            // читался как «админу всё запрещено», и причину приходилось
+            // искать по логам сервера.
+            if (!perms.isLoaded) {
+              return _buildCard([
+                Row(children: [
+                  Icon(Icons.cloud_off, size: 18, color: AppTheme.errorRed),
+                  const SizedBox(width: 10),
+                  const Expanded(child: Text(
+                    'Права не загружены с сервера — показать их нечем',
+                    style: TextStyle(fontSize: 14),
+                  )),
+                ]),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => ref
+                        .read(permissionStateProvider.notifier)
+                        .loadFromServer(),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: const Text('Загрузить права'),
+                  ),
+                ),
+              ]);
+            }
             return _buildCard([
               _buildPermissionRow('Просмотр инцидентов', perms.hasPermission(PermissionKey.incidentRead)),
               _buildPermissionRow('Создание инцидентов', perms.hasPermission(PermissionKey.incidentCreate)),

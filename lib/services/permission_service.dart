@@ -1,19 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'base_api_service.dart';
-import 'secure_storage_service.dart';
+import '../utils/app_logger.dart';
 
 /// Riverpod provider for [PermissionService].
 /// Автоматически пересоздаётся при смене Dio (смена сервера).
 final permissionServiceProvider = Provider<PermissionService>((ref) {
   ref.keepAlive();
   final dio = ref.watch(dioProvider);
-  final storage = ref.watch(secureStorageServiceProvider);
-  return PermissionService(dio, storage);
+  return PermissionService(dio);
 });
 
 /// Reactive state: текущий снэпшот прав пользователя.
@@ -81,11 +79,20 @@ class PermissionStateNotifier extends Notifier<PermissionSnapshot> {
   }
 
   /// Полная загрузка с сервера.
+  ///
+  /// Ошибку не поднимает: загрузка прав не должна валить авторизацию. Но и не
+  /// теряет — причина уходит в `lastPermissionLoadError`, и экран профиля
+  /// отличает «не загрузилось» от «запрещено».
   Future<void> loadFromServer() async {
-    final service = ref.read(permissionServiceProvider);
-    final snapshot = await service.loadFromServer();
-    if (snapshot != null) {
-      state = snapshot;
+    try {
+      final service = ref.read(permissionServiceProvider);
+      final snapshot = await service.loadFromServer();
+      if (snapshot != null) {
+        state = snapshot;
+      }
+    } catch (e) {
+      lastPermissionLoadError = 'Непредвиденная ошибка: $e';
+      _permLog('NOTIFIER ERROR: $e');
     }
   }
 
@@ -116,26 +123,38 @@ class PermissionStateNotifier extends Notifier<PermissionSnapshot> {
   }
 }
 
+
 // ─────────────────────────────────────────────
 // Сервис (сеть + кэш)
 // ─────────────────────────────────────────────
 
+/// Последняя ошибка загрузки прав — чтобы UI мог сказать, ПОЧЕМУ прав нет.
+///
+/// Нужна потому, что `logDebug` обрезан по `kDebugMode`: в release-сборке (а
+/// именно на ней и воспроизводился баг) диагностика не писалась никуда, и
+/// «тихий» отказ загрузки выглядел как «админу всё запрещено».
+String? lastPermissionLoadError;
+
+void _permLog(String msg) {
+  logDebug('🔐 [Permissions] $msg');
+}
+
 class PermissionService {
   final Dio _dio;
-  final SecureStorageService _storage;
 
   static const _cacheKey = 'permission_cache_v1';
   static const _endpoint = '/permissions/me';
 
-  PermissionService(this._dio, this._storage);
+  /// Токен к запросу подставляет `AuthInterceptor` внутри Dio. Своего
+  /// обращения к хранилищу здесь нет намеренно: раньше `loadFromServer()`
+  /// сам читал `getAccessToken()` и при null молча возвращал null, не
+  /// отправив запрос вовсе.
+  PermissionService(this._dio);
 
   /// Загружает права с сервера: GET /permissions/me
   Future<PermissionSnapshot?> loadFromServer() async {
+    _permLog('loadFromServer START, baseUrl=${_dio.options.baseUrl}');
     try {
-      // Токен добавляется автоматически через Dio AuthInterceptor.
-      // Не проверяем его здесь — на Windows getAccessToken() может
-      // вернуть null из-за race condition при чтении secure storage,
-      // хотя Dio interceptor при этом работает нормально.
       final response = await _dio.get(_endpoint);
 
       if (response.statusCode == 200 && response.data != null) {
@@ -154,13 +173,20 @@ class PermissionService {
 
         await saveToCache(snapshot);
 
-        debugPrint('✅ [PermissionService] Loaded ${permissions.length} permissions (v$version, admin=$isAdmin)');
+        lastPermissionLoadError = null;
+        _permLog('OK: ${permissions.length} perms, v$version, admin=$isAdmin');
         return snapshot;
+      } else {
+        lastPermissionLoadError = 'Сервер ответил ${response.statusCode}';
+        _permLog('Bad response: status=${response.statusCode}');
       }
     } on DioException catch (e) {
-      debugPrint('❌ [PermissionService] loadFromServer failed: ${e.message}');
+      lastPermissionLoadError =
+          'Запрос не выполнен (${e.type.name}${e.response?.statusCode != null ? ', HTTP ${e.response?.statusCode}' : ''})';
+      _permLog('DioException: type=${e.type}, status=${e.response?.statusCode}, msg=${e.message}');
     } catch (e) {
-      debugPrint('❌ [PermissionService] Unexpected error: $e');
+      lastPermissionLoadError = 'Непредвиденная ошибка: $e';
+      _permLog('UNEXPECTED: $e');
     }
     return null;
   }
@@ -177,7 +203,7 @@ class PermissionService {
       });
       await prefs.setString(_cacheKey, json);
     } catch (e) {
-      debugPrint('⚠️ [PermissionService] saveToCache failed: $e');
+      _permLog('saveToCache failed: $e');
     }
   }
 
@@ -198,7 +224,7 @@ class PermissionService {
         isAdmin: data['isAdmin'] as bool? ?? false,
       );
     } catch (e) {
-      debugPrint('⚠️ [PermissionService] loadCachedPermissions failed: $e');
+      _permLog('loadCachedPermissions failed: $e');
       return null;
     }
   }
