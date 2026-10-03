@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -2593,23 +2594,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
       // Определяем расширение из имени файла
       final ext = title.contains('.') ? title.substring(title.lastIndexOf('.')) : '';
+      final bytes = response.data as List<int>;
       
       // Диалог «Сохранить как»
       final savePath = await FilePicker.saveFile(
         dialogTitle: 'Сохранить документ',
         fileName: title,
         type: FileType.any,
+        bytes: Uint8List.fromList(bytes),
       );
 
       if (savePath == null) return; // Отменено
 
-      final file = File(savePath);
-      await file.writeAsBytes(response.data);
+      // На desktop bytes не записываются автоматически
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        final file = File(savePath);
+        await file.writeAsBytes(bytes);
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Сохранено: ${file.uri.pathSegments.last}'),
+            content: Text('✅ Сохранено: ${savePath.split(Platform.pathSeparator).last}'),
             backgroundColor: Colors.green,
             action: SnackBarAction(
               label: 'Открыть',
