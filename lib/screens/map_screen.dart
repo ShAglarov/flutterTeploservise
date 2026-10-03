@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/incident_schedule_manager.dart';
 import 'dart:math' as math;
@@ -2579,8 +2580,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     if (downloadUrl.isEmpty) return;
     try {
       final dio = ref.read(dioProvider);
-      // downloadUrl = /api/v1/house-documents/2/download
-      // Dio baseUrl уже содержит /api/v1, убираем дублирование
       String endpoint = downloadUrl;
       if (endpoint.startsWith('/api/v1/')) {
         endpoint = endpoint.substring('/api/v1'.length);
@@ -2592,34 +2591,30 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         options: Options(responseType: ResponseType.bytes),
       );
 
-      // Определяем путь для сохранения
-      String downloadsPath;
-      if (Platform.isWindows) {
-        downloadsPath = '${Platform.environment['USERPROFILE']}\\Downloads';
-      } else if (Platform.isMacOS) {
-        downloadsPath = '${Platform.environment['HOME']}/Downloads';
-      } else {
-        final dir = await getApplicationDocumentsDirectory();
-        downloadsPath = dir.path;
-      }
+      // Определяем расширение из имени файла
+      final ext = title.contains('.') ? title.substring(title.lastIndexOf('.')) : '';
+      
+      // Диалог «Сохранить как»
+      final savePath = await FilePicker.saveFile(
+        dialogTitle: 'Сохранить документ',
+        fileName: title,
+        type: FileType.any,
+      );
 
-      // Сохраняем файл
-      final safeName = title.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-      final filePath = '$downloadsPath${Platform.pathSeparator}$safeName';
-      final file = File(filePath);
+      if (savePath == null) return; // Отменено
+
+      final file = File(savePath);
       await file.writeAsBytes(response.data);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Сохранено: $safeName'),
+            content: Text('✅ Сохранено: ${file.uri.pathSegments.last}'),
             backgroundColor: Colors.green,
             action: SnackBarAction(
               label: 'Открыть',
               textColor: Colors.white,
-              onPressed: () {
-                launchUrl(Uri.file(filePath));
-              },
+              onPressed: () => launchUrl(Uri.file(savePath)),
             ),
           ),
         );
