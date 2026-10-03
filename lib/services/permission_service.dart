@@ -132,12 +132,10 @@ class PermissionService {
   /// Загружает права с сервера: GET /permissions/me
   Future<PermissionSnapshot?> loadFromServer() async {
     try {
-      final token = await _storage.getAccessToken();
-      if (token == null || token.isEmpty) {
-        debugPrint('⚠️ [PermissionService] No access token, skipping loadFromServer');
-        return null;
-      }
-
+      // Токен добавляется автоматически через Dio AuthInterceptor.
+      // Не проверяем его здесь — на Windows getAccessToken() может
+      // вернуть null из-за race condition при чтении secure storage,
+      // хотя Dio interceptor при этом работает нормально.
       final response = await _dio.get(_endpoint);
 
       if (response.statusCode == 200 && response.data != null) {
