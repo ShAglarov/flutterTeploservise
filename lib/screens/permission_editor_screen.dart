@@ -134,7 +134,7 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
       });
     } catch (e) {
       setState(() {
-        _error = 'Не удалось загрузить: ${e is DioException ? e.message : e}';
+        _error = 'Не удалось загрузить: ${_serverError(e)}';
         _isLoading = false;
       });
     }
@@ -186,7 +186,7 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Ошибка: ${e is DioException ? e.message : e}'),
+            content: Text('❌ Ошибка: ${_serverError(e)}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -206,7 +206,7 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
       setState(() => _isSaving = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка сброса: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Ошибка сброса: ${_serverError(e)}'), backgroundColor: Colors.red),
         );
       }
     }
