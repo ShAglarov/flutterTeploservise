@@ -2,6 +2,22 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/base_api_service.dart';
+import '../services/user_service.dart';
+
+/// Текст ошибки от сервера, а не `DioException.message`.
+///
+/// Предохранитель от блокировки системы возвращает объяснение в `detail`
+/// («нельзя снять право у последнего владельца»). Без разбора тела клиент
+/// показывал обобщённое «invalid status code 400», и причина отказа
+/// до пользователя не доходила.
+String _serverError(Object e) {
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map && data['detail'] != null) return data['detail'].toString();
+    return e.message ?? e.toString();
+  }
+  return e.toString();
+}
 
 /// Экран редактирования прав доступа пользователя (только admin).
 ///
@@ -31,6 +47,12 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
   bool _isSaving = false;
   String? _error;
   String? _roleName;
+  /// Цель — пользователь с ролью «Администратор».
+  bool _isAdmin = false;
+
+  /// Редактируем свои собственные права — предупреждаем отдельно: снятое
+  /// подействует на редактирующего немедленно.
+  bool get _isSelf => ref.read(currentUserIdProvider) == widget.userId;
 
   /// Все ключи из registry, группированные по категории.
   List<_PermissionSection> _sections = [];
@@ -72,7 +94,10 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
       final permData = permResp.data as Map<String, dynamic>;
       final rawPerms = (permData['permissions'] as Map<String, dynamic>? ?? {})
           .map((k, v) => MapEntry(k, v == true));
-      final roleName = permData['role_display_name'] as String?;
+      // Сервер отдаёт `role` (ключ вроде ADMIN), а не `role_display_name` —
+      // из-за несовпадения имени поля шапка с ролью не показывалась вовсе.
+      final roleName = (permData['role_display_name'] ?? permData['role']) as String?;
+      final isAdmin = permData['is_admin'] == true;
 
       // Build sections
       final grouped = <String, List<_RegistryItem>>{};
@@ -104,6 +129,7 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
         _values = Map.from(rawPerms);
         _originalValues = Map.from(rawPerms);
         _roleName = roleName;
+        _isAdmin = isAdmin;
         _isLoading = false;
       });
     } catch (e) {
@@ -134,12 +160,15 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
         data: {'permissions': delta},
       );
 
+      // Ответ PUT содержит матрицу КАК В БАЗЕ — ею и обновляем экран, чтобы
+      // показанное совпадало с сохранённым.
       final newPerms = (resp.data['permissions'] as Map<String, dynamic>? ?? {})
           .map((k, v) => MapEntry(k, v == true));
 
       setState(() {
         _values = Map.from(newPerms);
         _originalValues = Map.from(newPerms);
+        _isAdmin = resp.data['is_admin'] == true;
         _isSaving = false;
       });
 
@@ -258,6 +287,37 @@ class _PermissionEditorScreenState extends ConsumerState<PermissionEditorScreen>
                   ],
                 ),
               ),
+            ),
+          ),
+
+        // Матрица действует на всех, включая администратора. Предупреждаем
+        // о единственном необратимом действии: снятие права управления
+        // правами у самого себя или у последнего владельца сервер отклонит.
+        if (_isAdmin || _isSelf)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.amber.withAlpha(30),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.amber.withAlpha(90)),
+              ),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.warning_amber_rounded, size: 18, color: Colors.amber.shade800),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _isSelf
+                        ? 'Это ваши права. Ограничения подействуют и на вас. '
+                          'Право «Управление матрицей прав» себе снять нельзя — '
+                          'иначе вы потеряете доступ к этому экрану.'
+                        : 'Роль «Администратор» больше не даёт обхода: '
+                          'выключенные тумблеры ограничат и этого пользователя.',
+                    style: theme.textTheme.bodySmall?.copyWith(height: 1.35),
+                  ),
+                ),
+              ]),
             ),
           ),
 

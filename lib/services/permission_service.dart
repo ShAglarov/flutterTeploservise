@@ -38,10 +38,16 @@ class PermissionSnapshot {
     this.isAdmin = false,
   });
 
-  bool hasPermission(String key) {
-    if (isAdmin) return true;
-    return permissions[key] ?? false;
-  }
+  /// Разрешено ли действие.
+  ///
+  /// Роль НЕ даёт обхода: матрица прав действует и на администратора — так
+  /// же, как на сервере. Раньше здесь стояло `if (isAdmin) return true`, и
+  /// у администратора UI показывал всё разрешённым независимо от матрицы:
+  /// кнопка была видна, а сервер отвечал 403.
+  ///
+  /// `isAdmin` остаётся в снэпшоте — он про РОЛЬ (нужен для системных
+  /// операций вроде полной очистки данных), но доступ к функциям не даёт.
+  bool hasPermission(String key) => permissions[key] ?? false;
 
   PermissionSnapshot copyWith({
     Map<String, bool>? permissions,
