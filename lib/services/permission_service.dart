@@ -73,9 +73,11 @@ class PermissionStateNotifier extends Notifier<PermissionSnapshot> {
   Future<void> _loadCached() async {
     final service = ref.read(permissionServiceProvider);
     final cached = await service.loadCachedPermissions();
-    if (cached != null) {
-      state = cached;
-    }
+    if (cached == null) return;
+    // Кэш читается асинхронно и может прийти ПОСЛЕ ответа сервера. Тогда
+    // применять его нельзя: вернули бы старые права поверх свежих.
+    if (state.isLoaded) return;
+    state = cached;
   }
 
   /// Полная загрузка с сервера.
@@ -97,10 +99,25 @@ class PermissionStateNotifier extends Notifier<PermissionSnapshot> {
   }
 
   /// Применение дельта-обновления (от WebSocket).
+  ///
+  /// Версия монотонно растёт на сервере (`user_permissions.version`), поэтому
+  /// сообщение со версией НЕ БОЛЬШЕ текущей — это дубль или пришедшее с
+  /// опозданием старое обновление. Применять его нельзя: при переподключении
+  /// WebSocket сервер может повторно доставить сообщение, и права откатились
+  /// бы к состоянию до правки.
   void applyDelta(Map<String, bool> changes, Map<String, bool>? full, int newVersion) {
+    if (state.isLoaded && newVersion > 0 && newVersion <= state.version) {
+      _permLog(
+        'Пропущена устаревшая дельта: v$newVersion <= текущая v${state.version}',
+      );
+      return;
+    }
+
     final service = ref.read(permissionServiceProvider);
     final current = Map<String, bool>.from(state.permissions);
     if (full != null) {
+      // Полный снимок авторитетнее: он закрывает расхождения, если какая-то
+      // дельта до нас не дошла.
       current
         ..clear()
         ..addAll(full);

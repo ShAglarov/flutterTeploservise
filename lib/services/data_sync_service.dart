@@ -10,7 +10,7 @@ import 'realtime_service.dart';
 import 'device_id_service.dart';
 
 import '../providers/incident_providers.dart';
-import '../providers/auth_provider.dart';
+import '../services/user_service.dart';
 import 'chat_read_service.dart';
 import '../utils/app_logger.dart';
 
@@ -360,8 +360,7 @@ class DataSyncService {
         
         // Обновляем счётчик непрочитанных (только для чужих сообщений)
         if (actionType == 'create' && comment.userId != null) {
-          final authState = _ref.read(authProvider);
-          final myId = int.tryParse(authState.user?.id ?? '');
+          final myId = _ref.read(currentUserIdProvider);
           if (myId == null || comment.userId != myId) {
             _ref.read(unreadCountsProvider.notifier).incrementUnread(comment.incidentId);
           }

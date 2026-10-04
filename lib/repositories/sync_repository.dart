@@ -135,7 +135,13 @@ class SyncRepository {
             createdAt: DateTime.parse(comment.createdAt),
             isSystemMessage: Value(comment.isSystemMessage),
             userId: Value(comment.userId),
-            authorName: Value(comment.author?.fullName),
+            // Имя берём по цепочке сотрудник → жилец → имя в самом
+            // сообщении. Раньше сохранялся только author?.fullName, поэтому
+            // автор-жилец терялся при записи в локальную БД, и чат, который
+            // читает из Drift (а не из API), подписывал его «ID 0».
+            authorName: Value(comment.author?.fullName ??
+                comment.residentAuthor?.fullName ??
+                comment.senderName),
             authorPosition: Value(null),
             authorAvatarUrl: Value(comment.author?.avatarUrl),
             id: comment.id.toString(),
@@ -146,6 +152,14 @@ class SyncRepository {
     });
   }
 
+  /// Удаляет комментарий из локальной БД — чтобы он исчез из чата сразу,
+  /// не дожидаясь полной пересинхронизации.
+  Future<void> deleteComment(int commentId) async {
+    await (_db.delete(_db.incidentComments)
+          ..where((t) => t.backendId.equals(commentId)))
+        .go();
+  }
+
   Stream<List<IncidentComment>> watchComments(int incidentId) {
     return (_db.select(_db.incidentComments)
           ..where((t) => t.incidentId.equals(incidentId))
@@ -153,17 +167,29 @@ class SyncRepository {
         .watch()
         .map((rows) {
       return rows.map((row) {
+        final uid = row.userId;
+        final isStaff = uid != null && uid != 0;
         return IncidentComment(
           id: row.backendId,
           incidentId: row.incidentId ?? 0,
           text: row.commentText,
           createdAt: row.createdAt.toIso8601String(),
-          userId: row.userId ?? 0,
-          author: IncidentCommentAuthor(
-            id: row.userId ?? 0,
-            fullName: row.authorName,
-            avatarUrl: row.authorAvatarUrl,
-          ),
+          // Сохраняем «пусто» как пусто: userId == 0 для жильца означало бы
+          // сотрудника с нулевым id, и `isMine` в чате сравнивал бы 0 == 0.
+          userId: isStaff ? uid : null,
+          // author только для сотрудника. Раньше он создавался всегда, и у
+          // сообщения жильца получался автор с id=0 и пустым именем —
+          // displayName выводил «ID 0» вместо имени.
+          author: isStaff
+              ? IncidentCommentAuthor(
+                  id: uid,
+                  fullName: row.authorName,
+                  avatarUrl: row.authorAvatarUrl,
+                )
+              : null,
+          // Для жильца имя лежит в authorName — отдаём как senderName,
+          // displayName подхватит его.
+          senderName: isStaff ? null : row.authorName,
           isSystemMessage: row.isSystemMessage,
         );
       }).toList();

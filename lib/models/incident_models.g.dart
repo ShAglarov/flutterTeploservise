@@ -375,6 +375,12 @@ IncidentComment _$IncidentCommentFromJson(Map<String, dynamic> json) =>
           : IncidentCommentAuthor.fromJson(
               json['author'] as Map<String, dynamic>,
             ),
+      residentAuthor: json['resident_author'] == null
+          ? null
+          : IncidentCommentAuthor.fromJson(
+              json['resident_author'] as Map<String, dynamic>,
+            ),
+      residentId: (json['resident_id'] as num?)?.toInt(),
       senderName: json['sender_name'] as String?,
       isSystemMessage: json['is_system_message'] as bool? ?? false,
     );
@@ -387,6 +393,8 @@ Map<String, dynamic> _$IncidentCommentToJson(IncidentComment instance) =>
       'created_at': instance.createdAt,
       'user_id': instance.userId,
       'author': instance.author,
+      'resident_author': instance.residentAuthor,
+      'resident_id': instance.residentId,
       'sender_name': instance.senderName,
       'is_system_message': instance.isSystemMessage,
     };

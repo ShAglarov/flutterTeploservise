@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/incident_models.dart';
 import '../repositories/sync_repository.dart';
-import '../providers/auth_provider.dart';
 import '../services/incident_service.dart';
 
 import '../services/user_service.dart';
@@ -11,7 +10,7 @@ import '../models/user_role.dart';
 
 part 'incident_providers.g.dart';
 
-enum IncidentQuickFilter { active, assignedToMe, all }
+enum IncidentQuickFilter { active, assignedToMe, completed, all }
 enum IncidentPeriod { allTime, today, thisWeek }
 
 class IncidentFilterState {
@@ -147,6 +146,8 @@ class IncidentViewModel {
   final bool supplyFullyStopped;
   /// Локально вычисленный цвет инцидента ("normal" | "partial" | "full")
   final String resolvedColorStatus;
+  /// Полные названия домов, включённых в инцидент
+  final String? affectedHousesText;
 
   IncidentViewModel({
     required this.raw,
@@ -161,6 +162,7 @@ class IncidentViewModel {
     this.totalBoilersCount = 0,
     this.supplyFullyStopped = false,
     required this.resolvedColorStatus,
+    this.affectedHousesText,
   });
 }
 
@@ -301,6 +303,18 @@ IncidentViewModel _createViewModel(IncidentResponse inc, String? boilerHouseDeta
       ? (List<int>.from(inc.inactiveBoilerNumbers!)..sort())
       : const <int>[];
 
+  // 9. Названия домов
+  String? affectedHousesText;
+  if (inc.affectedHouseDetails != null && inc.affectedHouseDetails!.isNotEmpty) {
+    final names = inc.affectedHouseDetails!
+        .map((h) => h.savedLocation?.name)
+        .where((n) => n != null && n.isNotEmpty)
+        .toList();
+    if (names.isNotEmpty) {
+      affectedHousesText = names.join(', ');
+    }
+  }
+
   return IncidentViewModel(
     raw: inc,
     boilerHouseDetail: boilerHouseDetail,
@@ -314,6 +328,7 @@ IncidentViewModel _createViewModel(IncidentResponse inc, String? boilerHouseDeta
     totalBoilersCount: inc.boilerHouse?.totalBoilersCount ?? 0,
     supplyFullyStopped: inc.supplyFullyStopped ?? false,
     resolvedColorStatus: resolvedColorStatus,
+    affectedHousesText: affectedHousesText,
   );
 }
 
@@ -348,8 +363,11 @@ String _computeColorStatus(IncidentResponse inc) {
 final filteredIncidentsProvider = Provider<AsyncValue<List<IncidentResponse>>>((ref) {
   final allAsync = ref.watch(allIncidentsProvider);
   final filter = ref.watch(incidentFilterProvider);
-  final authState = ref.watch(authProvider);
-  final currentUserId = int.tryParse(authState.user?.id ?? '');
+  // Свой id — из currentUserIdProvider (GET /users/me), единственного
+  // источника. Прежде читался второй провайдер с именем authProvider,
+  // который инициализировался лишь побочным эффектом импорта: пока его
+  // состояние пустое, фильтр «мои инциденты» ничего не находил.
+  final currentUserId = ref.watch(currentUserIdProvider);
   
   return allAsync.whenData((incidents) {
     return incidents.where((inc) {
@@ -366,6 +384,8 @@ final filteredIncidentsProvider = Provider<AsyncValue<List<IncidentResponse>>>((
       if (filter.quickFilter == IncidentQuickFilter.active) {
         if (inc.status?.name.toLowerCase().contains('resolved') ?? false) return false;
         if (inc.status?.name.toLowerCase().contains('closed') ?? false) return false;
+      } else if (filter.quickFilter == IncidentQuickFilter.completed) {
+        if (inc.status != IncidentStatus.resolved && inc.status != IncidentStatus.closed) return false;
       } else if (filter.quickFilter == IncidentQuickFilter.assignedToMe) {
         if (currentUserId != null && inc.assignedTo != currentUserId) return false;
       }

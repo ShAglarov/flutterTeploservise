@@ -66,6 +66,12 @@ class PermissionKey {
   static const operationLogCreate = 'operation_log.create';
   static const operationLogUpdate = 'operation_log.update';
 
+  // ─── Жильцы ───
+  static const residentRead = 'resident.read';
+  static const residentCreate = 'resident.create';
+  static const residentUpdate = 'resident.update';
+  static const residentDelete = 'resident.delete';
+
   // ─── Пользователи ───
   static const userRead = 'user.read';
   static const userCreate = 'user.create';
@@ -95,6 +101,7 @@ class PermissionKey {
     incidentRead, incidentCreate, incidentUpdate, incidentDelete, incidentApprove,
     incidentCommentRead, incidentCommentCreate, incidentCommentDelete,
     photoCreate, photoDelete,
+    residentRead, residentCreate, residentUpdate, residentDelete,
     managementCompanyRead, managementCompanyCreate, managementCompanyUpdate,
     managementCompanyDelete, managementCompanyImport, managementCompanyExport,
     reportRead, reportCreate, reportApprove,

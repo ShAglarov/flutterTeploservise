@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/api_models.dart';
+import 'auth_service.dart';
 import 'base_api_service.dart';
 
 final userServiceProvider = Provider<UserService>((ref) {
@@ -156,5 +157,27 @@ final usersProvider = FutureProvider<List<APIUserResponse>>((ref) async {
 final usersMapProvider = FutureProvider<Map<int, APIUserResponse>>((ref) async {
   final usersList = await ref.watch(usersProvider.future);
   return {for (var user in usersList) user.id: user};
+});
+
+/// Текущий пользователь — GET /users/me.
+///
+/// Единственный источник своего id для UI.
+///
+/// Раньше в проекте было ДВА провайдера с именем `authProvider`. Тот, что
+/// хранил `user`, инициализировался лишь как побочный эффект импорта из
+/// incident_providers, поэтому его состояние могло быть пустым: экран чата
+/// сравнивал `comment.userId == null` и показывал СВОИ сообщения как чужие —
+/// слева, с аватаркой и чужим именем. Дубль удалён, id берём здесь.
+///
+/// `usersProvider` для этого не годится: он требует права `user.read`,
+/// которого у обычного сотрудника нет, а свой профиль доступен всем.
+final currentUserProvider = FutureProvider<APIUserResponse>((ref) async {
+  final authService = ref.watch(authServiceProvider);
+  return authService.getCurrentUser();
+});
+
+/// Свой user_id или null, если профиль ещё не загружен.
+final currentUserIdProvider = Provider<int?>((ref) {
+  return ref.watch(currentUserProvider).value?.id;
 });
 

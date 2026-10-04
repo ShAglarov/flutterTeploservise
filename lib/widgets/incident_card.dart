@@ -25,6 +25,11 @@ class IncidentCard extends StatefulWidget {
   final bool isOverdue;
   final int unreadChatCount;
   final int incidentId;
+  final String? affectedHousesText;
+  /// Какие поля показывать — ключи из `kIncidentCardFields`.
+  /// Отсутствующий ключ = показывать: скрыто только то, что пользователь
+  /// скрыл осознанно.
+  final Map<String, bool> fieldVisibility;
   final VoidCallback? onTap;
 
   const IncidentCard({
@@ -49,6 +54,8 @@ class IncidentCard extends StatefulWidget {
     this.isOverdue = false,
     this.unreadChatCount = 0,
     this.incidentId = 0,
+    this.affectedHousesText,
+    this.fieldVisibility = const {},
     this.onTap,
   });
 
@@ -277,14 +284,15 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                             ),
                             const SizedBox(width: 4),
                           ],
-                          Flexible(
-                            child: Text(
-                              widget.timestamp,
-                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12, fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.right,
-                              maxLines: 2,
+                          if (_shows('timestamp'))
+                            Flexible(
+                              child: Text(
+                                widget.timestamp,
+                                style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(180), fontSize: 12, fontWeight: FontWeight.w600),
+                                textAlign: TextAlign.right,
+                                maxLines: 2,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -316,49 +324,41 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.boilerHouseDetail ?? widget.location,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface.withAlpha(180),
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                                            Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
-                      _buildActionRow(
-                        context,
-                        icon: Icons.account_circle,
-                        text: widget.assigneeName ?? 'Не назначен',
-                        rightText: 'Assigned',
-                      ),
-                      if (widget.broadcastText != null) ...[
-                                              Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
-                        _buildActionRow(
-                          context,
-                          icon: Icons.campaign,
-                          text: widget.broadcastText!,
+                      if (_shows('location')) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.boilerHouseDetail ?? widget.location,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withAlpha(180),
+                            fontSize: 14,
+                          ),
                         ),
                       ],
-                      if (widget.stoppedServicesText != null) ...[
-                                              Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
-                        _buildActionRow(
-                          context,
-                          icon: Icons.warning_rounded,
-                          iconColor: AppTheme.warningOrange,
-                          text: 'Остановлено: ${widget.stoppedServicesText}',
+                      if (_shows('affectedHouses') && widget.affectedHousesText != null) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.home_outlined, size: 14, color: Theme.of(context).colorScheme.onSurface.withAlpha(120)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                widget.affectedHousesText!,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                      // ─── ЧИПЫ КОТЛОВ ───
-                      _buildBoilerChipsRow(context),
-                      if (widget.affectedPopulationCount > 0) ...[
-                                              Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
-                        _buildActionRow(
-                          context,
-                          icon: Icons.people,
-                          text: 'Без услуг: ${widget.affectedPopulationCount} чел.',
-                        ),
-                      ],
+                      // Нижние секции собираются списком: разделители
+                      // вставляются МЕЖДУ видимыми блоками. Раньше каждый
+                      // Divider стоял безусловно перед своим блоком, и при
+                      // скрытии блока осталась бы двойная линия (а при
+                      // скрытии всех — линия в пустоту).
+                      ..._buildSections(context),
                     ],
                   ),
                 ),
@@ -403,6 +403,70 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
     }
 
     return cardWidget;
+  }
+
+  /// Показывать ли поле. Отсутствующий ключ = показывать: карточка с
+  /// настройками по умолчанию (и любой вызов без `fieldVisibility`) выглядит
+  /// как до появления настроек.
+  bool _shows(String key) => widget.fieldVisibility[key] ?? true;
+
+  bool get _hasBoilerInfo =>
+      widget.totalBoilersCount > 0 ||
+      widget.supplyFullyStopped ||
+      widget.inactiveBoilerNumbers.isNotEmpty;
+
+  /// Видимые нижние секции карточки, разделённые линиями.
+  List<Widget> _buildSections(BuildContext context) {
+    final sections = <Widget>[];
+
+    if (_shows('assignee')) {
+      sections.add(_buildActionRow(
+        context,
+        icon: Icons.account_circle,
+        text: widget.assigneeName ?? 'Не назначен',
+        rightText: 'Assigned',
+      ));
+    }
+    if (_shows('broadcast') && widget.broadcastText != null) {
+      sections.add(_buildActionRow(
+        context,
+        icon: Icons.campaign,
+        text: widget.broadcastText!,
+      ));
+    }
+    if (_shows('stoppedServices') && widget.stoppedServicesText != null) {
+      sections.add(_buildActionRow(
+        context,
+        icon: Icons.warning_rounded,
+        iconColor: AppTheme.warningOrange,
+        text: 'Остановлено: ${widget.stoppedServicesText}',
+      ));
+    }
+    if (_shows('boilerChips') && _hasBoilerInfo) {
+      sections.add(_buildBoilerChipsRow(context));
+    }
+    if (_shows('population') && widget.affectedPopulationCount > 0) {
+      sections.add(_buildActionRow(
+        context,
+        icon: Icons.people,
+        text: 'Без услуг: ${widget.affectedPopulationCount} чел.',
+      ));
+    }
+
+    if (sections.isEmpty) return const [];
+
+    final divider = Divider(
+      height: 1,
+      color: Theme.of(context).colorScheme.onSurface.withAlpha(25),
+    );
+
+    // Отступ перед первой линией был частью верхнего блока — оставляем его
+    // только когда внизу реально что-то есть.
+    final out = <Widget>[const SizedBox(height: 16)];
+    for (final section in sections) {
+      out..add(divider)..add(section);
+    }
+    return out;
   }
 
   /// Разрешаем цвет полоски/бейджа — идентично iOS логике окрашивания карточек:
@@ -464,13 +528,9 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
     );
   }
 
+  /// Блок состояния котлов. Разделитель сверху НЕ рисует: его вставляет
+  /// `_buildSections`, иначе при скрытии соседних блоков линии сдваивались.
   Widget _buildBoilerChipsRow(BuildContext context) {
-    if (widget.totalBoilersCount <= 0 &&
-        !widget.supplyFullyStopped &&
-        widget.inactiveBoilerNumbers.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final total = widget.totalBoilersCount;
     final inactive = widget.inactiveBoilerNumbers;
@@ -486,15 +546,18 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
       bannerColor = AppTheme.errorRed;
     } else if (inactive.isNotEmpty) {
       bannerTitle = 'Частичная остановка';
-      final totalStr = total > 0 ? ' из $total' : '';
-      bannerSubtitle = 'С${inactive.length}$totalStr котл${_boilerWord(inactive.length)} не работает';
+      // Было: 'С${inactive.length} из $total котл${_boilerWord(...)} не работает'
+      // — лишняя «С» в начале и неверные склонения: «С1 из 3 котла не
+      // работает», «С2 из 3 котла не работает». Склонение считалось по
+      // числу неработающих, а слово стоит после «из $total», плюс для
+      // count==1 суффикс был пустым и получалось «котл».
+      bannerSubtitle = _inactiveBoilersPhrase(inactive.length, total);
       bannerColor = AppTheme.warningOrange;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Divider(height: 1, color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
         const SizedBox(height: 12),
         Text(
           'Состояние котлов',
@@ -564,13 +627,34 @@ class _IncidentCardState extends State<IncidentCard> with TickerProviderStateMix
     );
   }
 
-  String _boilerWord(int count) {
+  /// «1 котёл не работает» / «2 из 3 котлов не работают».
+  ///
+  /// Слово и глагол согласуются с ЧИСЛОМ НЕРАБОТАЮЩИХ, а после «из N» всегда
+  /// идёт родительный падеж множественного числа («из 3 котлов»).
+  static String _inactiveBoilersPhrase(int inactive, int total) {
+    final verb = _boilerVerb(inactive);
+    if (total > 0) {
+      return '$inactive из $total котлов $verb';
+    }
+    return '$inactive ${_boilerNoun(inactive)} $verb';
+  }
+
+  /// «котёл» / «котла» / «котлов» — с чередованием ё→о в основе.
+  static String _boilerNoun(int count) {
     final mod10 = count % 10;
     final mod100 = count % 100;
-    if (mod100 >= 11 && mod100 <= 19) return 'ов';
-    if (mod10 == 1) return '';
-    if (mod10 >= 2 && mod10 <= 4) return 'а';
-    return 'ов';
+    if (mod100 >= 11 && mod100 <= 14) return 'котлов';
+    if (mod10 == 1) return 'котёл';
+    if (mod10 >= 2 && mod10 <= 4) return 'котла';
+    return 'котлов';
+  }
+
+  /// «не работает» для 1, 21, 101…; «не работают» для остальных.
+  static String _boilerVerb(int count) {
+    final mod10 = count % 10;
+    final mod100 = count % 100;
+    if (mod100 >= 11 && mod100 <= 14) return 'не работают';
+    return mod10 == 1 ? 'не работает' : 'не работают';
   }
 
   Widget _boilerChip(BuildContext context, int number, {required bool inactive}) {

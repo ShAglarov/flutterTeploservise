@@ -57,6 +57,11 @@ class Auth extends _$Auth {
         // Сессия истекла (401 + неудачный refresh) — права тоже недействительны.
         ref.read(permissionStateProvider.notifier).clear();
         state = AuthState(status: AuthStatus.unauthenticated);
+      } else if (event == AppEvent.permissionsStale) {
+        // Сервер отказал по правам → наш снэпшот устарел. Перечитываем, и
+        // UI сам скроет то, чего больше нет (кнопки, пункты меню).
+        logDebug('🔐 [Auth] Permissions stale — reloading from server');
+        ref.read(permissionStateProvider.notifier).loadFromServer();
       }
     });
     ref.onDispose(() => _eventSubscription?.cancel());
@@ -159,6 +164,11 @@ class Auth extends _$Auth {
     try {
       final authService = ref.read(authServiceProvider);
       await authService.login(username, password);
+      // Кэш прав один на устройство и не привязан к пользователю. Если
+      // предыдущий сеанс завершился некорректно (приложение убили, logout
+      // не прошёл), в кэше лежат права ДРУГОГО человека — и новый
+      // пользователь на мгновение увидел бы их. Чистим до загрузки своих.
+      ref.read(permissionStateProvider.notifier).clear();
       state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
       _loadPermissions();
     } catch (e) {

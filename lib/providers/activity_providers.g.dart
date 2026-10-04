@@ -52,7 +52,7 @@ final class IncidentActivityFeedProvider
 }
 
 String _$incidentActivityFeedHash() =>
-    r'24e6b12c12ed51e1657c14c7d50ab643c2f8243a';
+    r'f3f172ae39abfb5f45c420185a2febd5e43bc84e';
 
 final class IncidentActivityFeedFamily extends $Family
     with

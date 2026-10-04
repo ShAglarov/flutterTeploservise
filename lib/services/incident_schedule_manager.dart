@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/incident_models.dart';
 import '../providers/incident_providers.dart';
-import '../services/incident_service.dart';
 import '../repositories/sync_repository.dart';
 
 /// Менеджер расписания инцидентов — автоматически обновляет UI
@@ -17,8 +16,8 @@ class IncidentScheduleManager {
   final Ref _ref;
   List<IncidentResponse> _lastIncidents = [];
   
-  /// Множество ID инцидентов, для которых уже отправлен запрос на авто-закрытие.
-  /// Предотвращает повторные запросы при каждом updateSchedule.
+  /// ID инцидентов, для которых перерисовка по истечении finishedAt уже
+  /// запрошена — иначе invalidate уходил бы на каждый updateSchedule.
   final Set<int> _autoResolvedIds = {};
 
   IncidentScheduleManager(this._ref);
@@ -31,7 +30,7 @@ class IncidentScheduleManager {
     // КРИТИЧНО: Всегда проверяем просроченные инциденты при каждом обновлении,
     // а не только когда таймер срабатывает. Это гарантирует авто-закрытие
     // даже если приложение было свёрнуто или менеджер пересоздан.
-    _performAutoResolveIfNeeded(incidents);
+    _refreshOverdueIfNeeded(incidents);
   }
 
   /// Находит ближайший startedAt в будущем и ставит таймер
@@ -116,46 +115,38 @@ class IncidentScheduleManager {
       debugPrint('🏁 [ScheduleManager] Таймер завершения сработал!');
       _nextFinishDate = null;
       // Авто-завершение для инцидентов с autoResolveOnFinish=true
-      _performAutoResolveIfNeeded(_lastIncidents);
+      _refreshOverdueIfNeeded(_lastIncidents);
       // Трогаем БД чтобы Drift stream re-emit
       _touchIncidentsInDb();
       _ref.invalidate(allIncidentsProvider);
     });
   }
 
-  /// Авто-завершает просроченные инциденты с autoResolveOnFinish=true
-  void _performAutoResolveIfNeeded(List<IncidentResponse> incidents) {
+  /// Обновляет UI для инцидентов, у которых истекло finishedAt.
+  ///
+  /// САМО завершение делает сервер (auto_resolve_finished_incidents в
+  /// main.py, цикл раз в 30с). Раньше PATCH отправлял клиент, и это было
+  /// неверно по трём причинам:
+  ///   * инцидент не закрывался, пока никто не откроет приложение;
+  ///   * каждый запущенный клиент слал свой PATCH на один инцидент — гонка
+  ///     и дубли в журнале действий;
+  ///   * при закрытом приложении push о завершении не уходил вовсе.
+  ///
+  /// Клиенту остаётся перерисовать карточку: статус придёт с сервера через
+  /// WebSocket/синхронизацию.
+  void _refreshOverdueIfNeeded(List<IncidentResponse> incidents) {
+    final needsRefresh = incidents.any((inc) =>
+        inc.isOverdue && inc.autoResolveOnFinish && !_autoResolvedIds.contains(inc.id));
+    if (!needsRefresh) return;
+
     for (final inc in incidents) {
-      if (!inc.isOverdue) continue;
-      if (!inc.autoResolveOnFinish) continue;
-      // Не отправляем повторный запрос для уже обработанных
-      if (_autoResolvedIds.contains(inc.id)) continue;
-      _autoResolvedIds.add(inc.id);
-      
-      debugPrint('✅ [ScheduleManager] Авто-завершение инцидента "${inc.title}" (id=${inc.id}, '
-          'finishedAt=${inc.finishedAt}, autoResolve=${inc.autoResolveOnFinish})');
-      
-      // Отправляем PATCH на сервер для закрытия
-      try {
-        final service = _ref.read(incidentServiceProvider);
-        final update = IncidentUpdate(
-          id: inc.id,
-          status: IncidentStatus.closed,
-          resolvedAt: DateTime.now().toUtc().toIso8601String(),
-        );
-        service.updateIncident(inc.id, update).then((_) {
-          debugPrint('✅ [ScheduleManager] Инцидент ${inc.id} закрыт на сервере');
-          _ref.invalidate(allIncidentsProvider);
-        }).catchError((e) {
-          debugPrint('❌ [ScheduleManager] Ошибка закрытия инцидента ${inc.id}: $e');
-          // Убираем из обработанных, чтобы повторить при следующем updateSchedule
-          _autoResolvedIds.remove(inc.id);
-        });
-      } catch (e) {
-        debugPrint('❌ [ScheduleManager] Ошибка при авто-завершении: $e');
-        _autoResolvedIds.remove(inc.id);
+      if (inc.isOverdue && inc.autoResolveOnFinish) {
+        _autoResolvedIds.add(inc.id);
+        debugPrint('⏳ [ScheduleManager] Инцидент ${inc.id} просрочен — '
+            'ждём авто-завершения на сервере');
       }
     }
+    _ref.invalidate(allIncidentsProvider);
   }
 
   void _cancelStartTimer() {

@@ -12,6 +12,8 @@ import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../widgets/incident_filter_sheet.dart';
+import '../widgets/incident_card_settings_sheet.dart';
+import '../providers/incident_card_settings.dart';
 import '../providers/offline_edit_permission.dart';
 import '../services/chat_read_service.dart';
 
@@ -53,12 +55,39 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
     // 2. Watch the ViewModels stream with native Riverpod caching and lifecycle handling
     final viewModelsAsync = ref.watch(incidentViewModelsProvider);
 
+    // 3. Настройки полей карточки — watch, чтобы список перерисовался сразу
+    // после переключения тумблера в открытом листе настроек.
+    final hiddenFieldsCount = ref
+        .watch(incidentCardSettingsProvider)
+        .values
+        .where((v) => v == false)
+        .length;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Журнал инцидентов'),
         actions: [
+          // Настройки полей карточки. Бейджем показываем, что часть полей
+          // скрыта: иначе «пропавший» адрес выглядит как потеря данных.
+          IconButton(
+            icon: Badge(
+              isLabelVisible: hiddenFieldsCount > 0,
+              label: Text('$hiddenFieldsCount'),
+              child: const Icon(Icons.tune),
+            ),
+            tooltip: 'Поля карточки',
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const IncidentCardSettingsSheet(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
+            tooltip: 'Фильтры',
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -172,6 +201,12 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
           ),
           const SizedBox(width: 8),
           _FilterChip(
+            label: 'Завершённые',
+            isSelected: ref.watch(incidentFilterProvider).quickFilter == IncidentQuickFilter.completed,
+            onSelected: () => ref.read(incidentFilterProvider.notifier).setQuickFilter(IncidentQuickFilter.completed),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
             label: 'Все',
             isSelected: ref.watch(incidentFilterProvider).quickFilter == IncidentQuickFilter.all,
             onSelected: () => ref.read(incidentFilterProvider.notifier).setQuickFilter(IncidentQuickFilter.all),
@@ -255,6 +290,9 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
             ],
           ),
           child: IncidentCard(
+            // Перерисовка списка при переключении тумблера обеспечена
+            // ref.watch в build() — здесь достаточно read.
+            fieldVisibility: ref.read(incidentCardSettingsProvider),
             title: sortedInc.title ?? 'Инцидент №${sortedInc.id}',
             location: sortedInc.boilerHouse?.address != null
                 ? '📍 Котельная: ${sortedInc.boilerHouse!.address}'
@@ -281,6 +319,7 @@ class _IncidentListScreenState extends ConsumerState<IncidentListScreen> {
             isUnsynced: sortedInc.localPendingAck == true,
             isOverdue: sortedInc.isOverdue,
             boilerHouseDetail: sortedVm.boilerHouseDetail,
+            affectedHousesText: sortedVm.affectedHousesText,
             unreadChatCount: unreadCounts[sortedInc.id] ?? 0,
             incidentId: sortedInc.id,
             onTap: () {

@@ -5,7 +5,13 @@ final eventServiceProvider = Provider<EventService>((ref) {
   return EventService();
 });
 
-enum AppEvent { logout }
+enum AppEvent {
+  logout,
+
+  /// Сервер отказал по правам (403 permission_denied) — локальный снэпшот
+  /// прав устарел и его надо перечитать. Слушается в auth_providers.
+  permissionsStale,
+}
 
 class EventService {
   final _controller = StreamController<AppEvent>.broadcast();

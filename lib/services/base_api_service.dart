@@ -67,6 +67,25 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    // 403 permission_denied — сервер отказал по правам. Это значит, что
+    // локальный снэпшот прав устарел: клиент показал кнопку, которой уже
+    // нет. Перечитываем права, чтобы UI пришёл в соответствие с сервером.
+    //
+    // Нужно потому, что единственным механизмом обновления был WebSocket
+    // permission_update: если он не дошёл (сеть, спящий сокет, выход из
+    // фона), клиент жил со старыми правами до перелогина.
+    if (err.response?.statusCode == 403) {
+      final detail = err.response?.data;
+      final isPermissionDenied = detail is Map &&
+          detail['detail'] is String &&
+          (detail['detail'] as String).startsWith('permission_denied');
+      if (isPermissionDenied) {
+        logDebug('🔐 [AuthInterceptor] 403 ${detail['detail']} — refreshing permissions');
+        _eventService.fire(AppEvent.permissionsStale);
+      }
+      return handler.next(err);
+    }
+
     if (err.response?.statusCode == 401) {
       // Don't try to refresh if we didn't send a token (unauthenticated request)
       final sentToken = err.requestOptions.headers['Authorization'];

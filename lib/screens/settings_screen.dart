@@ -362,6 +362,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SizedBox(height: 24),
 
         // ═══════ Пользователи и жильцы ═══════
+        // Заголовок прячем вместе с содержимым: без прав на людей и жильцов
+        // осталась бы подпись над пустой карточкой.
+        if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userRead) ||
+            ref.watch(permissionStateProvider).hasPermission(PermissionKey.residentRead)) ...[
         _buildSectionHeader('Пользователи и жильцы'),
         const SizedBox(height: 8),
         _buildCard([
@@ -378,24 +382,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 );
               },
             ),
-          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userRead))
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userRead) &&
+              ref.watch(permissionStateProvider).hasPermission(PermissionKey.residentRead))
             _buildDivider(),
-          _buildNavRow(
-            icon: Icons.people_outline,
-            iconColor: Colors.amber,
-            title: 'Управление жильцами',
-            subtitle: 'Добавление, редактирование, блокировка жильцов',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ResidentsManagementScreen()),
-              );
-            },
-          ),
+          // Жильцы — своё право. Раньше пункт был открыт всем, кто дошёл до
+          // настроек, а эндпоинты /residents вообще не проверяли права.
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.residentRead))
+            _buildNavRow(
+              icon: Icons.people_outline,
+              iconColor: Colors.amber,
+              title: 'Управление жильцами',
+              subtitle: 'Добавление, редактирование, блокировка жильцов',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ResidentsManagementScreen()),
+                );
+              },
+            ),
         ]),
         _buildSectionFooter('Управление учётными записями и жильцами домов'),
 
         const SizedBox(height: 24),
+        ],
 
         // ═══════ Биллинг и начисления ═══════
         _buildSectionHeader('Биллинг и начисления'),
@@ -1059,10 +1068,15 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
             style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 17)),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: AppTheme.primaryBlue, size: 28),
-            onPressed: () => _showCreateUserDialog(context),
-          ),
+          // Создавать пользователей — только с правом user.create.
+          // Кнопка была видна всем, кто попал на экран (user.read), и
+          // заполненная форма упиралась в 403 на отправке.
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.userCreate))
+            IconButton(
+              icon: const Icon(Icons.add, color: AppTheme.primaryBlue, size: 28),
+              tooltip: 'Создать пользователя',
+              onPressed: () => _showCreateUserDialog(context),
+            ),
         ],
       ),
       body: usersState.isLoading
@@ -1385,10 +1399,17 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen>
                 ],
               ),
             ),
-            // Toggle active/deactive
+            // Активация/деактивация — право user.update. Без него тумблер
+            // показывался, но сервер отвечал 403, и единственным признаком
+            // отказа была строчка «Проверьте права доступа» уже ПОСЛЕ
+            // подтверждения деактивации.
             Switch.adaptive(
               value: user.isActive && !isBlocked,
-              onChanged: isBlocked ? null : (newValue) async {
+              onChanged: (isBlocked ||
+                      !ref.watch(permissionStateProvider)
+                          .hasPermission(PermissionKey.userUpdate))
+                  ? null
+                  : (newValue) async {
                 // Allow re-activation of deactivated users
                 // Prevent self-deactivation
                 final authService = ref.read(authServiceProvider);
@@ -1785,6 +1806,8 @@ class UserProfileScreen extends ConsumerWidget {
       lastLoginAt: lastSeen,
     );
 
+    final perms = ref.watch(permissionStateProvider);
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -1887,13 +1910,19 @@ class UserProfileScreen extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
-            // Action buttons
+            // Действия над пользователем — каждое по своему праву.
+            //
+            // Раньше весь блок показывался любому, у кого есть user.read:
+            // человек видел «Редакт.», «Пароль», «Права доступа», нажимал —
+            // и получал 403 без объяснения. Теперь кнопки, которых сервер не
+            // разрешит, не рисуются вовсе.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildActionButton(context, Icons.edit, 'Редакт.', AppTheme.successGreen, () {
-                  _showEditUserDialog(context, ref, user);
-                }),
+                if (perms.hasPermission(PermissionKey.userUpdate))
+                  _buildActionButton(context, Icons.edit, 'Редакт.', AppTheme.successGreen, () {
+                    _showEditUserDialog(context, ref, user);
+                  }),
                 _buildActionButton(
                   context,
                   Icons.map_outlined,
@@ -1907,42 +1936,50 @@ class UserProfileScreen extends ConsumerWidget {
                           );
                         },
                 ),
-                _buildActionButton(context, Icons.vpn_key, 'Пароль', AppTheme.warningOrange, () {
-                  _showChangePasswordDialog(context, ref, user);
-                }),
-                _buildActionButton(context, Icons.article_outlined, 'Журнал', Colors.purpleAccent, () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ActionLogListScreen(initialUserId: user.id),
-                    ),
-                  );
-                }),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Reassign sites button (second row)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildActionButton(context, Icons.swap_horiz, 'Передать\nучастки', Colors.deepOrangeAccent, () {
-                  _showReassignDialog(context, ref);
-                }),
-                _buildActionButton(context, Icons.tune, 'Права\nдоступа', Colors.blueAccent, () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PermissionEditorScreen(
-                        userId: user.id,
-                        userName: _getFullName(),
+                if (perms.hasPermission(PermissionKey.userUpdate))
+                  _buildActionButton(context, Icons.vpn_key, 'Пароль', AppTheme.warningOrange, () {
+                    _showChangePasswordDialog(context, ref, user);
+                  }),
+                if (perms.hasPermission(PermissionKey.actionLogRead))
+                  _buildActionButton(context, Icons.article_outlined, 'Журнал', Colors.purpleAccent, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ActionLogListScreen(initialUserId: user.id),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
               ],
             ),
+
+            if (perms.hasPermission(PermissionKey.userUpdate) ||
+                perms.hasPermission(PermissionKey.userManagePermissions)) ...[
+              const SizedBox(height: 12),
+
+              // Reassign sites button (second row)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  if (perms.hasPermission(PermissionKey.userUpdate))
+                    _buildActionButton(context, Icons.swap_horiz, 'Передать\nучастки', Colors.deepOrangeAccent, () {
+                      _showReassignDialog(context, ref);
+                    }),
+                  // Матрицу прав меняет только тот, кому это разрешено.
+                  if (perms.hasPermission(PermissionKey.userManagePermissions))
+                    _buildActionButton(context, Icons.tune, 'Права\nдоступа', Colors.blueAccent, () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PermissionEditorScreen(
+                            userId: user.id,
+                            userName: _getFullName(),
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ],
 
             const SizedBox(height: 24),
 

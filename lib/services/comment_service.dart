@@ -27,4 +27,12 @@ class CommentService {
     );
     return IncidentComment.fromJson(response.data);
   }
+
+  /// Удаление комментария.
+  ///
+  /// Сервер разрешает автору удалить свой комментарий всегда, чужой — только
+  /// при наличии права `incident_comment.delete`.
+  Future<void> deleteComment(int incidentId, int commentId) async {
+    await _dio.delete('/incidents/$incidentId/comments/$commentId');
+  }
 }

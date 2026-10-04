@@ -37,7 +37,7 @@ class IncidentChat extends _$IncidentChat {
   Future<void> sendComment(String text) async {
     final commentService = ref.read(commentServiceProvider);
     final syncRepo = ref.read(syncRepositoryProvider);
-    
+
     try {
       final newComment = await commentService.postComment(incidentId, text);
       // Persist locally immediately
@@ -46,5 +46,17 @@ class IncidentChat extends _$IncidentChat {
       dev.log('ChatProvider: Failed to send comment: $e', name: 'Chat');
       rethrow;
     }
+  }
+
+  /// Удаляет комментарий на сервере и локально.
+  ///
+  /// Локальное удаление — сразу после ответа сервера: WebSocket-рассылка
+  /// может не дойти, и сообщение осталось бы на экране до пересинхронизации.
+  Future<void> deleteComment(int commentId) async {
+    final commentService = ref.read(commentServiceProvider);
+    final syncRepo = ref.read(syncRepositoryProvider);
+
+    await commentService.deleteComment(incidentId, commentId);
+    await syncRepo.deleteComment(commentId);
   }
 }

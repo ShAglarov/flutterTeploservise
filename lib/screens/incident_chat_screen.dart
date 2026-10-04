@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_provider.dart';
 import '../providers/chat_providers.dart';
 import '../models/incident_models.dart';
+import '../models/permission_key.dart';
+import '../services/permission_service.dart';
 import '../services/user_service.dart';
 import '../widgets/user_avatar_widget.dart';
 import '../widgets/user_profile_sheet.dart';
@@ -42,15 +43,20 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
     super.dispose();
   }
 
-  int? get _currentUserId {
-    final authState = ref.read(authProvider);
-    return int.tryParse(authState.user?.id ?? '');
-  }
+  /// Свой id — из GET /users/me.
+  ///
+  /// Раньше читался `authProvider.user?.id` из второго провайдера с тем же
+  /// именем (теперь удалён). Он инициализировался только как побочный
+  /// эффект импорта, и при пустом состоянии `_currentUserId` == null — ВСЕ
+  /// свои сообщения показывались как чужие: слева, серым пузырём, с
+  /// аватаркой и именем другого человека.
+  int? get _currentUserId => ref.watch(currentUserIdProvider);
 
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(incidentChatProvider(widget.incidentId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final myId = _currentUserId;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7),
@@ -107,7 +113,13 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
                     final comment = comments[index];
-                    final isMine = comment.userId == _currentUserId;
+                    // Пока свой id не загружен — считаем сообщения чужими:
+                    // показать чужое своим (справа, синим) хуже, чем
+                    // наоборот. Раньше сравнение null == null делало
+                    // «своими» все сообщения жильцов.
+                    final isMine = myId != null &&
+                        comment.userId != null &&
+                        comment.userId == myId;
                     // Show date separator
                     final showDate = index == 0 || _shouldShowDateSeparator(
                       comments[index - 1].createdAt,
@@ -141,8 +153,15 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
               ),
             ),
           ),
-          // Input bar
-          _buildInputBar(isDark),
+          // Поле ввода — только при праве на добавление комментариев.
+          // Сервер такой POST отклонит с 403, но раньше клиент этого не
+          // знал: пользователь писал сообщение, отправлял и видел, что оно
+          // исчезло без объяснения.
+          if (ref.watch(permissionStateProvider)
+              .hasPermission(PermissionKey.incidentCommentCreate))
+            _buildInputBar(isDark)
+          else
+            _buildReadOnlyBar(isDark),
         ],
       ),
     );
@@ -209,6 +228,44 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
                 onPressed: _send,
                 icon: const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
                 padding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Панель вместо поля ввода, когда права на комментарии нет.
+  /// Объясняет причину: иначе исчезнувшее поле выглядит как поломка.
+  Widget _buildReadOnlyBar(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).padding.bottom + 12,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+        border: Border(
+          top: BorderSide(color: Theme.of(context).dividerColor.withAlpha(40)),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.lock_outline,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(110)),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'Нет права на добавление комментариев — только чтение',
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
               ),
             ),
           ),
@@ -315,7 +372,14 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
             const SizedBox(width: 6),
           ],
           Flexible(
-            child: Container(
+            child: GestureDetector(
+              // Удаление по долгому нажатию. Своё сообщение автор удаляет
+              // всегда, чужое — только с правом incident_comment.delete;
+              // те же правила проверяет сервер.
+              onLongPress: _canDelete(comment, isMine)
+                  ? () => _confirmDelete(comment)
+                  : null,
+              child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: bubbleColor,
@@ -339,13 +403,39 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
                   if (!isMine && showAvatar)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        comment.displayName,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: nameColor,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            comment.displayName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: nameColor,
+                            ),
+                          ),
+                          // Жилец и сотрудник выглядели одинаково — отвечая,
+                          // можно было не понять, кому пишешь.
+                          if (comment.isResidentComment) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.teal.withAlpha(40),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'жилец',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.teal.shade700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   Text(
@@ -369,11 +459,57 @@ class _IncidentChatScreenState extends ConsumerState<IncidentChatScreen> {
                   ),
                 ],
               ),
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Можно ли удалить это сообщение: своё — всегда, чужое — по праву.
+  /// Системные сообщения не удаляются: это журнал, а не переписка.
+  bool _canDelete(IncidentComment comment, bool isMine) {
+    if (comment.isSystemMessage) return false;
+    if (isMine) return true;
+    return ref
+        .read(permissionStateProvider)
+        .hasPermission(PermissionKey.incidentCommentDelete);
+  }
+
+  Future<void> _confirmDelete(IncidentComment comment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить сообщение?'),
+        content: const Text('Сообщение будет удалено у всех участников.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref
+          .read(incidentChatProvider(widget.incidentId).notifier)
+          .deleteComment(comment.id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Не удалось удалить: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _send() {

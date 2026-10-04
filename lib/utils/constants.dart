@@ -12,6 +12,8 @@ class AppConstants {
   static const String login = '/auth/login';
   static const String register = '/auth/register';
   static const String refresh = '/auth/refresh';
+  /// Одноразовый билет для WebSocket — чтобы не светить JWT в query-строке.
+  static const String wsTicket = '/auth/ws-ticket';
   static const String heartbeat = '/auth/heartbeat';
   static const String logout = '/auth/logout';
   static const String currentUser = '/users/me';

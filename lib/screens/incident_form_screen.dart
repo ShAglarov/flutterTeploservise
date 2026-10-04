@@ -150,7 +150,7 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
               const SizedBox(height: 16),
               
               _buildSection(
-                title: 'ОТВЕТСТВЕННЫЙ И СПЕРИОД',
+                title: 'ОТВЕТСТВЕННЫЙ И ВРЕМЯ',
                 child: Column(
                   children: [
                     usersAsync.when(
@@ -293,10 +293,13 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         tileColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                         title: Text('Авто-завершение по окончании', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 14)),
+                        // Подпись называет КОНКРЕТНОЕ время и исход. Раньше в
+                        // выключенном состоянии она дублировала заголовок
+                        // («Авто-завершение»), то есть не говорила ничего.
                         subtitle: Text(
-                          state.autoResolveOnFinish 
-                            ? 'Инцидент автоматически завершится' 
-                            : 'Авто-завершение',
+                          state.autoResolveOnFinish
+                            ? 'Закроется сам ${DateFormat('dd.MM.yyyy в HH:mm').format(state.finishedAt!)}'
+                            : 'Закрыть инцидент придётся вручную',
                           style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140), fontSize: 12),
                         ),
                         secondary: Icon(
@@ -350,14 +353,31 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                 title: 'ЗАТРОНУТЫЕ РЕСУРСЫ И ДОМА',
                 child: Column(
                   children: [
+                    // Подписи говорят, что именно увидит жилец. Раньше
+                    // тумблеры назывались просто «Остановить ГВС» и при
+                    // включении ещё и объявляли полную остановку подачи,
+                    // стирая отметки котлов — то есть делали больше, чем
+                    // написано.
                     SwitchListTile(
                       title: Text('Остановить ГВС', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                      subtitle: Text(
+                        state.stopHotWater
+                            ? 'Жильцы без горячей воды'
+                            : 'Горячая вода подаётся',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 12),
+                      ),
                       value: state.stopHotWater,
                       onChanged: controller.updateStopHotWater,
                       activeThumbColor: Colors.blue,
                     ),
                     SwitchListTile(
                       title: Text('Остановить отопление', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                      subtitle: Text(
+                        state.stopHeating
+                            ? 'Жильцы без отопления'
+                            : 'Отопление подаётся',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(128), fontSize: 12),
+                      ),
                       value: state.stopHeating,
                       onChanged: controller.updateStopHeating,
                       activeThumbColor: Colors.red,
@@ -507,6 +527,8 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
         : (state.boilerHouseId != null ? _localBoilerCount : 0);
     final boilerHouseNotSelected = state.boilerHouseId == null;
     final usingLocalCount = serverBoilerCount == null || serverBoilerCount == 0;
+    final allBoilersInactive =
+        totalBoilers > 0 && state.inactiveBoilers.length >= totalBoilers;
 
     return _buildSection(
       title: 'СОСТОЯНИЕ КОТЛОВ',
@@ -550,8 +572,13 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
                     Icon(Icons.info_outline, size: 15, color: Colors.orange.shade400),
                     const SizedBox(width: 8),
                     Expanded(
+                      // Счётчик живёт только в этой форме: в карточке
+                      // котельной он не сохраняется (это другая сущность и
+                      // другое право доступа). Говорим об этом прямо, иначе
+                      // пользователь ждёт, что указанное число останется.
                       child: Text(
-                        'Кол-во котлов не задано в котельной. Укажите вручную:',
+                        'Кол-во котлов не задано в котельной — укажите для этого '
+                        'инцидента (в котельной не сохранится):',
                         style: TextStyle(color: Colors.orange.shade300, fontSize: 11),
                       ),
                     ),
@@ -612,7 +639,11 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
               runSpacing: 8,
               children: List.generate(totalBoilers, (index) {
                 final boilerNumber = index + 1;
-                final isInactive = state.inactiveBoilers.contains(boilerNumber);
+                // При полной остановке подачи все котлы показываем
+                // нерабочими, но сам набор отметок НЕ стираем: выключив
+                // тумблер, пользователь должен увидеть свой прежний выбор.
+                final isInactive = state.supplyFullyStopped ||
+                    state.inactiveBoilers.contains(boilerNumber);
                 // Чипы ВСЕГДА кликабельны — пользователь может снять котёл с нерабочего
                 // даже когда supplyFullyStopped=true (автоустановлен при всех нерабочих)
                 return GestureDetector(
@@ -650,20 +681,33 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
             const SizedBox(height: 14),
           ],
 
-          // ── Тумблер "Услуги поступают" (инверсный — как на iOS) ──
+          // ── Тумблер полной остановки подачи ──
+          //
+          // Переформулирован с «Услуги поступают» на прямое утверждение.
+          // Инверсный тумблер («ВКЛ = всё хорошо») читался неоднозначно:
+          // пользователь включал тумблер, ожидая «остановить», и получал
+          // обратное. Теперь ВКЛ = остановлено, как у соседних тумблеров
+          // «Остановить ГВС» / «Остановить отопление».
+          //
+          // Блокируется ТОЛЬКО когда все котлы отмечены нерабочими — тогда
+          // полная остановка следует из самих котлов. Раньше он блокировался
+          // ещё и при остановке ГВС/отопления, и вернуть частичный режим
+          // было нельзя вообще.
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              'Услуги поступают',
+              'Подача теплоносителя прекращена',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),
             subtitle: Text(
-              state.supplyFullyStopped
-                  ? 'Теплоноситель полностью прекращён'
-                  : 'Подача в штатном / частичном режиме',
+              allBoilersInactive
+                  ? 'Все котлы отмечены нерабочими — остановка полная'
+                  : (state.supplyFullyStopped
+                      ? 'Теплоноситель не подаётся совсем'
+                      : 'Подача идёт (полностью или частично)'),
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSurface.withAlpha(128),
                 fontSize: 12,
@@ -676,18 +720,17 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
               color: state.supplyFullyStopped ? Colors.red : Colors.green,
               size: 22,
             ),
-            // Инверсия: тумблер ВКЛ = услуги поступают = supplyFullyStopped = false
-            value: !state.supplyFullyStopped,
-            // Тумблер заблокирован если: все котлы нерабочие ИЛИ хотя бы один ресурс остановлен
-            onChanged: ((state.inactiveBoilers.length >= totalBoilers && totalBoilers > 0) || state.stopHotWater || state.stopHeating)
+            value: state.supplyFullyStopped,
+            onChanged: allBoilersInactive
                 ? null
-                : (value) => controller.updateSupplyFullyStopped(!value, totalBoilers: totalBoilers),
-            activeThumbColor: Colors.green,
-            inactiveThumbColor: Colors.red.shade400,
-            inactiveTrackColor: Colors.red.shade900.withAlpha(100),
+                : (value) => controller.updateSupplyFullyStopped(value, totalBoilers: totalBoilers),
+            activeThumbColor: Colors.red,
           ),
 
-          // ── Статус-индикатор ──
+          // ── Итог по инциденту: котлы + услуги ──
+          // Показывается всегда, даже когда котельная не выбрана: иначе
+          // форма молчит о том, что проблема не указана, и пользователь
+          // узнаёт об этом только по ошибке при сохранении.
           const SizedBox(height: 8),
           _buildBoilerStatusIndicator(context, state, totalBoilers),
         ],
@@ -696,12 +739,24 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
   }
 
   /// Цветной статус-индикатор в нижней части секции
+  /// Итог по инциденту: что с котлами И что с услугами.
+  ///
+  /// Раньше индикатор смотрел только на котлы и мог написать «Все котлы
+  /// работают / Подача в штатном режиме» у инцидента, в котором ГВС и
+  /// отопление отключены — то есть прямо противоречил двум тумблерам выше.
+  /// Также он исчезал при totalBoilers == 0 (котельная не выбрана), и форма
+  /// вообще не показывала, что проблема не указана.
   Widget _buildBoilerStatusIndicator(
     BuildContext context,
     IncidentFormState state,
     int totalBoilers,
   ) {
-    if (totalBoilers == 0) return const SizedBox.shrink();
+    final stoppedServices = <String>[
+      if (state.stopHotWater) 'ГВС',
+      if (state.stopHeating) 'отопление',
+    ];
+    final inactiveCount = state.inactiveBoilers.length;
+    final allInactive = totalBoilers > 0 && inactiveCount >= totalBoilers;
 
     final Color bgColor;
     final Color textColor;
@@ -709,30 +764,52 @@ class _IncidentFormScreenState extends ConsumerState<IncidentFormScreen> {
     final String statusText;
     final String subText;
 
-    if (state.supplyFullyStopped) {
-      bgColor = Colors.red.withAlpha(30);
-      textColor = Colors.red.shade300;
-      emoji = '🔴';
-      statusText = 'Полная остановка';
-      subText = 'Подача полностью прекращена';
-    } else if (state.inactiveBoilers.isEmpty) {
-      bgColor = Colors.green.withAlpha(25);
-      textColor = Colors.green.shade400;
-      emoji = '🟢';
-      statusText = 'Все котлы работают';
-      subText = 'Подача в штатном режиме';
-    } else if (totalBoilers > 0 && state.inactiveBoilers.length >= totalBoilers) {
-      bgColor = Colors.red.withAlpha(30);
-      textColor = Colors.red.shade300;
-      emoji = '🔴';
-      statusText = 'Полная остановка';
-      subText = 'Все $totalBoilers котлов не работают';
+    // Описание состояния котлов — одной фразой, переиспользуется ниже.
+    final String boilerPart;
+    if (totalBoilers == 0) {
+      boilerPart = '';
+    } else if (state.supplyFullyStopped || allInactive) {
+      boilerPart = 'все котлы не работают';
+    } else if (inactiveCount == 0) {
+      boilerPart = 'котлы работают';
     } else {
+      boilerPart = '$inactiveCount из $totalBoilers котлов не работает';
+    }
+
+    final servicesPart = stoppedServices.isEmpty
+        ? 'услуги поступают'
+        : 'остановлено: ${stoppedServices.join(', ')}';
+
+    if (state.supplyFullyStopped || allInactive) {
+      bgColor = Colors.red.withAlpha(30);
+      textColor = Colors.red.shade300;
+      emoji = '🔴';
+      statusText = 'Полная остановка';
+      subText = [
+        'Подача теплоносителя прекращена',
+        if (stoppedServices.isNotEmpty) servicesPart,
+      ].join(' • ');
+    } else if (inactiveCount > 0) {
       bgColor = Colors.orange.withAlpha(30);
       textColor = Colors.orange.shade300;
       emoji = '🟠';
       statusText = 'Частичная остановка';
-      subText = '${state.inactiveBoilers.length} из $totalBoilers котлов не работает';
+      subText = [boilerPart, servicesPart].where((s) => s.isNotEmpty).join(' • ');
+    } else if (stoppedServices.isNotEmpty) {
+      // Котлы в порядке, но услуги отключены — это тоже инцидент.
+      bgColor = Colors.orange.withAlpha(30);
+      textColor = Colors.orange.shade300;
+      emoji = '🟠';
+      statusText = 'Услуги отключены';
+      subText = [servicesPart, if (boilerPart.isNotEmpty) boilerPart].join(' • ');
+    } else {
+      // Ни одной проблемы — save() такой инцидент не пропустит, и индикатор
+      // честно об этом предупреждает, а не рисует зелёное «всё хорошо».
+      bgColor = Colors.blueGrey.withAlpha(30);
+      textColor = Colors.blueGrey.shade200;
+      emoji = 'ℹ️';
+      statusText = 'Проблема не указана';
+      subText = 'Остановите ГВС/отопление или отметьте неработающий котёл';
     }
 
     return AnimatedContainer(

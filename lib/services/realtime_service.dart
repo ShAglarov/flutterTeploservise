@@ -71,7 +71,23 @@ class RealtimeService {
   // GPS: Защита от параллельных запросов разрешений
   Future<Position?>? _pendingGpsRequest;
 
+  /// Сервис уничтожен — контроллеры закрыты, добавлять в них нельзя.
+  /// Без этого флага отложенный reconnect-таймер, сработавший после
+  /// dispose(), бросал StateError («Cannot add new events after calling
+  /// close») из _connectionStateController.add().
+  bool _disposed = false;
+
   RealtimeService(this._storage, this._deviceService);
+
+  /// Все исходящие события идут через это — чтобы проверка «не закрыт ли
+  /// контроллер» была в одном месте, а не в девяти местах вызова.
+  void _emit<T>(StreamController<T> controller, T value) {
+    if (_disposed || controller.isClosed) return;
+    controller.add(value);
+  }
+
+  void _emitConnectionState(bool connected) =>
+      _emit(_connectionStateController, connected);
 
   /// Force-disconnect and reconnect immediately.
   /// Called from app lifecycle handler on resume from background/sleep.
@@ -91,13 +107,67 @@ class RealtimeService {
     _isConnected = false;
     _isConnecting = false; // Reset to allow connect()
     _retryCount = 0; // Reset backoff — this is an intentional reconnect
-    _connectionStateController.add(false);
+    _emitConnectionState(false);
 
     // Refresh token before reconnecting — after sleep, JWT is likely expired
     await _refreshTokenIfNeeded();
 
     // Connect immediately
     await connect();
+  }
+
+  /// Одноразовый билет для WS-подключения (POST /auth/ws-ticket).
+  ///
+  /// SECURITY: билет вместо JWT в URL. Query-строка — худшее место для
+  /// токена: она попадает в access-логи nginx и обратных прокси, в
+  /// диагностику TLS-терминаторов и в метрики. Билет живёт 60 секунд,
+  /// одноразовый (сервер удаляет его при проверке) и не даёт доступа к
+  /// HTTP API, поэтому утечка такой строки почти ничего не стоит.
+  ///
+  /// Возвращает null, если билет получить не удалось (Redis недоступен,
+  /// сети нет, сервер старой версии) — тогда [connect] падает обратно на
+  /// `?token=`, который сервер всё ещё принимает. Без этого отката
+  /// недоступность Redis means полная потеря realtime.
+  Future<String?> _fetchWsTicket() async {
+    try {
+      final token = await _storage.getAccessToken();
+      if (token == null || token.isEmpty) return null;
+
+      final dio = Dio(BaseOptions(
+        baseUrl: AppConstants.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        // 401 обрабатываем сами — он означает «обнови токен», а не ошибку сети.
+        validateStatus: (code) => code != null && code < 500,
+      ));
+
+      Future<Response<dynamic>> post(String bearer) => dio.post(
+            AppConstants.wsTicket,
+            options: Options(headers: {'Authorization': 'Bearer $bearer'}),
+          );
+
+      var response = await post(token);
+
+      if (response.statusCode == 401) {
+        // Токен истёк — обновляем и пробуем ещё раз. Этот путь закрывает
+        // reconnect-петлю: раньше истёкший токен переподключался вечно,
+        // потому что refresh вызывался только в reconnectNow().
+        await _refreshTokenIfNeeded();
+        final fresh = await _storage.getAccessToken();
+        if (fresh == null || fresh.isEmpty) return null;
+        response = await post(fresh);
+      }
+
+      if (response.statusCode == 200 && response.data is Map) {
+        final ticket = (response.data as Map)['ticket'] as String?;
+        if (ticket != null && ticket.isNotEmpty) return ticket;
+      }
+      dev.log('RealtimeService: WS ticket unavailable (HTTP ${response.statusCode}), falling back to token', name: 'WS');
+      return null;
+    } catch (e) {
+      dev.log('RealtimeService: WS ticket request failed, falling back to token: $e', name: 'WS');
+      return null;
+    }
   }
 
   /// Attempts to refresh the access token via HTTP refresh endpoint.
@@ -140,6 +210,9 @@ class RealtimeService {
   }
 
   Future<void> connect() async {
+    // Отложенный reconnect мог сработать уже после dispose — открывать
+    // сокет и заводить таймеры в уничтоженном сервисе нельзя.
+    if (_disposed) return;
     if (_isConnecting || _channel != null) return;
     _isConnecting = true;
     _forceLoggedOut = false; // Reset flag on new connection attempt
@@ -156,7 +229,17 @@ class RealtimeService {
         return;
       }
 
-      String url = '${AppConstants.wsBaseUrl}/$deviceId?token=$token';
+      // SECURITY: предпочитаем одноразовый билет. JWT в query-строке остаётся
+      // только как откат (Redis недоступен / сервер старой версии).
+      final ticket = await _fetchWsTicket();
+      final credential = ticket != null
+          ? 'ticket=${Uri.encodeQueryComponent(ticket)}'
+          : 'token=${Uri.encodeQueryComponent(token)}';
+      final String url = '${AppConstants.wsBaseUrl}/$deviceId?$credential';
+      dev.log(
+        'RealtimeService: WS auth via ${ticket != null ? "one-time ticket" : "token fallback"}',
+        name: 'WS',
+      );
 
       // NOTE: wss:// is used for all environments.
       // SECURITY: сертификат проверяется в release-сборках. Обход
@@ -203,7 +286,7 @@ class RealtimeService {
       // Schedule a deferred reset after 5 seconds of stable connection.
       _isConnected = true;
       _lastConnectedAt = DateTime.now();
-      _connectionStateController.add(true);
+      _emitConnectionState(true);
 
       // КРИТИЧНО: Отправляем device info СРАЗУ при подключении.
       // Не ждём первого ping от сервера — иначе при resume сессии
@@ -223,12 +306,10 @@ class RealtimeService {
 
       if (wasConnectedBefore) {
         dev.log('RealtimeService: Reconnected — firing onReconnect', name: 'WS');
-        _reconnectController.add(null);
+        _emit(_reconnectController, null);
       }
-      
-      // КРИТИЧНО: Сразу после подключения отправляем device info + GPS.
-      // Не ждём серверного ping — гарантируем попадание device info на сервер.
-      _sendPongWithLocation();
+      // device info + GPS уже отправлены выше. Второй вызов здесь был
+      // дублем: на каждое подключение уходило два pong и два запроса GPS.
     } catch (e) {
       dev.log('RealtimeService: Failed to connect: $e', name: 'WS');
       _isConnecting = false;
@@ -257,7 +338,7 @@ class RealtimeService {
           final reason = (decoded['data'] as Map<String, dynamic>?)?['reason'] ?? 'unknown';
           dev.log('RealtimeService: ⛔ FORCE_LOGOUT received: reason=$reason', name: 'WS');
           _forceLoggedOut = true;
-          _forceLogoutController.add(reason);
+          _emit(_forceLogoutController, reason);
           disconnect(); // Чистое закрытие без reconnect
           return;
         }
@@ -279,10 +360,10 @@ class RealtimeService {
         if (decoded['type'] == 'permission_update') {
           dev.log('RealtimeService: 🔐 permission_update received', name: 'WS');
           final payload = decoded['payload'] as Map<String, dynamic>? ?? decoded['data'] as Map<String, dynamic>? ?? {};
-          _permissionUpdateController.add(payload);
+          _emit(_permissionUpdateController, payload);
           return;
         }
-        _messageController.add(decoded);
+        _emit(_messageController, decoded);
       }
     } catch (e) {
       dev.log('RealtimeService: Failed to decode message: $e', name: 'WS');
@@ -290,6 +371,8 @@ class RealtimeService {
   }
 
   void _handleDisconnect() {
+    if (_disposed) return;
+
     // ADDED: Cancel the deferred backoff reset — connection failed before proving stability
     _stableConnectionTimer?.cancel();
     _stableConnectionTimer = null;
@@ -304,7 +387,7 @@ class RealtimeService {
     _subscription = null;
     _channel = null;
     _isConnected = false;
-    _connectionStateController.add(false);
+    _emitConnectionState(false);
 
     // КРИТИЧНО: Если сервер прислал force_logout — НЕ переподключаемся
     if (_forceLoggedOut) {
@@ -326,9 +409,16 @@ class RealtimeService {
     );
 
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(delay, () {
+    _reconnectTimer = Timer(delay, () async {
       _retryCount++;
-      connect();
+      // Частая причина разрыва — истёкший JWT: сервер закрывает соединение
+      // с 1008, и подключение тем же токеном обрывается снова, бесконечно.
+      // Обновляем токен перед повторной попыткой. Для первой попытки это не
+      // нужно — там токен только что использовался успешно.
+      if (_retryCount > 1) {
+        await _refreshTokenIfNeeded();
+      }
+      await connect();
     });
   }
 
@@ -349,7 +439,7 @@ class RealtimeService {
     _channel = null;
     _subscription = null;
     _isConnected = false;
-    _connectionStateController.add(false);
+    _emitConnectionState(false);
     dev.log('RealtimeService: Manually disconnected', name: 'WS');
   }
 
@@ -505,6 +595,9 @@ class RealtimeService {
   }
 
   void dispose() {
+    // Флаг ДО disconnect(): сам disconnect эмитит connectionState, а
+    // контроллеры мы сейчас закроем.
+    _disposed = true;
     disconnect();
     _messageController.close();
     _reconnectController.close();

@@ -449,6 +449,13 @@ class IncidentComment {
   @JsonKey(name: 'user_id')
   final int? userId;
   final IncidentCommentAuthor? author;
+  /// Жилец-автор. Сервер отдаёт `resident_author` с самого начала, но модель
+  /// его не читала — поэтому сообщения жильцов подписывались «Unknown».
+  @JsonKey(name: 'resident_author')
+  final IncidentCommentAuthor? residentAuthor;
+  /// ID жильца — отличает жильца от сотрудника, у которого user_id.
+  @JsonKey(name: 'resident_id')
+  final int? residentId;
   @JsonKey(name: 'sender_name')
   final String? senderName;
   @JsonKey(name: 'is_system_message', defaultValue: false)
@@ -461,19 +468,34 @@ class IncidentComment {
     required this.createdAt,
     this.userId,
     this.author,
+    this.residentAuthor,
+    this.residentId,
     this.senderName,
     this.isSystemMessage = false,
   });
 
-  /// Display name: author.fullName → senderName → 'Unknown'
+  /// Имя автора для подписи сообщения.
+  ///
+  /// Порядок: сотрудник → жилец → имя, сохранённое в самом сообщении.
+  /// Раньше `resident_author` не читался вовсе, а последним шагом стояло
+  /// «Unknown» — английское слово в русском интерфейсе, по которому к тому
+  /// же нельзя понять, кто написал.
   String get displayName {
     if (author != null) return author!.formattedDisplayName;
+    if (residentAuthor != null) return residentAuthor!.formattedDisplayName;
     if (senderName != null && senderName!.isNotEmpty) return senderName!;
-    return 'Unknown';
+    if (isResidentComment) return 'Жилец';
+    return userId != null ? 'Сотрудник №$userId' : 'Неизвестный автор';
   }
 
-  /// Whether this is a resident comment (no staff user_id)
-  bool get isResidentComment => userId == null || userId == 0;
+  /// Сообщение от жильца, а не от сотрудника.
+  ///
+  /// Признак — наличие resident_id / resident_author. Прежняя проверка
+  /// «user_id пустой» ошибалась на системных сообщениях (их тоже пишут без
+  /// user_id) и считала их сообщениями жильцов.
+  bool get isResidentComment =>
+      residentId != null || residentAuthor != null ||
+      (!isSystemMessage && (userId == null || userId == 0));
 
   factory IncidentComment.fromJson(Map<String, dynamic> json) => _$IncidentCommentFromJson(json);
   Map<String, dynamic> toJson() => _$IncidentCommentToJson(this);
