@@ -129,6 +129,195 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  /// Пересчёт заявленных периодов оплаты у исторических операций.
+  ///
+  /// Сначала предпросмотр (`apply=false`) — сервер возвращает список того,
+  /// что будет изменено. Запись только после подтверждения: журнал кассира
+  /// учётный, «применить вслепую» здесь недопустимо.
+  Future<void> _fixDeclaredPeriods() async {
+    final dio = ref.read(dioProvider);
+
+    // ── Шаг 1: предпросмотр ──
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    Map<String, dynamic> preview;
+    try {
+      final resp = await dio.post(
+        '/payment-documents/operations/fix-declared-periods',
+        data: {'apply': false},
+      );
+      preview = (resp.data as Map).cast<String, dynamic>();
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('❌ Не удалось проверить: ${_dioMessage(e)}'),
+          backgroundColor: Colors.red,
+        ));
+      }
+      return;
+    }
+    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+
+    final found = (preview['found'] as num?)?.toInt() ?? 0;
+    final accounts = (preview['accounts_affected'] as num?)?.toInt() ?? 0;
+    final items = (preview['items'] as List? ?? []).cast<Map<String, dynamic>>();
+
+    if (found == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('✅ Все периоды оплаты соответствуют зачёту — править нечего'),
+        backgroundColor: Colors.green,
+      ));
+      return;
+    }
+
+    // ── Шаг 2: показываем КАЖДУЮ правку и просим подтверждение ──
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(ctx).colorScheme.surface,
+        title: Row(children: [
+          const Icon(Icons.rule, color: Colors.amber, size: 26),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Пересчёт периодов',
+                style: TextStyle(
+                    color: Theme.of(ctx).colorScheme.onSurface, fontSize: 18)),
+          ),
+        ]),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Найдено операций с периодом, который не подтверждён '
+                'фактическим зачётом: $found (по $accounts лиц. счетам).\n\n'
+                'Период будет заменён на месяцы, которые платёж реально '
+                'закрыл. Отмена изменений возможна только вручную.',
+                style: TextStyle(
+                    color: Theme.of(ctx).colorScheme.onSurface.withAlpha(180),
+                    fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 280),
+                  decoration: BoxDecoration(
+                    color: Theme.of(ctx).colorScheme.surfaceContainerHighest
+                        .withAlpha(70),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: items.length,
+                    itemBuilder: (_, i) {
+                      final it = items[i];
+                      final amount =
+                          (it['amount'] as num?)?.toDouble() ?? 0;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ЛС #${it['account_id']} · '
+                              '${amount.toStringAsFixed(2)} ₽ · '
+                              '${it['payment_date'] ?? '—'}',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(ctx)
+                                      .colorScheme
+                                      .onSurface
+                                      .withAlpha(140)),
+                            ),
+                            Text(
+                              '${it['old_label']}  →  ${it['new_label']}',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      Theme.of(ctx).colorScheme.onSurface),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Применить ($found)',
+                style: const TextStyle(
+                    color: Colors.amber, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    // ── Шаг 3: применяем ──
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      final resp = await dio.post(
+        '/payment-documents/operations/fix-declared-periods',
+        data: {'apply': true},
+      );
+      final data = (resp.data as Map).cast<String, dynamic>();
+      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+
+      final changed = (data['changed'] as num?)?.toInt() ?? 0;
+      final problems = (data['problems'] as List? ?? []).length;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(problems == 0
+            ? '🔧 Исправлено операций: $changed'
+            : '🔧 Исправлено: $changed. Без точного периода осталось: $problems '
+              '(платежи в аванс или входящий долг)'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 5),
+      ));
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('❌ Ошибка: ${_dioMessage(e)}'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  /// Текст ошибки от сервера, а не обобщённое «invalid status code».
+  String _dioMessage(Object e) {
+    if (e is DioException) {
+      final data = e.response?.data;
+      if (data is Map && data['detail'] != null) return data['detail'].toString();
+      return e.message ?? e.toString();
+    }
+    return e.toString();
+  }
+
   Future<void> _handleLogout() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -534,14 +723,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             },
           ),
-          _buildDivider(),
-          _buildNavRow(
-            icon: Icons.delete_forever,
-            iconColor: Colors.red,
-            title: 'Удалить все документы',
-            subtitle: 'Полная очистка платёжных документов и операций',
-            onTap: () => _confirmDeleteAllDocs(),
-          ),
+          // Правка журнала кассира — по праву на изменение лицевых счетов.
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.accountUpdate)) ...[
+            _buildDivider(),
+            _buildNavRow(
+              icon: Icons.rule,
+              iconColor: Colors.amber,
+              title: 'Пересчитать периоды оплаты',
+              subtitle: 'Исправляет «Оплачено за» в чеках прошлых платежей',
+              onTap: () => _fixDeclaredPeriods(),
+            ),
+          ],
+          // Право то же, что проверяет эндпоинт /delete-all (account.create):
+          // иначе кнопка скрылась бы у тех, кому сервер разрешает.
+          if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.accountCreate)) ...[
+            _buildDivider(),
+            _buildNavRow(
+              icon: Icons.delete_forever,
+              iconColor: Colors.red,
+              title: 'Удалить все документы',
+              subtitle: 'Полная очистка платёжных документов и операций',
+              onTap: () => _confirmDeleteAllDocs(),
+            ),
+          ],
         ]),
         _buildSectionFooter('Просмотр, анализ и загрузка платёжных документов'),
 
