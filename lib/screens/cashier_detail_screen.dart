@@ -1280,6 +1280,14 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
     final totalCtrl = TextEditingController();
     DateTime paymentDate = DateTime.now();
 
+    /// Зачесть деньги строго в выбранный период, а не в самый старый долг.
+    ///
+    /// Это назначение платежа по ст. 319.1 ГК РФ — осознанное указание,
+    /// которое нужно редко: жилец платит «именно за сентябрь», имея
+    /// непогашенный июнь. По умолчанию выключено, и зачёт идёт по общему
+    /// правилу «сначала самая ранняя задолженность».
+    bool strictPeriod = false;
+
     // Умный режим: расчёт с бэкенда.
     bool smartMode = true;
     Map<String, dynamic>? plan;
@@ -1409,23 +1417,40 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
             final v = (value as num?)?.toDouble() ?? 0;
             if (v > 0) body[key] = v;
           });
-          // Период считает бэкенд. null означает «зачёт идёт чистым FIFO»
-          // (деньги уходят в долг до начала учёта, у которого периода нет) —
-          // тогда period_from/period_to не отправляем вовсе.
-          final pFrom = plan?['period_from'] as String?;
-          final pTo = plan?['period_to'] as String?;
-          if (pFrom != null && pTo != null) {
-            body['period_from'] = pFrom;
-            body['period_to'] = pTo;
-          }
+          // Период НЕ отправляем. Он нужен только как «назначение платежа»
+          // (ст. 319.1 ГК РФ) — осознанное указание жильца зачесть деньги в
+          // конкретный месяц вместо самого старого долга. В умном режиме
+          // такого указания нет: период в preview — это и есть результат
+          // FIFO, рассчитанный сервером.
+          //
+          // Отправлять его вредно по двум причинам:
+          //   * он ограничивает зачёт указанным диапазоном, а между preview
+          //     и нажатием «Оплатить» долг мог измениться (другой кассир,
+          //     импорт XLS) — устаревший диапазон направит деньги не туда;
+          //   * сохранённый период считается заявленным, и чек печатает
+          //     строку «Указано при оплате: …» на каждом обычном платеже.
+          //
+          // Без периода зачёт при чтении сам разложит деньги по FIFO — то
+          // есть ровно так, как показал preview, но уже по актуальным данным.
         } else {
           controllers.forEach((key, ctrl) {
             final val = double.tryParse(ctrl.text.replaceAll(',', '.'));
             if (val != null && val > 0) body['paid_$key'] = val;
           });
           if (body.isEmpty) return;
-          body['period_from'] = '${periodFrom.year}-${periodFrom.month.toString().padLeft(2, '0')}-01';
-          body['period_to'] = '${periodTo.year}-${periodTo.month.toString().padLeft(2, '0')}-01';
+          // Период отправляем ТОЛЬКО если кассир осознанно включил
+          // «Зачесть строго в этот период». Пикеры выше служат ещё и для
+          // просмотра долга за диапазон, поэтому сами по себе они не
+          // означают назначение платежа.
+          //
+          // Раньше период уходил всегда — и заполненный по умолчанию
+          // («Период от» = оценка по площади и тарифу, «Период до» = период
+          // документа) становился «заявленным». Отсюда и чек «Оплачено за:
+          // Март — Сентябрь 2026», когда 630 ₽ закрыли ровно июнь.
+          if (strictPeriod) {
+            body['period_from'] = '${periodFrom.year}-${periodFrom.month.toString().padLeft(2, '0')}-01';
+            body['period_to'] = '${periodTo.year}-${periodTo.month.toString().padLeft(2, '0')}-01';
+          }
         }
         if (noteCtrl.text.isNotEmpty) body['note'] = noteCtrl.text;
         body['payment_date'] = '${paymentDate.year}-${paymentDate.month.toString().padLeft(2, '0')}-${paymentDate.day.toString().padLeft(2, '0')}';
@@ -1469,6 +1494,35 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
               setSheetState(() => periodTo = d);
               loadPeriodDebt(setSheetState);
             }),
+            // Назначение платежа — осознанный выбор, по умолчанию выключен.
+            // Пикеры выше нужны и просто чтобы посмотреть долг за диапазон;
+            // раньше их значения уходили как «заявленный период» всегда, и
+            // чек печатал месяцы, которые жилец не оплачивал.
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                'Зачесть строго в этот период',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: Theme.of(ctx).colorScheme.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                strictPeriod
+                    ? 'Деньги уйдут в выбранный период, даже если есть более '
+                      'ранний долг'
+                    : 'Обычный порядок: сначала погашается самая ранняя '
+                      'задолженность',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: Theme.of(ctx).colorScheme.onSurface.withAlpha(140),
+                ),
+              ),
+              value: strictPeriod,
+              onChanged: (v) => setSheetState(() => strictPeriod = v),
+              activeThumbColor: Colors.orange,
+            ),
             if (loading)
               const Padding(padding: EdgeInsets.all(8), child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))))
             else ...[
