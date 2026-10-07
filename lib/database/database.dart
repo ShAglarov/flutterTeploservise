@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import '../services/tenant_service.dart';
 
 part 'database.g.dart';
 
@@ -460,6 +461,9 @@ class AppDatabase extends _$AppDatabase {
 }
 
 final databaseProvider = Provider<AppDatabase>((ref) {
+  // Пересоздаём БД при смене организации: иначе остался бы открытым файл
+  // прежнего тенанта, и данные нового пользователя писались бы в чужой кэш.
+  ref.watch(currentOrganizationProvider);
   final db = AppDatabase();
   ref.onDispose(() => db.close());
   return db;
@@ -468,7 +472,23 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'db.sqlite'));
+
+    // MULTI-TENANCY: имя файла включает организацию.
+    //
+    // Локальная БД — кэш серверных данных. Если на одном устройстве
+    // работают сотрудники двух управляющих компаний, общий `db.sqlite`
+    // смешал бы их данные: после входа второго он до полной
+    // пересинхронизации видел бы дома, лицевые счета и инциденты первого.
+    // Отдельный файл на тенанта решает это физически.
+    //
+    // `db.sqlite` без суффикса остаётся для сессий без организации
+    // (не вошли, суперадмин) — и это же прежний файл, поэтому у
+    // единственного действующего клиента кэш не теряется при обновлении:
+    // организацию он получит при следующем входе.
+    final orgId = TenantService.currentOrganizationId;
+    final name = orgId == null ? 'db.sqlite' : 'db_org_$orgId.sqlite';
+    final file = File(p.join(dbFolder.path, name));
+
     return NativeDatabase.createInBackground(file, setup: (db) {
       // Enable Write-Ahead Logging to prevent SQLite lockups during concurrent read/writes
       db.execute('PRAGMA journal_mode=WAL;');

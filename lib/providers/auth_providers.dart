@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/auth_service.dart';
 import '../services/secure_storage_service.dart';
 import '../services/permission_service.dart';
+import '../services/tenant_service.dart';
 import '../services/realtime_service.dart';
 import '../services/event_service.dart';
 import '../utils/constants.dart';
@@ -169,6 +170,10 @@ class Auth extends _$Auth {
       // не прошёл), в кэше лежат права ДРУГОГО человека — и новый
       // пользователь на мгновение увидел бы их. Чистим до загрузки своих.
       ref.read(permissionStateProvider.notifier).clear();
+      // Организация сессии в глобальном состоянии: от неё зависит провайдер
+      // локальной БД (отдельный файл кэша на тенанта).
+      ref.read(currentOrganizationProvider.notifier)
+          .set(TenantService.currentOrganizationId);
       state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
       _loadPermissions();
     } catch (e) {
@@ -219,6 +224,7 @@ class Auth extends _$Auth {
     // Права — часть сессии: без сброса следующий пользователь на этой машине
     // получил бы их из кэша предыдущего.
     ref.read(permissionStateProvider.notifier).clear();
+    ref.read(currentOrganizationProvider.notifier).set(null);
     state = AuthState(status: AuthStatus.unauthenticated);
   }
 }

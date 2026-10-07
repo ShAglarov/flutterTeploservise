@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'base_api_service.dart';
 import 'device_id_service.dart';
+import 'tenant_service.dart';
 import '../utils/app_logger.dart';
 
 final wnsPushServiceProvider = Provider<WnsPushService>((ref) {
@@ -20,6 +21,21 @@ class WnsPushService {
   final DeviceIdService _deviceIdService;
 
   WnsPushService(this._dio, this._deviceIdService);
+
+  /// Относится ли полученный push к текущей организации.
+  ///
+  /// MULTI-TENANCY: сервер отправляет уведомления только на устройства своей
+  /// организации, но доставка асинхронна. APNs/WNS могут принести сообщение
+  /// через минуты — уже после того, как на устройстве вышли и вошли под
+  /// другой компанией. Такое уведомление нужно игнорировать, иначе сотрудник
+  /// увидит инцидент чужого клиента.
+  ///
+  /// Вызывать из обработчика нажатия на уведомление перед открытием
+  /// карточки: `organization_id` сервер кладёт в скрытый payload.
+  static bool shouldHandlePush(Map<String, dynamic>? payload) {
+    if (payload == null) return true;
+    return TenantService.belongsToCurrentOrg(payload['organization_id']);
+  }
 
   /// Call this once after user login on Windows.
   /// On non-Windows platforms this is a no-op.

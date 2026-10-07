@@ -9,6 +9,7 @@ import 'package:web_socket_channel/io.dart';
 import '../utils/constants.dart';
 import '../utils/secure_http.dart';
 import 'secure_storage_service.dart';
+import 'tenant_service.dart';
 import 'device_id_service.dart';
 import 'dart:developer' as dev;
 import 'package:geolocator/geolocator.dart';
@@ -363,6 +364,20 @@ class RealtimeService {
           _emit(_permissionUpdateController, payload);
           return;
         }
+        // MULTI-TENANCY: отбрасываем события чужой организации.
+        //
+        // Сервер рассылает только своим, но клиент обязан проверять сам:
+        // WebSocket мог остаться от прежней сессии (вышли и вошли под
+        // другой компанией на том же устройстве), а сообщение прийти уже
+        // после переключения. Данные попали бы в кэш нового тенанта.
+        final payload = decoded['data'] as Map<String, dynamic>?;
+        final eventOrg = decoded['organization_id'] ??
+            payload?['organization_id'] ??
+            (payload?['entity_data'] as Map<String, dynamic>?)?['organization_id'];
+        if (!TenantService.belongsToCurrentOrg(eventOrg)) {
+          return;
+        }
+
         _emit(_messageController, decoded);
       }
     } catch (e) {

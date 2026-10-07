@@ -23,6 +23,7 @@ import 'services/secure_storage_service.dart';
 import 'services/permission_service.dart';
 import 'providers/incident_providers.dart';
 import 'utils/secure_http.dart';
+import 'services/tenant_service.dart';
 import 'utils/app_logger.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -32,6 +33,12 @@ void main() async {
   // SECURITY: в release проверка TLS-сертификата обязательна.
   // Обход доступен только в debug-сборках — см. utils/secure_http.dart
   HttpOverrides.global = SecureHttpOverrides();
+
+  // MULTI-TENANCY: организацию поднимаем в память ПЕРВЫМ делом — от неё
+  // зависит имя файла локальной БД, которое читается синхронно при её
+  // открытии. Без этого первый запуск после рестарта открыл бы кэш
+  // «без организации».
+  await TenantService.restore();
 
   // Увеличиваем ImageCache — декодированные тайлы карты остаются
   // в оперативной памяти и при зуме показываются мгновенно

@@ -63,6 +63,8 @@ APILoginResponse _$APILoginResponseFromJson(Map<String, dynamic> json) =>
       accessToken: json['access_token'] as String,
       refreshToken: json['refresh_token'] as String?,
       tokenType: json['token_type'] as String,
+      organizationId: (json['organization_id'] as num?)?.toInt(),
+      isSuperadmin: json['is_superadmin'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$APILoginResponseToJson(APILoginResponse instance) =>
@@ -70,4 +72,6 @@ Map<String, dynamic> _$APILoginResponseToJson(APILoginResponse instance) =>
       'access_token': instance.accessToken,
       'refresh_token': instance.refreshToken,
       'token_type': instance.tokenType,
+      'organization_id': instance.organizationId,
+      'is_superadmin': instance.isSuperadmin,
     };

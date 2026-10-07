@@ -20,6 +20,7 @@ import '../services/user_service.dart';
 import '../services/avatar_cache_service.dart';
 import '../services/base_api_service.dart';
 import '../services/permission_service.dart';
+import '../services/tenant_service.dart';
 import '../repositories/sync_repository.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
@@ -31,6 +32,7 @@ import 'payment_documents_screen.dart';
 import 'import_xls_screen.dart';
 import 'activity_monitor_screen.dart';
 import 'org_requisites_screen.dart';
+import 'organizations_screen.dart';
 import 'residents_management_screen.dart';
 import 'tariffs_screen.dart';
 import 'billing_screen.dart';
@@ -549,6 +551,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildSectionFooter('Управление отображением элементов на карте'),
 
         const SizedBox(height: 24),
+
+        // ═══════ Суперадмин (владелец сервиса) ═══════
+        // Раздел только для is_superadmin: заведение новых управляющих
+        // компаний. Обычный админ своей организации его не видит — и не
+        // прошёл бы проверку на сервере (403).
+        if (TenantService.isSuperadmin) ...[
+          _buildSectionHeader('Сервис'),
+          const SizedBox(height: 8),
+          _buildCard([
+            _buildNavRow(
+              icon: Icons.apartment_outlined,
+              iconColor: AppTheme.successGreen,
+              title: 'Организации',
+              subtitle: 'Подключение новых управляющих компаний',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OrganizationsScreen()),
+                );
+              },
+            ),
+          ]),
+          _buildSectionFooter(
+              'Данные организаций изолированы друг от друга'),
+          const SizedBox(height: 24),
+        ],
 
         // ═══════ Пользователи и жильцы ═══════
         // Заголовок прячем вместе с содержимым: без прав на людей и жильцов

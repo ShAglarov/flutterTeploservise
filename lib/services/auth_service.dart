@@ -4,6 +4,7 @@ import 'base_api_service.dart';
 import 'secure_storage_service.dart';
 import 'device_id_service.dart';
 import '../models/api_models.dart';
+import 'tenant_service.dart';
 import '../utils/constants.dart';
 import '../utils/app_logger.dart';
 
@@ -46,6 +47,13 @@ class AuthService {
       if (loginResponse.refreshToken != null) {
         await _storage.saveRefreshToken(loginResponse.refreshToken!);
       }
+
+      // MULTI-TENANCY: запоминаем организацию ДО первых запросов и до
+      // открытия локальной БД — её имя файла зависит от тенанта.
+      await TenantService.setOrganization(
+        loginResponse.organizationId,
+        isSuperadmin: loginResponse.isSuperadmin,
+      );
       
       // Отправка session event "login" с геолокацией (best-effort, не блокирует вход)
       _sendSessionEventAsync('login');
@@ -80,6 +88,9 @@ class AuthService {
     } finally {
       // КРИТИЧНО: clearAuthData() вместо clearAll() — НЕ удаляет device_id
       await _storage.clearAuthData();
+      // Сбрасываем организацию: следующий вход на этом устройстве может
+      // быть под другой компанией, и её кэш не должен смешаться с этим.
+      await TenantService.clear();
     }
   }
 

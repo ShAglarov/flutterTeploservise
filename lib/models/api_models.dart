@@ -104,11 +104,23 @@ class APILoginResponse {
   final String? refreshToken;
   @JsonKey(name: 'token_type')
   final String tokenType;
+  /// Организация (tenant) пользователя.
+  ///
+  /// Экран входа не меняется — компания не вводится руками, сервер
+  /// определяет её по логину (логин глобально уникален). Клиенту id нужен,
+  /// чтобы изолировать локальный кэш и отбрасывать push/realtime-события
+  /// чужой организации.
+  @JsonKey(name: 'organization_id')
+  final int? organizationId;
+  @JsonKey(name: 'is_superadmin', defaultValue: false)
+  final bool isSuperadmin;
 
   APILoginResponse({
     required this.accessToken,
     this.refreshToken,
     required this.tokenType,
+    this.organizationId,
+    this.isSuperadmin = false,
   });
 
   factory APILoginResponse.fromJson(Map<String, dynamic> json) => _$APILoginResponseFromJson(json);
