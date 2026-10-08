@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
+import '../utils/safe_filename.dart';
 
 import 'base_api_service.dart';
 
@@ -57,6 +60,8 @@ class ReportSummary {
   final List<Map<String, dynamic>> incidents;
   final List<Map<String, dynamic>> byBoilerHouse;
   final List<Map<String, dynamic>> byHouse;
+  /// Группировка по котельным для краткой формы.
+  final List<Map<String, dynamic>> compact;
 
   const ReportSummary({
     required this.title,
@@ -73,6 +78,7 @@ class ReportSummary {
     required this.incidents,
     required this.byBoilerHouse,
     required this.byHouse,
+    required this.compact,
   });
 
   factory ReportSummary.fromJson(Map<String, dynamic> json) {
@@ -96,6 +102,7 @@ class ReportSummary {
       incidents: list('incidents'),
       byBoilerHouse: list('by_boiler_house'),
       byHouse: list('by_house'),
+      compact: list('compact'),
     );
   }
 }
@@ -113,10 +120,11 @@ class IncidentReportService {
         .toList();
   }
 
-  Future<ReportSummary> shiftSummary({String? shiftDate}) async {
+  Future<ReportSummary> shiftSummary({String? shiftDate, bool compact = false}) async {
     final r = await _dio.get('/incident-reports/shift', queryParameters: {
       'format': 'json',
       'shift_date': ?shiftDate,
+      'compact': compact,
     });
     return ReportSummary.fromJson((r.data as Map).cast<String, dynamic>());
   }
@@ -139,10 +147,22 @@ class IncidentReportService {
     return ReportSummary.fromJson((r.data as Map).cast<String, dynamic>());
   }
 
-  Future<File> downloadShiftPdf({String? shiftDate}) => _pdf(
+  Future<File> downloadShiftPdf({
+    String? shiftDate,
+    bool compact = false,
+    int? dispatcherId,
+    int? engineerId,
+  }) =>
+      _pdf(
         '/incident-reports/shift',
-        {'format': 'pdf', 'shift_date': ?shiftDate},
-        'Отчёт о дежурстве.pdf',
+        {
+          'format': 'pdf',
+          'shift_date': ?shiftDate,
+          'compact': compact,
+          'dispatcher_id': ?dispatcherId,
+          'engineer_id': ?engineerId,
+        },
+        compact ? 'Краткий отчёт о дежурстве.pdf' : 'Отчёт о дежурстве.pdf',
       );
 
   Future<File> downloadPeriodPdf({
@@ -180,8 +200,10 @@ class IncidentReportService {
       ),
     );
     final dir = await getTemporaryDirectory();
-    final name = _nameFrom(response.headers) ?? fallbackName;
-    final file = File('${dir.path}/$name');
+    // Чистка обязательна: Windows не допускает \ / : * ? " < > | в пути.
+    final name = safeFileName(_nameFrom(response.headers) ?? fallbackName,
+        fallback: 'report_${fileTimeStamp()}.pdf');
+    final file = File(p.join(dir.path, name));
     await file.writeAsBytes(response.data ?? const []);
     return file;
   }
@@ -190,7 +212,9 @@ class IncidentReportService {
   String? _nameFrom(Headers headers) {
     final raw = headers.value('content-disposition');
     if (raw == null) return null;
-    final ext = RegExp(r"filename\*=UTF-8''([^;]+)").firstMatch(raw);
+    // caseSensitive: false — Starlette пишет filename*=utf-8'' строчными.
+    final ext = RegExp(r"filename\*=UTF-8''([^;]+)", caseSensitive: false)
+        .firstMatch(raw);
     if (ext != null) {
       try {
         return Uri.decodeComponent(ext.group(1)!.trim());

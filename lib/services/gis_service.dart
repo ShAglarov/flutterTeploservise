@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+
+import '../utils/safe_filename.dart';
 
 import 'base_api_service.dart';
 
@@ -96,9 +99,14 @@ class GisService {
     );
 
     final dir = await getTemporaryDirectory();
-    final name = _fileNameFrom(response.headers) ??
-        'ГИС ${DateTime.now().toIso8601String().substring(0, 16)}.xlsx';
-    final file = File('${dir.path}/$name');
+    // Имя чистим всегда: оно приходит из заголовка сервера, а Windows
+    // запрещает в пути \ / : * ? " < > |.
+    final name = safeFileName(
+      _fileNameFrom(response.headers) ?? 'ГИС ${fileTimeStamp()}.xlsx',
+      fallback: 'gis_${fileTimeStamp()}.xlsx',
+    );
+    // p.join, а не '/': на Windows разделитель — обратный слэш.
+    final file = File(p.join(dir.path, name));
     await file.writeAsBytes(response.data ?? const []);
     return file;
   }
@@ -109,7 +117,12 @@ class GisService {
     final raw = headers.value('content-disposition');
     if (raw == null) return null;
     // Сначала RFC 5987 (filename*=UTF-8''...), затем обычный filename.
-    final ext = RegExp(r"filename\*=UTF-8''([^;]+)").firstMatch(raw);
+    // caseSensitive: false — Starlette присылает filename*=utf-8''
+    // СТРОЧНЫМИ, и шаблон с UTF-8 не совпадал: имя не распознавалось,
+    // подставлялось запасное с двоеточием из ISO-даты, и на Windows
+    // путь оказывался недопустимым.
+    final ext = RegExp(r"filename\*=UTF-8''([^;]+)", caseSensitive: false)
+        .firstMatch(raw);
     if (ext != null) {
       try {
         return Uri.decodeComponent(ext.group(1)!.trim());

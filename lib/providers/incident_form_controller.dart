@@ -233,13 +233,15 @@ class IncidentFormController extends _$IncidentFormController {
       return false;
     }
 
-    // Проблема указана если: остановлен ГВС/отопление, ИЛИ есть неработающие котлы, ИЛИ полная остановка
-    final hasStoppedResource = state.stopHotWater || state.stopHeating;
-    final hasBoilerIssue = state.inactiveBoilers.isNotEmpty || state.supplyFullyStopped;
-    if (!hasStoppedResource && !hasBoilerIssue) {
-      state = state.copyWith(errorMessage: 'Выберите хотя бы одну проблему: остановите ГВС/отопление или отметьте неработающий котёл');
-      return false;
-    }
+    // Инцидент БЕЗ остановки услуг — нормальный случай, а не ошибка.
+    //
+    // Раньше здесь стояла проверка «выберите хотя бы одну проблему», и
+    // сохранить инцидент с выключенными тумблерами было невозможно. Но в
+    // котельной может случиться происшествие (пожар, авария на кровле,
+    // повреждение оборудования), которое потушили вовремя: котёл работает,
+    // ГВС и отопление идут, услуги поступают — а зафиксировать инцидент
+    // нужно. Пин при этом остаётся оранжевым: происшествие есть, но
+    // снабжение не прервано.
 
     if (state.affectedHouseIds.isEmpty) {
       state = state.copyWith(errorMessage: 'Выберите затронутые дома');

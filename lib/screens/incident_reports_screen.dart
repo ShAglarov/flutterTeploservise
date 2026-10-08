@@ -4,12 +4,19 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/api_models.dart';
 import '../services/file_export_helper.dart';
 import '../services/incident_report_service.dart';
+import '../services/user_service.dart';
 import '../utils/app_theme.dart';
 
 final shiftsProvider = FutureProvider<List<ShiftInfo>>((ref) async {
   return ref.watch(incidentReportServiceProvider).getShifts();
+});
+
+/// Сотрудники — для выбора диспетчера смены и главного инженера.
+final reportStaffProvider = FutureProvider<List<APIUserResponse>>((ref) async {
+  return ref.watch(userServiceProvider).getAllUsers();
 });
 
 /// Отчёты по инцидентам.
@@ -30,13 +37,27 @@ class _IncidentReportsScreenState extends ConsumerState<IncidentReportsScreen> {
   DateTimeRange? _range;
   String? _statusFilter;
 
+  /// Кто подписывает отчёт. Выбирается из списка сотрудников: выгрузить
+  /// может один человек, а подписывают дежурный и инженер.
+  APIUserResponse? _dispatcher;
+  APIUserResponse? _engineer;
+
   static const _pdfMime = 'application/pdf';
 
-  Future<void> _exportShift({String? shiftDate, required String label}) async {
+  Future<void> _exportShift({
+    String? shiftDate,
+    required String label,
+    bool compact = false,
+  }) async {
     setState(() => _busy = true);
     try {
       final service = ref.read(incidentReportServiceProvider);
-      final file = await service.downloadShiftPdf(shiftDate: shiftDate);
+      final file = await service.downloadShiftPdf(
+        shiftDate: shiftDate,
+        compact: compact,
+        dispatcherId: _dispatcher?.id,
+        engineerId: _engineer?.id,
+      );
       await _share(file, label);
     } catch (e) {
       _toast(_errorText(e), AppTheme.errorRed);
@@ -404,8 +425,108 @@ class _IncidentReportsScreenState extends ConsumerState<IncidentReportsScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          // Краткая форма: один лист, по котельным. Отдельной кнопкой —
+          // полный отчёт остаётся как был.
+          SizedBox(
+            height: 40,
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _busy
+                  ? null
+                  : () => _exportShift(
+                        label: 'Краткий отчёт о дежурстве',
+                        compact: true,
+                      ),
+              icon: const Icon(Icons.table_rows_outlined, size: 17),
+              label: const Text('Краткий отчёт (на один лист)'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _staffPickers(cs),
         ],
       ),
+    );
+  }
+
+  /// Выбор диспетчера смены и главного инженера для подписей в отчёте.
+  Widget _staffPickers(ColorScheme cs) {
+    final staff = ref.watch(reportStaffProvider);
+    return staff.when(
+      loading: () => const SizedBox(
+        height: 18,
+        child: Center(
+          child: SizedBox(
+              width: 14, height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      ),
+      error: (e, _) => Text('Не удалось загрузить сотрудников',
+          style: TextStyle(fontSize: 11, color: cs.onSurface.withAlpha(140))),
+      data: (users) {
+        final sorted = [...users]..sort(
+            (a, b) => a.formattedDisplayName.compareTo(b.formattedDisplayName));
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Подписи в отчёте',
+                style: TextStyle(
+                    fontSize: 11, color: cs.onSurface.withAlpha(150))),
+            const SizedBox(height: 6),
+            _staffDropdown(
+              label: 'Диспетчер смены',
+              value: _dispatcher,
+              users: sorted,
+              onChanged: (u) => setState(() => _dispatcher = u),
+            ),
+            const SizedBox(height: 6),
+            _staffDropdown(
+              label: 'Главный инженер',
+              value: _engineer,
+              users: sorted,
+              onChanged: (u) => setState(() => _engineer = u),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _staffDropdown({
+    required String label,
+    required APIUserResponse? value,
+    required List<APIUserResponse> users,
+    required ValueChanged<APIUserResponse?> onChanged,
+  }) {
+    return DropdownButtonFormField<int?>(
+      // Храним id, а не объект: после обновления списка приходят новые
+      // экземпляры, и сравнение по ссылке сбрасывало бы выбор.
+      initialValue: value?.id,
+      isDense: true,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: label,
+        isDense: true,
+        border: const OutlineInputBorder(),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      ),
+      style: const TextStyle(fontSize: 12.5),
+      items: [
+        const DropdownMenuItem<int?>(
+            value: null,
+            child: Text('не выбран', style: TextStyle(fontSize: 12.5))),
+        ...users.map((u) => DropdownMenuItem<int?>(
+              value: u.id,
+              child: Text(u.formattedDisplayName,
+                  style: const TextStyle(fontSize: 12.5),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+            )),
+      ],
+      onChanged: _busy
+          ? null
+          : (id) => onChanged(
+              id == null ? null : users.firstWhere((u) => u.id == id)),
     );
   }
 
@@ -444,13 +565,31 @@ class _IncidentReportsScreenState extends ConsumerState<IncidentReportsScreen> {
                   '${s.stillActive > 0 ? " · не закрыто ${s.stillActive}" : ""}',
           style: TextStyle(fontSize: 11, color: cs.onSurface.withAlpha(150)),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-          tooltip: 'Выгрузить PDF',
-          onPressed: _busy
-              ? null
-              : () => _exportShift(
-                  shiftDate: s.shiftDate, label: 'Отчёт о дежурстве'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Краткая форма доступна и для прошлых смен: отчёт за
+            // вчерашнее дежурство нужен так же часто.
+            IconButton(
+              icon: const Icon(Icons.table_rows_outlined, size: 17),
+              tooltip: 'Краткий отчёт',
+              onPressed: _busy
+                  ? null
+                  : () => _exportShift(
+                        shiftDate: s.shiftDate,
+                        label: 'Краткий отчёт о дежурстве',
+                        compact: true,
+                      ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+              tooltip: 'Полный отчёт PDF',
+              onPressed: _busy
+                  ? null
+                  : () => _exportShift(
+                      shiftDate: s.shiftDate, label: 'Отчёт о дежурстве'),
+            ),
+          ],
         ),
       ),
     );

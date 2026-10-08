@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../utils/safe_filename.dart';
+
 /// Кроссплатформенный экспорт файлов.
 /// На десктопе (Windows/Linux/macOS) — диалог "Сохранить как".
 /// На мобильных — share sheet.
@@ -33,9 +35,11 @@ class FileExportHelper {
 
   /// Десктоп: диалог "Сохранить как" через FilePicker.
   static Future<String?> _saveFileDesktop(File sourceFile, String fileName) async {
+    // Имя чистим и здесь: оно попадает в диалог «Сохранить как», и
+    // Windows отклоняет запрещённые символы \ / : * ? " < > |.
     final outputPath = await FilePicker.saveFile(
       dialogTitle: 'Сохранить отчёт',
-      fileName: fileName,
+      fileName: safeFileName(fileName),
     );
 
     if (outputPath == null) return null; // Пользователь отменил
