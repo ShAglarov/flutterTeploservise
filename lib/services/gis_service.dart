@@ -74,6 +74,23 @@ class GisImportResult {
 }
 
 /// Экспорт и импорт официальных шаблонов ГИС ЖКХ.
+/// Результат выгрузки: файл и сводка, что в него попало.
+class GisExportResult {
+  final File file;
+  final int exported;
+  final int skipped;
+  final List<String> warnings;
+
+  const GisExportResult({
+    required this.file,
+    required this.exported,
+    required this.skipped,
+    required this.warnings,
+  });
+
+  bool get hasStats => exported > 0 || skipped > 0;
+}
+
 class GisService {
   final Dio _dio;
 
@@ -91,7 +108,7 @@ class GisService {
   /// Файл приходит как байты: шаблон ГИС собран на сервере поверх
   /// оригинала, и его нельзя пересобирать на клиенте — портал
   /// отвергает файлы с изменённым форматом.
-  Future<File> _download(String path, {Map<String, dynamic>? query}) async {
+  Future<GisExportResult> _download(String path, {Map<String, dynamic>? query}) async {
     final response = await _dio.get<List<int>>(
       path,
       queryParameters: query,
@@ -108,7 +125,24 @@ class GisService {
     // p.join, а не '/': на Windows разделитель — обратный слэш.
     final file = File(p.join(dir.path, name));
     await file.writeAsBytes(response.data ?? const []);
-    return file;
+
+    // Сводка приходит заголовками: файл отдаётся потоком, и тела у
+    // ответа нет.
+    final warningsRaw = response.headers.value('x-export-warnings');
+    final warnings = <String>[];
+    if (warningsRaw != null && warningsRaw.isNotEmpty) {
+      try {
+        warnings.addAll(Uri.decodeComponent(warningsRaw).split(' | '));
+      } catch (_) {
+        // Битое процентное кодирование — сводку просто не показываем.
+      }
+    }
+    return GisExportResult(
+      file: file,
+      exported: int.tryParse(response.headers.value('x-export-exported') ?? '') ?? 0,
+      skipped: int.tryParse(response.headers.value('x-export-skipped') ?? '') ?? 0,
+      warnings: warnings,
+    );
   }
 
   /// Имя файла из Content-Disposition — сервер присылает понятное
@@ -134,25 +168,25 @@ class GisService {
     return plain?.group(1)?.trim();
   }
 
-  Future<File> exportHouses({List<int>? houseIds}) =>
+  Future<GisExportResult> exportHouses({List<int>? houseIds}) =>
       _download('/gis/export/houses', query: _ids('house_ids', houseIds));
 
-  Future<File> exportAccounts({List<int>? accountIds}) =>
+  Future<GisExportResult> exportAccounts({List<int>? accountIds}) =>
       _download('/gis/export/accounts', query: _ids('account_ids', accountIds));
 
-  Future<File> exportPaymentDocuments({DateTime? period, List<int>? accountIds}) =>
+  Future<GisExportResult> exportPaymentDocuments({DateTime? period, List<int>? accountIds}) =>
       _download('/gis/export/payment-documents', query: {
         if (period != null) 'period': _date(period),
         ..._ids('account_ids', accountIds),
       });
 
-  Future<File> exportAcknowledgments({DateTime? from, DateTime? to}) =>
+  Future<GisExportResult> exportAcknowledgments({DateTime? from, DateTime? to}) =>
       _download('/gis/export/acknowledgments', query: {
         if (from != null) 'date_from': _date(from),
         if (to != null) 'date_to': _date(to),
       });
 
-  Future<File> downloadBlank(String kind) => _download('/gis/templates/$kind/blank');
+  Future<GisExportResult> downloadBlank(String kind) => _download('/gis/templates/$kind/blank');
 
   Future<GisImportResult> import(String kind, String filePath) async {
     final endpoint = {

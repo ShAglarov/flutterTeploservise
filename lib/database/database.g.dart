@@ -5491,6 +5491,179 @@ class $SavedLocationsTable extends SavedLocations
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _cadastralNumberMeta = const VerificationMeta(
+    'cadastralNumber',
+  );
+  @override
+  late final GeneratedColumn<String> cadastralNumber = GeneratedColumn<String>(
+    'cadastral_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _commissioningDateMeta = const VerificationMeta(
+    'commissioningDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> commissioningDate =
+      GeneratedColumn<DateTime>(
+        'commissioning_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _stoveTypeMeta = const VerificationMeta(
+    'stoveType',
+  );
+  @override
+  late final GeneratedColumn<String> stoveType = GeneratedColumn<String>(
+    'stove_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _housingTypeMeta = const VerificationMeta(
+    'housingType',
+  );
+  @override
+  late final GeneratedColumn<String> housingType = GeneratedColumn<String>(
+    'housing_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _entrancesCountMeta = const VerificationMeta(
+    'entrancesCount',
+  );
+  @override
+  late final GeneratedColumn<int> entrancesCount = GeneratedColumn<int>(
+    'entrances_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisOktmoMeta = const VerificationMeta(
+    'gisOktmo',
+  );
+  @override
+  late final GeneratedColumn<String> gisOktmo = GeneratedColumn<String>(
+    'gis_oktmo',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisStateMeta = const VerificationMeta(
+    'gisState',
+  );
+  @override
+  late final GeneratedColumn<String> gisState = GeneratedColumn<String>(
+    'gis_state',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisLifecycleStageMeta = const VerificationMeta(
+    'gisLifecycleStage',
+  );
+  @override
+  late final GeneratedColumn<String> gisLifecycleStage =
+      GeneratedColumn<String>(
+        'gis_lifecycle_stage',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _undergroundFloorsMeta = const VerificationMeta(
+    'undergroundFloors',
+  );
+  @override
+  late final GeneratedColumn<int> undergroundFloors = GeneratedColumn<int>(
+    'underground_floors',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisTimezoneMeta = const VerificationMeta(
+    'gisTimezone',
+  );
+  @override
+  late final GeneratedColumn<String> gisTimezone = GeneratedColumn<String>(
+    'gis_timezone',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisCulturalHeritageMeta =
+      const VerificationMeta('gisCulturalHeritage');
+  @override
+  late final GeneratedColumn<bool> gisCulturalHeritage = GeneratedColumn<bool>(
+    'gis_cultural_heritage',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gis_cultural_heritage" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _gisFederalPropertyMeta =
+      const VerificationMeta('gisFederalProperty');
+  @override
+  late final GeneratedColumn<bool> gisFederalProperty = GeneratedColumn<bool>(
+    'gis_federal_property',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gis_federal_property" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _gisMunicipalPropertyMeta =
+      const VerificationMeta('gisMunicipalProperty');
+  @override
+  late final GeneratedColumn<bool> gisMunicipalProperty = GeneratedColumn<bool>(
+    'gis_municipal_property',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gis_municipal_property" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _gisHostelTypeMeta = const VerificationMeta(
+    'gisHostelType',
+  );
+  @override
+  late final GeneratedColumn<String> gisHostelType = GeneratedColumn<String>(
+    'gis_hostel_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisStatusMeta = const VerificationMeta(
+    'gisStatus',
+  );
+  @override
+  late final GeneratedColumn<String> gisStatus = GeneratedColumn<String>(
+    'gis_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _boilerHouseIdMeta = const VerificationMeta(
     'boilerHouseId',
   );
@@ -5554,6 +5727,21 @@ class $SavedLocationsTable extends SavedLocations
     yearBuilt,
     managementCompanyName,
     tariff,
+    cadastralNumber,
+    commissioningDate,
+    stoveType,
+    housingType,
+    entrancesCount,
+    gisOktmo,
+    gisState,
+    gisLifecycleStage,
+    undergroundFloors,
+    gisTimezone,
+    gisCulturalHeritage,
+    gisFederalProperty,
+    gisMunicipalProperty,
+    gisHostelType,
+    gisStatus,
     boilerHouseId,
     managementCompanyRefId,
     id,
@@ -5714,6 +5902,129 @@ class $SavedLocationsTable extends SavedLocations
         tariff.isAcceptableOrUnknown(data['tariff']!, _tariffMeta),
       );
     }
+    if (data.containsKey('cadastral_number')) {
+      context.handle(
+        _cadastralNumberMeta,
+        cadastralNumber.isAcceptableOrUnknown(
+          data['cadastral_number']!,
+          _cadastralNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('commissioning_date')) {
+      context.handle(
+        _commissioningDateMeta,
+        commissioningDate.isAcceptableOrUnknown(
+          data['commissioning_date']!,
+          _commissioningDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('stove_type')) {
+      context.handle(
+        _stoveTypeMeta,
+        stoveType.isAcceptableOrUnknown(data['stove_type']!, _stoveTypeMeta),
+      );
+    }
+    if (data.containsKey('housing_type')) {
+      context.handle(
+        _housingTypeMeta,
+        housingType.isAcceptableOrUnknown(
+          data['housing_type']!,
+          _housingTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('entrances_count')) {
+      context.handle(
+        _entrancesCountMeta,
+        entrancesCount.isAcceptableOrUnknown(
+          data['entrances_count']!,
+          _entrancesCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_oktmo')) {
+      context.handle(
+        _gisOktmoMeta,
+        gisOktmo.isAcceptableOrUnknown(data['gis_oktmo']!, _gisOktmoMeta),
+      );
+    }
+    if (data.containsKey('gis_state')) {
+      context.handle(
+        _gisStateMeta,
+        gisState.isAcceptableOrUnknown(data['gis_state']!, _gisStateMeta),
+      );
+    }
+    if (data.containsKey('gis_lifecycle_stage')) {
+      context.handle(
+        _gisLifecycleStageMeta,
+        gisLifecycleStage.isAcceptableOrUnknown(
+          data['gis_lifecycle_stage']!,
+          _gisLifecycleStageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('underground_floors')) {
+      context.handle(
+        _undergroundFloorsMeta,
+        undergroundFloors.isAcceptableOrUnknown(
+          data['underground_floors']!,
+          _undergroundFloorsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_timezone')) {
+      context.handle(
+        _gisTimezoneMeta,
+        gisTimezone.isAcceptableOrUnknown(
+          data['gis_timezone']!,
+          _gisTimezoneMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_cultural_heritage')) {
+      context.handle(
+        _gisCulturalHeritageMeta,
+        gisCulturalHeritage.isAcceptableOrUnknown(
+          data['gis_cultural_heritage']!,
+          _gisCulturalHeritageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_federal_property')) {
+      context.handle(
+        _gisFederalPropertyMeta,
+        gisFederalProperty.isAcceptableOrUnknown(
+          data['gis_federal_property']!,
+          _gisFederalPropertyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_municipal_property')) {
+      context.handle(
+        _gisMunicipalPropertyMeta,
+        gisMunicipalProperty.isAcceptableOrUnknown(
+          data['gis_municipal_property']!,
+          _gisMunicipalPropertyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_hostel_type')) {
+      context.handle(
+        _gisHostelTypeMeta,
+        gisHostelType.isAcceptableOrUnknown(
+          data['gis_hostel_type']!,
+          _gisHostelTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_status')) {
+      context.handle(
+        _gisStatusMeta,
+        gisStatus.isAcceptableOrUnknown(data['gis_status']!, _gisStatusMeta),
+      );
+    }
     if (data.containsKey('boiler_house_id')) {
       context.handle(
         _boilerHouseIdMeta,
@@ -5824,6 +6135,66 @@ class $SavedLocationsTable extends SavedLocations
         DriftSqlType.double,
         data['${effectivePrefix}tariff'],
       ),
+      cadastralNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cadastral_number'],
+      ),
+      commissioningDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}commissioning_date'],
+      ),
+      stoveType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stove_type'],
+      ),
+      housingType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}housing_type'],
+      ),
+      entrancesCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}entrances_count'],
+      ),
+      gisOktmo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_oktmo'],
+      ),
+      gisState: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_state'],
+      ),
+      gisLifecycleStage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_lifecycle_stage'],
+      ),
+      undergroundFloors: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}underground_floors'],
+      ),
+      gisTimezone: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_timezone'],
+      ),
+      gisCulturalHeritage: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gis_cultural_heritage'],
+      ),
+      gisFederalProperty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gis_federal_property'],
+      ),
+      gisMunicipalProperty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gis_municipal_property'],
+      ),
+      gisHostelType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_hostel_type'],
+      ),
+      gisStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_status'],
+      ),
       boilerHouseId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}boiler_house_id'],
@@ -5866,6 +6237,21 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
   final int? yearBuilt;
   final String? managementCompanyName;
   final double? tariff;
+  final String? cadastralNumber;
+  final DateTime? commissioningDate;
+  final String? stoveType;
+  final String? housingType;
+  final int? entrancesCount;
+  final String? gisOktmo;
+  final String? gisState;
+  final String? gisLifecycleStage;
+  final int? undergroundFloors;
+  final String? gisTimezone;
+  final bool? gisCulturalHeritage;
+  final bool? gisFederalProperty;
+  final bool? gisMunicipalProperty;
+  final String? gisHostelType;
+  final String? gisStatus;
   final int? boilerHouseId;
   final String? managementCompanyRefId;
   final int id;
@@ -5890,6 +6276,21 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     this.yearBuilt,
     this.managementCompanyName,
     this.tariff,
+    this.cadastralNumber,
+    this.commissioningDate,
+    this.stoveType,
+    this.housingType,
+    this.entrancesCount,
+    this.gisOktmo,
+    this.gisState,
+    this.gisLifecycleStage,
+    this.undergroundFloors,
+    this.gisTimezone,
+    this.gisCulturalHeritage,
+    this.gisFederalProperty,
+    this.gisMunicipalProperty,
+    this.gisHostelType,
+    this.gisStatus,
     this.boilerHouseId,
     this.managementCompanyRefId,
     required this.id,
@@ -5954,6 +6355,51 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     }
     if (!nullToAbsent || tariff != null) {
       map['tariff'] = Variable<double>(tariff);
+    }
+    if (!nullToAbsent || cadastralNumber != null) {
+      map['cadastral_number'] = Variable<String>(cadastralNumber);
+    }
+    if (!nullToAbsent || commissioningDate != null) {
+      map['commissioning_date'] = Variable<DateTime>(commissioningDate);
+    }
+    if (!nullToAbsent || stoveType != null) {
+      map['stove_type'] = Variable<String>(stoveType);
+    }
+    if (!nullToAbsent || housingType != null) {
+      map['housing_type'] = Variable<String>(housingType);
+    }
+    if (!nullToAbsent || entrancesCount != null) {
+      map['entrances_count'] = Variable<int>(entrancesCount);
+    }
+    if (!nullToAbsent || gisOktmo != null) {
+      map['gis_oktmo'] = Variable<String>(gisOktmo);
+    }
+    if (!nullToAbsent || gisState != null) {
+      map['gis_state'] = Variable<String>(gisState);
+    }
+    if (!nullToAbsent || gisLifecycleStage != null) {
+      map['gis_lifecycle_stage'] = Variable<String>(gisLifecycleStage);
+    }
+    if (!nullToAbsent || undergroundFloors != null) {
+      map['underground_floors'] = Variable<int>(undergroundFloors);
+    }
+    if (!nullToAbsent || gisTimezone != null) {
+      map['gis_timezone'] = Variable<String>(gisTimezone);
+    }
+    if (!nullToAbsent || gisCulturalHeritage != null) {
+      map['gis_cultural_heritage'] = Variable<bool>(gisCulturalHeritage);
+    }
+    if (!nullToAbsent || gisFederalProperty != null) {
+      map['gis_federal_property'] = Variable<bool>(gisFederalProperty);
+    }
+    if (!nullToAbsent || gisMunicipalProperty != null) {
+      map['gis_municipal_property'] = Variable<bool>(gisMunicipalProperty);
+    }
+    if (!nullToAbsent || gisHostelType != null) {
+      map['gis_hostel_type'] = Variable<String>(gisHostelType);
+    }
+    if (!nullToAbsent || gisStatus != null) {
+      map['gis_status'] = Variable<String>(gisStatus);
     }
     if (!nullToAbsent || boilerHouseId != null) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId);
@@ -6025,6 +6471,51 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       tariff: tariff == null && nullToAbsent
           ? const Value.absent()
           : Value(tariff),
+      cadastralNumber: cadastralNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cadastralNumber),
+      commissioningDate: commissioningDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(commissioningDate),
+      stoveType: stoveType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stoveType),
+      housingType: housingType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(housingType),
+      entrancesCount: entrancesCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entrancesCount),
+      gisOktmo: gisOktmo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisOktmo),
+      gisState: gisState == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisState),
+      gisLifecycleStage: gisLifecycleStage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisLifecycleStage),
+      undergroundFloors: undergroundFloors == null && nullToAbsent
+          ? const Value.absent()
+          : Value(undergroundFloors),
+      gisTimezone: gisTimezone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisTimezone),
+      gisCulturalHeritage: gisCulturalHeritage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisCulturalHeritage),
+      gisFederalProperty: gisFederalProperty == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisFederalProperty),
+      gisMunicipalProperty: gisMunicipalProperty == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisMunicipalProperty),
+      gisHostelType: gisHostelType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisHostelType),
+      gisStatus: gisStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisStatus),
       boilerHouseId: boilerHouseId == null && nullToAbsent
           ? const Value.absent()
           : Value(boilerHouseId),
@@ -6065,6 +6556,31 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
         json['managementCompanyName'],
       ),
       tariff: serializer.fromJson<double?>(json['tariff']),
+      cadastralNumber: serializer.fromJson<String?>(json['cadastralNumber']),
+      commissioningDate: serializer.fromJson<DateTime?>(
+        json['commissioningDate'],
+      ),
+      stoveType: serializer.fromJson<String?>(json['stoveType']),
+      housingType: serializer.fromJson<String?>(json['housingType']),
+      entrancesCount: serializer.fromJson<int?>(json['entrancesCount']),
+      gisOktmo: serializer.fromJson<String?>(json['gisOktmo']),
+      gisState: serializer.fromJson<String?>(json['gisState']),
+      gisLifecycleStage: serializer.fromJson<String?>(
+        json['gisLifecycleStage'],
+      ),
+      undergroundFloors: serializer.fromJson<int?>(json['undergroundFloors']),
+      gisTimezone: serializer.fromJson<String?>(json['gisTimezone']),
+      gisCulturalHeritage: serializer.fromJson<bool?>(
+        json['gisCulturalHeritage'],
+      ),
+      gisFederalProperty: serializer.fromJson<bool?>(
+        json['gisFederalProperty'],
+      ),
+      gisMunicipalProperty: serializer.fromJson<bool?>(
+        json['gisMunicipalProperty'],
+      ),
+      gisHostelType: serializer.fromJson<String?>(json['gisHostelType']),
+      gisStatus: serializer.fromJson<String?>(json['gisStatus']),
       boilerHouseId: serializer.fromJson<int?>(json['boilerHouseId']),
       managementCompanyRefId: serializer.fromJson<String?>(
         json['managementCompanyRefId'],
@@ -6098,6 +6614,21 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
         managementCompanyName,
       ),
       'tariff': serializer.toJson<double?>(tariff),
+      'cadastralNumber': serializer.toJson<String?>(cadastralNumber),
+      'commissioningDate': serializer.toJson<DateTime?>(commissioningDate),
+      'stoveType': serializer.toJson<String?>(stoveType),
+      'housingType': serializer.toJson<String?>(housingType),
+      'entrancesCount': serializer.toJson<int?>(entrancesCount),
+      'gisOktmo': serializer.toJson<String?>(gisOktmo),
+      'gisState': serializer.toJson<String?>(gisState),
+      'gisLifecycleStage': serializer.toJson<String?>(gisLifecycleStage),
+      'undergroundFloors': serializer.toJson<int?>(undergroundFloors),
+      'gisTimezone': serializer.toJson<String?>(gisTimezone),
+      'gisCulturalHeritage': serializer.toJson<bool?>(gisCulturalHeritage),
+      'gisFederalProperty': serializer.toJson<bool?>(gisFederalProperty),
+      'gisMunicipalProperty': serializer.toJson<bool?>(gisMunicipalProperty),
+      'gisHostelType': serializer.toJson<String?>(gisHostelType),
+      'gisStatus': serializer.toJson<String?>(gisStatus),
       'boilerHouseId': serializer.toJson<int?>(boilerHouseId),
       'managementCompanyRefId': serializer.toJson<String?>(
         managementCompanyRefId,
@@ -6127,6 +6658,21 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     Value<int?> yearBuilt = const Value.absent(),
     Value<String?> managementCompanyName = const Value.absent(),
     Value<double?> tariff = const Value.absent(),
+    Value<String?> cadastralNumber = const Value.absent(),
+    Value<DateTime?> commissioningDate = const Value.absent(),
+    Value<String?> stoveType = const Value.absent(),
+    Value<String?> housingType = const Value.absent(),
+    Value<int?> entrancesCount = const Value.absent(),
+    Value<String?> gisOktmo = const Value.absent(),
+    Value<String?> gisState = const Value.absent(),
+    Value<String?> gisLifecycleStage = const Value.absent(),
+    Value<int?> undergroundFloors = const Value.absent(),
+    Value<String?> gisTimezone = const Value.absent(),
+    Value<bool?> gisCulturalHeritage = const Value.absent(),
+    Value<bool?> gisFederalProperty = const Value.absent(),
+    Value<bool?> gisMunicipalProperty = const Value.absent(),
+    Value<String?> gisHostelType = const Value.absent(),
+    Value<String?> gisStatus = const Value.absent(),
     Value<int?> boilerHouseId = const Value.absent(),
     Value<String?> managementCompanyRefId = const Value.absent(),
     int? id,
@@ -6163,6 +6709,39 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
         ? managementCompanyName.value
         : this.managementCompanyName,
     tariff: tariff.present ? tariff.value : this.tariff,
+    cadastralNumber: cadastralNumber.present
+        ? cadastralNumber.value
+        : this.cadastralNumber,
+    commissioningDate: commissioningDate.present
+        ? commissioningDate.value
+        : this.commissioningDate,
+    stoveType: stoveType.present ? stoveType.value : this.stoveType,
+    housingType: housingType.present ? housingType.value : this.housingType,
+    entrancesCount: entrancesCount.present
+        ? entrancesCount.value
+        : this.entrancesCount,
+    gisOktmo: gisOktmo.present ? gisOktmo.value : this.gisOktmo,
+    gisState: gisState.present ? gisState.value : this.gisState,
+    gisLifecycleStage: gisLifecycleStage.present
+        ? gisLifecycleStage.value
+        : this.gisLifecycleStage,
+    undergroundFloors: undergroundFloors.present
+        ? undergroundFloors.value
+        : this.undergroundFloors,
+    gisTimezone: gisTimezone.present ? gisTimezone.value : this.gisTimezone,
+    gisCulturalHeritage: gisCulturalHeritage.present
+        ? gisCulturalHeritage.value
+        : this.gisCulturalHeritage,
+    gisFederalProperty: gisFederalProperty.present
+        ? gisFederalProperty.value
+        : this.gisFederalProperty,
+    gisMunicipalProperty: gisMunicipalProperty.present
+        ? gisMunicipalProperty.value
+        : this.gisMunicipalProperty,
+    gisHostelType: gisHostelType.present
+        ? gisHostelType.value
+        : this.gisHostelType,
+    gisStatus: gisStatus.present ? gisStatus.value : this.gisStatus,
     boilerHouseId: boilerHouseId.present
         ? boilerHouseId.value
         : this.boilerHouseId,
@@ -6209,6 +6788,43 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           ? data.managementCompanyName.value
           : this.managementCompanyName,
       tariff: data.tariff.present ? data.tariff.value : this.tariff,
+      cadastralNumber: data.cadastralNumber.present
+          ? data.cadastralNumber.value
+          : this.cadastralNumber,
+      commissioningDate: data.commissioningDate.present
+          ? data.commissioningDate.value
+          : this.commissioningDate,
+      stoveType: data.stoveType.present ? data.stoveType.value : this.stoveType,
+      housingType: data.housingType.present
+          ? data.housingType.value
+          : this.housingType,
+      entrancesCount: data.entrancesCount.present
+          ? data.entrancesCount.value
+          : this.entrancesCount,
+      gisOktmo: data.gisOktmo.present ? data.gisOktmo.value : this.gisOktmo,
+      gisState: data.gisState.present ? data.gisState.value : this.gisState,
+      gisLifecycleStage: data.gisLifecycleStage.present
+          ? data.gisLifecycleStage.value
+          : this.gisLifecycleStage,
+      undergroundFloors: data.undergroundFloors.present
+          ? data.undergroundFloors.value
+          : this.undergroundFloors,
+      gisTimezone: data.gisTimezone.present
+          ? data.gisTimezone.value
+          : this.gisTimezone,
+      gisCulturalHeritage: data.gisCulturalHeritage.present
+          ? data.gisCulturalHeritage.value
+          : this.gisCulturalHeritage,
+      gisFederalProperty: data.gisFederalProperty.present
+          ? data.gisFederalProperty.value
+          : this.gisFederalProperty,
+      gisMunicipalProperty: data.gisMunicipalProperty.present
+          ? data.gisMunicipalProperty.value
+          : this.gisMunicipalProperty,
+      gisHostelType: data.gisHostelType.present
+          ? data.gisHostelType.value
+          : this.gisHostelType,
+      gisStatus: data.gisStatus.present ? data.gisStatus.value : this.gisStatus,
       boilerHouseId: data.boilerHouseId.present
           ? data.boilerHouseId.value
           : this.boilerHouseId,
@@ -6242,6 +6858,21 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           ..write('yearBuilt: $yearBuilt, ')
           ..write('managementCompanyName: $managementCompanyName, ')
           ..write('tariff: $tariff, ')
+          ..write('cadastralNumber: $cadastralNumber, ')
+          ..write('commissioningDate: $commissioningDate, ')
+          ..write('stoveType: $stoveType, ')
+          ..write('housingType: $housingType, ')
+          ..write('entrancesCount: $entrancesCount, ')
+          ..write('gisOktmo: $gisOktmo, ')
+          ..write('gisState: $gisState, ')
+          ..write('gisLifecycleStage: $gisLifecycleStage, ')
+          ..write('undergroundFloors: $undergroundFloors, ')
+          ..write('gisTimezone: $gisTimezone, ')
+          ..write('gisCulturalHeritage: $gisCulturalHeritage, ')
+          ..write('gisFederalProperty: $gisFederalProperty, ')
+          ..write('gisMunicipalProperty: $gisMunicipalProperty, ')
+          ..write('gisHostelType: $gisHostelType, ')
+          ..write('gisStatus: $gisStatus, ')
           ..write('boilerHouseId: $boilerHouseId, ')
           ..write('managementCompanyRefId: $managementCompanyRefId, ')
           ..write('id: $id')
@@ -6271,6 +6902,21 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     yearBuilt,
     managementCompanyName,
     tariff,
+    cadastralNumber,
+    commissioningDate,
+    stoveType,
+    housingType,
+    entrancesCount,
+    gisOktmo,
+    gisState,
+    gisLifecycleStage,
+    undergroundFloors,
+    gisTimezone,
+    gisCulturalHeritage,
+    gisFederalProperty,
+    gisMunicipalProperty,
+    gisHostelType,
+    gisStatus,
     boilerHouseId,
     managementCompanyRefId,
     id,
@@ -6299,6 +6945,21 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           other.yearBuilt == this.yearBuilt &&
           other.managementCompanyName == this.managementCompanyName &&
           other.tariff == this.tariff &&
+          other.cadastralNumber == this.cadastralNumber &&
+          other.commissioningDate == this.commissioningDate &&
+          other.stoveType == this.stoveType &&
+          other.housingType == this.housingType &&
+          other.entrancesCount == this.entrancesCount &&
+          other.gisOktmo == this.gisOktmo &&
+          other.gisState == this.gisState &&
+          other.gisLifecycleStage == this.gisLifecycleStage &&
+          other.undergroundFloors == this.undergroundFloors &&
+          other.gisTimezone == this.gisTimezone &&
+          other.gisCulturalHeritage == this.gisCulturalHeritage &&
+          other.gisFederalProperty == this.gisFederalProperty &&
+          other.gisMunicipalProperty == this.gisMunicipalProperty &&
+          other.gisHostelType == this.gisHostelType &&
+          other.gisStatus == this.gisStatus &&
           other.boilerHouseId == this.boilerHouseId &&
           other.managementCompanyRefId == this.managementCompanyRefId &&
           other.id == this.id);
@@ -6325,6 +6986,21 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
   final Value<int?> yearBuilt;
   final Value<String?> managementCompanyName;
   final Value<double?> tariff;
+  final Value<String?> cadastralNumber;
+  final Value<DateTime?> commissioningDate;
+  final Value<String?> stoveType;
+  final Value<String?> housingType;
+  final Value<int?> entrancesCount;
+  final Value<String?> gisOktmo;
+  final Value<String?> gisState;
+  final Value<String?> gisLifecycleStage;
+  final Value<int?> undergroundFloors;
+  final Value<String?> gisTimezone;
+  final Value<bool?> gisCulturalHeritage;
+  final Value<bool?> gisFederalProperty;
+  final Value<bool?> gisMunicipalProperty;
+  final Value<String?> gisHostelType;
+  final Value<String?> gisStatus;
   final Value<int?> boilerHouseId;
   final Value<String?> managementCompanyRefId;
   final Value<int> id;
@@ -6349,6 +7025,21 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.yearBuilt = const Value.absent(),
     this.managementCompanyName = const Value.absent(),
     this.tariff = const Value.absent(),
+    this.cadastralNumber = const Value.absent(),
+    this.commissioningDate = const Value.absent(),
+    this.stoveType = const Value.absent(),
+    this.housingType = const Value.absent(),
+    this.entrancesCount = const Value.absent(),
+    this.gisOktmo = const Value.absent(),
+    this.gisState = const Value.absent(),
+    this.gisLifecycleStage = const Value.absent(),
+    this.undergroundFloors = const Value.absent(),
+    this.gisTimezone = const Value.absent(),
+    this.gisCulturalHeritage = const Value.absent(),
+    this.gisFederalProperty = const Value.absent(),
+    this.gisMunicipalProperty = const Value.absent(),
+    this.gisHostelType = const Value.absent(),
+    this.gisStatus = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
     this.managementCompanyRefId = const Value.absent(),
     this.id = const Value.absent(),
@@ -6374,6 +7065,21 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.yearBuilt = const Value.absent(),
     this.managementCompanyName = const Value.absent(),
     this.tariff = const Value.absent(),
+    this.cadastralNumber = const Value.absent(),
+    this.commissioningDate = const Value.absent(),
+    this.stoveType = const Value.absent(),
+    this.housingType = const Value.absent(),
+    this.entrancesCount = const Value.absent(),
+    this.gisOktmo = const Value.absent(),
+    this.gisState = const Value.absent(),
+    this.gisLifecycleStage = const Value.absent(),
+    this.undergroundFloors = const Value.absent(),
+    this.gisTimezone = const Value.absent(),
+    this.gisCulturalHeritage = const Value.absent(),
+    this.gisFederalProperty = const Value.absent(),
+    this.gisMunicipalProperty = const Value.absent(),
+    this.gisHostelType = const Value.absent(),
+    this.gisStatus = const Value.absent(),
     this.boilerHouseId = const Value.absent(),
     this.managementCompanyRefId = const Value.absent(),
     this.id = const Value.absent(),
@@ -6399,6 +7105,21 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Expression<int>? yearBuilt,
     Expression<String>? managementCompanyName,
     Expression<double>? tariff,
+    Expression<String>? cadastralNumber,
+    Expression<DateTime>? commissioningDate,
+    Expression<String>? stoveType,
+    Expression<String>? housingType,
+    Expression<int>? entrancesCount,
+    Expression<String>? gisOktmo,
+    Expression<String>? gisState,
+    Expression<String>? gisLifecycleStage,
+    Expression<int>? undergroundFloors,
+    Expression<String>? gisTimezone,
+    Expression<bool>? gisCulturalHeritage,
+    Expression<bool>? gisFederalProperty,
+    Expression<bool>? gisMunicipalProperty,
+    Expression<String>? gisHostelType,
+    Expression<String>? gisStatus,
     Expression<int>? boilerHouseId,
     Expression<String>? managementCompanyRefId,
     Expression<int>? id,
@@ -6425,6 +7146,24 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       if (managementCompanyName != null)
         'management_company_name': managementCompanyName,
       if (tariff != null) 'tariff': tariff,
+      if (cadastralNumber != null) 'cadastral_number': cadastralNumber,
+      if (commissioningDate != null) 'commissioning_date': commissioningDate,
+      if (stoveType != null) 'stove_type': stoveType,
+      if (housingType != null) 'housing_type': housingType,
+      if (entrancesCount != null) 'entrances_count': entrancesCount,
+      if (gisOktmo != null) 'gis_oktmo': gisOktmo,
+      if (gisState != null) 'gis_state': gisState,
+      if (gisLifecycleStage != null) 'gis_lifecycle_stage': gisLifecycleStage,
+      if (undergroundFloors != null) 'underground_floors': undergroundFloors,
+      if (gisTimezone != null) 'gis_timezone': gisTimezone,
+      if (gisCulturalHeritage != null)
+        'gis_cultural_heritage': gisCulturalHeritage,
+      if (gisFederalProperty != null)
+        'gis_federal_property': gisFederalProperty,
+      if (gisMunicipalProperty != null)
+        'gis_municipal_property': gisMunicipalProperty,
+      if (gisHostelType != null) 'gis_hostel_type': gisHostelType,
+      if (gisStatus != null) 'gis_status': gisStatus,
       if (boilerHouseId != null) 'boiler_house_id': boilerHouseId,
       if (managementCompanyRefId != null)
         'management_company_ref_id': managementCompanyRefId,
@@ -6453,6 +7192,21 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Value<int?>? yearBuilt,
     Value<String?>? managementCompanyName,
     Value<double?>? tariff,
+    Value<String?>? cadastralNumber,
+    Value<DateTime?>? commissioningDate,
+    Value<String?>? stoveType,
+    Value<String?>? housingType,
+    Value<int?>? entrancesCount,
+    Value<String?>? gisOktmo,
+    Value<String?>? gisState,
+    Value<String?>? gisLifecycleStage,
+    Value<int?>? undergroundFloors,
+    Value<String?>? gisTimezone,
+    Value<bool?>? gisCulturalHeritage,
+    Value<bool?>? gisFederalProperty,
+    Value<bool?>? gisMunicipalProperty,
+    Value<String?>? gisHostelType,
+    Value<String?>? gisStatus,
     Value<int?>? boilerHouseId,
     Value<String?>? managementCompanyRefId,
     Value<int>? id,
@@ -6479,6 +7233,21 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       managementCompanyName:
           managementCompanyName ?? this.managementCompanyName,
       tariff: tariff ?? this.tariff,
+      cadastralNumber: cadastralNumber ?? this.cadastralNumber,
+      commissioningDate: commissioningDate ?? this.commissioningDate,
+      stoveType: stoveType ?? this.stoveType,
+      housingType: housingType ?? this.housingType,
+      entrancesCount: entrancesCount ?? this.entrancesCount,
+      gisOktmo: gisOktmo ?? this.gisOktmo,
+      gisState: gisState ?? this.gisState,
+      gisLifecycleStage: gisLifecycleStage ?? this.gisLifecycleStage,
+      undergroundFloors: undergroundFloors ?? this.undergroundFloors,
+      gisTimezone: gisTimezone ?? this.gisTimezone,
+      gisCulturalHeritage: gisCulturalHeritage ?? this.gisCulturalHeritage,
+      gisFederalProperty: gisFederalProperty ?? this.gisFederalProperty,
+      gisMunicipalProperty: gisMunicipalProperty ?? this.gisMunicipalProperty,
+      gisHostelType: gisHostelType ?? this.gisHostelType,
+      gisStatus: gisStatus ?? this.gisStatus,
       boilerHouseId: boilerHouseId ?? this.boilerHouseId,
       managementCompanyRefId:
           managementCompanyRefId ?? this.managementCompanyRefId,
@@ -6551,6 +7320,53 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     if (tariff.present) {
       map['tariff'] = Variable<double>(tariff.value);
     }
+    if (cadastralNumber.present) {
+      map['cadastral_number'] = Variable<String>(cadastralNumber.value);
+    }
+    if (commissioningDate.present) {
+      map['commissioning_date'] = Variable<DateTime>(commissioningDate.value);
+    }
+    if (stoveType.present) {
+      map['stove_type'] = Variable<String>(stoveType.value);
+    }
+    if (housingType.present) {
+      map['housing_type'] = Variable<String>(housingType.value);
+    }
+    if (entrancesCount.present) {
+      map['entrances_count'] = Variable<int>(entrancesCount.value);
+    }
+    if (gisOktmo.present) {
+      map['gis_oktmo'] = Variable<String>(gisOktmo.value);
+    }
+    if (gisState.present) {
+      map['gis_state'] = Variable<String>(gisState.value);
+    }
+    if (gisLifecycleStage.present) {
+      map['gis_lifecycle_stage'] = Variable<String>(gisLifecycleStage.value);
+    }
+    if (undergroundFloors.present) {
+      map['underground_floors'] = Variable<int>(undergroundFloors.value);
+    }
+    if (gisTimezone.present) {
+      map['gis_timezone'] = Variable<String>(gisTimezone.value);
+    }
+    if (gisCulturalHeritage.present) {
+      map['gis_cultural_heritage'] = Variable<bool>(gisCulturalHeritage.value);
+    }
+    if (gisFederalProperty.present) {
+      map['gis_federal_property'] = Variable<bool>(gisFederalProperty.value);
+    }
+    if (gisMunicipalProperty.present) {
+      map['gis_municipal_property'] = Variable<bool>(
+        gisMunicipalProperty.value,
+      );
+    }
+    if (gisHostelType.present) {
+      map['gis_hostel_type'] = Variable<String>(gisHostelType.value);
+    }
+    if (gisStatus.present) {
+      map['gis_status'] = Variable<String>(gisStatus.value);
+    }
     if (boilerHouseId.present) {
       map['boiler_house_id'] = Variable<int>(boilerHouseId.value);
     }
@@ -6588,6 +7404,21 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
           ..write('yearBuilt: $yearBuilt, ')
           ..write('managementCompanyName: $managementCompanyName, ')
           ..write('tariff: $tariff, ')
+          ..write('cadastralNumber: $cadastralNumber, ')
+          ..write('commissioningDate: $commissioningDate, ')
+          ..write('stoveType: $stoveType, ')
+          ..write('housingType: $housingType, ')
+          ..write('entrancesCount: $entrancesCount, ')
+          ..write('gisOktmo: $gisOktmo, ')
+          ..write('gisState: $gisState, ')
+          ..write('gisLifecycleStage: $gisLifecycleStage, ')
+          ..write('undergroundFloors: $undergroundFloors, ')
+          ..write('gisTimezone: $gisTimezone, ')
+          ..write('gisCulturalHeritage: $gisCulturalHeritage, ')
+          ..write('gisFederalProperty: $gisFederalProperty, ')
+          ..write('gisMunicipalProperty: $gisMunicipalProperty, ')
+          ..write('gisHostelType: $gisHostelType, ')
+          ..write('gisStatus: $gisStatus, ')
           ..write('boilerHouseId: $boilerHouseId, ')
           ..write('managementCompanyRefId: $managementCompanyRefId, ')
           ..write('id: $id')
@@ -10474,6 +11305,304 @@ class $MyAccountsTable extends MyAccounts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _backendIdMeta = const VerificationMeta(
+    'backendId',
+  );
+  @override
+  late final GeneratedColumn<int> backendId = GeneratedColumn<int>(
+    'backend_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _locationIdMeta = const VerificationMeta(
+    'locationId',
+  );
+  @override
+  late final GeneratedColumn<int> locationId = GeneratedColumn<int>(
+    'location_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cadastralNumberMeta = const VerificationMeta(
+    'cadastralNumber',
+  );
+  @override
+  late final GeneratedColumn<String> cadastralNumber = GeneratedColumn<String>(
+    'cadastral_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _roomsCountMeta = const VerificationMeta(
+    'roomsCount',
+  );
+  @override
+  late final GeneratedColumn<int> roomsCount = GeneratedColumn<int>(
+    'rooms_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisElsMeta = const VerificationMeta('gisEls');
+  @override
+  late final GeneratedColumn<String> gisEls = GeneratedColumn<String>(
+    'gis_els',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisAccountTypeMeta = const VerificationMeta(
+    'gisAccountType',
+  );
+  @override
+  late final GeneratedColumn<String> gisAccountType = GeneratedColumn<String>(
+    'gis_account_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisIsTenantMeta = const VerificationMeta(
+    'gisIsTenant',
+  );
+  @override
+  late final GeneratedColumn<bool> gisIsTenant = GeneratedColumn<bool>(
+    'gis_is_tenant',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gis_is_tenant" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _gisIsSplitMeta = const VerificationMeta(
+    'gisIsSplit',
+  );
+  @override
+  late final GeneratedColumn<bool> gisIsSplit = GeneratedColumn<bool>(
+    'gis_is_split',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gis_is_split" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _gisLastNameMeta = const VerificationMeta(
+    'gisLastName',
+  );
+  @override
+  late final GeneratedColumn<String> gisLastName = GeneratedColumn<String>(
+    'gis_last_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisFirstNameMeta = const VerificationMeta(
+    'gisFirstName',
+  );
+  @override
+  late final GeneratedColumn<String> gisFirstName = GeneratedColumn<String>(
+    'gis_first_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisMiddleNameMeta = const VerificationMeta(
+    'gisMiddleName',
+  );
+  @override
+  late final GeneratedColumn<String> gisMiddleName = GeneratedColumn<String>(
+    'gis_middle_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisSnilsMeta = const VerificationMeta(
+    'gisSnils',
+  );
+  @override
+  late final GeneratedColumn<String> gisSnils = GeneratedColumn<String>(
+    'gis_snils',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisDocTypeMeta = const VerificationMeta(
+    'gisDocType',
+  );
+  @override
+  late final GeneratedColumn<String> gisDocType = GeneratedColumn<String>(
+    'gis_doc_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisDocNumberMeta = const VerificationMeta(
+    'gisDocNumber',
+  );
+  @override
+  late final GeneratedColumn<String> gisDocNumber = GeneratedColumn<String>(
+    'gis_doc_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisDocSeriesMeta = const VerificationMeta(
+    'gisDocSeries',
+  );
+  @override
+  late final GeneratedColumn<String> gisDocSeries = GeneratedColumn<String>(
+    'gis_doc_series',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisDocDateMeta = const VerificationMeta(
+    'gisDocDate',
+  );
+  @override
+  late final GeneratedColumn<String> gisDocDate = GeneratedColumn<String>(
+    'gis_doc_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisOgrnMeta = const VerificationMeta(
+    'gisOgrn',
+  );
+  @override
+  late final GeneratedColumn<String> gisOgrn = GeneratedColumn<String>(
+    'gis_ogrn',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisNzaMeta = const VerificationMeta('gisNza');
+  @override
+  late final GeneratedColumn<String> gisNza = GeneratedColumn<String>(
+    'gis_nza',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisKppMeta = const VerificationMeta('gisKpp');
+  @override
+  late final GeneratedColumn<String> gisKpp = GeneratedColumn<String>(
+    'gis_kpp',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _livingAreaMeta = const VerificationMeta(
+    'livingArea',
+  );
+  @override
+  late final GeneratedColumn<double> livingArea = GeneratedColumn<double>(
+    'living_area',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _heatedAreaMeta = const VerificationMeta(
+    'heatedArea',
+  );
+  @override
+  late final GeneratedColumn<double> heatedArea = GeneratedColumn<double>(
+    'heated_area',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _residentsCountMeta = const VerificationMeta(
+    'residentsCount',
+  );
+  @override
+  late final GeneratedColumn<int> residentsCount = GeneratedColumn<int>(
+    'residents_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisPremisesTypeMeta = const VerificationMeta(
+    'gisPremisesType',
+  );
+  @override
+  late final GeneratedColumn<String> gisPremisesType = GeneratedColumn<String>(
+    'gis_premises_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisPremisesNumberMeta = const VerificationMeta(
+    'gisPremisesNumber',
+  );
+  @override
+  late final GeneratedColumn<String> gisPremisesNumber =
+      GeneratedColumn<String>(
+        'gis_premises_number',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _gisRoomNumberMeta = const VerificationMeta(
+    'gisRoomNumber',
+  );
+  @override
+  late final GeneratedColumn<String> gisRoomNumber = GeneratedColumn<String>(
+    'gis_room_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisPaymentShareMeta = const VerificationMeta(
+    'gisPaymentShare',
+  );
+  @override
+  late final GeneratedColumn<double> gisPaymentShare = GeneratedColumn<double>(
+    'gis_payment_share',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gisStatusMeta = const VerificationMeta(
+    'gisStatus',
+  );
+  @override
+  late final GeneratedColumn<String> gisStatus = GeneratedColumn<String>(
+    'gis_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -10501,6 +11630,33 @@ class $MyAccountsTable extends MyAccounts
     phone,
     serviceType,
     status,
+    backendId,
+    locationId,
+    cadastralNumber,
+    roomsCount,
+    gisEls,
+    gisAccountType,
+    gisIsTenant,
+    gisIsSplit,
+    gisLastName,
+    gisFirstName,
+    gisMiddleName,
+    gisSnils,
+    gisDocType,
+    gisDocNumber,
+    gisDocSeries,
+    gisDocDate,
+    gisOgrn,
+    gisNza,
+    gisKpp,
+    livingArea,
+    heatedArea,
+    residentsCount,
+    gisPremisesType,
+    gisPremisesNumber,
+    gisRoomNumber,
+    gisPaymentShare,
+    gisStatus,
     id,
   ];
   @override
@@ -10601,6 +11757,216 @@ class $MyAccountsTable extends MyAccounts
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('backend_id')) {
+      context.handle(
+        _backendIdMeta,
+        backendId.isAcceptableOrUnknown(data['backend_id']!, _backendIdMeta),
+      );
+    }
+    if (data.containsKey('location_id')) {
+      context.handle(
+        _locationIdMeta,
+        locationId.isAcceptableOrUnknown(data['location_id']!, _locationIdMeta),
+      );
+    }
+    if (data.containsKey('cadastral_number')) {
+      context.handle(
+        _cadastralNumberMeta,
+        cadastralNumber.isAcceptableOrUnknown(
+          data['cadastral_number']!,
+          _cadastralNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rooms_count')) {
+      context.handle(
+        _roomsCountMeta,
+        roomsCount.isAcceptableOrUnknown(data['rooms_count']!, _roomsCountMeta),
+      );
+    }
+    if (data.containsKey('gis_els')) {
+      context.handle(
+        _gisElsMeta,
+        gisEls.isAcceptableOrUnknown(data['gis_els']!, _gisElsMeta),
+      );
+    }
+    if (data.containsKey('gis_account_type')) {
+      context.handle(
+        _gisAccountTypeMeta,
+        gisAccountType.isAcceptableOrUnknown(
+          data['gis_account_type']!,
+          _gisAccountTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_is_tenant')) {
+      context.handle(
+        _gisIsTenantMeta,
+        gisIsTenant.isAcceptableOrUnknown(
+          data['gis_is_tenant']!,
+          _gisIsTenantMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_is_split')) {
+      context.handle(
+        _gisIsSplitMeta,
+        gisIsSplit.isAcceptableOrUnknown(
+          data['gis_is_split']!,
+          _gisIsSplitMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_last_name')) {
+      context.handle(
+        _gisLastNameMeta,
+        gisLastName.isAcceptableOrUnknown(
+          data['gis_last_name']!,
+          _gisLastNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_first_name')) {
+      context.handle(
+        _gisFirstNameMeta,
+        gisFirstName.isAcceptableOrUnknown(
+          data['gis_first_name']!,
+          _gisFirstNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_middle_name')) {
+      context.handle(
+        _gisMiddleNameMeta,
+        gisMiddleName.isAcceptableOrUnknown(
+          data['gis_middle_name']!,
+          _gisMiddleNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_snils')) {
+      context.handle(
+        _gisSnilsMeta,
+        gisSnils.isAcceptableOrUnknown(data['gis_snils']!, _gisSnilsMeta),
+      );
+    }
+    if (data.containsKey('gis_doc_type')) {
+      context.handle(
+        _gisDocTypeMeta,
+        gisDocType.isAcceptableOrUnknown(
+          data['gis_doc_type']!,
+          _gisDocTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_doc_number')) {
+      context.handle(
+        _gisDocNumberMeta,
+        gisDocNumber.isAcceptableOrUnknown(
+          data['gis_doc_number']!,
+          _gisDocNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_doc_series')) {
+      context.handle(
+        _gisDocSeriesMeta,
+        gisDocSeries.isAcceptableOrUnknown(
+          data['gis_doc_series']!,
+          _gisDocSeriesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_doc_date')) {
+      context.handle(
+        _gisDocDateMeta,
+        gisDocDate.isAcceptableOrUnknown(
+          data['gis_doc_date']!,
+          _gisDocDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_ogrn')) {
+      context.handle(
+        _gisOgrnMeta,
+        gisOgrn.isAcceptableOrUnknown(data['gis_ogrn']!, _gisOgrnMeta),
+      );
+    }
+    if (data.containsKey('gis_nza')) {
+      context.handle(
+        _gisNzaMeta,
+        gisNza.isAcceptableOrUnknown(data['gis_nza']!, _gisNzaMeta),
+      );
+    }
+    if (data.containsKey('gis_kpp')) {
+      context.handle(
+        _gisKppMeta,
+        gisKpp.isAcceptableOrUnknown(data['gis_kpp']!, _gisKppMeta),
+      );
+    }
+    if (data.containsKey('living_area')) {
+      context.handle(
+        _livingAreaMeta,
+        livingArea.isAcceptableOrUnknown(data['living_area']!, _livingAreaMeta),
+      );
+    }
+    if (data.containsKey('heated_area')) {
+      context.handle(
+        _heatedAreaMeta,
+        heatedArea.isAcceptableOrUnknown(data['heated_area']!, _heatedAreaMeta),
+      );
+    }
+    if (data.containsKey('residents_count')) {
+      context.handle(
+        _residentsCountMeta,
+        residentsCount.isAcceptableOrUnknown(
+          data['residents_count']!,
+          _residentsCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_premises_type')) {
+      context.handle(
+        _gisPremisesTypeMeta,
+        gisPremisesType.isAcceptableOrUnknown(
+          data['gis_premises_type']!,
+          _gisPremisesTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_premises_number')) {
+      context.handle(
+        _gisPremisesNumberMeta,
+        gisPremisesNumber.isAcceptableOrUnknown(
+          data['gis_premises_number']!,
+          _gisPremisesNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_room_number')) {
+      context.handle(
+        _gisRoomNumberMeta,
+        gisRoomNumber.isAcceptableOrUnknown(
+          data['gis_room_number']!,
+          _gisRoomNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_payment_share')) {
+      context.handle(
+        _gisPaymentShareMeta,
+        gisPaymentShare.isAcceptableOrUnknown(
+          data['gis_payment_share']!,
+          _gisPaymentShareMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_status')) {
+      context.handle(
+        _gisStatusMeta,
+        gisStatus.isAcceptableOrUnknown(data['gis_status']!, _gisStatusMeta),
+      );
+    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
@@ -10661,6 +12027,114 @@ class $MyAccountsTable extends MyAccounts
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       ),
+      backendId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}backend_id'],
+      ),
+      locationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}location_id'],
+      ),
+      cadastralNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cadastral_number'],
+      ),
+      roomsCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rooms_count'],
+      ),
+      gisEls: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_els'],
+      ),
+      gisAccountType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_account_type'],
+      ),
+      gisIsTenant: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gis_is_tenant'],
+      ),
+      gisIsSplit: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gis_is_split'],
+      ),
+      gisLastName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_last_name'],
+      ),
+      gisFirstName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_first_name'],
+      ),
+      gisMiddleName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_middle_name'],
+      ),
+      gisSnils: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_snils'],
+      ),
+      gisDocType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_doc_type'],
+      ),
+      gisDocNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_doc_number'],
+      ),
+      gisDocSeries: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_doc_series'],
+      ),
+      gisDocDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_doc_date'],
+      ),
+      gisOgrn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_ogrn'],
+      ),
+      gisNza: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_nza'],
+      ),
+      gisKpp: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_kpp'],
+      ),
+      livingArea: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}living_area'],
+      ),
+      heatedArea: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}heated_area'],
+      ),
+      residentsCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}residents_count'],
+      ),
+      gisPremisesType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_premises_type'],
+      ),
+      gisPremisesNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_premises_number'],
+      ),
+      gisRoomNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_room_number'],
+      ),
+      gisPaymentShare: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}gis_payment_share'],
+      ),
+      gisStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_status'],
+      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -10687,6 +12161,33 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
   final String? phone;
   final String? serviceType;
   final String? status;
+  final int? backendId;
+  final int? locationId;
+  final String? cadastralNumber;
+  final int? roomsCount;
+  final String? gisEls;
+  final String? gisAccountType;
+  final bool? gisIsTenant;
+  final bool? gisIsSplit;
+  final String? gisLastName;
+  final String? gisFirstName;
+  final String? gisMiddleName;
+  final String? gisSnils;
+  final String? gisDocType;
+  final String? gisDocNumber;
+  final String? gisDocSeries;
+  final String? gisDocDate;
+  final String? gisOgrn;
+  final String? gisNza;
+  final String? gisKpp;
+  final double? livingArea;
+  final double? heatedArea;
+  final int? residentsCount;
+  final String? gisPremisesType;
+  final String? gisPremisesNumber;
+  final String? gisRoomNumber;
+  final double? gisPaymentShare;
+  final String? gisStatus;
   final int id;
   const MyAccountDb({
     this.accountNumber,
@@ -10701,6 +12202,33 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     this.phone,
     this.serviceType,
     this.status,
+    this.backendId,
+    this.locationId,
+    this.cadastralNumber,
+    this.roomsCount,
+    this.gisEls,
+    this.gisAccountType,
+    this.gisIsTenant,
+    this.gisIsSplit,
+    this.gisLastName,
+    this.gisFirstName,
+    this.gisMiddleName,
+    this.gisSnils,
+    this.gisDocType,
+    this.gisDocNumber,
+    this.gisDocSeries,
+    this.gisDocDate,
+    this.gisOgrn,
+    this.gisNza,
+    this.gisKpp,
+    this.livingArea,
+    this.heatedArea,
+    this.residentsCount,
+    this.gisPremisesType,
+    this.gisPremisesNumber,
+    this.gisRoomNumber,
+    this.gisPaymentShare,
+    this.gisStatus,
     required this.id,
   });
   @override
@@ -10740,6 +12268,87 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     if (!nullToAbsent || status != null) {
       map['status'] = Variable<String>(status);
     }
+    if (!nullToAbsent || backendId != null) {
+      map['backend_id'] = Variable<int>(backendId);
+    }
+    if (!nullToAbsent || locationId != null) {
+      map['location_id'] = Variable<int>(locationId);
+    }
+    if (!nullToAbsent || cadastralNumber != null) {
+      map['cadastral_number'] = Variable<String>(cadastralNumber);
+    }
+    if (!nullToAbsent || roomsCount != null) {
+      map['rooms_count'] = Variable<int>(roomsCount);
+    }
+    if (!nullToAbsent || gisEls != null) {
+      map['gis_els'] = Variable<String>(gisEls);
+    }
+    if (!nullToAbsent || gisAccountType != null) {
+      map['gis_account_type'] = Variable<String>(gisAccountType);
+    }
+    if (!nullToAbsent || gisIsTenant != null) {
+      map['gis_is_tenant'] = Variable<bool>(gisIsTenant);
+    }
+    if (!nullToAbsent || gisIsSplit != null) {
+      map['gis_is_split'] = Variable<bool>(gisIsSplit);
+    }
+    if (!nullToAbsent || gisLastName != null) {
+      map['gis_last_name'] = Variable<String>(gisLastName);
+    }
+    if (!nullToAbsent || gisFirstName != null) {
+      map['gis_first_name'] = Variable<String>(gisFirstName);
+    }
+    if (!nullToAbsent || gisMiddleName != null) {
+      map['gis_middle_name'] = Variable<String>(gisMiddleName);
+    }
+    if (!nullToAbsent || gisSnils != null) {
+      map['gis_snils'] = Variable<String>(gisSnils);
+    }
+    if (!nullToAbsent || gisDocType != null) {
+      map['gis_doc_type'] = Variable<String>(gisDocType);
+    }
+    if (!nullToAbsent || gisDocNumber != null) {
+      map['gis_doc_number'] = Variable<String>(gisDocNumber);
+    }
+    if (!nullToAbsent || gisDocSeries != null) {
+      map['gis_doc_series'] = Variable<String>(gisDocSeries);
+    }
+    if (!nullToAbsent || gisDocDate != null) {
+      map['gis_doc_date'] = Variable<String>(gisDocDate);
+    }
+    if (!nullToAbsent || gisOgrn != null) {
+      map['gis_ogrn'] = Variable<String>(gisOgrn);
+    }
+    if (!nullToAbsent || gisNza != null) {
+      map['gis_nza'] = Variable<String>(gisNza);
+    }
+    if (!nullToAbsent || gisKpp != null) {
+      map['gis_kpp'] = Variable<String>(gisKpp);
+    }
+    if (!nullToAbsent || livingArea != null) {
+      map['living_area'] = Variable<double>(livingArea);
+    }
+    if (!nullToAbsent || heatedArea != null) {
+      map['heated_area'] = Variable<double>(heatedArea);
+    }
+    if (!nullToAbsent || residentsCount != null) {
+      map['residents_count'] = Variable<int>(residentsCount);
+    }
+    if (!nullToAbsent || gisPremisesType != null) {
+      map['gis_premises_type'] = Variable<String>(gisPremisesType);
+    }
+    if (!nullToAbsent || gisPremisesNumber != null) {
+      map['gis_premises_number'] = Variable<String>(gisPremisesNumber);
+    }
+    if (!nullToAbsent || gisRoomNumber != null) {
+      map['gis_room_number'] = Variable<String>(gisRoomNumber);
+    }
+    if (!nullToAbsent || gisPaymentShare != null) {
+      map['gis_payment_share'] = Variable<double>(gisPaymentShare);
+    }
+    if (!nullToAbsent || gisStatus != null) {
+      map['gis_status'] = Variable<String>(gisStatus);
+    }
     map['id'] = Variable<int>(id);
     return map;
   }
@@ -10776,6 +12385,87 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
       status: status == null && nullToAbsent
           ? const Value.absent()
           : Value(status),
+      backendId: backendId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(backendId),
+      locationId: locationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationId),
+      cadastralNumber: cadastralNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cadastralNumber),
+      roomsCount: roomsCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(roomsCount),
+      gisEls: gisEls == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisEls),
+      gisAccountType: gisAccountType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisAccountType),
+      gisIsTenant: gisIsTenant == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisIsTenant),
+      gisIsSplit: gisIsSplit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisIsSplit),
+      gisLastName: gisLastName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisLastName),
+      gisFirstName: gisFirstName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisFirstName),
+      gisMiddleName: gisMiddleName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisMiddleName),
+      gisSnils: gisSnils == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisSnils),
+      gisDocType: gisDocType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisDocType),
+      gisDocNumber: gisDocNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisDocNumber),
+      gisDocSeries: gisDocSeries == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisDocSeries),
+      gisDocDate: gisDocDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisDocDate),
+      gisOgrn: gisOgrn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisOgrn),
+      gisNza: gisNza == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisNza),
+      gisKpp: gisKpp == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisKpp),
+      livingArea: livingArea == null && nullToAbsent
+          ? const Value.absent()
+          : Value(livingArea),
+      heatedArea: heatedArea == null && nullToAbsent
+          ? const Value.absent()
+          : Value(heatedArea),
+      residentsCount: residentsCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(residentsCount),
+      gisPremisesType: gisPremisesType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisPremisesType),
+      gisPremisesNumber: gisPremisesNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisPremisesNumber),
+      gisRoomNumber: gisRoomNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisRoomNumber),
+      gisPaymentShare: gisPaymentShare == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisPaymentShare),
+      gisStatus: gisStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisStatus),
       id: Value(id),
     );
   }
@@ -10798,6 +12488,35 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
       phone: serializer.fromJson<String?>(json['phone']),
       serviceType: serializer.fromJson<String?>(json['serviceType']),
       status: serializer.fromJson<String?>(json['status']),
+      backendId: serializer.fromJson<int?>(json['backendId']),
+      locationId: serializer.fromJson<int?>(json['locationId']),
+      cadastralNumber: serializer.fromJson<String?>(json['cadastralNumber']),
+      roomsCount: serializer.fromJson<int?>(json['roomsCount']),
+      gisEls: serializer.fromJson<String?>(json['gisEls']),
+      gisAccountType: serializer.fromJson<String?>(json['gisAccountType']),
+      gisIsTenant: serializer.fromJson<bool?>(json['gisIsTenant']),
+      gisIsSplit: serializer.fromJson<bool?>(json['gisIsSplit']),
+      gisLastName: serializer.fromJson<String?>(json['gisLastName']),
+      gisFirstName: serializer.fromJson<String?>(json['gisFirstName']),
+      gisMiddleName: serializer.fromJson<String?>(json['gisMiddleName']),
+      gisSnils: serializer.fromJson<String?>(json['gisSnils']),
+      gisDocType: serializer.fromJson<String?>(json['gisDocType']),
+      gisDocNumber: serializer.fromJson<String?>(json['gisDocNumber']),
+      gisDocSeries: serializer.fromJson<String?>(json['gisDocSeries']),
+      gisDocDate: serializer.fromJson<String?>(json['gisDocDate']),
+      gisOgrn: serializer.fromJson<String?>(json['gisOgrn']),
+      gisNza: serializer.fromJson<String?>(json['gisNza']),
+      gisKpp: serializer.fromJson<String?>(json['gisKpp']),
+      livingArea: serializer.fromJson<double?>(json['livingArea']),
+      heatedArea: serializer.fromJson<double?>(json['heatedArea']),
+      residentsCount: serializer.fromJson<int?>(json['residentsCount']),
+      gisPremisesType: serializer.fromJson<String?>(json['gisPremisesType']),
+      gisPremisesNumber: serializer.fromJson<String?>(
+        json['gisPremisesNumber'],
+      ),
+      gisRoomNumber: serializer.fromJson<String?>(json['gisRoomNumber']),
+      gisPaymentShare: serializer.fromJson<double?>(json['gisPaymentShare']),
+      gisStatus: serializer.fromJson<String?>(json['gisStatus']),
       id: serializer.fromJson<int>(json['id']),
     );
   }
@@ -10817,6 +12536,33 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
       'phone': serializer.toJson<String?>(phone),
       'serviceType': serializer.toJson<String?>(serviceType),
       'status': serializer.toJson<String?>(status),
+      'backendId': serializer.toJson<int?>(backendId),
+      'locationId': serializer.toJson<int?>(locationId),
+      'cadastralNumber': serializer.toJson<String?>(cadastralNumber),
+      'roomsCount': serializer.toJson<int?>(roomsCount),
+      'gisEls': serializer.toJson<String?>(gisEls),
+      'gisAccountType': serializer.toJson<String?>(gisAccountType),
+      'gisIsTenant': serializer.toJson<bool?>(gisIsTenant),
+      'gisIsSplit': serializer.toJson<bool?>(gisIsSplit),
+      'gisLastName': serializer.toJson<String?>(gisLastName),
+      'gisFirstName': serializer.toJson<String?>(gisFirstName),
+      'gisMiddleName': serializer.toJson<String?>(gisMiddleName),
+      'gisSnils': serializer.toJson<String?>(gisSnils),
+      'gisDocType': serializer.toJson<String?>(gisDocType),
+      'gisDocNumber': serializer.toJson<String?>(gisDocNumber),
+      'gisDocSeries': serializer.toJson<String?>(gisDocSeries),
+      'gisDocDate': serializer.toJson<String?>(gisDocDate),
+      'gisOgrn': serializer.toJson<String?>(gisOgrn),
+      'gisNza': serializer.toJson<String?>(gisNza),
+      'gisKpp': serializer.toJson<String?>(gisKpp),
+      'livingArea': serializer.toJson<double?>(livingArea),
+      'heatedArea': serializer.toJson<double?>(heatedArea),
+      'residentsCount': serializer.toJson<int?>(residentsCount),
+      'gisPremisesType': serializer.toJson<String?>(gisPremisesType),
+      'gisPremisesNumber': serializer.toJson<String?>(gisPremisesNumber),
+      'gisRoomNumber': serializer.toJson<String?>(gisRoomNumber),
+      'gisPaymentShare': serializer.toJson<double?>(gisPaymentShare),
+      'gisStatus': serializer.toJson<String?>(gisStatus),
       'id': serializer.toJson<int>(id),
     };
   }
@@ -10834,6 +12580,33 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     Value<String?> phone = const Value.absent(),
     Value<String?> serviceType = const Value.absent(),
     Value<String?> status = const Value.absent(),
+    Value<int?> backendId = const Value.absent(),
+    Value<int?> locationId = const Value.absent(),
+    Value<String?> cadastralNumber = const Value.absent(),
+    Value<int?> roomsCount = const Value.absent(),
+    Value<String?> gisEls = const Value.absent(),
+    Value<String?> gisAccountType = const Value.absent(),
+    Value<bool?> gisIsTenant = const Value.absent(),
+    Value<bool?> gisIsSplit = const Value.absent(),
+    Value<String?> gisLastName = const Value.absent(),
+    Value<String?> gisFirstName = const Value.absent(),
+    Value<String?> gisMiddleName = const Value.absent(),
+    Value<String?> gisSnils = const Value.absent(),
+    Value<String?> gisDocType = const Value.absent(),
+    Value<String?> gisDocNumber = const Value.absent(),
+    Value<String?> gisDocSeries = const Value.absent(),
+    Value<String?> gisDocDate = const Value.absent(),
+    Value<String?> gisOgrn = const Value.absent(),
+    Value<String?> gisNza = const Value.absent(),
+    Value<String?> gisKpp = const Value.absent(),
+    Value<double?> livingArea = const Value.absent(),
+    Value<double?> heatedArea = const Value.absent(),
+    Value<int?> residentsCount = const Value.absent(),
+    Value<String?> gisPremisesType = const Value.absent(),
+    Value<String?> gisPremisesNumber = const Value.absent(),
+    Value<String?> gisRoomNumber = const Value.absent(),
+    Value<double?> gisPaymentShare = const Value.absent(),
+    Value<String?> gisStatus = const Value.absent(),
     int? id,
   }) => MyAccountDb(
     accountNumber: accountNumber.present
@@ -10852,6 +12625,49 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     phone: phone.present ? phone.value : this.phone,
     serviceType: serviceType.present ? serviceType.value : this.serviceType,
     status: status.present ? status.value : this.status,
+    backendId: backendId.present ? backendId.value : this.backendId,
+    locationId: locationId.present ? locationId.value : this.locationId,
+    cadastralNumber: cadastralNumber.present
+        ? cadastralNumber.value
+        : this.cadastralNumber,
+    roomsCount: roomsCount.present ? roomsCount.value : this.roomsCount,
+    gisEls: gisEls.present ? gisEls.value : this.gisEls,
+    gisAccountType: gisAccountType.present
+        ? gisAccountType.value
+        : this.gisAccountType,
+    gisIsTenant: gisIsTenant.present ? gisIsTenant.value : this.gisIsTenant,
+    gisIsSplit: gisIsSplit.present ? gisIsSplit.value : this.gisIsSplit,
+    gisLastName: gisLastName.present ? gisLastName.value : this.gisLastName,
+    gisFirstName: gisFirstName.present ? gisFirstName.value : this.gisFirstName,
+    gisMiddleName: gisMiddleName.present
+        ? gisMiddleName.value
+        : this.gisMiddleName,
+    gisSnils: gisSnils.present ? gisSnils.value : this.gisSnils,
+    gisDocType: gisDocType.present ? gisDocType.value : this.gisDocType,
+    gisDocNumber: gisDocNumber.present ? gisDocNumber.value : this.gisDocNumber,
+    gisDocSeries: gisDocSeries.present ? gisDocSeries.value : this.gisDocSeries,
+    gisDocDate: gisDocDate.present ? gisDocDate.value : this.gisDocDate,
+    gisOgrn: gisOgrn.present ? gisOgrn.value : this.gisOgrn,
+    gisNza: gisNza.present ? gisNza.value : this.gisNza,
+    gisKpp: gisKpp.present ? gisKpp.value : this.gisKpp,
+    livingArea: livingArea.present ? livingArea.value : this.livingArea,
+    heatedArea: heatedArea.present ? heatedArea.value : this.heatedArea,
+    residentsCount: residentsCount.present
+        ? residentsCount.value
+        : this.residentsCount,
+    gisPremisesType: gisPremisesType.present
+        ? gisPremisesType.value
+        : this.gisPremisesType,
+    gisPremisesNumber: gisPremisesNumber.present
+        ? gisPremisesNumber.value
+        : this.gisPremisesNumber,
+    gisRoomNumber: gisRoomNumber.present
+        ? gisRoomNumber.value
+        : this.gisRoomNumber,
+    gisPaymentShare: gisPaymentShare.present
+        ? gisPaymentShare.value
+        : this.gisPaymentShare,
+    gisStatus: gisStatus.present ? gisStatus.value : this.gisStatus,
     id: id ?? this.id,
   );
   MyAccountDb copyWithCompanion(MyAccountsCompanion data) {
@@ -10876,6 +12692,73 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
           ? data.serviceType.value
           : this.serviceType,
       status: data.status.present ? data.status.value : this.status,
+      backendId: data.backendId.present ? data.backendId.value : this.backendId,
+      locationId: data.locationId.present
+          ? data.locationId.value
+          : this.locationId,
+      cadastralNumber: data.cadastralNumber.present
+          ? data.cadastralNumber.value
+          : this.cadastralNumber,
+      roomsCount: data.roomsCount.present
+          ? data.roomsCount.value
+          : this.roomsCount,
+      gisEls: data.gisEls.present ? data.gisEls.value : this.gisEls,
+      gisAccountType: data.gisAccountType.present
+          ? data.gisAccountType.value
+          : this.gisAccountType,
+      gisIsTenant: data.gisIsTenant.present
+          ? data.gisIsTenant.value
+          : this.gisIsTenant,
+      gisIsSplit: data.gisIsSplit.present
+          ? data.gisIsSplit.value
+          : this.gisIsSplit,
+      gisLastName: data.gisLastName.present
+          ? data.gisLastName.value
+          : this.gisLastName,
+      gisFirstName: data.gisFirstName.present
+          ? data.gisFirstName.value
+          : this.gisFirstName,
+      gisMiddleName: data.gisMiddleName.present
+          ? data.gisMiddleName.value
+          : this.gisMiddleName,
+      gisSnils: data.gisSnils.present ? data.gisSnils.value : this.gisSnils,
+      gisDocType: data.gisDocType.present
+          ? data.gisDocType.value
+          : this.gisDocType,
+      gisDocNumber: data.gisDocNumber.present
+          ? data.gisDocNumber.value
+          : this.gisDocNumber,
+      gisDocSeries: data.gisDocSeries.present
+          ? data.gisDocSeries.value
+          : this.gisDocSeries,
+      gisDocDate: data.gisDocDate.present
+          ? data.gisDocDate.value
+          : this.gisDocDate,
+      gisOgrn: data.gisOgrn.present ? data.gisOgrn.value : this.gisOgrn,
+      gisNza: data.gisNza.present ? data.gisNza.value : this.gisNza,
+      gisKpp: data.gisKpp.present ? data.gisKpp.value : this.gisKpp,
+      livingArea: data.livingArea.present
+          ? data.livingArea.value
+          : this.livingArea,
+      heatedArea: data.heatedArea.present
+          ? data.heatedArea.value
+          : this.heatedArea,
+      residentsCount: data.residentsCount.present
+          ? data.residentsCount.value
+          : this.residentsCount,
+      gisPremisesType: data.gisPremisesType.present
+          ? data.gisPremisesType.value
+          : this.gisPremisesType,
+      gisPremisesNumber: data.gisPremisesNumber.present
+          ? data.gisPremisesNumber.value
+          : this.gisPremisesNumber,
+      gisRoomNumber: data.gisRoomNumber.present
+          ? data.gisRoomNumber.value
+          : this.gisRoomNumber,
+      gisPaymentShare: data.gisPaymentShare.present
+          ? data.gisPaymentShare.value
+          : this.gisPaymentShare,
+      gisStatus: data.gisStatus.present ? data.gisStatus.value : this.gisStatus,
       id: data.id.present ? data.id.value : this.id,
     );
   }
@@ -10895,13 +12778,40 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
           ..write('phone: $phone, ')
           ..write('serviceType: $serviceType, ')
           ..write('status: $status, ')
+          ..write('backendId: $backendId, ')
+          ..write('locationId: $locationId, ')
+          ..write('cadastralNumber: $cadastralNumber, ')
+          ..write('roomsCount: $roomsCount, ')
+          ..write('gisEls: $gisEls, ')
+          ..write('gisAccountType: $gisAccountType, ')
+          ..write('gisIsTenant: $gisIsTenant, ')
+          ..write('gisIsSplit: $gisIsSplit, ')
+          ..write('gisLastName: $gisLastName, ')
+          ..write('gisFirstName: $gisFirstName, ')
+          ..write('gisMiddleName: $gisMiddleName, ')
+          ..write('gisSnils: $gisSnils, ')
+          ..write('gisDocType: $gisDocType, ')
+          ..write('gisDocNumber: $gisDocNumber, ')
+          ..write('gisDocSeries: $gisDocSeries, ')
+          ..write('gisDocDate: $gisDocDate, ')
+          ..write('gisOgrn: $gisOgrn, ')
+          ..write('gisNza: $gisNza, ')
+          ..write('gisKpp: $gisKpp, ')
+          ..write('livingArea: $livingArea, ')
+          ..write('heatedArea: $heatedArea, ')
+          ..write('residentsCount: $residentsCount, ')
+          ..write('gisPremisesType: $gisPremisesType, ')
+          ..write('gisPremisesNumber: $gisPremisesNumber, ')
+          ..write('gisRoomNumber: $gisRoomNumber, ')
+          ..write('gisPaymentShare: $gisPaymentShare, ')
+          ..write('gisStatus: $gisStatus, ')
           ..write('id: $id')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     accountNumber,
     address,
     area,
@@ -10914,8 +12824,35 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     phone,
     serviceType,
     status,
+    backendId,
+    locationId,
+    cadastralNumber,
+    roomsCount,
+    gisEls,
+    gisAccountType,
+    gisIsTenant,
+    gisIsSplit,
+    gisLastName,
+    gisFirstName,
+    gisMiddleName,
+    gisSnils,
+    gisDocType,
+    gisDocNumber,
+    gisDocSeries,
+    gisDocDate,
+    gisOgrn,
+    gisNza,
+    gisKpp,
+    livingArea,
+    heatedArea,
+    residentsCount,
+    gisPremisesType,
+    gisPremisesNumber,
+    gisRoomNumber,
+    gisPaymentShare,
+    gisStatus,
     id,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -10932,6 +12869,33 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
           other.phone == this.phone &&
           other.serviceType == this.serviceType &&
           other.status == this.status &&
+          other.backendId == this.backendId &&
+          other.locationId == this.locationId &&
+          other.cadastralNumber == this.cadastralNumber &&
+          other.roomsCount == this.roomsCount &&
+          other.gisEls == this.gisEls &&
+          other.gisAccountType == this.gisAccountType &&
+          other.gisIsTenant == this.gisIsTenant &&
+          other.gisIsSplit == this.gisIsSplit &&
+          other.gisLastName == this.gisLastName &&
+          other.gisFirstName == this.gisFirstName &&
+          other.gisMiddleName == this.gisMiddleName &&
+          other.gisSnils == this.gisSnils &&
+          other.gisDocType == this.gisDocType &&
+          other.gisDocNumber == this.gisDocNumber &&
+          other.gisDocSeries == this.gisDocSeries &&
+          other.gisDocDate == this.gisDocDate &&
+          other.gisOgrn == this.gisOgrn &&
+          other.gisNza == this.gisNza &&
+          other.gisKpp == this.gisKpp &&
+          other.livingArea == this.livingArea &&
+          other.heatedArea == this.heatedArea &&
+          other.residentsCount == this.residentsCount &&
+          other.gisPremisesType == this.gisPremisesType &&
+          other.gisPremisesNumber == this.gisPremisesNumber &&
+          other.gisRoomNumber == this.gisRoomNumber &&
+          other.gisPaymentShare == this.gisPaymentShare &&
+          other.gisStatus == this.gisStatus &&
           other.id == this.id);
 }
 
@@ -10948,6 +12912,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
   final Value<String?> phone;
   final Value<String?> serviceType;
   final Value<String?> status;
+  final Value<int?> backendId;
+  final Value<int?> locationId;
+  final Value<String?> cadastralNumber;
+  final Value<int?> roomsCount;
+  final Value<String?> gisEls;
+  final Value<String?> gisAccountType;
+  final Value<bool?> gisIsTenant;
+  final Value<bool?> gisIsSplit;
+  final Value<String?> gisLastName;
+  final Value<String?> gisFirstName;
+  final Value<String?> gisMiddleName;
+  final Value<String?> gisSnils;
+  final Value<String?> gisDocType;
+  final Value<String?> gisDocNumber;
+  final Value<String?> gisDocSeries;
+  final Value<String?> gisDocDate;
+  final Value<String?> gisOgrn;
+  final Value<String?> gisNza;
+  final Value<String?> gisKpp;
+  final Value<double?> livingArea;
+  final Value<double?> heatedArea;
+  final Value<int?> residentsCount;
+  final Value<String?> gisPremisesType;
+  final Value<String?> gisPremisesNumber;
+  final Value<String?> gisRoomNumber;
+  final Value<double?> gisPaymentShare;
+  final Value<String?> gisStatus;
   final Value<int> id;
   const MyAccountsCompanion({
     this.accountNumber = const Value.absent(),
@@ -10962,6 +12953,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     this.phone = const Value.absent(),
     this.serviceType = const Value.absent(),
     this.status = const Value.absent(),
+    this.backendId = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.cadastralNumber = const Value.absent(),
+    this.roomsCount = const Value.absent(),
+    this.gisEls = const Value.absent(),
+    this.gisAccountType = const Value.absent(),
+    this.gisIsTenant = const Value.absent(),
+    this.gisIsSplit = const Value.absent(),
+    this.gisLastName = const Value.absent(),
+    this.gisFirstName = const Value.absent(),
+    this.gisMiddleName = const Value.absent(),
+    this.gisSnils = const Value.absent(),
+    this.gisDocType = const Value.absent(),
+    this.gisDocNumber = const Value.absent(),
+    this.gisDocSeries = const Value.absent(),
+    this.gisDocDate = const Value.absent(),
+    this.gisOgrn = const Value.absent(),
+    this.gisNza = const Value.absent(),
+    this.gisKpp = const Value.absent(),
+    this.livingArea = const Value.absent(),
+    this.heatedArea = const Value.absent(),
+    this.residentsCount = const Value.absent(),
+    this.gisPremisesType = const Value.absent(),
+    this.gisPremisesNumber = const Value.absent(),
+    this.gisRoomNumber = const Value.absent(),
+    this.gisPaymentShare = const Value.absent(),
+    this.gisStatus = const Value.absent(),
     this.id = const Value.absent(),
   });
   MyAccountsCompanion.insert({
@@ -10977,6 +12995,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     this.phone = const Value.absent(),
     this.serviceType = const Value.absent(),
     this.status = const Value.absent(),
+    this.backendId = const Value.absent(),
+    this.locationId = const Value.absent(),
+    this.cadastralNumber = const Value.absent(),
+    this.roomsCount = const Value.absent(),
+    this.gisEls = const Value.absent(),
+    this.gisAccountType = const Value.absent(),
+    this.gisIsTenant = const Value.absent(),
+    this.gisIsSplit = const Value.absent(),
+    this.gisLastName = const Value.absent(),
+    this.gisFirstName = const Value.absent(),
+    this.gisMiddleName = const Value.absent(),
+    this.gisSnils = const Value.absent(),
+    this.gisDocType = const Value.absent(),
+    this.gisDocNumber = const Value.absent(),
+    this.gisDocSeries = const Value.absent(),
+    this.gisDocDate = const Value.absent(),
+    this.gisOgrn = const Value.absent(),
+    this.gisNza = const Value.absent(),
+    this.gisKpp = const Value.absent(),
+    this.livingArea = const Value.absent(),
+    this.heatedArea = const Value.absent(),
+    this.residentsCount = const Value.absent(),
+    this.gisPremisesType = const Value.absent(),
+    this.gisPremisesNumber = const Value.absent(),
+    this.gisRoomNumber = const Value.absent(),
+    this.gisPaymentShare = const Value.absent(),
+    this.gisStatus = const Value.absent(),
     this.id = const Value.absent(),
   }) : locationUUID = Value(locationUUID);
   static Insertable<MyAccountDb> custom({
@@ -10992,6 +13037,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     Expression<String>? phone,
     Expression<String>? serviceType,
     Expression<String>? status,
+    Expression<int>? backendId,
+    Expression<int>? locationId,
+    Expression<String>? cadastralNumber,
+    Expression<int>? roomsCount,
+    Expression<String>? gisEls,
+    Expression<String>? gisAccountType,
+    Expression<bool>? gisIsTenant,
+    Expression<bool>? gisIsSplit,
+    Expression<String>? gisLastName,
+    Expression<String>? gisFirstName,
+    Expression<String>? gisMiddleName,
+    Expression<String>? gisSnils,
+    Expression<String>? gisDocType,
+    Expression<String>? gisDocNumber,
+    Expression<String>? gisDocSeries,
+    Expression<String>? gisDocDate,
+    Expression<String>? gisOgrn,
+    Expression<String>? gisNza,
+    Expression<String>? gisKpp,
+    Expression<double>? livingArea,
+    Expression<double>? heatedArea,
+    Expression<int>? residentsCount,
+    Expression<String>? gisPremisesType,
+    Expression<String>? gisPremisesNumber,
+    Expression<String>? gisRoomNumber,
+    Expression<double>? gisPaymentShare,
+    Expression<String>? gisStatus,
     Expression<int>? id,
   }) {
     return RawValuesInsertable({
@@ -11007,6 +13079,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
       if (phone != null) 'phone': phone,
       if (serviceType != null) 'service_type': serviceType,
       if (status != null) 'status': status,
+      if (backendId != null) 'backend_id': backendId,
+      if (locationId != null) 'location_id': locationId,
+      if (cadastralNumber != null) 'cadastral_number': cadastralNumber,
+      if (roomsCount != null) 'rooms_count': roomsCount,
+      if (gisEls != null) 'gis_els': gisEls,
+      if (gisAccountType != null) 'gis_account_type': gisAccountType,
+      if (gisIsTenant != null) 'gis_is_tenant': gisIsTenant,
+      if (gisIsSplit != null) 'gis_is_split': gisIsSplit,
+      if (gisLastName != null) 'gis_last_name': gisLastName,
+      if (gisFirstName != null) 'gis_first_name': gisFirstName,
+      if (gisMiddleName != null) 'gis_middle_name': gisMiddleName,
+      if (gisSnils != null) 'gis_snils': gisSnils,
+      if (gisDocType != null) 'gis_doc_type': gisDocType,
+      if (gisDocNumber != null) 'gis_doc_number': gisDocNumber,
+      if (gisDocSeries != null) 'gis_doc_series': gisDocSeries,
+      if (gisDocDate != null) 'gis_doc_date': gisDocDate,
+      if (gisOgrn != null) 'gis_ogrn': gisOgrn,
+      if (gisNza != null) 'gis_nza': gisNza,
+      if (gisKpp != null) 'gis_kpp': gisKpp,
+      if (livingArea != null) 'living_area': livingArea,
+      if (heatedArea != null) 'heated_area': heatedArea,
+      if (residentsCount != null) 'residents_count': residentsCount,
+      if (gisPremisesType != null) 'gis_premises_type': gisPremisesType,
+      if (gisPremisesNumber != null) 'gis_premises_number': gisPremisesNumber,
+      if (gisRoomNumber != null) 'gis_room_number': gisRoomNumber,
+      if (gisPaymentShare != null) 'gis_payment_share': gisPaymentShare,
+      if (gisStatus != null) 'gis_status': gisStatus,
       if (id != null) 'id': id,
     });
   }
@@ -11024,6 +13123,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     Value<String?>? phone,
     Value<String?>? serviceType,
     Value<String?>? status,
+    Value<int?>? backendId,
+    Value<int?>? locationId,
+    Value<String?>? cadastralNumber,
+    Value<int?>? roomsCount,
+    Value<String?>? gisEls,
+    Value<String?>? gisAccountType,
+    Value<bool?>? gisIsTenant,
+    Value<bool?>? gisIsSplit,
+    Value<String?>? gisLastName,
+    Value<String?>? gisFirstName,
+    Value<String?>? gisMiddleName,
+    Value<String?>? gisSnils,
+    Value<String?>? gisDocType,
+    Value<String?>? gisDocNumber,
+    Value<String?>? gisDocSeries,
+    Value<String?>? gisDocDate,
+    Value<String?>? gisOgrn,
+    Value<String?>? gisNza,
+    Value<String?>? gisKpp,
+    Value<double?>? livingArea,
+    Value<double?>? heatedArea,
+    Value<int?>? residentsCount,
+    Value<String?>? gisPremisesType,
+    Value<String?>? gisPremisesNumber,
+    Value<String?>? gisRoomNumber,
+    Value<double?>? gisPaymentShare,
+    Value<String?>? gisStatus,
     Value<int>? id,
   }) {
     return MyAccountsCompanion(
@@ -11039,6 +13165,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
       phone: phone ?? this.phone,
       serviceType: serviceType ?? this.serviceType,
       status: status ?? this.status,
+      backendId: backendId ?? this.backendId,
+      locationId: locationId ?? this.locationId,
+      cadastralNumber: cadastralNumber ?? this.cadastralNumber,
+      roomsCount: roomsCount ?? this.roomsCount,
+      gisEls: gisEls ?? this.gisEls,
+      gisAccountType: gisAccountType ?? this.gisAccountType,
+      gisIsTenant: gisIsTenant ?? this.gisIsTenant,
+      gisIsSplit: gisIsSplit ?? this.gisIsSplit,
+      gisLastName: gisLastName ?? this.gisLastName,
+      gisFirstName: gisFirstName ?? this.gisFirstName,
+      gisMiddleName: gisMiddleName ?? this.gisMiddleName,
+      gisSnils: gisSnils ?? this.gisSnils,
+      gisDocType: gisDocType ?? this.gisDocType,
+      gisDocNumber: gisDocNumber ?? this.gisDocNumber,
+      gisDocSeries: gisDocSeries ?? this.gisDocSeries,
+      gisDocDate: gisDocDate ?? this.gisDocDate,
+      gisOgrn: gisOgrn ?? this.gisOgrn,
+      gisNza: gisNza ?? this.gisNza,
+      gisKpp: gisKpp ?? this.gisKpp,
+      livingArea: livingArea ?? this.livingArea,
+      heatedArea: heatedArea ?? this.heatedArea,
+      residentsCount: residentsCount ?? this.residentsCount,
+      gisPremisesType: gisPremisesType ?? this.gisPremisesType,
+      gisPremisesNumber: gisPremisesNumber ?? this.gisPremisesNumber,
+      gisRoomNumber: gisRoomNumber ?? this.gisRoomNumber,
+      gisPaymentShare: gisPaymentShare ?? this.gisPaymentShare,
+      gisStatus: gisStatus ?? this.gisStatus,
       id: id ?? this.id,
     );
   }
@@ -11082,6 +13235,87 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (backendId.present) {
+      map['backend_id'] = Variable<int>(backendId.value);
+    }
+    if (locationId.present) {
+      map['location_id'] = Variable<int>(locationId.value);
+    }
+    if (cadastralNumber.present) {
+      map['cadastral_number'] = Variable<String>(cadastralNumber.value);
+    }
+    if (roomsCount.present) {
+      map['rooms_count'] = Variable<int>(roomsCount.value);
+    }
+    if (gisEls.present) {
+      map['gis_els'] = Variable<String>(gisEls.value);
+    }
+    if (gisAccountType.present) {
+      map['gis_account_type'] = Variable<String>(gisAccountType.value);
+    }
+    if (gisIsTenant.present) {
+      map['gis_is_tenant'] = Variable<bool>(gisIsTenant.value);
+    }
+    if (gisIsSplit.present) {
+      map['gis_is_split'] = Variable<bool>(gisIsSplit.value);
+    }
+    if (gisLastName.present) {
+      map['gis_last_name'] = Variable<String>(gisLastName.value);
+    }
+    if (gisFirstName.present) {
+      map['gis_first_name'] = Variable<String>(gisFirstName.value);
+    }
+    if (gisMiddleName.present) {
+      map['gis_middle_name'] = Variable<String>(gisMiddleName.value);
+    }
+    if (gisSnils.present) {
+      map['gis_snils'] = Variable<String>(gisSnils.value);
+    }
+    if (gisDocType.present) {
+      map['gis_doc_type'] = Variable<String>(gisDocType.value);
+    }
+    if (gisDocNumber.present) {
+      map['gis_doc_number'] = Variable<String>(gisDocNumber.value);
+    }
+    if (gisDocSeries.present) {
+      map['gis_doc_series'] = Variable<String>(gisDocSeries.value);
+    }
+    if (gisDocDate.present) {
+      map['gis_doc_date'] = Variable<String>(gisDocDate.value);
+    }
+    if (gisOgrn.present) {
+      map['gis_ogrn'] = Variable<String>(gisOgrn.value);
+    }
+    if (gisNza.present) {
+      map['gis_nza'] = Variable<String>(gisNza.value);
+    }
+    if (gisKpp.present) {
+      map['gis_kpp'] = Variable<String>(gisKpp.value);
+    }
+    if (livingArea.present) {
+      map['living_area'] = Variable<double>(livingArea.value);
+    }
+    if (heatedArea.present) {
+      map['heated_area'] = Variable<double>(heatedArea.value);
+    }
+    if (residentsCount.present) {
+      map['residents_count'] = Variable<int>(residentsCount.value);
+    }
+    if (gisPremisesType.present) {
+      map['gis_premises_type'] = Variable<String>(gisPremisesType.value);
+    }
+    if (gisPremisesNumber.present) {
+      map['gis_premises_number'] = Variable<String>(gisPremisesNumber.value);
+    }
+    if (gisRoomNumber.present) {
+      map['gis_room_number'] = Variable<String>(gisRoomNumber.value);
+    }
+    if (gisPaymentShare.present) {
+      map['gis_payment_share'] = Variable<double>(gisPaymentShare.value);
+    }
+    if (gisStatus.present) {
+      map['gis_status'] = Variable<String>(gisStatus.value);
+    }
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
@@ -11103,6 +13337,33 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
           ..write('phone: $phone, ')
           ..write('serviceType: $serviceType, ')
           ..write('status: $status, ')
+          ..write('backendId: $backendId, ')
+          ..write('locationId: $locationId, ')
+          ..write('cadastralNumber: $cadastralNumber, ')
+          ..write('roomsCount: $roomsCount, ')
+          ..write('gisEls: $gisEls, ')
+          ..write('gisAccountType: $gisAccountType, ')
+          ..write('gisIsTenant: $gisIsTenant, ')
+          ..write('gisIsSplit: $gisIsSplit, ')
+          ..write('gisLastName: $gisLastName, ')
+          ..write('gisFirstName: $gisFirstName, ')
+          ..write('gisMiddleName: $gisMiddleName, ')
+          ..write('gisSnils: $gisSnils, ')
+          ..write('gisDocType: $gisDocType, ')
+          ..write('gisDocNumber: $gisDocNumber, ')
+          ..write('gisDocSeries: $gisDocSeries, ')
+          ..write('gisDocDate: $gisDocDate, ')
+          ..write('gisOgrn: $gisOgrn, ')
+          ..write('gisNza: $gisNza, ')
+          ..write('gisKpp: $gisKpp, ')
+          ..write('livingArea: $livingArea, ')
+          ..write('heatedArea: $heatedArea, ')
+          ..write('residentsCount: $residentsCount, ')
+          ..write('gisPremisesType: $gisPremisesType, ')
+          ..write('gisPremisesNumber: $gisPremisesNumber, ')
+          ..write('gisRoomNumber: $gisRoomNumber, ')
+          ..write('gisPaymentShare: $gisPaymentShare, ')
+          ..write('gisStatus: $gisStatus, ')
           ..write('id: $id')
           ..write(')'))
         .toString();
@@ -17525,6 +19786,21 @@ typedef $$SavedLocationsTableCreateCompanionBuilder =
       Value<int?> yearBuilt,
       Value<String?> managementCompanyName,
       Value<double?> tariff,
+      Value<String?> cadastralNumber,
+      Value<DateTime?> commissioningDate,
+      Value<String?> stoveType,
+      Value<String?> housingType,
+      Value<int?> entrancesCount,
+      Value<String?> gisOktmo,
+      Value<String?> gisState,
+      Value<String?> gisLifecycleStage,
+      Value<int?> undergroundFloors,
+      Value<String?> gisTimezone,
+      Value<bool?> gisCulturalHeritage,
+      Value<bool?> gisFederalProperty,
+      Value<bool?> gisMunicipalProperty,
+      Value<String?> gisHostelType,
+      Value<String?> gisStatus,
       Value<int?> boilerHouseId,
       Value<String?> managementCompanyRefId,
       Value<int> id,
@@ -17551,6 +19827,21 @@ typedef $$SavedLocationsTableUpdateCompanionBuilder =
       Value<int?> yearBuilt,
       Value<String?> managementCompanyName,
       Value<double?> tariff,
+      Value<String?> cadastralNumber,
+      Value<DateTime?> commissioningDate,
+      Value<String?> stoveType,
+      Value<String?> housingType,
+      Value<int?> entrancesCount,
+      Value<String?> gisOktmo,
+      Value<String?> gisState,
+      Value<String?> gisLifecycleStage,
+      Value<int?> undergroundFloors,
+      Value<String?> gisTimezone,
+      Value<bool?> gisCulturalHeritage,
+      Value<bool?> gisFederalProperty,
+      Value<bool?> gisMunicipalProperty,
+      Value<String?> gisHostelType,
+      Value<String?> gisStatus,
       Value<int?> boilerHouseId,
       Value<String?> managementCompanyRefId,
       Value<int> id,
@@ -17766,6 +20057,81 @@ class $$SavedLocationsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get cadastralNumber => $composableBuilder(
+    column: $table.cadastralNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get commissioningDate => $composableBuilder(
+    column: $table.commissioningDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stoveType => $composableBuilder(
+    column: $table.stoveType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get housingType => $composableBuilder(
+    column: $table.housingType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get entrancesCount => $composableBuilder(
+    column: $table.entrancesCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisOktmo => $composableBuilder(
+    column: $table.gisOktmo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisState => $composableBuilder(
+    column: $table.gisState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisLifecycleStage => $composableBuilder(
+    column: $table.gisLifecycleStage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get undergroundFloors => $composableBuilder(
+    column: $table.undergroundFloors,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisTimezone => $composableBuilder(
+    column: $table.gisTimezone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gisCulturalHeritage => $composableBuilder(
+    column: $table.gisCulturalHeritage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gisFederalProperty => $composableBuilder(
+    column: $table.gisFederalProperty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gisMunicipalProperty => $composableBuilder(
+    column: $table.gisMunicipalProperty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisHostelType => $composableBuilder(
+    column: $table.gisHostelType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisStatus => $composableBuilder(
+    column: $table.gisStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -17977,6 +20343,81 @@ class $$SavedLocationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get cadastralNumber => $composableBuilder(
+    column: $table.cadastralNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get commissioningDate => $composableBuilder(
+    column: $table.commissioningDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stoveType => $composableBuilder(
+    column: $table.stoveType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get housingType => $composableBuilder(
+    column: $table.housingType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get entrancesCount => $composableBuilder(
+    column: $table.entrancesCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisOktmo => $composableBuilder(
+    column: $table.gisOktmo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisState => $composableBuilder(
+    column: $table.gisState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisLifecycleStage => $composableBuilder(
+    column: $table.gisLifecycleStage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get undergroundFloors => $composableBuilder(
+    column: $table.undergroundFloors,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisTimezone => $composableBuilder(
+    column: $table.gisTimezone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gisCulturalHeritage => $composableBuilder(
+    column: $table.gisCulturalHeritage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gisFederalProperty => $composableBuilder(
+    column: $table.gisFederalProperty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gisMunicipalProperty => $composableBuilder(
+    column: $table.gisMunicipalProperty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisHostelType => $composableBuilder(
+    column: $table.gisHostelType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisStatus => $composableBuilder(
+    column: $table.gisStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -18114,6 +20555,73 @@ class $$SavedLocationsTableAnnotationComposer
 
   GeneratedColumn<double> get tariff =>
       $composableBuilder(column: $table.tariff, builder: (column) => column);
+
+  GeneratedColumn<String> get cadastralNumber => $composableBuilder(
+    column: $table.cadastralNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get commissioningDate => $composableBuilder(
+    column: $table.commissioningDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get stoveType =>
+      $composableBuilder(column: $table.stoveType, builder: (column) => column);
+
+  GeneratedColumn<String> get housingType => $composableBuilder(
+    column: $table.housingType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get entrancesCount => $composableBuilder(
+    column: $table.entrancesCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisOktmo =>
+      $composableBuilder(column: $table.gisOktmo, builder: (column) => column);
+
+  GeneratedColumn<String> get gisState =>
+      $composableBuilder(column: $table.gisState, builder: (column) => column);
+
+  GeneratedColumn<String> get gisLifecycleStage => $composableBuilder(
+    column: $table.gisLifecycleStage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get undergroundFloors => $composableBuilder(
+    column: $table.undergroundFloors,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisTimezone => $composableBuilder(
+    column: $table.gisTimezone,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get gisCulturalHeritage => $composableBuilder(
+    column: $table.gisCulturalHeritage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get gisFederalProperty => $composableBuilder(
+    column: $table.gisFederalProperty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get gisMunicipalProperty => $composableBuilder(
+    column: $table.gisMunicipalProperty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisHostelType => $composableBuilder(
+    column: $table.gisHostelType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisStatus =>
+      $composableBuilder(column: $table.gisStatus, builder: (column) => column);
 
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
@@ -18271,6 +20779,21 @@ class $$SavedLocationsTableTableManager
                 Value<int?> yearBuilt = const Value.absent(),
                 Value<String?> managementCompanyName = const Value.absent(),
                 Value<double?> tariff = const Value.absent(),
+                Value<String?> cadastralNumber = const Value.absent(),
+                Value<DateTime?> commissioningDate = const Value.absent(),
+                Value<String?> stoveType = const Value.absent(),
+                Value<String?> housingType = const Value.absent(),
+                Value<int?> entrancesCount = const Value.absent(),
+                Value<String?> gisOktmo = const Value.absent(),
+                Value<String?> gisState = const Value.absent(),
+                Value<String?> gisLifecycleStage = const Value.absent(),
+                Value<int?> undergroundFloors = const Value.absent(),
+                Value<String?> gisTimezone = const Value.absent(),
+                Value<bool?> gisCulturalHeritage = const Value.absent(),
+                Value<bool?> gisFederalProperty = const Value.absent(),
+                Value<bool?> gisMunicipalProperty = const Value.absent(),
+                Value<String?> gisHostelType = const Value.absent(),
+                Value<String?> gisStatus = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
                 Value<String?> managementCompanyRefId = const Value.absent(),
                 Value<int> id = const Value.absent(),
@@ -18295,6 +20818,21 @@ class $$SavedLocationsTableTableManager
                 yearBuilt: yearBuilt,
                 managementCompanyName: managementCompanyName,
                 tariff: tariff,
+                cadastralNumber: cadastralNumber,
+                commissioningDate: commissioningDate,
+                stoveType: stoveType,
+                housingType: housingType,
+                entrancesCount: entrancesCount,
+                gisOktmo: gisOktmo,
+                gisState: gisState,
+                gisLifecycleStage: gisLifecycleStage,
+                undergroundFloors: undergroundFloors,
+                gisTimezone: gisTimezone,
+                gisCulturalHeritage: gisCulturalHeritage,
+                gisFederalProperty: gisFederalProperty,
+                gisMunicipalProperty: gisMunicipalProperty,
+                gisHostelType: gisHostelType,
+                gisStatus: gisStatus,
                 boilerHouseId: boilerHouseId,
                 managementCompanyRefId: managementCompanyRefId,
                 id: id,
@@ -18321,6 +20859,21 @@ class $$SavedLocationsTableTableManager
                 Value<int?> yearBuilt = const Value.absent(),
                 Value<String?> managementCompanyName = const Value.absent(),
                 Value<double?> tariff = const Value.absent(),
+                Value<String?> cadastralNumber = const Value.absent(),
+                Value<DateTime?> commissioningDate = const Value.absent(),
+                Value<String?> stoveType = const Value.absent(),
+                Value<String?> housingType = const Value.absent(),
+                Value<int?> entrancesCount = const Value.absent(),
+                Value<String?> gisOktmo = const Value.absent(),
+                Value<String?> gisState = const Value.absent(),
+                Value<String?> gisLifecycleStage = const Value.absent(),
+                Value<int?> undergroundFloors = const Value.absent(),
+                Value<String?> gisTimezone = const Value.absent(),
+                Value<bool?> gisCulturalHeritage = const Value.absent(),
+                Value<bool?> gisFederalProperty = const Value.absent(),
+                Value<bool?> gisMunicipalProperty = const Value.absent(),
+                Value<String?> gisHostelType = const Value.absent(),
+                Value<String?> gisStatus = const Value.absent(),
                 Value<int?> boilerHouseId = const Value.absent(),
                 Value<String?> managementCompanyRefId = const Value.absent(),
                 Value<int> id = const Value.absent(),
@@ -18345,6 +20898,21 @@ class $$SavedLocationsTableTableManager
                 yearBuilt: yearBuilt,
                 managementCompanyName: managementCompanyName,
                 tariff: tariff,
+                cadastralNumber: cadastralNumber,
+                commissioningDate: commissioningDate,
+                stoveType: stoveType,
+                housingType: housingType,
+                entrancesCount: entrancesCount,
+                gisOktmo: gisOktmo,
+                gisState: gisState,
+                gisLifecycleStage: gisLifecycleStage,
+                undergroundFloors: undergroundFloors,
+                gisTimezone: gisTimezone,
+                gisCulturalHeritage: gisCulturalHeritage,
+                gisFederalProperty: gisFederalProperty,
+                gisMunicipalProperty: gisMunicipalProperty,
+                gisHostelType: gisHostelType,
+                gisStatus: gisStatus,
                 boilerHouseId: boilerHouseId,
                 managementCompanyRefId: managementCompanyRefId,
                 id: id,
@@ -21230,6 +23798,33 @@ typedef $$MyAccountsTableCreateCompanionBuilder =
       Value<String?> phone,
       Value<String?> serviceType,
       Value<String?> status,
+      Value<int?> backendId,
+      Value<int?> locationId,
+      Value<String?> cadastralNumber,
+      Value<int?> roomsCount,
+      Value<String?> gisEls,
+      Value<String?> gisAccountType,
+      Value<bool?> gisIsTenant,
+      Value<bool?> gisIsSplit,
+      Value<String?> gisLastName,
+      Value<String?> gisFirstName,
+      Value<String?> gisMiddleName,
+      Value<String?> gisSnils,
+      Value<String?> gisDocType,
+      Value<String?> gisDocNumber,
+      Value<String?> gisDocSeries,
+      Value<String?> gisDocDate,
+      Value<String?> gisOgrn,
+      Value<String?> gisNza,
+      Value<String?> gisKpp,
+      Value<double?> livingArea,
+      Value<double?> heatedArea,
+      Value<int?> residentsCount,
+      Value<String?> gisPremisesType,
+      Value<String?> gisPremisesNumber,
+      Value<String?> gisRoomNumber,
+      Value<double?> gisPaymentShare,
+      Value<String?> gisStatus,
       Value<int> id,
     });
 typedef $$MyAccountsTableUpdateCompanionBuilder =
@@ -21246,6 +23841,33 @@ typedef $$MyAccountsTableUpdateCompanionBuilder =
       Value<String?> phone,
       Value<String?> serviceType,
       Value<String?> status,
+      Value<int?> backendId,
+      Value<int?> locationId,
+      Value<String?> cadastralNumber,
+      Value<int?> roomsCount,
+      Value<String?> gisEls,
+      Value<String?> gisAccountType,
+      Value<bool?> gisIsTenant,
+      Value<bool?> gisIsSplit,
+      Value<String?> gisLastName,
+      Value<String?> gisFirstName,
+      Value<String?> gisMiddleName,
+      Value<String?> gisSnils,
+      Value<String?> gisDocType,
+      Value<String?> gisDocNumber,
+      Value<String?> gisDocSeries,
+      Value<String?> gisDocDate,
+      Value<String?> gisOgrn,
+      Value<String?> gisNza,
+      Value<String?> gisKpp,
+      Value<double?> livingArea,
+      Value<double?> heatedArea,
+      Value<int?> residentsCount,
+      Value<String?> gisPremisesType,
+      Value<String?> gisPremisesNumber,
+      Value<String?> gisRoomNumber,
+      Value<double?> gisPaymentShare,
+      Value<String?> gisStatus,
       Value<int> id,
     });
 
@@ -21315,6 +23937,141 @@ class $$MyAccountsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get backendId => $composableBuilder(
+    column: $table.backendId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cadastralNumber => $composableBuilder(
+    column: $table.cadastralNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get roomsCount => $composableBuilder(
+    column: $table.roomsCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisEls => $composableBuilder(
+    column: $table.gisEls,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisAccountType => $composableBuilder(
+    column: $table.gisAccountType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gisIsTenant => $composableBuilder(
+    column: $table.gisIsTenant,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gisIsSplit => $composableBuilder(
+    column: $table.gisIsSplit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisLastName => $composableBuilder(
+    column: $table.gisLastName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisFirstName => $composableBuilder(
+    column: $table.gisFirstName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisMiddleName => $composableBuilder(
+    column: $table.gisMiddleName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisSnils => $composableBuilder(
+    column: $table.gisSnils,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisDocType => $composableBuilder(
+    column: $table.gisDocType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisDocNumber => $composableBuilder(
+    column: $table.gisDocNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisDocSeries => $composableBuilder(
+    column: $table.gisDocSeries,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisDocDate => $composableBuilder(
+    column: $table.gisDocDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisOgrn => $composableBuilder(
+    column: $table.gisOgrn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisNza => $composableBuilder(
+    column: $table.gisNza,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisKpp => $composableBuilder(
+    column: $table.gisKpp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get livingArea => $composableBuilder(
+    column: $table.livingArea,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get heatedArea => $composableBuilder(
+    column: $table.heatedArea,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get residentsCount => $composableBuilder(
+    column: $table.residentsCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisPremisesType => $composableBuilder(
+    column: $table.gisPremisesType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisPremisesNumber => $composableBuilder(
+    column: $table.gisPremisesNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisRoomNumber => $composableBuilder(
+    column: $table.gisRoomNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get gisPaymentShare => $composableBuilder(
+    column: $table.gisPaymentShare,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisStatus => $composableBuilder(
+    column: $table.gisStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21393,6 +24150,141 @@ class $$MyAccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get backendId => $composableBuilder(
+    column: $table.backendId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cadastralNumber => $composableBuilder(
+    column: $table.cadastralNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get roomsCount => $composableBuilder(
+    column: $table.roomsCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisEls => $composableBuilder(
+    column: $table.gisEls,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisAccountType => $composableBuilder(
+    column: $table.gisAccountType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gisIsTenant => $composableBuilder(
+    column: $table.gisIsTenant,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gisIsSplit => $composableBuilder(
+    column: $table.gisIsSplit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisLastName => $composableBuilder(
+    column: $table.gisLastName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisFirstName => $composableBuilder(
+    column: $table.gisFirstName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisMiddleName => $composableBuilder(
+    column: $table.gisMiddleName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisSnils => $composableBuilder(
+    column: $table.gisSnils,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisDocType => $composableBuilder(
+    column: $table.gisDocType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisDocNumber => $composableBuilder(
+    column: $table.gisDocNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisDocSeries => $composableBuilder(
+    column: $table.gisDocSeries,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisDocDate => $composableBuilder(
+    column: $table.gisDocDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisOgrn => $composableBuilder(
+    column: $table.gisOgrn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisNza => $composableBuilder(
+    column: $table.gisNza,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisKpp => $composableBuilder(
+    column: $table.gisKpp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get livingArea => $composableBuilder(
+    column: $table.livingArea,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get heatedArea => $composableBuilder(
+    column: $table.heatedArea,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get residentsCount => $composableBuilder(
+    column: $table.residentsCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisPremisesType => $composableBuilder(
+    column: $table.gisPremisesType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisPremisesNumber => $composableBuilder(
+    column: $table.gisPremisesNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisRoomNumber => $composableBuilder(
+    column: $table.gisRoomNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get gisPaymentShare => $composableBuilder(
+    column: $table.gisPaymentShare,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisStatus => $composableBuilder(
+    column: $table.gisStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -21452,6 +24344,127 @@ class $$MyAccountsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumn<int> get backendId =>
+      $composableBuilder(column: $table.backendId, builder: (column) => column);
+
+  GeneratedColumn<int> get locationId => $composableBuilder(
+    column: $table.locationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cadastralNumber => $composableBuilder(
+    column: $table.cadastralNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get roomsCount => $composableBuilder(
+    column: $table.roomsCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisEls =>
+      $composableBuilder(column: $table.gisEls, builder: (column) => column);
+
+  GeneratedColumn<String> get gisAccountType => $composableBuilder(
+    column: $table.gisAccountType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get gisIsTenant => $composableBuilder(
+    column: $table.gisIsTenant,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get gisIsSplit => $composableBuilder(
+    column: $table.gisIsSplit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisLastName => $composableBuilder(
+    column: $table.gisLastName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisFirstName => $composableBuilder(
+    column: $table.gisFirstName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisMiddleName => $composableBuilder(
+    column: $table.gisMiddleName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisSnils =>
+      $composableBuilder(column: $table.gisSnils, builder: (column) => column);
+
+  GeneratedColumn<String> get gisDocType => $composableBuilder(
+    column: $table.gisDocType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisDocNumber => $composableBuilder(
+    column: $table.gisDocNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisDocSeries => $composableBuilder(
+    column: $table.gisDocSeries,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisDocDate => $composableBuilder(
+    column: $table.gisDocDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisOgrn =>
+      $composableBuilder(column: $table.gisOgrn, builder: (column) => column);
+
+  GeneratedColumn<String> get gisNza =>
+      $composableBuilder(column: $table.gisNza, builder: (column) => column);
+
+  GeneratedColumn<String> get gisKpp =>
+      $composableBuilder(column: $table.gisKpp, builder: (column) => column);
+
+  GeneratedColumn<double> get livingArea => $composableBuilder(
+    column: $table.livingArea,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get heatedArea => $composableBuilder(
+    column: $table.heatedArea,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get residentsCount => $composableBuilder(
+    column: $table.residentsCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisPremisesType => $composableBuilder(
+    column: $table.gisPremisesType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisPremisesNumber => $composableBuilder(
+    column: $table.gisPremisesNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisRoomNumber => $composableBuilder(
+    column: $table.gisRoomNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get gisPaymentShare => $composableBuilder(
+    column: $table.gisPaymentShare,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisStatus =>
+      $composableBuilder(column: $table.gisStatus, builder: (column) => column);
+
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 }
@@ -21499,6 +24512,33 @@ class $$MyAccountsTableTableManager
                 Value<String?> phone = const Value.absent(),
                 Value<String?> serviceType = const Value.absent(),
                 Value<String?> status = const Value.absent(),
+                Value<int?> backendId = const Value.absent(),
+                Value<int?> locationId = const Value.absent(),
+                Value<String?> cadastralNumber = const Value.absent(),
+                Value<int?> roomsCount = const Value.absent(),
+                Value<String?> gisEls = const Value.absent(),
+                Value<String?> gisAccountType = const Value.absent(),
+                Value<bool?> gisIsTenant = const Value.absent(),
+                Value<bool?> gisIsSplit = const Value.absent(),
+                Value<String?> gisLastName = const Value.absent(),
+                Value<String?> gisFirstName = const Value.absent(),
+                Value<String?> gisMiddleName = const Value.absent(),
+                Value<String?> gisSnils = const Value.absent(),
+                Value<String?> gisDocType = const Value.absent(),
+                Value<String?> gisDocNumber = const Value.absent(),
+                Value<String?> gisDocSeries = const Value.absent(),
+                Value<String?> gisDocDate = const Value.absent(),
+                Value<String?> gisOgrn = const Value.absent(),
+                Value<String?> gisNza = const Value.absent(),
+                Value<String?> gisKpp = const Value.absent(),
+                Value<double?> livingArea = const Value.absent(),
+                Value<double?> heatedArea = const Value.absent(),
+                Value<int?> residentsCount = const Value.absent(),
+                Value<String?> gisPremisesType = const Value.absent(),
+                Value<String?> gisPremisesNumber = const Value.absent(),
+                Value<String?> gisRoomNumber = const Value.absent(),
+                Value<double?> gisPaymentShare = const Value.absent(),
+                Value<String?> gisStatus = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => MyAccountsCompanion(
                 accountNumber: accountNumber,
@@ -21513,6 +24553,33 @@ class $$MyAccountsTableTableManager
                 phone: phone,
                 serviceType: serviceType,
                 status: status,
+                backendId: backendId,
+                locationId: locationId,
+                cadastralNumber: cadastralNumber,
+                roomsCount: roomsCount,
+                gisEls: gisEls,
+                gisAccountType: gisAccountType,
+                gisIsTenant: gisIsTenant,
+                gisIsSplit: gisIsSplit,
+                gisLastName: gisLastName,
+                gisFirstName: gisFirstName,
+                gisMiddleName: gisMiddleName,
+                gisSnils: gisSnils,
+                gisDocType: gisDocType,
+                gisDocNumber: gisDocNumber,
+                gisDocSeries: gisDocSeries,
+                gisDocDate: gisDocDate,
+                gisOgrn: gisOgrn,
+                gisNza: gisNza,
+                gisKpp: gisKpp,
+                livingArea: livingArea,
+                heatedArea: heatedArea,
+                residentsCount: residentsCount,
+                gisPremisesType: gisPremisesType,
+                gisPremisesNumber: gisPremisesNumber,
+                gisRoomNumber: gisRoomNumber,
+                gisPaymentShare: gisPaymentShare,
+                gisStatus: gisStatus,
                 id: id,
               ),
           createCompanionCallback:
@@ -21529,6 +24596,33 @@ class $$MyAccountsTableTableManager
                 Value<String?> phone = const Value.absent(),
                 Value<String?> serviceType = const Value.absent(),
                 Value<String?> status = const Value.absent(),
+                Value<int?> backendId = const Value.absent(),
+                Value<int?> locationId = const Value.absent(),
+                Value<String?> cadastralNumber = const Value.absent(),
+                Value<int?> roomsCount = const Value.absent(),
+                Value<String?> gisEls = const Value.absent(),
+                Value<String?> gisAccountType = const Value.absent(),
+                Value<bool?> gisIsTenant = const Value.absent(),
+                Value<bool?> gisIsSplit = const Value.absent(),
+                Value<String?> gisLastName = const Value.absent(),
+                Value<String?> gisFirstName = const Value.absent(),
+                Value<String?> gisMiddleName = const Value.absent(),
+                Value<String?> gisSnils = const Value.absent(),
+                Value<String?> gisDocType = const Value.absent(),
+                Value<String?> gisDocNumber = const Value.absent(),
+                Value<String?> gisDocSeries = const Value.absent(),
+                Value<String?> gisDocDate = const Value.absent(),
+                Value<String?> gisOgrn = const Value.absent(),
+                Value<String?> gisNza = const Value.absent(),
+                Value<String?> gisKpp = const Value.absent(),
+                Value<double?> livingArea = const Value.absent(),
+                Value<double?> heatedArea = const Value.absent(),
+                Value<int?> residentsCount = const Value.absent(),
+                Value<String?> gisPremisesType = const Value.absent(),
+                Value<String?> gisPremisesNumber = const Value.absent(),
+                Value<String?> gisRoomNumber = const Value.absent(),
+                Value<double?> gisPaymentShare = const Value.absent(),
+                Value<String?> gisStatus = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => MyAccountsCompanion.insert(
                 accountNumber: accountNumber,
@@ -21543,6 +24637,33 @@ class $$MyAccountsTableTableManager
                 phone: phone,
                 serviceType: serviceType,
                 status: status,
+                backendId: backendId,
+                locationId: locationId,
+                cadastralNumber: cadastralNumber,
+                roomsCount: roomsCount,
+                gisEls: gisEls,
+                gisAccountType: gisAccountType,
+                gisIsTenant: gisIsTenant,
+                gisIsSplit: gisIsSplit,
+                gisLastName: gisLastName,
+                gisFirstName: gisFirstName,
+                gisMiddleName: gisMiddleName,
+                gisSnils: gisSnils,
+                gisDocType: gisDocType,
+                gisDocNumber: gisDocNumber,
+                gisDocSeries: gisDocSeries,
+                gisDocDate: gisDocDate,
+                gisOgrn: gisOgrn,
+                gisNza: gisNza,
+                gisKpp: gisKpp,
+                livingArea: livingArea,
+                heatedArea: heatedArea,
+                residentsCount: residentsCount,
+                gisPremisesType: gisPremisesType,
+                gisPremisesNumber: gisPremisesNumber,
+                gisRoomNumber: gisRoomNumber,
+                gisPaymentShare: gisPaymentShare,
+                gisStatus: gisStatus,
                 id: id,
               ),
           withReferenceMapper: (p0) => p0

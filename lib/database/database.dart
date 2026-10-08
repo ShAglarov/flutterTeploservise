@@ -275,6 +275,36 @@ class MyAccounts extends Table {
   TextColumn get serviceType => text().nullable()();
   TextColumn get status => text().nullable()();
 
+  // Поля ГИС ЖКХ и характеристики помещения — по той же причине, что и
+  // у домов: без них введённое вручную не возвращалось в карточку.
+  IntColumn get backendId => integer().nullable()();
+  IntColumn get locationId => integer().nullable()();
+  TextColumn get cadastralNumber => text().nullable()();
+  IntColumn get roomsCount => integer().nullable()();
+  TextColumn get gisEls => text().nullable()();
+  TextColumn get gisAccountType => text().nullable()();
+  BoolColumn get gisIsTenant => boolean().nullable()();
+  BoolColumn get gisIsSplit => boolean().nullable()();
+  TextColumn get gisLastName => text().nullable()();
+  TextColumn get gisFirstName => text().nullable()();
+  TextColumn get gisMiddleName => text().nullable()();
+  TextColumn get gisSnils => text().nullable()();
+  TextColumn get gisDocType => text().nullable()();
+  TextColumn get gisDocNumber => text().nullable()();
+  TextColumn get gisDocSeries => text().nullable()();
+  TextColumn get gisDocDate => text().nullable()();
+  TextColumn get gisOgrn => text().nullable()();
+  TextColumn get gisNza => text().nullable()();
+  TextColumn get gisKpp => text().nullable()();
+  RealColumn get livingArea => real().nullable()();
+  RealColumn get heatedArea => real().nullable()();
+  IntColumn get residentsCount => integer().nullable()();
+  TextColumn get gisPremisesType => text().nullable()();
+  TextColumn get gisPremisesNumber => text().nullable()();
+  TextColumn get gisRoomNumber => text().nullable()();
+  RealColumn get gisPaymentShare => real().nullable()();
+  TextColumn get gisStatus => text().nullable()();
+
   // We add an auto id to serve as simple PK. The unique constraint is on (locationUUID, accountNumber)
   IntColumn get id => integer().autoIncrement()();
 }
@@ -314,6 +344,27 @@ class SavedLocations extends Table {
   IntColumn get yearBuilt => integer().nullable().withDefault(const Constant(0))();
   TextColumn get managementCompanyName => text().nullable()();
   RealColumn get tariff => real().nullable()();
+
+  // Характеристики дома и поля ГИС ЖКХ.
+  //
+  // Без них введённое в карточке дома пропадало с экрана: форма читает
+  // дом из локального кэша, а в кэше этих колонок не было — сервер
+  // сохранял значения, но обратно они не приходили.
+  TextColumn get cadastralNumber => text().nullable()();
+  DateTimeColumn get commissioningDate => dateTime().nullable()();
+  TextColumn get stoveType => text().nullable()();
+  TextColumn get housingType => text().nullable()();
+  IntColumn get entrancesCount => integer().nullable()();
+  TextColumn get gisOktmo => text().nullable()();
+  TextColumn get gisState => text().nullable()();
+  TextColumn get gisLifecycleStage => text().nullable()();
+  IntColumn get undergroundFloors => integer().nullable()();
+  TextColumn get gisTimezone => text().nullable()();
+  BoolColumn get gisCulturalHeritage => boolean().nullable()();
+  BoolColumn get gisFederalProperty => boolean().nullable()();
+  BoolColumn get gisMunicipalProperty => boolean().nullable()();
+  TextColumn get gisHostelType => text().nullable()();
+  TextColumn get gisStatus => text().nullable()();
 
   // Relationships
   IntColumn get boilerHouseId => integer().nullable().references(BoilerHouses, #backendId)();
@@ -443,7 +494,7 @@ class AppDatabase extends _$AppDatabase {
   // 15: добавлены индексы affected_houses_incident_id и
   // incident_photos_incident_id. Бамп нужен, чтобы уже установленные копии
   // прошли onUpgrade и пересоздали схему с индексами.
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

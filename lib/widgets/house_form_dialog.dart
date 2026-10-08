@@ -9,6 +9,7 @@ import '../services/location_service.dart';
 import '../services/user_service.dart';
 import '../services/base_api_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/gis_dictionaries.dart';
 import '../providers/offline_edit_permission.dart';
 import 'house_selection_dialog.dart';
 import 'management_company_selection_dialog.dart';
@@ -511,20 +512,28 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                         _buildInputRow(Icons.tag, Colors.teal, 'ОКТМО',
                             _gisOktmoController, hint: '82701000'),
                         _buildDivider(),
-                        _buildInputRow(Icons.health_and_safety, Colors.green,
-                            'Состояние', _gisStateController, hint: 'Исправный'),
+                        // Справочные поля — выпадающими списками: портал
+                        // сверяет текст дословно, и опечатка в «Исправный»
+                        // приводит к отказу при загрузке файла.
+                        _buildGisPicker(
+                          Icons.health_and_safety, Colors.green, 'Состояние',
+                          _gisStateController.text,
+                          gisStates,
+                          (v) => setState(() => _gisStateController.text = v ?? ''),
+                        ),
                         _buildDivider(),
-                        _buildInputRow(Icons.timeline, Colors.blue,
-                            'Стадия жизненного цикла', _gisLifecycleController,
-                            hint: 'Эксплуатируется'),
+                        _buildGisPicker(
+                          Icons.timeline, Colors.blue, 'Стадия жизненного цикла',
+                          _gisLifecycleController.text,
+                          gisLifecycleStages,
+                          (v) => setState(() => _gisLifecycleController.text = v ?? ''),
+                        ),
                         _buildDivider(),
                         _buildInputRow(Icons.stairs, Colors.brown,
                             'Подземных этажей', _gisUndergroundController,
                             hint: '0', keyboardType: TextInputType.number),
                         _buildDivider(),
-                        _buildInputRow(Icons.schedule, Colors.deepPurple,
-                            'Часовая зона', _gisTimezoneController,
-                            hint: 'Europe/Moscow'),
+                        _buildTimezonePicker(),
                         _buildDivider(),
                         _buildTristateRow(Icons.account_balance, Colors.amber,
                             'Культурное наследие', _gisCulturalHeritage,
@@ -538,9 +547,13 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                             'Муниципальная собственность', _gisMunicipalProperty,
                             (v) => setState(() => _gisMunicipalProperty = v)),
                         _buildDivider(),
-                        _buildInputRow(Icons.apartment, Colors.orange,
-                            'Тип общежития', _gisHostelTypeController,
-                            hint: 'не заполнять, если не общежитие'),
+                        _buildGisPicker(
+                          Icons.apartment, Colors.orange, 'Тип общежития',
+                          _gisHostelTypeController.text,
+                          gisHostelTypes,
+                          (v) => setState(() => _gisHostelTypeController.text = v ?? ''),
+                          emptyLabel: 'не общежитие',
+                        ),
                         if (_gisStatus != null && _gisStatus!.isNotEmpty) ...[
                           _buildDivider(),
                           // Статус приходит от портала после загрузки файла,
@@ -691,6 +704,82 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   /// вещи, портал на пустой строке в коде ОКТМО ругается.
   String? _textOrNull(TextEditingController c) =>
       c.text.trim().isEmpty ? null : c.text.trim();
+
+  /// Выбор значения из справочника ГИС.
+  ///
+  /// Показываем диалогом, а не DropdownButton: некоторые значения длинные
+  /// («Капитальный ремонт без отселения»), и в узкой строке формы они
+  /// обрезались бы до неузнаваемости.
+  Widget _buildGisPicker(
+    IconData icon,
+    Color iconColor,
+    String label,
+    String current,
+    List<String> options,
+    ValueChanged<String?> onChanged, {
+    String emptyLabel = 'Не указано',
+  }) {
+    return _buildActionRow(
+      icon,
+      iconColor,
+      label,
+      current.isEmpty ? emptyLabel : current,
+      onTap: () async {
+        final result = await showDialog<String>(
+          context: context,
+          builder: (ctx) => SimpleDialog(
+            title: Text(label),
+            children: [
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, ''),
+                child: Text(emptyLabel,
+                    style: const TextStyle(fontStyle: FontStyle.italic)),
+              ),
+              ...options.map((o) => SimpleDialogOption(
+                    onPressed: () => Navigator.pop(ctx, o),
+                    child: Text(o),
+                  )),
+            ],
+          ),
+        );
+        if (result != null) onChanged(result);
+      },
+    );
+  }
+
+  /// Часовая зона: выбираем по городу, в портал уходит идентификатор Olson.
+  Widget _buildTimezonePicker() {
+    final current = _gisTimezoneController.text;
+    final match = gisTimezones.where((z) => z.id == current).firstOrNull;
+    return _buildActionRow(
+      Icons.schedule,
+      Colors.deepPurple,
+      'Часовая зона',
+      match?.label ?? (current.isEmpty ? 'Не указано' : current),
+      onTap: () async {
+        final result = await showDialog<String>(
+          context: context,
+          builder: (ctx) => SimpleDialog(
+            title: const Text('Часовая зона по Olson'),
+            children: [
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, ''),
+                child: const Text('Не указано',
+                    style: TextStyle(fontStyle: FontStyle.italic)),
+              ),
+              ...gisTimezones.map((z) => SimpleDialogOption(
+                    onPressed: () => Navigator.pop(ctx, z.id),
+                    child: Text(z.label),
+                  )),
+            ],
+          ),
+        );
+        if (result != null) {
+          setState(() => _gisTimezoneController.text = result);
+        }
+      },
+    );
+  }
 
   /// Переключатель на три состояния: не указано / Да / Нет.
   Widget _buildTristateRow(

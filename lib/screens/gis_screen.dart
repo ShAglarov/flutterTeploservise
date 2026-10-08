@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -39,32 +37,31 @@ class _GisScreenState extends ConsumerState<GisScreen> {
     setState(() => _busyKind = 'export_$kind');
     try {
       final service = ref.read(gisServiceProvider);
-      final File file;
+      final GisExportResult result;
       switch (kind) {
         case 'mkd':
-          file = await service.exportHouses();
+          result = await service.exportHouses();
           break;
         case 'ls':
-          file = await service.exportAccounts();
+          result = await service.exportAccounts();
           break;
         case 'pd':
-          file = await service.exportPaymentDocuments(period: _pdPeriod);
+          result = await service.exportPaymentDocuments(period: _pdPeriod);
           break;
         case 'kvit':
-          file = await service.exportAcknowledgments();
+          result = await service.exportAcknowledgments();
           break;
         default:
           return;
       }
 
       await FileExportHelper.exportFile(
-        sourceFile: file,
-        fileName: file.uri.pathSegments.last,
+        sourceFile: result.file,
+        fileName: result.file.uri.pathSegments.last,
         mimeType: _mime,
         subject: title,
       );
-      _toast('Файл готов. Загрузите его в личном кабинете ГИС ЖКХ.',
-          AppTheme.successGreen);
+      if (mounted) await _showExportResult(title, result);
     } catch (e) {
       _toast(_errorText(e), AppTheme.errorRed);
     } finally {
@@ -72,13 +69,71 @@ class _GisScreenState extends ConsumerState<GisScreen> {
     }
   }
 
+  /// Показывает, что попало в файл и чего не хватило.
+  ///
+  /// Раньше шаблон выгружался молча, и пустой файл выглядел как
+  /// неработающая выгрузка. На деле запись без ключевого идентификатора
+  /// (ФИАС у дома, идентификатор ЖКУ у лицевого счёта) портал не примет,
+  /// и её нужно сначала дозаполнить.
+  Future<void> _showExportResult(String title, GisExportResult r) async {
+    if (!r.hasStats) {
+      _toast('Файл готов. Загрузите его в личном кабинете ГИС ЖКХ.',
+          AppTheme.successGreen);
+      return;
+    }
+
+    if (r.skipped == 0) {
+      _toast('Файл готов: ${r.exported} записей. '
+          'Загрузите его в личном кабинете ГИС ЖКХ.', AppTheme.successGreen);
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Выгружено записей: ${r.exported}',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text('Пропущено: ${r.skipped}',
+                  style: const TextStyle(color: AppTheme.warningOrange)),
+              const SizedBox(height: 10),
+              const Text(
+                'Портал сопоставляет записи по идентификаторам. Без них '
+                'строка не принимается, поэтому такие записи в файл не '
+                'попали — заполните их в карточке и выгрузите снова.',
+                style: TextStyle(fontSize: 12),
+              ),
+              if (r.warnings.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ...r.warnings.map((w) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text('• $w', style: const TextStyle(fontSize: 11.5)),
+                    )),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Понятно')),
+        ],
+      ),
+    );
+  }
+
   Future<void> _downloadBlank(String kind, String title) async {
     setState(() => _busyKind = 'blank_$kind');
     try {
-      final file = await ref.read(gisServiceProvider).downloadBlank(kind);
+      final result = await ref.read(gisServiceProvider).downloadBlank(kind);
       await FileExportHelper.exportFile(
-        sourceFile: file,
-        fileName: file.uri.pathSegments.last,
+        sourceFile: result.file,
+        fileName: result.file.uri.pathSegments.last,
         mimeType: _mime,
         subject: title,
       );
