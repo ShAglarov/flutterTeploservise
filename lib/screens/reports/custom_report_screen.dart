@@ -216,15 +216,19 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _presetChip(theme, isDark, '📊', 'Руководителю',
-                          ['summary', 'top_houses', 'monthly_dynamics', 'payment_trend', 'location_comparison']),
-                      const SizedBox(width: 8),
-                      _presetChip(theme, isDark, '💰', 'Бухгалтеру',
-                          ['summary', 'by_services', 'recalc_analysis', 'last_payments', 'overpayments']),
-                      const SizedBox(width: 8),
-                      _presetChip(theme, isDark, '⚖️', 'Юристу',
-                          ['top_debtors', 'debt_aging', 'overpayments']),
-                      const SizedBox(width: 8),
+                      // Пресеты берутся из reportPresets: раньше список был
+                      // продублирован здесь, и добавление секции в модель
+                      // не попадало в кнопки.
+                      for (final entry in reportPresets.entries) ...[
+                        _presetChip(
+                          theme,
+                          isDark,
+                          entry.key.characters.first,
+                          entry.key.substring(entry.key.indexOf(' ') + 1),
+                          entry.value['keys'] ?? const [],
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       _presetChip(theme, isDark, '✅', 'Все', _sections.keys.toList()),
                       const SizedBox(width: 8),
                       _presetChip(theme, isDark, '❌', 'Сброс', []),
@@ -241,20 +245,15 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _groupTitle(theme, '📊 Обзор'),
-                    ...sectionDefinitions.where((s) =>
-                        ['summary', 'monthly_dynamics', 'payment_trend'].contains(s.key))
-                        .map((s) => _sectionCheckbox(theme, isDark, s)),
-                    const SizedBox(height: 8),
-                    _groupTitle(theme, '📋 Детализация'),
-                    ...sectionDefinitions.where((s) =>
-                        ['top_houses', 'top_debtors', 'best_payers', 'last_payments', 'location_comparison'].contains(s.key))
-                        .map((s) => _sectionCheckbox(theme, isDark, s)),
-                    const SizedBox(height: 8),
-                    _groupTitle(theme, '🔍 Специальные'),
-                    ...sectionDefinitions.where((s) =>
-                        ['by_services', 'recalc_analysis', 'overpayments', 'debt_aging'].contains(s.key))
-                        .map((s) => _sectionCheckbox(theme, isDark, s)),
+                    // Группы — из sectionGroups, чтобы новая секция
+                    // появлялась в списке сама, без правки экрана.
+                    for (final group in sectionGroups.entries) ...[
+                      _groupTitle(theme, group.key),
+                      ...sectionDefinitions
+                          .where((s) => group.value.contains(s.key))
+                          .map((s) => _sectionCheckbox(theme, isDark, s)),
+                      const SizedBox(height: 8),
+                    ],
                   ],
                 ),
               ),
@@ -882,6 +881,28 @@ class _CustomReportScreenState extends ConsumerState<CustomReportScreen>
             DebtAgingSection(groups: (_reportResult['debt_aging'] as List?)?.cast<Map<String, dynamic>>() ?? []),
           if (_reportResult.containsKey('location_comparison'))
             ComparisonSection(items: (_reportResult['location_comparison'] as List?)?.cast<Map<String, dynamic>>() ?? []),
+
+          // ── Касса, платежи и честные итоги ──
+          if (_reportResult.containsKey('collection_summary'))
+            CollectionSummarySection(
+                data: _reportResult['collection_summary'] as Map<String, dynamic>? ?? {}),
+          if (_reportResult.containsKey('cashier_shift'))
+            CashierShiftSection(
+                data: _reportResult['cashier_shift'] as Map<String, dynamic>? ?? {}),
+          if (_reportResult.containsKey('payment_structure'))
+            PaymentStructureSection(
+                data: _reportResult['payment_structure'] as Map<String, dynamic>? ?? {}),
+          if (_reportResult.containsKey('payments_register'))
+            PaymentsRegisterSection(
+                data: _reportResult['payments_register'] as Map<String, dynamic>? ?? {}),
+          if (_reportResult.containsKey('cashier_performance'))
+            CashierPerformanceSection(
+                rows: (_reportResult['cashier_performance'] as List?)
+                        ?.cast<Map<String, dynamic>>() ??
+                    []),
+          if (_reportResult.containsKey('debt_distribution'))
+            DebtDistributionSection(
+                data: _reportResult['debt_distribution'] as Map<String, dynamic>? ?? {}),
 
           const SizedBox(height: 40),
         ],

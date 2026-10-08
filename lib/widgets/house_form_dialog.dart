@@ -46,6 +46,19 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   late final TextEditingController _entrancesController;
   String? _stoveType;
   String? _housingType;
+
+  // ─── ГИС ЖКХ: лист «Характеристики МКД» шаблона импорта сведений о МКД ───
+  late final TextEditingController _gisOktmoController;
+  late final TextEditingController _gisStateController;
+  late final TextEditingController _gisLifecycleController;
+  late final TextEditingController _gisUndergroundController;
+  late final TextEditingController _gisTimezoneController;
+  late final TextEditingController _gisHostelTypeController;
+  // Трёхзначные: null — «не указано», портал отличает это от «Нет».
+  bool? _gisCulturalHeritage;
+  bool? _gisFederalProperty;
+  bool? _gisMunicipalProperty;
+  String? _gisStatus;
   
   bool _providesHeating = false;
   bool _providesHotWater = false;
@@ -73,6 +86,17 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _cadastralController = TextEditingController(text: initial?.cadastralNumber ?? '');
     _commissioningDateController = TextEditingController(text: initial?.commissioningDate ?? '');
     _entrancesController = TextEditingController(text: initial?.entrancesCount?.toString() ?? '');
+    _gisOktmoController = TextEditingController(text: initial?.gisOktmo ?? '');
+    _gisStateController = TextEditingController(text: initial?.gisState ?? '');
+    _gisLifecycleController = TextEditingController(text: initial?.gisLifecycleStage ?? '');
+    _gisUndergroundController =
+        TextEditingController(text: initial?.undergroundFloors?.toString() ?? '');
+    _gisTimezoneController = TextEditingController(text: initial?.gisTimezone ?? '');
+    _gisHostelTypeController = TextEditingController(text: initial?.gisHostelType ?? '');
+    _gisCulturalHeritage = initial?.gisCulturalHeritage;
+    _gisFederalProperty = initial?.gisFederalProperty;
+    _gisMunicipalProperty = initial?.gisMunicipalProperty;
+    _gisStatus = initial?.gisStatus;
     _stoveType = initial?.stoveType;
     _housingType = initial?.housingType;
     _providesHeating = initial?.providesHeating ?? false;
@@ -201,6 +225,12 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _fiasHouseController.dispose();
     _fiasAOController.dispose();
     _cadastralController.dispose();
+    _gisOktmoController.dispose();
+    _gisStateController.dispose();
+    _gisLifecycleController.dispose();
+    _gisUndergroundController.dispose();
+    _gisTimezoneController.dispose();
+    _gisHostelTypeController.dispose();
     _commissioningDateController.dispose();
     super.dispose();
   }
@@ -248,6 +278,17 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           stoveType: _stoveType,
           housingType: _housingType,
           entrancesCount: int.tryParse(_entrancesController.text),
+          // ГИС ЖКХ: пустое поле отправляем как null — «не заполнено».
+          gisOktmo: _textOrNull(_gisOktmoController),
+          gisState: _textOrNull(_gisStateController),
+          gisLifecycleStage: _textOrNull(_gisLifecycleController),
+          undergroundFloors: int.tryParse(_gisUndergroundController.text),
+          gisTimezone: _textOrNull(_gisTimezoneController),
+          gisCulturalHeritage: _gisCulturalHeritage,
+          gisFederalProperty: _gisFederalProperty,
+          gisMunicipalProperty: _gisMunicipalProperty,
+          gisHostelType: _textOrNull(_gisHostelTypeController),
+          gisStatus: _gisStatus,
         );
         result = await ref.read(locationServiceProvider).updateSavedLocation(widget.initialLocation!.id, update);
       } else {
@@ -271,6 +312,17 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           stoveType: _stoveType,
           housingType: _housingType,
           entrancesCount: int.tryParse(_entrancesController.text),
+          // ГИС ЖКХ: пустое поле отправляем как null — «не заполнено».
+          gisOktmo: _textOrNull(_gisOktmoController),
+          gisState: _textOrNull(_gisStateController),
+          gisLifecycleStage: _textOrNull(_gisLifecycleController),
+          undergroundFloors: int.tryParse(_gisUndergroundController.text),
+          gisTimezone: _textOrNull(_gisTimezoneController),
+          gisCulturalHeritage: _gisCulturalHeritage,
+          gisFederalProperty: _gisFederalProperty,
+          gisMunicipalProperty: _gisMunicipalProperty,
+          gisHostelType: _textOrNull(_gisHostelTypeController),
+          gisStatus: _gisStatus,
         );
         result = await ref.read(locationServiceProvider).createSavedLocation(location);
       }
@@ -451,7 +503,53 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                           },
                         ),
                       ]),
-                      
+
+                      // Поля шаблона ГИС, которых нет в обычной карточке дома.
+                      // ФИАС и кадастровый номер — выше, в своей секции.
+                      _SectionHeader('ГИС ЖКХ'),
+                      _buildSection([
+                        _buildInputRow(Icons.tag, Colors.teal, 'ОКТМО',
+                            _gisOktmoController, hint: '82701000'),
+                        _buildDivider(),
+                        _buildInputRow(Icons.health_and_safety, Colors.green,
+                            'Состояние', _gisStateController, hint: 'Исправный'),
+                        _buildDivider(),
+                        _buildInputRow(Icons.timeline, Colors.blue,
+                            'Стадия жизненного цикла', _gisLifecycleController,
+                            hint: 'Эксплуатируется'),
+                        _buildDivider(),
+                        _buildInputRow(Icons.stairs, Colors.brown,
+                            'Подземных этажей', _gisUndergroundController,
+                            hint: '0', keyboardType: TextInputType.number),
+                        _buildDivider(),
+                        _buildInputRow(Icons.schedule, Colors.deepPurple,
+                            'Часовая зона', _gisTimezoneController,
+                            hint: 'Europe/Moscow'),
+                        _buildDivider(),
+                        _buildTristateRow(Icons.account_balance, Colors.amber,
+                            'Культурное наследие', _gisCulturalHeritage,
+                            (v) => setState(() => _gisCulturalHeritage = v)),
+                        _buildDivider(),
+                        _buildTristateRow(Icons.flag, Colors.indigo,
+                            'Собственность субъекта РФ', _gisFederalProperty,
+                            (v) => setState(() => _gisFederalProperty = v)),
+                        _buildDivider(),
+                        _buildTristateRow(Icons.location_city, Colors.cyan,
+                            'Муниципальная собственность', _gisMunicipalProperty,
+                            (v) => setState(() => _gisMunicipalProperty = v)),
+                        _buildDivider(),
+                        _buildInputRow(Icons.apartment, Colors.orange,
+                            'Тип общежития', _gisHostelTypeController,
+                            hint: 'не заполнять, если не общежитие'),
+                        if (_gisStatus != null && _gisStatus!.isNotEmpty) ...[
+                          _buildDivider(),
+                          // Статус приходит от портала после загрузки файла,
+                          // поэтому только для чтения.
+                          _buildActionRow(Icons.cloud_done, Colors.blueGrey,
+                              'Статус в ГИС', _gisStatus!),
+                        ],
+                      ]),
+
                       _SectionHeader('Документы'),
                       _buildSection([
                         _buildActionRow(
@@ -586,6 +684,47 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
               ),
         ],
       ),
+    );
+  }
+
+  /// Пустое поле → null: для ГИС «не заполнено» и «пустая строка» разные
+  /// вещи, портал на пустой строке в коде ОКТМО ругается.
+  String? _textOrNull(TextEditingController c) =>
+      c.text.trim().isEmpty ? null : c.text.trim();
+
+  /// Переключатель на три состояния: не указано / Да / Нет.
+  Widget _buildTristateRow(
+    IconData icon,
+    Color iconColor,
+    String label,
+    bool? value,
+    ValueChanged<bool?> onChanged,
+  ) {
+    return _buildActionRow(
+      icon,
+      iconColor,
+      label,
+      value == null ? 'Не указано' : (value ? 'Да' : 'Нет'),
+      onTap: () async {
+        final result = await showDialog<String>(
+          context: context,
+          builder: (c) => SimpleDialog(
+            title: Text(label),
+            children: [
+              SimpleDialogOption(
+                  onPressed: () => Navigator.pop(c, 'null'),
+                  child: const Text('Не указано')),
+              SimpleDialogOption(
+                  onPressed: () => Navigator.pop(c, 'yes'), child: const Text('Да')),
+              SimpleDialogOption(
+                  onPressed: () => Navigator.pop(c, 'no'), child: const Text('Нет')),
+            ],
+          ),
+        );
+        if (result != null) {
+          onChanged(result == 'null' ? null : result == 'yes');
+        }
+      },
     );
   }
 

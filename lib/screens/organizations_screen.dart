@@ -5,6 +5,7 @@ import '../models/organization_models.dart';
 import '../providers/organization_providers.dart';
 import '../services/tenant_service.dart';
 import '../utils/app_theme.dart';
+import 'backups_screen.dart';
 import 'organization_form_screen.dart';
 
 /// Список организаций системы — экран владельца сервиса (суперадмина).
@@ -59,6 +60,12 @@ class OrganizationsScreen extends ConsumerWidget {
                   org: org,
                   isCurrent: org.id == currentOrgId,
                   onTap: () => _openForm(context, ref, org: org),
+                  onBackups: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BackupsScreen(organization: org),
+                    ),
+                  ),
                 );
               },
             ),
@@ -105,11 +112,13 @@ class _OrganizationTile extends StatelessWidget {
   final OrganizationResponse org;
   final bool isCurrent;
   final VoidCallback onTap;
+  final VoidCallback onBackups;
 
   const _OrganizationTile({
     required this.org,
     required this.isCurrent,
     required this.onTap,
+    required this.onBackups,
   });
 
   @override
@@ -161,12 +170,25 @@ class _OrganizationTile extends StatelessWidget {
         details.join(' · '),
         style: TextStyle(fontSize: 12, color: cs.onSurface.withAlpha(150)),
       ),
-      trailing: org.isActive
-          ? const Icon(Icons.chevron_right)
-          : Text(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Копии — на уровне организации: восстанавливать нужно именно
+          // одну компанию, не всю базу.
+          IconButton(
+            icon: const Icon(Icons.backup_outlined, size: 20),
+            tooltip: 'Резервные копии',
+            onPressed: onBackups,
+          ),
+          if (org.isActive)
+            const Icon(Icons.chevron_right)
+          else
+            Text(
               'отключена',
               style: TextStyle(fontSize: 11, color: AppTheme.warningOrange),
             ),
+        ],
+      ),
     );
   }
 }

@@ -25,20 +25,59 @@ final sectionDefinitions = <SectionDef>[
   SectionDef('recalc_analysis', Icons.sync_alt, Colors.deepOrange, 'Анализ перерасчётов', 'Перерасчёты по услугам, аномалии'),
   SectionDef('debt_aging', Icons.hourglass_bottom, Colors.brown, 'Группировка долгов', 'Распределение должников по суммам'),
   SectionDef('location_comparison', Icons.compare_arrows, Colors.blueGrey, 'Сравнение домов', 'Таблица ключевых метрик по домам'),
+
+  // ── Касса и платежи ──
+  // Раньше по кассе в конструкторе не было ни одной секции, хотя журнал
+  // операций хранит кассира, сумму, услугу и заявленный период.
+  SectionDef('cashier_shift', Icons.point_of_sale, Colors.green, 'Кассовая смена',
+      'Принято за день: по услугам и кассирам'),
+  SectionDef('payments_register', Icons.receipt_long, Colors.teal, 'Реестр платежей',
+      'Построчно: ЛС, плательщик, сумма, кассир'),
+  SectionDef('cashier_performance', Icons.badge, Colors.indigo, 'Работа кассиров',
+      'Принято, средний платёж, отмены по каждому'),
+  SectionDef('payment_structure', Icons.call_split, Colors.deepPurple, 'Структура поступлений',
+      'Текущие начисления, погашение долга, аванс'),
+
+  // ── Честные итоги по всей базе ──
+  SectionDef('collection_summary', Icons.account_balance_wallet, Colors.blue,
+      'Собираемость (расширенная)',
+      'Текущая и общая собираемость, куда пошли деньги'),
+  SectionDef('debt_distribution', Icons.bar_chart, Colors.red, 'Распределение долгов',
+      'Группы долга по ВСЕЙ базе, а не по топ-N'),
 ];
 
 /// Группы секций для конфигуратора.
 const sectionGroups = <String, List<String>>{
-  '📊 Обзор': ['summary', 'monthly_dynamics', 'payment_trend'],
+  '📊 Обзор': ['summary', 'collection_summary', 'monthly_dynamics', 'payment_trend'],
+  '💰 Касса и платежи': [
+    'cashier_shift', 'payments_register', 'cashier_performance', 'payment_structure',
+  ],
   '📋 Детализация': ['top_houses', 'top_debtors', 'best_payers', 'last_payments', 'location_comparison'],
-  '🔍 Специальные': ['by_services', 'recalc_analysis', 'overpayments', 'debt_aging'],
+  '🔍 Долги и услуги': ['debt_distribution', 'by_services', 'recalc_analysis', 'overpayments', 'debt_aging'],
 };
 
-/// Пресеты отчётов.
+/// Пресеты по роли: что человеку реально нужно показать руководству.
+///
+/// Кассир закрывает день, бухгалтер сводит поступления и перерасчёты,
+/// директор смотрит динамику и собираемость, юрист — долги для взыскания.
 const reportPresets = <String, Map<String, List<String>>>{
-  '📊 Руководителю': {'keys': ['summary', 'top_houses', 'monthly_dynamics', 'payment_trend', 'location_comparison']},
-  '💰 Бухгалтеру': {'keys': ['summary', 'by_services', 'recalc_analysis', 'last_payments', 'overpayments']},
-  '⚖️ Юристу': {'keys': ['top_debtors', 'debt_aging', 'overpayments']},
+  '💰 Кассиру': {'keys': [
+    'cashier_shift', 'payments_register', 'payment_structure',
+  ]},
+  '📒 Бухгалтеру': {'keys': [
+    'collection_summary', 'by_services', 'recalc_analysis',
+    'payments_register', 'overpayments',
+  ]},
+  '📊 Директору': {'keys': [
+    'collection_summary', 'monthly_dynamics', 'payment_trend',
+    'debt_distribution', 'location_comparison', 'cashier_performance',
+  ]},
+  '⚖️ Юристу': {'keys': [
+    'top_debtors', 'debt_distribution', 'overpayments',
+  ]},
+  '🔍 Контроль кассы': {'keys': [
+    'cashier_performance', 'payment_structure', 'recalc_analysis', 'overpayments',
+  ]},
 };
 
 /// Секции-потомки — не делают сетевых запросов, вычисляются из данных других секций.
@@ -58,4 +97,12 @@ Map<String, bool> defaultSections() => {
   'recalc_analysis': false,
   'debt_aging': false,
   'location_comparison': false,
+  'cashier_shift': false,
+  'payments_register': false,
+  'cashier_performance': false,
+  'payment_structure': false,
+  // По умолчанию включаем расширенную сводку и честное распределение
+  // долгов: это то, что чаще всего нужно и бухгалтеру, и директору.
+  'collection_summary': true,
+  'debt_distribution': false,
 };

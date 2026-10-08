@@ -4,8 +4,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
-import '../../services/file_export_helper.dart';
-import 'report_utils.dart';
 
 /// Экспорт отчёта в PDF и CSV.
 class ReportExporter {
@@ -86,6 +84,32 @@ class ReportExporter {
         ],
         if (reportResult.containsKey('location_comparison')) ...[
           _sectionTitle(ttf, 'Сравнение домов'), _locationComparisonTable(reportResult),
+          pw.SizedBox(height: 12),
+        ],
+        // ── Касса, платежи и честные итоги ──
+        if (reportResult.containsKey('collection_summary')) ...[
+          _sectionTitle(ttf, 'Собираемость'), _collectionSummaryTable(reportResult),
+          pw.SizedBox(height: 12),
+        ],
+        if (reportResult.containsKey('cashier_shift')) ...[
+          _sectionTitle(ttf, 'Кассовая смена'), _cashierShiftTable(reportResult),
+          pw.SizedBox(height: 12),
+        ],
+        if (reportResult.containsKey('payment_structure')) ...[
+          _sectionTitle(ttf, 'Структура поступлений'), _paymentStructureTable(reportResult),
+          pw.SizedBox(height: 12),
+        ],
+        if (reportResult.containsKey('payments_register')) ...[
+          _sectionTitle(ttf, 'Реестр платежей'), _paymentsRegisterTable(reportResult),
+          pw.SizedBox(height: 12),
+        ],
+        if (reportResult.containsKey('cashier_performance')) ...[
+          _sectionTitle(ttf, 'Работа кассиров'), _cashierPerformanceTable(reportResult),
+          pw.SizedBox(height: 12),
+        ],
+        if (reportResult.containsKey('debt_distribution')) ...[
+          _sectionTitle(ttf, 'Распределение долгов (вся база)'),
+          _debtDistributionTable(reportResult),
         ],
       ],
     ));
@@ -299,6 +323,161 @@ class ReportExporter {
       headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.brown50),
     );
+  }
+
+
+  // ── Касса и платежи ──
+
+  static String _m(num? v) => ((v ?? 0).toDouble()).toStringAsFixed(2);
+
+  static pw.Widget _collectionSummaryTable(Map<String, dynamic> r) {
+    final d = (r['collection_summary'] as Map?)?.cast<String, dynamic>() ?? {};
+    return pw.TableHelper.fromTextArray(
+      headers: ['Показатель', 'Значение'],
+      data: [
+        ['Начислено', _m(d['charged'] as num?)],
+        ['Оплачено', _m(d['paid'] as num?)],
+        ['Долг на конец', _m(d['debt_end'] as num?)],
+        ['Собираемость текущая, %', '${d['collection_current'] ?? 0}'],
+        ['Собираемость общая, %', '${d['collection_total'] ?? 0}'],
+        ['Оплачено за текущий период', _m(d['paid_current'] as num?)],
+        ['Погашено долга', _m(d['paid_debt'] as num?)],
+        ['Внесено авансом', _m(d['paid_advance'] as num?)],
+        ['Должников', '${d['debtors_count'] ?? 0}'],
+        ['Переплат', '${d['overpaid_count'] ?? 0}'],
+        ['Средний долг', _m(d['avg_debt'] as num?)],
+      ],
+      cellStyle: const pw.TextStyle(fontSize: 8),
+      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.blue50),
+    );
+  }
+
+  static pw.Widget _cashierShiftTable(Map<String, dynamic> r) {
+    final d = (r['cashier_shift'] as Map?)?.cast<String, dynamic>() ?? {};
+    final cashiers = (d['by_cashier'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+      pw.TableHelper.fromTextArray(
+        headers: ['Дата', 'Принято', 'Операций', 'ЛС', 'Средний', 'Отмен'],
+        data: [[
+          d['date']?.toString() ?? '—',
+          _m(d['total'] as num?),
+          '${d['operations'] ?? 0}',
+          '${d['accounts'] ?? 0}',
+          _m(d['average'] as num?),
+          '${d['undone'] ?? 0}',
+        ]],
+        cellStyle: const pw.TextStyle(fontSize: 8),
+        headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.green50),
+      ),
+      if (cashiers.isNotEmpty) ...[
+        pw.SizedBox(height: 6),
+        pw.TableHelper.fromTextArray(
+          headers: ['Кассир', 'Принято', 'Операций', 'Отмен'],
+          data: cashiers.map((c) => [
+            c['cashier']?.toString() ?? '—',
+            _m(c['amount'] as num?),
+            '${c['count'] ?? 0}',
+            '${c['undone'] ?? 0}',
+          ]).toList(),
+          cellStyle: const pw.TextStyle(fontSize: 8),
+          headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+          headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+        ),
+      ],
+    ]);
+  }
+
+  static pw.Widget _paymentStructureTable(Map<String, dynamic> r) {
+    final d = (r['payment_structure'] as Map?)?.cast<String, dynamic>() ?? {};
+    final buckets = (d['buckets'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return pw.TableHelper.fromTextArray(
+      headers: ['Назначение', 'Сумма', 'Доля, %', 'Платежей'],
+      data: buckets.map((b) => [
+        b['label']?.toString() ?? '—',
+        _m(b['amount'] as num?),
+        '${b['share'] ?? 0}',
+        '${b['count'] ?? 0}',
+      ]).toList(),
+      cellStyle: const pw.TextStyle(fontSize: 8),
+      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.deepPurple50),
+    );
+  }
+
+  static pw.Widget _paymentsRegisterTable(Map<String, dynamic> r) {
+    final d = (r['payments_register'] as Map?)?.cast<String, dynamic>() ?? {};
+    final rows = (d['rows'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+      pw.Text('Платежей: ${d['count'] ?? rows.length}   Итого: ${_m(d['total'] as num?)}',
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+      pw.SizedBox(height: 4),
+      pw.TableHelper.fromTextArray(
+        headers: ['Дата', 'ЛС', 'Плательщик', 'Услуга', 'За период', 'Сумма', 'Кассир'],
+        // В PDF кладём до 400 строк: дальше файл становится неподъёмным
+        // для печати, а итог всё равно посчитан по всему периоду.
+        data: rows.take(400).map((x) => [
+          x['date']?.toString() ?? '—',
+          x['account_number']?.toString() ?? '—',
+          (x['fio']?.toString() ?? '—'),
+          x['service']?.toString() ?? '—',
+          x['period_from']?.toString() ?? '—',
+          _m(x['amount'] as num?),
+          x['cashier']?.toString() ?? '—',
+        ]).toList(),
+        cellStyle: const pw.TextStyle(fontSize: 7),
+        headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.teal50),
+      ),
+    ]);
+  }
+
+  static pw.Widget _cashierPerformanceTable(Map<String, dynamic> r) {
+    final rows = (r['cashier_performance'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return pw.TableHelper.fromTextArray(
+      headers: ['Кассир', 'Принято', 'Операций', 'ЛС', 'Средний', 'Отмен'],
+      data: rows.map((x) => [
+        x['cashier']?.toString() ?? '—',
+        _m(x['amount'] as num?),
+        '${x['count'] ?? 0}',
+        '${x['accounts'] ?? 0}',
+        _m(x['average'] as num?),
+        '${x['undone'] ?? 0}',
+      ]).toList(),
+      cellStyle: const pw.TextStyle(fontSize: 8),
+      headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.indigo50),
+    );
+  }
+
+  static pw.Widget _debtDistributionTable(Map<String, dynamic> r) {
+    final d = (r['debt_distribution'] as Map?)?.cast<String, dynamic>() ?? {};
+    final groups = (d['groups'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final total = (d['total_debt'] as num?)?.toDouble() ?? 0;
+    return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+      pw.Text(
+        'Должников: ${d['total_debtors'] ?? 0}   Долг: ${_m(total)}   '
+        'Без долга: ${d['no_debt_count'] ?? 0}   Охват: ${d['scope'] ?? 'вся база'}',
+        style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+      ),
+      pw.SizedBox(height: 4),
+      pw.TableHelper.fromTextArray(
+        headers: ['Группа долга', 'Лицевых счетов', 'Сумма', 'Доля, %'],
+        data: groups.map((g) {
+          final sum = (g['total'] as num?)?.toDouble() ?? 0;
+          return [
+            g['label']?.toString() ?? '—',
+            '${g['count'] ?? 0}',
+            _m(sum),
+            total > 0 ? (sum / total * 100).toStringAsFixed(1) : '0.0',
+          ];
+        }).toList(),
+        cellStyle: const pw.TextStyle(fontSize: 8),
+        headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+        headerDecoration: const pw.BoxDecoration(color: PdfColors.red50),
+      ),
+    ]);
   }
 
   static pw.Widget _locationComparisonTable(Map<String, dynamic> r) {

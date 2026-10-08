@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/incident_schedule_manager.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -17,6 +17,8 @@ import 'incident_list_screen.dart';
 import 'action_log_list_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
+import 'incident_reports_screen.dart';
+import 'data_import_screen.dart';
 import 'management_company_list_screen.dart';
 import 'accounts_list_screen.dart';
 import '../providers/offline_edit_permission.dart';
@@ -51,7 +53,10 @@ class MapScreen extends ConsumerStatefulWidget {
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends ConsumerState<MapScreen> {
+// TickerProviderStateMixin нужен для плавного приближения к объекту:
+// MapController.move() переносит камеру мгновенно, без анимации.
+class _MapScreenState extends ConsumerState<MapScreen>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   final MapController _mapController = MapController();
 
@@ -135,10 +140,70 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _preloadTimer?.cancel();
     _mapEventSubscription?.cancel();
     _refreshSubscription?.cancel();
+    _zoomAnimation?.dispose();
     _searchController.dispose();
     _mapController.dispose();
     _sheetController.dispose();
     super.dispose();
+  }
+
+  /// Контроллер плавного приближения. Храним, чтобы прервать предыдущую
+  /// анимацию, если пользователь сразу зажал другой объект.
+  AnimationController? _zoomAnimation;
+
+  /// Плавно приближает камеру к точке.
+  ///
+  /// `MapController.move()` ставит камеру мгновенно — на долгом удержании
+  /// это выглядит как рывок. Здесь центр и зум интерполируются за
+  /// ~600 мс с замедлением к концу.
+  void _animateCameraTo(LatLng target, double targetZoom) {
+    _zoomAnimation?.dispose();
+
+    final camera = _mapController.camera;
+    final startCenter = camera.center;
+    final startZoom = camera.zoom;
+
+    final controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _zoomAnimation = controller;
+
+    final curve = CurvedAnimation(parent: controller, curve: Curves.easeOutCubic);
+
+    controller.addListener(() {
+      final t = curve.value;
+      _mapController.move(
+        LatLng(
+          startCenter.latitude + (target.latitude - startCenter.latitude) * t,
+          startCenter.longitude + (target.longitude - startCenter.longitude) * t,
+        ),
+        startZoom + (targetZoom - startZoom) * t,
+      );
+    });
+
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        controller.dispose();
+        if (_zoomAnimation == controller) _zoomAnimation = null;
+      }
+    });
+
+    controller.forward();
+  }
+
+  /// Долгое удержание на котельной — плавно приблизиться к ней.
+  void _onBoilerHouseMarkerLongPress(BoilerHouseResponse bh) {
+    HapticFeedback.mediumImpact();
+    _animateCameraTo(LatLng(bh.latitude, bh.longitude), 16);
+  }
+
+  /// Долгое удержание на доме — приближаем сильнее: дома стоят плотнее,
+  /// и на зуме котельной соседние дома сливаются.
+  void _onLocationMarkerLongPress(SavedLocationResponse loc) {
+    if (loc.latitude == 0 && loc.longitude == 0) return;
+    HapticFeedback.mediumImpact();
+    _animateCameraTo(LatLng(loc.latitude, loc.longitude), 18);
   }
 
   void _onLocationMarkerTap(SavedLocationResponse loc) {
@@ -186,7 +251,70 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
+  /// Радиус попадания по пину при долгом удержании, в пикселях экрана.
+  /// Чуть больше самого маркера: палец закрывает пин, и требовать точного
+  /// попадания в 28 px неудобно.
+  static const double _longPressHitRadius = 26;
+
+  /// Ищет пин под точкой удержания.
+  ///
+  /// Нужно потому, что в flutter_map маркеры — дети карты, и
+  /// `MapOptions.onLongPress` забирает жест раньше, чем до него доходит
+  /// `GestureDetector` внутри маркера. Поэтому попадание в пин считаем
+  /// сами: переводим координаты объектов в точки экрана и берём
+  /// ближайший в радиусе.
+  Object? _objectUnderPoint(Offset screenPoint) {
+    final camera = _mapController.camera;
+    final data = ref.read(filteredMapDataProvider);
+
+    Object? best;
+    double bestDistance = _longPressHitRadius;
+
+    void consider(Object item, double lat, double lng) {
+      if (lat == 0 && lng == 0) return;
+      final p = camera.latLngToScreenPoint(LatLng(lat, lng));
+      final d = (Offset(p.x, p.y) - screenPoint).distance;
+      if (d <= bestDistance) {
+        bestDistance = d;
+        best = item;
+      }
+    }
+
+    // Дома проверяем первыми: они мельче котельных, и при наложении
+    // выбрать нужно именно дом, иначе до него не добраться.
+    for (final loc in data.locations) {
+      if (loc.boilerHouseId == null || loc.boilerHouseId == 0) continue;
+      if (_selectedBoilerHouse != null &&
+          loc.boilerHouseId != _selectedBoilerHouse!.id) {
+        continue;
+      }
+      consider(loc, loc.latitude, loc.longitude);
+    }
+    for (final bh in data.boilerHouses) {
+      if (_selectedBoilerHouse != null && bh.id != _selectedBoilerHouse!.id) {
+        continue;
+      }
+      consider(bh, bh.latitude, bh.longitude);
+    }
+    return best;
+  }
+
   Future<void> _onMapLongPress(TapPosition tapPosition, LatLng point) async {
+    // Удержание на пине — приблизиться к нему, а не создавать объект.
+    //
+    // relative, а не global: latLngToScreenPoint возвращает координаты
+    // внутри виджета карты, а карта занимает не весь экран (сверху
+    // панель, снизу лист) — с global радиус попадания съехал бы.
+    final hit = _objectUnderPoint(tapPosition.relative ?? tapPosition.global);
+    if (hit is SavedLocationResponse) {
+      _onLocationMarkerLongPress(hit);
+      return;
+    }
+    if (hit is BoilerHouseResponse) {
+      _onBoilerHouseMarkerLongPress(hit);
+      return;
+    }
+
     final perms = ref.read(permissionStateProvider);
     if (_selectedBoilerHouse == null) {
       // Create Boiler House
@@ -592,16 +720,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         },
                       ),
                     ],
-                    if (ref.read(permissionStateProvider).hasPermission(PermissionKey.dataExport)) ...[
+                    // Отчёты диспетчера о дежурстве: главный сценарий —
+                    // сдача смены главному инженеру.
+                    if (ref.read(permissionStateProvider).hasPermission(PermissionKey.reportRead)) ...[
                       _buildDropdownDivider(),
                       _buildDropdownItem(
-                        Icons.ios_share_rounded,
-                        'Экспорт',
+                        Icons.assignment_outlined,
+                        'Отчёты',
                         const Color(0xFFFDAA1D),
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Экспорт скоро появится')),
-                          );
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const IncidentReportsScreen()));
+                        },
+                        trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.onSurface.withAlpha(60), size: 20),
+                      ),
+                    ],
+                    if (ref.read(permissionStateProvider).hasPermission(PermissionKey.dataImport)) ...[
+                      _buildDropdownDivider(),
+                      _buildDropdownItem(
+                        Icons.cloud_upload_outlined,
+                        'Импорт данных',
+                        const Color(0xFF00B894),
+                        () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const DataImportScreen()));
                         },
                         trailing: Icon(Icons.chevron_right_rounded, color: Theme.of(context).colorScheme.onSurface.withAlpha(60), size: 20),
                       ),

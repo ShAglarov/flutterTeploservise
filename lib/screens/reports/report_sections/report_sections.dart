@@ -12,3 +12,4 @@ export 'trend_section.dart';
 export 'recalc_section.dart';
 export 'debt_aging_section.dart';
 export 'comparison_section.dart';
+export 'cashier_sections.dart';

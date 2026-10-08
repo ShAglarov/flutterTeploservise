@@ -31,6 +31,7 @@ import 'profile_screen.dart';
 import 'payment_documents_screen.dart';
 import 'import_xls_screen.dart';
 import 'activity_monitor_screen.dart';
+import 'gis_screen.dart';
 import 'org_requisites_screen.dart';
 import 'organizations_screen.dart';
 import 'residents_management_screen.dart';
@@ -575,6 +576,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ]),
           _buildSectionFooter(
               'Данные организаций изолированы друг от друга'),
+          const SizedBox(height: 24),
+        ],
+
+        // ═══════ ГИС ЖКХ ═══════
+        // Обмен официальными шаблонами портала. Видно тем, у кого есть
+        // хотя бы одно из прав на обмен данными.
+        if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.dataExport) ||
+            ref.watch(permissionStateProvider).hasPermission(PermissionKey.dataImport)) ...[
+          _buildSectionHeader('ГИС ЖКХ'),
+          const SizedBox(height: 8),
+          _buildCard([
+            _buildNavRow(
+              icon: Icons.account_balance_outlined,
+              iconColor: Colors.teal,
+              title: 'Интеграция с ГИС ЖКХ',
+              subtitle: 'Выгрузка и загрузка шаблонов МКД, ЛС, ПД, квитирования',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const GisScreen()),
+                );
+              },
+            ),
+          ]),
+          _buildSectionFooter(
+              'Официальные шаблоны портала без изменения формата файлов'),
           const SizedBox(height: 24),
         ],
 

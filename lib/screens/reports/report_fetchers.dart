@@ -232,6 +232,97 @@ mixin ReportFetchers {
   }
 
   /// Dispatch: вызывает нужный fetch/compute по ключу секции.
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Касса и платежи: серверная агрегация
+  // ═══════════════════════════════════════════════════════════════════
+
+  /// Даты для кассовых отчётов.
+  ///
+  /// Период конструктора задан периодами НАЧИСЛЕНИЙ (ММ.ГГГГ), а касса
+  /// фильтруется по дате платежа. Берём первое число начального периода
+  /// и последний день конечного — иначе платежи последнего месяца
+  /// отсекались бы.
+  Map<String, dynamic> get cashierDateParams {
+    final from = periodFrom;
+    final to = periodTo;
+    return {
+      'date_from': ?from,
+      'date_to': ?(to == null ? null : _lastDayOf(to)),
+    };
+  }
+
+  String _lastDayOf(String isoDate) {
+    final d = DateTime.tryParse(isoDate);
+    if (d == null) return isoDate;
+    final last = DateTime(d.year, d.month + 1, 0);
+    return '${last.year.toString().padLeft(4, '0')}-'
+        '${last.month.toString().padLeft(2, '0')}-'
+        '${last.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> fetchCashierShift(Dio dio) async {
+    // Смена — это один день. Берём конец периода: обычно отчёт смотрят
+    // за последний день выбранного диапазона.
+    final to = periodTo;
+    final resp = await dio.get(
+      '/payment-documents/reports/cashier-shift',
+      queryParameters: {if (to != null) 'shift_date': _lastDayOf(to)},
+    );
+    reportResult['cashier_shift'] = resp.data;
+  }
+
+  Future<void> fetchPaymentsRegister(Dio dio) async {
+    final resp = await dio.get(
+      '/payment-documents/reports/payments-register',
+      queryParameters: {
+        ...cashierDateParams,
+        'location_id': ?selectedLocationId,
+        'limit': 1000,
+      },
+    );
+    reportResult['payments_register'] = resp.data;
+  }
+
+  Future<void> fetchCashierPerformance(Dio dio) async {
+    final resp = await dio.get(
+      '/payment-documents/reports/cashier-performance',
+      queryParameters: cashierDateParams,
+    );
+    reportResult['cashier_performance'] = resp.data;
+  }
+
+  Future<void> fetchPaymentStructure(Dio dio) async {
+    final resp = await dio.get(
+      '/payment-documents/reports/payment-structure',
+      queryParameters: cashierDateParams,
+    );
+    reportResult['payment_structure'] = resp.data;
+  }
+
+  /// Распределение долгов ПО ВСЕЙ БАЗЕ.
+  ///
+  /// Раньше считалось на клиенте из топ-N должников, и в отчёте стояли
+  /// суммы пятидесяти человек вместо итога по организации.
+  Future<void> fetchDebtDistribution(Dio dio) async {
+    final resp = await dio.get(
+      '/payment-documents/reports/debt-distribution',
+      queryParameters: {
+        'period_date': ?periodTo,
+        'location_id': ?selectedLocationId,
+      },
+    );
+    reportResult['debt_distribution'] = resp.data;
+  }
+
+  Future<void> fetchCollectionSummary(Dio dio) async {
+    final resp = await dio.get(
+      '/payment-documents/reports/collection-summary',
+      queryParameters: periodRangeParams,
+    );
+    reportResult['collection_summary'] = resp.data;
+  }
+
   Future<void> fetchSection(Dio dio, String section) async {
     switch (section) {
       case 'summary':
@@ -281,6 +372,24 @@ mixin ReportFetchers {
           await fetchTopHouses(dio);
         }
         computeLocationComparison();
+        break;
+      case 'cashier_shift':
+        await fetchCashierShift(dio);
+        break;
+      case 'payments_register':
+        await fetchPaymentsRegister(dio);
+        break;
+      case 'cashier_performance':
+        await fetchCashierPerformance(dio);
+        break;
+      case 'payment_structure':
+        await fetchPaymentStructure(dio);
+        break;
+      case 'debt_distribution':
+        await fetchDebtDistribution(dio);
+        break;
+      case 'collection_summary':
+        await fetchCollectionSummary(dio);
         break;
     }
   }
