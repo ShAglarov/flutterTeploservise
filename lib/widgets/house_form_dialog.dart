@@ -11,6 +11,8 @@ import '../services/base_api_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/gis_dictionaries.dart';
 import '../providers/offline_edit_permission.dart';
+import '../screens/gis_params_screen.dart';
+import '../screens/house_structure_screen.dart';
 import 'house_selection_dialog.dart';
 import 'management_company_selection_dialog.dart';
 
@@ -561,6 +563,47 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                           _buildActionRow(Icons.cloud_done, Colors.blueGrey,
                               'Статус в ГИС', _gisStatus!),
                         ],
+                        // Отдельные листы шаблона — на своих экранах:
+                        // параметров там 110, и в карточку дома они не
+                        // поместились бы. Доступны только после
+                        // сохранения дома: нужен его id.
+                        if (widget.initialLocation?.id != null) ...[
+                          _buildDivider(),
+                          _buildActionRow(
+                            Icons.door_front_door,
+                            Colors.brown,
+                            'Подъезды и лифты',
+                            'листы «Подъезды», «Лифты»',
+                            onTap: _openStructure,
+                          ),
+                          _buildDivider(),
+                          _buildActionRow(
+                            Icons.info_outline,
+                            Colors.blue,
+                            'Информация о доме',
+                            'износ, площади, паркинг',
+                            onTap: () => _openParams(
+                                'house_info', 'Информация о доме'),
+                          ),
+                          _buildDivider(),
+                          _buildActionRow(
+                            Icons.foundation,
+                            Colors.deepOrange,
+                            'Конструктивные элементы',
+                            'фундамент, стены, крыша',
+                            onTap: () => _openParams('house_structure',
+                                'Конструктивные элементы'),
+                          ),
+                          _buildDivider(),
+                          _buildActionRow(
+                            Icons.plumbing,
+                            Colors.cyan,
+                            'Внутридомовые сети',
+                            'отопление, ГВС, ХВС, газ',
+                            onTap: () => _openParams(
+                                'house_networks', 'Внутридомовые сети'),
+                          ),
+                        ],
                       ]),
 
                       _SectionHeader('Документы'),
@@ -868,6 +911,32 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
         ],
       ),
     );
+  }
+
+  /// Подъезды и лифты дома — отдельный экран.
+  void _openStructure() {
+    final id = widget.initialLocation?.id;
+    if (id == null) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => HouseStructureScreen(
+        locationId: id,
+        houseName: widget.initialLocation?.name ?? 'Дом',
+      ),
+    ));
+  }
+
+  /// Расширенные сведения ГИС: форма строится по каталогу с сервера.
+  void _openParams(String groupKey, String title) {
+    final id = widget.initialLocation?.id;
+    if (id == null) return;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => GisParamsScreen(
+        groupKey: groupKey,
+        ownerType: 'house',
+        ownerId: id,
+        ownerTitle: widget.initialLocation?.name ?? title,
+      ),
+    ));
   }
 
   Widget _buildActionRow(IconData icon, Color iconColor, String label, String value, {VoidCallback? onTap}) {

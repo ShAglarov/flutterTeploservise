@@ -274,6 +274,11 @@ class AccountResponse {
   final String? gisPremisesNumber;
   final String? gisRoomNumber;
   final double? gisPaymentShare;
+  // Лист «Доп критерии поиска в ЕГРП» шаблона МКД: нужен, когда
+  // привязать помещение по кадастровому номеру не удалось.
+  final String? gisEgrpConditionalNumber;
+  final String? gisEgrpRegistrationNumber;
+  final String? gisEgrpRegistrationDate;
   final String? gisStatus;
   final String createdAt;
   final String? updatedAt;
@@ -317,6 +322,9 @@ class AccountResponse {
     this.gisPremisesNumber,
     this.gisRoomNumber,
     this.gisPaymentShare,
+    this.gisEgrpConditionalNumber,
+    this.gisEgrpRegistrationNumber,
+    this.gisEgrpRegistrationDate,
     this.gisStatus,
     required this.createdAt,
     this.updatedAt,
@@ -407,6 +415,11 @@ class AccountUpdate {
   final String? gisPremisesNumber;
   final String? gisRoomNumber;
   final double? gisPaymentShare;
+  // Лист «Доп критерии поиска в ЕГРП» шаблона МКД: нужен, когда
+  // привязать помещение по кадастровому номеру не удалось.
+  final String? gisEgrpConditionalNumber;
+  final String? gisEgrpRegistrationNumber;
+  final String? gisEgrpRegistrationDate;
 
   AccountUpdate({
     this.locationId,
@@ -445,6 +458,9 @@ class AccountUpdate {
     this.gisPremisesNumber,
     this.gisRoomNumber,
     this.gisPaymentShare,
+    this.gisEgrpConditionalNumber,
+    this.gisEgrpRegistrationNumber,
+    this.gisEgrpRegistrationDate,
   });
 
   factory AccountUpdate.fromJson(Map<String, dynamic> json) => _$AccountUpdateFromJson(json);

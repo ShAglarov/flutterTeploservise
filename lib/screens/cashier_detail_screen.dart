@@ -11,6 +11,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../services/base_api_service.dart';
 import '../services/file_export_helper.dart';
 import 'cashier_help_screen.dart';
+import 'pd_extra_screen.dart';
 
 /// Экран деталей платёжного документа — рабочее место кассира
 class CashierDetailScreen extends ConsumerStatefulWidget {
@@ -61,6 +62,13 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
             tooltip: 'Инструкция',
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CashierHelpScreen())),
           ),
+          // Дополнительные листы шаблона ГИС: неустойки, ДПД,
+          // составляющие стоимости электроэнергии, платёжные реквизиты.
+          IconButton(
+            icon: const Icon(Icons.playlist_add),
+            tooltip: 'Сведения для ГИС ЖКХ',
+            onPressed: _details == null ? null : _openGisExtras,
+          ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadDetails),
         ],
       ),
@@ -74,6 +82,22 @@ class _CashierDetailScreenState extends ConsumerState<CashierDetailScreen> {
                 ]))
               : _buildContent(theme),
     );
+  }
+
+  /// Дополнительные сведения ПД для шаблона ГИС.
+  void _openGisExtras() {
+    final doc = _details ?? const {};
+    final period = doc['period_label'] ?? doc['period_date'] ?? '';
+    final account = doc['account_number'] ?? doc['account'] ?? '';
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => PdExtraScreen(
+        documentId: widget.docId,
+        documentTitle: [account, period]
+            .where((e) => '$e'.isNotEmpty)
+            .join(' · '),
+        pdType: doc['gis_pd_type'] as String?,
+      ),
+    ));
   }
 
   Widget _buildContent(ThemeData theme) {

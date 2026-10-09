@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/location_models.dart';
 import '../models/permission_key.dart';
 import '../services/location_service.dart';
+import 'account_details_screen.dart';
 import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
 
@@ -47,6 +48,10 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
   late final TextEditingController _premisesNumber;
   late final TextEditingController _roomNumber;
   late final TextEditingController _paymentShare;
+  // Лист «Доп критерии поиска в ЕГРП» шаблона МКД.
+  late final TextEditingController _egrpConditional;
+  late final TextEditingController _egrpRegNumber;
+  late final TextEditingController _egrpRegDate;
 
   bool? _isTenant;
   bool? _isSplit;
@@ -84,6 +89,12 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
     _premisesNumber = TextEditingController(text: a.gisPremisesNumber ?? '');
     _roomNumber = TextEditingController(text: a.gisRoomNumber ?? '');
     _paymentShare = TextEditingController(text: a.gisPaymentShare?.toString() ?? '');
+    _egrpConditional =
+        TextEditingController(text: a.gisEgrpConditionalNumber ?? '');
+    _egrpRegNumber =
+        TextEditingController(text: a.gisEgrpRegistrationNumber ?? '');
+    _egrpRegDate =
+        TextEditingController(text: a.gisEgrpRegistrationDate ?? '');
     _isTenant = a.gisIsTenant;
     _isSplit = a.gisIsSplit;
   }
@@ -95,6 +106,7 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
       _docType, _docNumber, _docSeries, _docDate, _ogrn, _nza, _kpp,
       _area, _livingArea, _heatedArea, _residents,
       _premisesType, _premisesNumber, _roomNumber, _paymentShare,
+      _egrpConditional, _egrpRegNumber, _egrpRegDate,
     ]) {
       c.dispose();
     }
@@ -140,6 +152,9 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
         gisPremisesNumber: _t(_premisesNumber),
         gisRoomNumber: _t(_roomNumber),
         gisPaymentShare: _d(_paymentShare),
+        gisEgrpConditionalNumber: _t(_egrpConditional),
+        gisEgrpRegistrationNumber: _t(_egrpRegNumber),
+        gisEgrpRegistrationDate: _t(_egrpRegDate),
       );
 
       await ref.read(locationServiceProvider).updateAccount(widget.account.id, update);
@@ -276,6 +291,39 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
             _field(_roomNumber, 'Номер комнаты'),
             _field(_paymentShare, 'Доля внесения платы, %',
                 hint: '100', number: true),
+
+            const SizedBox(height: 12),
+            _header('Привязка к ЕГРП'),
+            // Заполняется, когда привязать помещение по кадастровому
+            // номеру не удалось — лист «Доп критерии поиска в ЕГРП».
+            _field(_egrpConditional, 'Условный номер ЕГРП'),
+            _field(_egrpRegNumber, 'Номер гос. регистрации права'),
+            _field(_egrpRegDate, 'Дата гос. регистрации права',
+                hint: 'ГГГГ-ММ-ДД'),
+
+            const SizedBox(height: 12),
+            _header('Комнаты и основания'),
+            // Отдельный экран: комнат и договоров у счёта может быть
+            // несколько, в поля карточки они не укладываются.
+            Card(
+              margin: EdgeInsets.zero,
+              child: ListTile(
+                leading: const Icon(Icons.meeting_room, color: Colors.teal),
+                title: const Text('Комнаты, основания, параметры'),
+                subtitle: const Text(
+                    'листы «Комнаты», «Основания», «Информация о помещениях»'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => AccountDetailsScreen(
+                    accountId: widget.account.id,
+                    accountTitle: 'ЛС ${widget.account.accountNumber}',
+                    premisesType: _premisesType.text.trim().isEmpty
+                        ? null
+                        : _premisesType.text.trim(),
+                  ),
+                )),
+              ),
+            ),
 
             const SizedBox(height: 24),
             if (canEdit)

@@ -273,6 +273,10 @@ AccountResponse _$AccountResponseFromJson(Map<String, dynamic> json) =>
       gisPremisesNumber: json['gis_premises_number'] as String?,
       gisRoomNumber: json['gis_room_number'] as String?,
       gisPaymentShare: (json['gis_payment_share'] as num?)?.toDouble(),
+      gisEgrpConditionalNumber: json['gis_egrp_conditional_number'] as String?,
+      gisEgrpRegistrationNumber:
+          json['gis_egrp_registration_number'] as String?,
+      gisEgrpRegistrationDate: json['gis_egrp_registration_date'] as String?,
       gisStatus: json['gis_status'] as String?,
       createdAt: json['created_at'] as String,
       updatedAt: json['updated_at'] as String?,
@@ -318,6 +322,9 @@ Map<String, dynamic> _$AccountResponseToJson(AccountResponse instance) =>
       'gis_premises_number': instance.gisPremisesNumber,
       'gis_room_number': instance.gisRoomNumber,
       'gis_payment_share': instance.gisPaymentShare,
+      'gis_egrp_conditional_number': instance.gisEgrpConditionalNumber,
+      'gis_egrp_registration_number': instance.gisEgrpRegistrationNumber,
+      'gis_egrp_registration_date': instance.gisEgrpRegistrationDate,
       'gis_status': instance.gisStatus,
       'created_at': instance.createdAt,
       'updated_at': instance.updatedAt,
@@ -398,6 +405,10 @@ AccountUpdate _$AccountUpdateFromJson(Map<String, dynamic> json) =>
       gisPremisesNumber: json['gis_premises_number'] as String?,
       gisRoomNumber: json['gis_room_number'] as String?,
       gisPaymentShare: (json['gis_payment_share'] as num?)?.toDouble(),
+      gisEgrpConditionalNumber: json['gis_egrp_conditional_number'] as String?,
+      gisEgrpRegistrationNumber:
+          json['gis_egrp_registration_number'] as String?,
+      gisEgrpRegistrationDate: json['gis_egrp_registration_date'] as String?,
     );
 
 Map<String, dynamic> _$AccountUpdateToJson(AccountUpdate instance) =>
@@ -438,4 +449,7 @@ Map<String, dynamic> _$AccountUpdateToJson(AccountUpdate instance) =>
       'gis_premises_number': ?instance.gisPremisesNumber,
       'gis_room_number': ?instance.gisRoomNumber,
       'gis_payment_share': ?instance.gisPaymentShare,
+      'gis_egrp_conditional_number': ?instance.gisEgrpConditionalNumber,
+      'gis_egrp_registration_number': ?instance.gisEgrpRegistrationNumber,
+      'gis_egrp_registration_date': ?instance.gisEgrpRegistrationDate,
     };
