@@ -7,6 +7,7 @@ import '../models/permission_key.dart';
 import '../services/location_service.dart';
 import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/gis_dictionaries.dart';
 
 /// Создание и правка лицевого счёта вручную.
 ///
@@ -49,8 +50,14 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   late final TextEditingController _els;
   late final TextEditingController _cadastral;
   late final TextEditingController _serviceType;
+  late final TextEditingController _premisesNumber;
 
   String? _status;
+  // Справочные поля ГИС — выбором, а не вводом: портал сверяет текст
+  // дословно, и опечатка в «ЛС УО» приводит к отказу файла.
+  String? _accountType;
+  String? _premisesType;
+  String? _docType;
   bool _saving = false;
 
   bool get _isEditing => widget.account != null;
@@ -75,8 +82,16 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     _els = TextEditingController(text: a?.gisEls ?? '');
     _cadastral = TextEditingController(text: a?.cadastralNumber ?? '');
     _serviceType = TextEditingController(text: a?.serviceType ?? '');
+    _premisesNumber = TextEditingController(text: a?.gisPremisesNumber ?? '');
     final status = a?.status;
     _status = (status != null && _statuses.contains(status)) ? status : null;
+    _accountType = gisAccountTypes.contains(a?.gisAccountType)
+        ? a!.gisAccountType
+        : null;
+    _premisesType = gisPremisesTypes.contains(a?.gisPremisesType)
+        ? a!.gisPremisesType
+        : null;
+    _docType = gisDocumentTypes.contains(a?.gisDocType) ? a!.gisDocType : null;
   }
 
   /// Площадь без хвоста «.0»: в поле ввода он только мешает.
@@ -137,6 +152,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             cadastralNumber: _t(_cadastral),
             serviceType: _t(_serviceType),
             status: _status,
+            gisAccountType: _accountType,
+            gisPremisesType: _premisesType,
+            gisDocType: _docType,
+            gisPremisesNumber: _t(_premisesNumber),
           ),
         );
       } else {
@@ -281,6 +300,17 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             ],
 
             const SizedBox(height: 8),
+            _header('Данные для ГИС ЖКХ'),
+            _gisDropdown('Тип лицевого счёта', _accountType, gisAccountTypes,
+                (v) => setState(() => _accountType = v)),
+            _gisDropdown('Тип помещения', _premisesType, gisPremisesTypes,
+                (v) => setState(() => _premisesType = v)),
+            _field(_premisesNumber, 'Номер помещения (квартиры)', hint: '12'),
+            if (_isEditing)
+              _gisDropdown('Вид документа', _docType, gisDocumentTypes,
+                  (v) => setState(() => _docType = v)),
+
+            const SizedBox(height: 8),
             _header('Идентификаторы'),
             _field(_jku, 'Идентификатор ЖКУ', hint: '80РС558347-01'),
             if (_isEditing) _field(_els, 'Единый лицевой счёт (ЕЛС)'),
@@ -329,6 +359,43 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             letterSpacing: 0.4,
             color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
           ),
+        ),
+      );
+
+  /// Выпадающий список значений ГИС.
+  ///
+  /// Длинные варианты (виды документов) в строке не поместились бы,
+  /// поэтому список прокручиваемый и значение переносится.
+  Widget _gisDropdown(
+    String label,
+    String? value,
+    List<String> options,
+    ValueChanged<String?> onChanged,
+  ) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: DropdownButtonFormField<String?>(
+          initialValue: value,
+          isExpanded: true,
+          isDense: true,
+          decoration: InputDecoration(
+            labelText: label,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+          style: const TextStyle(fontSize: 12.5),
+          items: [
+            const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('не указан', style: TextStyle(fontSize: 12.5))),
+            ...options.map((o) => DropdownMenuItem<String?>(
+                  value: o,
+                  child: Text(o,
+                      style: const TextStyle(fontSize: 12.5),
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                )),
+          ],
+          onChanged: onChanged,
         ),
       );
 

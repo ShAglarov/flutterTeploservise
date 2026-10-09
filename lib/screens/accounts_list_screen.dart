@@ -7,6 +7,7 @@ import '../services/location_service.dart';
 import '../services/permission_service.dart';
 import '../services/base_api_service.dart';
 import 'account_form_screen.dart';
+import 'accounts_bulk_screen.dart';
 import 'account_gis_screen.dart';
 import 'payment_documents_screen.dart';
 
@@ -102,10 +103,26 @@ class _AccountsListScreenState extends ConsumerState<AccountsListScreen> {
       ),
       floatingActionButton:
           ref.watch(permissionStateProvider).hasPermission(PermissionKey.accountCreate)
-              ? FloatingActionButton.extended(
-                  onPressed: _createAccount,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Лицевой счёт'),
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Массовое создание по номерам квартир: придумывать
+                    // номер для каждой квартиры вручную не нужно.
+                    FloatingActionButton.small(
+                      heroTag: 'bulk',
+                      tooltip: 'Создать счета по квартирам',
+                      onPressed: _bulkCreate,
+                      child: const Icon(Icons.playlist_add),
+                    ),
+                    const SizedBox(height: 10),
+                    FloatingActionButton.extended(
+                      heroTag: 'single',
+                      onPressed: _createAccount,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Лицевой счёт'),
+                    ),
+                  ],
                 )
               : null,
       body: Column(
@@ -427,6 +444,22 @@ class _AccountsListScreenState extends ConsumerState<AccountsListScreen> {
     } catch (e) {
       _toast('Не удалось открыть счёт: $e', Colors.red);
     }
+  }
+
+  Future<void> _bulkCreate() async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AccountsBulkScreen(
+          locationId: widget.locationId,
+          locationName: _locationName,
+        ),
+      ),
+    );
+    // Экран генерации не возвращает true, но счета могли появиться —
+    // перечитываем список всегда.
+    if (mounted) await _loadAccounts();
+    if (changed == true && mounted) await _loadAccounts();
   }
 
   Future<void> _createAccount() async {
