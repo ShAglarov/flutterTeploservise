@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../services/auth_service.dart';
+import 'map_providers.dart';
 import '../services/secure_storage_service.dart';
 import '../services/permission_service.dart';
 import '../services/tenant_service.dart';
@@ -174,6 +175,13 @@ class Auth extends _$Auth {
       // локальной БД (отдельный файл кэша на тенанта).
       ref.read(currentOrganizationProvider.notifier)
           .set(TenantService.currentOrganizationId);
+      // Явно сбрасываем данные карты: смена организации меняет файл
+      // локальной БД, и прежние дома с котельными относятся к другой
+      // компании. Полагаться только на перестроение по цепочке
+      // зависимостей ненадёжно — провайдер keepAlive, и при неудачном
+      // стечении обстоятельств он оставался с пустым кэшем до
+      // перезапуска приложения.
+      ref.invalidate(mapDataProvider);
       state = state.copyWith(status: AuthStatus.authenticated, isLoading: false);
       _loadPermissions();
     } catch (e) {

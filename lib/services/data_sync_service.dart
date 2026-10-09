@@ -190,8 +190,17 @@ class DataSyncService {
           dev.log('[DataSync] management_company action - skipping (not implemented)', name: 'SYNC');
           break;
         case 'account':
-          // TODO: implement if/when Account sync is needed
-          dev.log('[DataSync] account action - skipping (not implemented)', name: 'SYNC');
+          // Лицевые счета не хранятся в локальном кэше целиком — экран
+          // читает их прямо из API. Поэтому здесь только сигнал
+          // «перечитай», чтобы открытый список обновился сам.
+          _notifyReload('account', entityIdRaw);
+          break;
+        case 'resident':
+          // Жильцы тоже читаются из API: сигнализируем экрану.
+          _notifyReload('resident', entityIdRaw);
+          break;
+        case 'user':
+          _notifyReload('user', entityIdRaw);
           break;
         default:
           dev.log('[DataSync] Unknown entity type: $entityType', name: 'SYNC');
@@ -261,6 +270,23 @@ class DataSyncService {
   // ---------------------------------------------------------------------------
   // Entity handlers
   // ---------------------------------------------------------------------------
+
+  /// Сообщает открытым экранам, что сущность изменилась.
+  ///
+  /// Лицевые счета, жильцы и пользователи не лежат в локальном кэше
+  /// целиком — их экраны читают данные из API. Поэтому вместо записи в
+  /// БД поднимаем общий сигнал обновления: открытый список перечитает
+  /// себя сам, без выхода и повторного входа.
+  void _notifyReload(String entityType, dynamic entityId) {
+    dev.log('[DataSync] $entityType изменился (id=$entityId) — сигнал обновления',
+        name: 'SYNC');
+    try {
+      _ref.read(globalRefreshEventControllerProvider).add(null);
+    } catch (e) {
+      // Контроллер мог быть закрыт при выходе — это не ошибка.
+      dev.log('[DataSync] Не удалось подать сигнал обновления: $e', name: 'SYNC');
+    }
+  }
 
   Future<void> _handleIncident(String actionType, dynamic entityId, Map<String, dynamic>? entityData) async {
     if (actionType == 'delete') {

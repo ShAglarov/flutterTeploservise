@@ -106,6 +106,16 @@ class MapData extends _$MapData {
   @override
   MapDataState build() {
     _disposed = false;
+    // КРИТИЧНО сбросить флаг загрузки.
+    //
+    // При смене организации провайдер пересоздаётся (его цепочка зависит
+    // от currentOrganizationProvider → databaseProvider). Если прошлый
+    // экземпляр был уничтожен В СЕРЕДИНЕ загрузки, _isFetching оставался
+    // true, и _fetchInitialData() нового экземпляра сразу выходил по
+    // проверке «уже загружаю». Новая БД оставалась пустой: дома и
+    // котельные появлялись только после перезапуска приложения.
+    _isFetching = false;
+    _fetchRetryCount = 0;
     final syncRepo = ref.watch(syncRepositoryProvider);
     
     // 1. Subscribe to local DB streams for reactive updates
@@ -183,6 +193,8 @@ class MapData extends _$MapData {
     
     ref.onDispose(() {
       _disposed = true;
+      // Снимаем флаг: иначе следующий экземпляр решит, что загрузка идёт.
+      _isFetching = false;
       _retryTimer?.cancel();
       bhSub.cancel();
       locSub.cancel();
