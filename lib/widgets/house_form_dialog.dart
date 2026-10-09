@@ -102,6 +102,12 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _gisStatus = initial?.gisStatus;
     _stoveType = initial?.stoveType;
     _housingType = initial?.housingType;
+    // Счётчик «заполнено N из M» в заголовке секции ГИС должен
+    // меняться сразу при вводе. Пикеры вызывают setState сами, а поля
+    // с клавиатуры — нет, поэтому слушаем их контроллеры.
+    for (final controller in [_gisOktmoController, _gisUndergroundController]) {
+      controller.addListener(_onGisFieldChanged);
+    }
     _providesHeating = initial?.providesHeating ?? false;
     _providesHotWater = initial?.providesHotWater ?? false;
     _selectedManagementCompanyId = initial?.managementCompanyId;
@@ -217,6 +223,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
 
   @override
   void dispose() {
+    for (final controller in [_gisOktmoController, _gisUndergroundController]) {
+      controller.removeListener(_onGisFieldChanged);
+    }
     _nameController.dispose();
     _floorsController.dispose();
     _residentsController.dispose();
@@ -366,28 +375,93 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
       builder: (context) => const HouseSelectionDialog(),
     );
 
-    if (result != null) {
-      setState(() {
-        _nameController.text = result.name;
-        _areaController.text = result.totalArea?.toString() ?? '';
-        _floorsController.text = result.floors?.toString() ?? '';
-        _yearController.text = result.yearBuilt?.toString() ?? '';
-        _roomsController.text = result.rooms?.toString() ?? '';
-        _residentsController.text = result.residentsCount?.toString() ?? '';
-        _latController.text = result.latitude.toString();
-        _lngController.text = result.longitude.toString();
-        _fiasHouseController.text = result.fiasHouseGuid ?? '';
-        _fiasAOController.text = result.fiasAOGuid ?? '';
-        _providesHeating = result.providesHeating ?? false;
-        _providesHotWater = result.providesHotWater ?? false;
-        _selectedManagementCompanyId = result.managementCompanyId;
-        _selectedManagementCompanyName = result.managementCompanyName;
-        _cadastralController.text = result.cadastralNumber ?? '';
-        _commissioningDateController.text = result.commissioningDate ?? '';
-        _entrancesController.text = result.entrancesCount?.toString() ?? '';
-        _stoveType = result.stoveType;
-        _housingType = result.housingType;
-      });
+    if (result == null) return;
+
+    // Диалог показывает дома, УЖЕ заведённые в организации. Если
+    // скопировать всё, включая ФИАС и кадастровый номер, и сменить
+    // только название, в базе окажутся ДВА дома с одним ФИАС. Для
+    // портала ГИС это не два дома, а одна запись дважды.
+    //
+    // Выгрузка такие дубли теперь отсекает, но лучше не создавать их
+    // вовсе: спрашиваем, нужна правка того же дома или новый дом с
+    // похожими характеристиками.
+    if (!mounted) return;
+    final mode = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Что сделать с выбранным домом?'),
+        content: Text(
+          '«${result.name}» уже есть в базе.\n\n'
+          'Если это тот же дом — откройте его карточку и измените там: '
+          'иначе появится второй дом с теми же ФИАС и кадастровым '
+          'номером.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('cancel'),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('copy'),
+            child: const Text('Только характеристики'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop('edit'),
+            child: const Text('Открыть этот дом'),
+          ),
+        ],
+      ),
+    );
+    if (mode == null || mode == 'cancel') return;
+
+    if (mode == 'edit') {
+      // Закрываем форму создания и отдаём выбранный дом наружу —
+      // вызывающий экран откроет его карточку на правку.
+      if (mounted) Navigator.of(context).pop(result);
+      return;
+    }
+
+    setState(() {
+      // Характеристики, общие для похожих домов, копируем.
+      _areaController.text = result.totalArea?.toString() ?? '';
+      _floorsController.text = result.floors?.toString() ?? '';
+      _yearController.text = result.yearBuilt?.toString() ?? '';
+      _roomsController.text = result.rooms?.toString() ?? '';
+      _residentsController.text = result.residentsCount?.toString() ?? '';
+      _providesHeating = result.providesHeating ?? false;
+      _providesHotWater = result.providesHotWater ?? false;
+      _selectedManagementCompanyId = result.managementCompanyId;
+      _selectedManagementCompanyName = result.managementCompanyName;
+      _entrancesController.text = result.entrancesCount?.toString() ?? '';
+      _stoveType = result.stoveType;
+      _housingType = result.housingType;
+      _commissioningDateController.text = result.commissioningDate ?? '';
+      // ОКТМО и часовая зона относятся к населённому пункту, а не к
+      // зданию — их копировать можно.
+      _gisOktmoController.text = result.gisOktmo ?? '';
+      _gisTimezoneController.text = result.gisTimezone ?? '';
+
+      // НЕ копируем: название, координаты, ФИАС, кадастровый номер.
+      // Это удостоверение конкретного здания, у нового дома оно своё.
+      _nameController.clear();
+      _latController.clear();
+      _lngController.clear();
+      _fiasHouseController.clear();
+      _fiasAOController.clear();
+      _cadastralController.clear();
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Характеристики скопированы. Укажите адрес, координаты, '
+            'ФИАС и кадастровый номер нового дома.',
+          ),
+          duration: Duration(seconds: 5),
+        ),
+      );
     }
   }
 
@@ -443,6 +517,74 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                         _buildInputRow(Icons.people, Colors.orange, 'Жильцов', _residentsController, hint: '4', keyboardType: TextInputType.number),
                       ]),
                       
+                      // Эти поля раньше лежали в секции «ФИАС и кадастр»,
+                      // хотя к идентификаторам не относятся.
+                      _SectionHeader('Дом'),
+                      _buildSection([
+                        _buildActionRow(
+                          Icons.event_available,
+                          Colors.green,
+                          'Ввод в эксплуатацию',
+                          _commissioningDateController.text.isNotEmpty
+                              ? _formatIsoDate(_commissioningDateController.text)
+                              : 'Не указан',
+                          isEmpty: _commissioningDateController.text.isEmpty,
+                          onTap: _pickCommissioningDate,
+                        ),
+                        _buildDivider(),
+                        _buildInputRow(Icons.door_front_door, Colors.indigo,
+                            'Подъездов', _entrancesController,
+                            hint: '4', keyboardType: TextInputType.number),
+                        _buildDivider(),
+                        _buildActionRow(
+                          Icons.local_fire_department,
+                          Colors.orange,
+                          'Тип плит',
+                          _stoveLabel(_stoveType) ?? 'Не указан',
+                          isEmpty: _stoveLabel(_stoveType) == null,
+                          onTap: () async {
+                            final result = await _pickOne(
+                              title: 'Тип плит',
+                              current: _stoveType ?? '',
+                              emptyLabel: 'Не указан',
+                              options: const [
+                                _Option('gas', 'Газовые'),
+                                _Option('electric', 'Электрические'),
+                                _Option('mixed', 'Смешанные'),
+                              ],
+                            );
+                            if (result != null) {
+                              setState(() =>
+                                  _stoveType = result.isEmpty ? null : result);
+                            }
+                          },
+                        ),
+                        _buildDivider(),
+                        _buildActionRow(
+                          Icons.home,
+                          Colors.deepPurple,
+                          'Тип жилья',
+                          _housingLabel(_housingType) ?? 'Не указан',
+                          isEmpty: _housingLabel(_housingType) == null,
+                          onTap: () async {
+                            final result = await _pickOne(
+                              title: 'Тип жилья',
+                              current: _housingType ?? '',
+                              emptyLabel: 'Не указан',
+                              options: const [
+                                _Option('privatized', 'Приватизированное'),
+                                _Option('municipal', 'Муниципальное'),
+                                _Option('departmental', 'Ведомственное'),
+                              ],
+                            );
+                            if (result != null) {
+                              setState(() =>
+                                  _housingType = result.isEmpty ? null : result);
+                            }
+                          },
+                        ),
+                      ]),
+
                       _SectionHeader('Координаты'),
                       _buildSection([
                         _buildInputRow(Icons.navigation, Colors.red, 'Широта', _latController, keyboardType: const TextInputType.numberWithOptions(decimal: true)),
@@ -458,58 +600,12 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                         _buildDivider(),
                         _buildInputRow(Icons.pin, Colors.teal, 'Кадастровый номер', _cadastralController, hint: '05:40:000038:3079'),
                         _buildDivider(),
-                        _buildActionRow(
-                          Icons.event_available,
-                          Colors.green,
-                          'Ввод в эксплуатацию',
-                          _commissioningDateController.text.isNotEmpty 
-                            ? _commissioningDateController.text 
-                            : 'Выбрать дату',
-                          onTap: _pickCommissioningDate,
-                        ),
-                        _buildDivider(),
-                        _buildInputRow(Icons.door_front_door, Colors.indigo, 'Подъездов', _entrancesController, hint: '4', keyboardType: TextInputType.number),
-                        _buildDivider(),
-                        _buildActionRow(
-                          Icons.local_fire_department,
-                          Colors.orange,
-                          'Тип плит',
-                          _stoveType == 'gas' ? 'Газовые' : _stoveType == 'electric' ? 'Электрические' : _stoveType == 'mixed' ? 'Смешанные' : 'Не указан',
-                          onTap: () async {
-                            final result = await showDialog<String>(context: context, builder: (c) => SimpleDialog(
-                              title: const Text('Тип плит'),
-                              children: [
-                                SimpleDialogOption(child: const Text('🔥 Газовые'), onPressed: () => Navigator.pop(c, 'gas')),
-                                SimpleDialogOption(child: const Text('⚡ Электрические'), onPressed: () => Navigator.pop(c, 'electric')),
-                                SimpleDialogOption(child: const Text('🔄 Смешанные'), onPressed: () => Navigator.pop(c, 'mixed')),
-                              ],
-                            ));
-                            if (result != null) setState(() => _stoveType = result);
-                          },
-                        ),
-                        _buildDivider(),
-                        _buildActionRow(
-                          Icons.home,
-                          Colors.deepPurple,
-                          'Тип жилья',
-                          _housingType == 'privatized' ? 'Приватизированное' : _housingType == 'municipal' ? 'Муниципальное' : _housingType == 'departmental' ? 'Ведомственное' : 'Не указан',
-                          onTap: () async {
-                            final result = await showDialog<String>(context: context, builder: (c) => SimpleDialog(
-                              title: const Text('Тип жилья'),
-                              children: [
-                                SimpleDialogOption(child: const Text('🏠 Приватизированное'), onPressed: () => Navigator.pop(c, 'privatized')),
-                                SimpleDialogOption(child: const Text('🏢 Муниципальное'), onPressed: () => Navigator.pop(c, 'municipal')),
-                                SimpleDialogOption(child: const Text('🏗️ Ведомственное'), onPressed: () => Navigator.pop(c, 'departmental')),
-                              ],
-                            ));
-                            if (result != null) setState(() => _housingType = result);
-                          },
-                        ),
                       ]),
 
                       // Поля шаблона ГИС, которых нет в обычной карточке дома.
                       // ФИАС и кадастровый номер — выше, в своей секции.
-                      _SectionHeader('ГИС ЖКХ'),
+                      _SectionHeader('ГИС ЖКХ',
+                          filled: _gisFilledCount, total: _gisTotalCount),
                       _buildSection([
                         _buildInputRow(Icons.tag, Colors.teal, 'ОКТМО',
                             _gisOktmoController, hint: '82701000'),
@@ -559,51 +655,78 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                         if (_gisStatus != null && _gisStatus!.isNotEmpty) ...[
                           _buildDivider(),
                           // Статус приходит от портала после загрузки файла,
-                          // поэтому только для чтения.
+                          // поэтому только для чтения (onTap не задан).
                           _buildActionRow(Icons.cloud_done, Colors.blueGrey,
                               'Статус в ГИС', _gisStatus!),
                         ],
-                        // Отдельные листы шаблона — на своих экранах:
-                        // параметров там 110, и в карточку дома они не
-                        // поместились бы. Доступны только после
-                        // сохранения дома: нужен его id.
-                        if (widget.initialLocation?.id != null) ...[
-                          _buildDivider(),
-                          _buildActionRow(
-                            Icons.door_front_door,
-                            Colors.brown,
-                            'Подъезды и лифты',
-                            'листы «Подъезды», «Лифты»',
-                            onTap: _openStructure,
+                      ]),
+
+                      // Отдельные листы шаблона — на своих экранах:
+                      // расширенных параметров 112, в карточку они не
+                      // поместились бы. Своей секцией, а не вперемешку с
+                      // полями: это переходы, а не ввод значений.
+                      _SectionHeader('Сведения для ГИС ЖКХ'),
+                      if (widget.initialLocation?.id == null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline,
+                                  size: 15,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withAlpha(130)),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Доступно после сохранения дома',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withAlpha(130),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          _buildDivider(),
-                          _buildActionRow(
-                            Icons.info_outline,
-                            Colors.blue,
-                            'Информация о доме',
-                            'износ, площади, паркинг',
-                            onTap: () => _openParams(
-                                'house_info', 'Информация о доме'),
-                          ),
-                          _buildDivider(),
-                          _buildActionRow(
-                            Icons.foundation,
-                            Colors.deepOrange,
-                            'Конструктивные элементы',
-                            'фундамент, стены, крыша',
-                            onTap: () => _openParams('house_structure',
-                                'Конструктивные элементы'),
-                          ),
-                          _buildDivider(),
-                          _buildActionRow(
-                            Icons.plumbing,
-                            Colors.cyan,
-                            'Внутридомовые сети',
-                            'отопление, ГВС, ХВС, газ',
-                            onTap: () => _openParams(
-                                'house_networks', 'Внутридомовые сети'),
-                          ),
-                        ],
+                        ),
+                      _buildSection([
+                        _buildLinkRow(
+                          Icons.door_front_door,
+                          Colors.brown,
+                          'Подъезды и лифты',
+                          'номера, этажность, заводские номера',
+                          _openStructure,
+                        ),
+                        _buildDivider(),
+                        _buildLinkRow(
+                          Icons.info_outline,
+                          Colors.blue,
+                          'Информация о доме',
+                          'износ, площади, паркинг',
+                          () => _openParams('house_info', 'Информация о доме'),
+                        ),
+                        _buildDivider(),
+                        _buildLinkRow(
+                          Icons.foundation,
+                          Colors.deepOrange,
+                          'Конструктивные элементы',
+                          'фундамент, стены, крыша, окна',
+                          () => _openParams(
+                              'house_structure', 'Конструктивные элементы'),
+                        ),
+                        _buildDivider(),
+                        _buildLinkRow(
+                          Icons.plumbing,
+                          Colors.cyan,
+                          'Внутридомовые сети',
+                          'отопление, ГВС, ХВС, газ, электричество',
+                          () => _openParams(
+                              'house_networks', 'Внутридомовые сети'),
+                        ),
                       ]),
 
                       _SectionHeader('Документы'),
@@ -753,6 +876,184 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   /// Показываем диалогом, а не DropdownButton: некоторые значения длинные
   /// («Капитальный ремонт без отселения»), и в узкой строке формы они
   /// обрезались бы до неузнаваемости.
+  /// Перерисовать счётчик в заголовке секции ГИС.
+  void _onGisFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
+  /// Сколько полей секции ГИС заполнено. По нему заголовок показывает
+  /// «заполнено N из M»: полей много, и без счётчика непонятно, что
+  /// осталось дозаполнить перед выгрузкой в портал.
+  int get _gisTotalCount => 9;
+
+  int get _gisFilledCount {
+    var filled = 0;
+    if (_gisOktmoController.text.trim().isNotEmpty) filled++;
+    if (_gisStateController.text.trim().isNotEmpty) filled++;
+    if (_gisLifecycleController.text.trim().isNotEmpty) filled++;
+    if (_gisUndergroundController.text.trim().isNotEmpty) filled++;
+    if (_gisTimezoneController.text.trim().isNotEmpty) filled++;
+    if (_gisCulturalHeritage != null) filled++;
+    if (_gisFederalProperty != null) filled++;
+    if (_gisMunicipalProperty != null) filled++;
+    if (_gisHostelTypeController.text.trim().isNotEmpty) filled++;
+    return filled;
+  }
+
+  /// Переход на отдельный экран: название, пояснение и стрелка.
+  ///
+  /// Отдельно от `_buildActionRow`, потому что здесь нет «значения» —
+  /// раньше пояснение писалось в колонку значения, где его обрезало и
+  /// красило бледным, как незаполненное поле.
+  ///
+  /// У нового дома переход недоступен: экранам нужен его id. Строка при
+  /// этом остаётся видимой (приглушённой), чтобы было понятно, что
+  /// раздел существует.
+  Widget _buildLinkRow(
+    IconData icon,
+    Color iconColor,
+    String label,
+    String description,
+    VoidCallback onTap,
+  ) {
+    final enabled = widget.initialLocation?.id != null;
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.45,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(label,
+                        style: TextStyle(
+                            color: scheme.onSurface, fontSize: 16)),
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        color: scheme.onSurface.withAlpha(130),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios,
+                  size: 14, color: scheme.onSurface.withAlpha(100)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Название типа плит или null, если не задан.
+  String? _stoveLabel(String? code) => const {
+        'gas': 'Газовые',
+        'electric': 'Электрические',
+        'mixed': 'Смешанные',
+      }[code];
+
+  String? _housingLabel(String? code) => const {
+        'privatized': 'Приватизированное',
+        'municipal': 'Муниципальное',
+        'departmental': 'Ведомственное',
+      }[code];
+
+  /// «2020-05-14» → «14.05.2020»: ISO-дата в поле ввода неудобна.
+  String _formatIsoDate(String iso) {
+    final parts = iso.split('T').first.split('-');
+    if (parts.length != 3) return iso;
+    return '${parts[2]}.${parts[1]}.${parts[0]}';
+  }
+
+  /// Выбор одного значения из списка с отметкой текущего.
+  ///
+  /// Вместо SimpleDialog — лист снизу: в справочниках ГИС до 22
+  /// значений («Состояние», «Часовая зона»), в диалоге они не
+  /// помещались на экран телефона и список нельзя было прокрутить.
+  Future<String?> _pickOne({
+    required String title,
+    required String current,
+    required List<_Option> options,
+    String emptyLabel = 'Не указано',
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: options.length > 6 ? 0.7 : 0.45,
+        maxChildSize: 0.9,
+        builder: (_, controller) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                      fontSize: 17, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                controller: controller,
+                children: [
+                  ListTile(
+                    leading: Icon(
+                      current.isEmpty
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: current.isEmpty ? scheme.primary : null,
+                    ),
+                    title: Text(emptyLabel,
+                        style: const TextStyle(fontStyle: FontStyle.italic)),
+                    onTap: () => Navigator.pop(ctx, ''),
+                  ),
+                  const Divider(height: 1),
+                  for (final option in options)
+                    ListTile(
+                      leading: Icon(
+                        option.value == current
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: option.value == current ? scheme.primary : null,
+                      ),
+                      title: Text(option.label),
+                      subtitle: option.hint == null ? null : Text(option.hint!),
+                      onTap: () => Navigator.pop(ctx, option.value),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGisPicker(
     IconData icon,
     Color iconColor,
@@ -767,23 +1068,13 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
       iconColor,
       label,
       current.isEmpty ? emptyLabel : current,
+      isEmpty: current.isEmpty,
       onTap: () async {
-        final result = await showDialog<String>(
-          context: context,
-          builder: (ctx) => SimpleDialog(
-            title: Text(label),
-            children: [
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, ''),
-                child: Text(emptyLabel,
-                    style: const TextStyle(fontStyle: FontStyle.italic)),
-              ),
-              ...options.map((o) => SimpleDialogOption(
-                    onPressed: () => Navigator.pop(ctx, o),
-                    child: Text(o),
-                  )),
-            ],
-          ),
+        final result = await _pickOne(
+          title: label,
+          current: current,
+          emptyLabel: emptyLabel,
+          options: [for (final o in options) _Option(o, o)],
         );
         if (result != null) onChanged(result);
       },
@@ -798,24 +1089,18 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
       Icons.schedule,
       Colors.deepPurple,
       'Часовая зона',
-      match?.label ?? (current.isEmpty ? 'Не указано' : current),
+      match?.city ?? (current.isEmpty ? 'Не указано' : current),
+      // Идентификатор Olson показываем подписью: в значение он не
+      // влезал, а оператору полезно видеть, что уйдёт в портал.
+      subtitle: match?.id,
+      isEmpty: current.isEmpty,
       onTap: () async {
-        final result = await showDialog<String>(
-          context: context,
-          builder: (ctx) => SimpleDialog(
-            title: const Text('Часовая зона по Olson'),
-            children: [
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, ''),
-                child: const Text('Не указано',
-                    style: TextStyle(fontStyle: FontStyle.italic)),
-              ),
-              ...gisTimezones.map((z) => SimpleDialogOption(
-                    onPressed: () => Navigator.pop(ctx, z.id),
-                    child: Text(z.label),
-                  )),
-            ],
-          ),
+        final result = await _pickOne(
+          title: 'Часовая зона по Olson',
+          current: current,
+          options: [
+            for (final z in gisTimezones) _Option(z.id, z.city, hint: z.id),
+          ],
         );
         if (result != null) {
           setState(() => _gisTimezoneController.text = result);
@@ -825,6 +1110,10 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   }
 
   /// Переключатель на три состояния: не указано / Да / Нет.
+  ///
+  /// Сегментами, а не диалогом: это самый частый ввод в секции ГИС
+  /// (культурное наследие, собственность субъекта, муниципальная), и
+  /// лишнее окно на каждое поле только мешало.
   Widget _buildTristateRow(
     IconData icon,
     Color iconColor,
@@ -832,31 +1121,46 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     bool? value,
     ValueChanged<bool?> onChanged,
   ) {
-    return _buildActionRow(
-      icon,
-      iconColor,
-      label,
-      value == null ? 'Не указано' : (value ? 'Да' : 'Нет'),
-      onTap: () async {
-        final result = await showDialog<String>(
-          context: context,
-          builder: (c) => SimpleDialog(
-            title: Text(label),
-            children: [
-              SimpleDialogOption(
-                  onPressed: () => Navigator.pop(c, 'null'),
-                  child: const Text('Не указано')),
-              SimpleDialogOption(
-                  onPressed: () => Navigator.pop(c, 'yes'), child: const Text('Да')),
-              SimpleDialogOption(
-                  onPressed: () => Navigator.pop(c, 'no'), child: const Text('Нет')),
-            ],
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: iconColor),
           ),
-        );
-        if (result != null) {
-          onChanged(result == 'null' ? null : result == 'yes');
-        }
-      },
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(label,
+                style: TextStyle(color: scheme.onSurface, fontSize: 15)),
+          ),
+          const SizedBox(width: 8),
+          SegmentedButton<String>(
+            style: const ButtonStyle(
+              visualDensity: VisualDensity(horizontal: -3, vertical: -3),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: 'null', label: Text('—')),
+              ButtonSegment(value: 'yes', label: Text('Да')),
+              ButtonSegment(value: 'no', label: Text('Нет')),
+            ],
+            selected: {
+              value == null ? 'null' : (value ? 'yes' : 'no'),
+            },
+            onSelectionChanged: (selected) {
+              final picked = selected.first;
+              onChanged(picked == 'null' ? null : picked == 'yes');
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -939,35 +1243,107 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     ));
   }
 
-  Widget _buildActionRow(IconData icon, Color iconColor, String label, String value, {VoidCallback? onTap}) {
+  /// Строка со значением, которое выбирают (не вводят с клавиатуры).
+  ///
+  /// ВАЖНО ПРО ЦВЕТ: раньше значение рисовалось
+  /// `Colors.white.withValues(alpha: 0.5)`. На светлой теме это белый
+  /// текст на белой карточке — выбранные «Состояние», «Тип плит»,
+  /// «Часовая зона» и ещё десяток полей были не видны вообще. Цвет
+  /// обязан идти от темы, поэтому здесь `colorScheme`.
+  ///
+  /// [isEmpty] — значение не заполнено: показываем его бледным и
+  /// курсивом, чтобы «Не указано» нельзя было спутать с настоящим
+  /// значением. [isLink] — строка открывает отдельный экран.
+  Widget _buildActionRow(
+    IconData icon,
+    Color iconColor,
+    String label,
+    String value, {
+    VoidCallback? onTap,
+    bool isEmpty = false,
+    bool isLink = false,
+    String? subtitle,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final enabled = onTap != null;
+
     return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+      child: Opacity(
+        // Недоступная строка (например, до сохранения дома) видна, но
+        // явно показывает, что нажать нельзя.
+        opacity: enabled ? 1 : 0.45,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 18, color: iconColor),
               ),
-              child: Icon(icon, size: 18, color: iconColor),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(color: scheme.onSurface, fontSize: 16),
+                    ),
+                    if (subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: scheme.onSurface.withAlpha(130),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            Text(
-              value,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 16),
-            ),
-            if (value == 'Выбрать' || value == 'Не выбрано')
-              Icon(Icons.chevron_right, size: 20, color: Theme.of(context).colorScheme.onSurface.withAlpha(77)),
-          ],
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.right,
+                  // Длинные значения («Капитальный ремонт без отселения»,
+                  // названия часовых зон) раньше ломали строку по ширине.
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isEmpty
+                        ? scheme.onSurface.withAlpha(105)
+                        : scheme.onSurface,
+                    fontSize: 15,
+                    fontWeight: isEmpty ? FontWeight.normal : FontWeight.w500,
+                    fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
+                  ),
+                ),
+              ),
+              // Стрелка у ВСЕХ нажимаемых строк: раньше она появлялась
+              // только у значений «Выбрать»/«Не выбрано», и по
+              // заполненной строке не было видно, что её можно открыть.
+              if (enabled)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2),
+                  child: Icon(
+                    isLink ? Icons.arrow_forward_ios : Icons.unfold_more,
+                    size: isLink ? 14 : 18,
+                    color: scheme.onSurface.withAlpha(100),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1093,22 +1469,79 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   }
 }
 
+/// Вариант выбора: что уйдёт в базу (`value`) и что видит оператор.
+class _Option {
+  final String value;
+  final String label;
+
+  /// Пояснение под названием — например идентификатор Olson.
+  final String? hint;
+
+  const _Option(this.value, this.label, {this.hint});
+}
+
 class _SectionHeader extends StatelessWidget {
   final String title;
-  const _SectionHeader(this.title);
+
+  /// Сколько полей секции заполнено — показывается справа.
+  /// Нужно для секции ГИС: полей там много, и без счётчика непонятно,
+  /// что ещё не заполнено перед выгрузкой в портал.
+  final int? filled;
+  final int? total;
+
+  const _SectionHeader(this.title, {this.filled, this.total});
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final showCounter = filled != null && total != null && total! > 0;
+    final complete = showCounter && filled == total;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title.toUpperCase(),
+              style: TextStyle(
+                color: scheme.onSurface.withAlpha(140),
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          if (showCounter)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: complete
+                    ? Colors.green.withValues(alpha: 0.15)
+                    : scheme.onSurface.withAlpha(18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  if (complete)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 3),
+                      child: Icon(Icons.check, size: 11, color: Colors.green),
+                    ),
+                  Text(
+                    'заполнено $filled из $total',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: complete
+                          ? Colors.green.shade700
+                          : scheme.onSurface.withAlpha(150),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

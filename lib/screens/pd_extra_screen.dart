@@ -128,7 +128,7 @@ class _PdExtraScreenState extends ConsumerState<PdExtraScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Дополнительные сведения ПД'),
         bottom: PreferredSize(
@@ -136,7 +136,12 @@ class _PdExtraScreenState extends ConsumerState<PdExtraScreen> {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(widget.documentTitle,
-                style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context)
+                        .appBarTheme
+                        .foregroundColor
+                        ?.withAlpha(180))),
           ),
         ),
       ),

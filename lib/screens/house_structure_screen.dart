@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/gis_details_models.dart';
 import '../services/gis_details_service.dart';
-import '../utils/app_theme.dart';
 import 'gis_params_screen.dart';
 
 /// Подъезды и лифты дома — листы «Подъезды», «Лифты» и «Информация о
@@ -80,7 +79,7 @@ class _HouseStructureScreenState extends ConsumerState<HouseStructureScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Подъезды и лифты'),
         bottom: PreferredSize(
@@ -89,7 +88,13 @@ class _HouseStructureScreenState extends ConsumerState<HouseStructureScreen> {
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
               widget.houseName,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .appBarTheme
+                      .foregroundColor
+                      ?.withAlpha(180),
+                ),
             ),
           ),
         ),

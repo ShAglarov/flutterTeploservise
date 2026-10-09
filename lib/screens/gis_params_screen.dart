@@ -122,7 +122,7 @@ class _GisParamsScreenState extends ConsumerState<GisParamsScreen> {
     final catalog = ref.watch(gisCatalogProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: catalog.maybeWhen(
           data: (groups) {
@@ -198,7 +198,9 @@ class _GisParamsScreenState extends ConsumerState<GisParamsScreen> {
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          // От темы, а не Colors.white: на тёмной теме белая плашка
+          // делала подпись и счётчик нечитаемыми.
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: Column(
             children: [

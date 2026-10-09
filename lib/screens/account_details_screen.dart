@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/gis_details_models.dart';
 import '../services/gis_details_service.dart';
-import '../utils/app_theme.dart';
 import 'gis_params_screen.dart';
 
 /// Комнаты и основания лицевого счёта — листы «Комнаты», «Информация о
@@ -101,7 +100,7 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.lightBackground,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Сведения ГИС по счёту'),
         bottom: PreferredSize(
@@ -109,7 +108,12 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
           child: Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(widget.accountTitle,
-                style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context)
+                        .appBarTheme
+                        .foregroundColor
+                        ?.withAlpha(180))),
           ),
         ),
       ),
