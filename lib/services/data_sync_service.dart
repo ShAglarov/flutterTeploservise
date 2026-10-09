@@ -12,6 +12,7 @@ import 'device_id_service.dart';
 import '../providers/incident_providers.dart';
 import '../services/user_service.dart';
 import 'chat_read_service.dart';
+import 'location_service.dart';
 import '../utils/app_logger.dart';
 
 final dataSyncServiceProvider = Provider<DataSyncService>((ref) {
@@ -164,6 +165,19 @@ class DataSyncService {
       }
     }
 
+    // Массовый импорт (шаблоны ГИС ЖКХ) присылает одно событие
+    // «reload» вместо события на каждую из тысяч строк: сервер уже
+    // обновил записи, клиенту нужно просто перечитать раздел.
+    // Отдельной ветвью, потому что entity_id здесь 0, а entity_data
+    // несёт только счётчики — обычные обработчики такое событие
+    // молча проглатывали, и загруженный шаблон не появлялся на
+    // экранах до перезахода.
+    if (actionType == 'reload') {
+      await _handleBulkReload(entityType);
+      await _trackActionId(actionId);
+      return true;
+    }
+
     try {
       logDebug('💾 [DataSyncService] Начинаю запись в БД для: $actionType $entityType (id: $entityIdRaw)');
       switch (entityType) {
@@ -277,6 +291,30 @@ class DataSyncService {
   /// целиком — их экраны читают данные из API. Поэтому вместо записи в
   /// БД поднимаем общий сигнал обновления: открытый список перечитает
   /// себя сам, без выхода и повторного входа.
+
+  /// Перечитать раздел после массовой операции на сервере.
+  ///
+  /// Дома хранятся в локальной БД, поэтому их надо перекачать с
+  /// сервера; лицевые счета и платёжные документы экраны читают из
+  /// API — им достаточно сигнала обновления.
+  Future<void> _handleBulkReload(String entityType) async {
+    dev.log('[DataSync] Массовое обновление «$entityType» — перечитываю',
+        name: 'SYNC');
+    try {
+      if (entityType == 'saved_location') {
+        await _ref
+            .read(locationServiceProvider)
+            .getAllSavedLocations(forceRefresh: true);
+      }
+    } catch (e) {
+      dev.log('[DataSync] Не удалось перечитать $entityType: $e', name: 'SYNC');
+    }
+    // Сигнал экранам в любом случае: даже если перекачка не удалась,
+    // открытые списки должны попробовать обновиться сами.
+    _notifyReload(entityType, 0);
+    _fireRefreshIfNotBatch();
+  }
+
   void _notifyReload(String entityType, dynamic entityId) {
     dev.log('[DataSync] $entityType изменился (id=$entityId) — сигнал обновления',
         name: 'SYNC');
