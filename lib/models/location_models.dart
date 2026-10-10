@@ -29,6 +29,10 @@ class SavedLocationResponse {
   final String? stoveType;
   final String? housingType;
   final int? entrancesCount;
+  // Нежилые помещения: `rooms` — это КВАРТИРЫ, нежилые в него не входят.
+  // Параметры 11532 и 14532 листа «Информация о МКД» шаблона ГИС.
+  final int? nonlivingCount;
+  final double? nonlivingArea;
   // ГИС ЖКХ — лист «Характеристики МКД» шаблона импорта сведений о МКД.
   final String? gisOktmo;
   final String? gisState;
@@ -70,6 +74,8 @@ class SavedLocationResponse {
     this.stoveType,
     this.housingType,
     this.entrancesCount,
+    this.nonlivingCount,
+    this.nonlivingArea,
     this.gisOktmo,
     this.gisState,
     this.gisLifecycleStage,
@@ -112,6 +118,10 @@ class SavedLocationCreate {
   final String? stoveType;
   final String? housingType;
   final int? entrancesCount;
+  // Нежилые помещения: `rooms` — это КВАРТИРЫ, нежилые в него не входят.
+  // Параметры 11532 и 14532 листа «Информация о МКД» шаблона ГИС.
+  final int? nonlivingCount;
+  final double? nonlivingArea;
   // ГИС ЖКХ — лист «Характеристики МКД» шаблона импорта сведений о МКД.
   final String? gisOktmo;
   final String? gisState;
@@ -145,6 +155,8 @@ class SavedLocationCreate {
     this.stoveType,
     this.housingType,
     this.entrancesCount,
+    this.nonlivingCount,
+    this.nonlivingArea,
     this.gisOktmo,
     this.gisState,
     this.gisLifecycleStage,
@@ -185,6 +197,10 @@ class SavedLocationUpdate {
   final String? stoveType;
   final String? housingType;
   final int? entrancesCount;
+  // Нежилые помещения: `rooms` — это КВАРТИРЫ, нежилые в него не входят.
+  // Параметры 11532 и 14532 листа «Информация о МКД» шаблона ГИС.
+  final int? nonlivingCount;
+  final double? nonlivingArea;
   // ГИС ЖКХ — лист «Характеристики МКД» шаблона импорта сведений о МКД.
   final String? gisOktmo;
   final String? gisState;
@@ -218,6 +234,8 @@ class SavedLocationUpdate {
     this.stoveType,
     this.housingType,
     this.entrancesCount,
+    this.nonlivingCount,
+    this.nonlivingArea,
     this.gisOktmo,
     this.gisState,
     this.gisLifecycleStage,

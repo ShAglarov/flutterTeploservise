@@ -5547,6 +5547,28 @@ class $SavedLocationsTable extends SavedLocations
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _nonlivingCountMeta = const VerificationMeta(
+    'nonlivingCount',
+  );
+  @override
+  late final GeneratedColumn<int> nonlivingCount = GeneratedColumn<int>(
+    'nonliving_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nonlivingAreaMeta = const VerificationMeta(
+    'nonlivingArea',
+  );
+  @override
+  late final GeneratedColumn<double> nonlivingArea = GeneratedColumn<double>(
+    'nonliving_area',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _gisOktmoMeta = const VerificationMeta(
     'gisOktmo',
   );
@@ -5732,6 +5754,8 @@ class $SavedLocationsTable extends SavedLocations
     stoveType,
     housingType,
     entrancesCount,
+    nonlivingCount,
+    nonlivingArea,
     gisOktmo,
     gisState,
     gisLifecycleStage,
@@ -5941,6 +5965,24 @@ class $SavedLocationsTable extends SavedLocations
         entrancesCount.isAcceptableOrUnknown(
           data['entrances_count']!,
           _entrancesCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nonliving_count')) {
+      context.handle(
+        _nonlivingCountMeta,
+        nonlivingCount.isAcceptableOrUnknown(
+          data['nonliving_count']!,
+          _nonlivingCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nonliving_area')) {
+      context.handle(
+        _nonlivingAreaMeta,
+        nonlivingArea.isAcceptableOrUnknown(
+          data['nonliving_area']!,
+          _nonlivingAreaMeta,
         ),
       );
     }
@@ -6155,6 +6197,14 @@ class $SavedLocationsTable extends SavedLocations
         DriftSqlType.int,
         data['${effectivePrefix}entrances_count'],
       ),
+      nonlivingCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}nonliving_count'],
+      ),
+      nonlivingArea: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}nonliving_area'],
+      ),
       gisOktmo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}gis_oktmo'],
@@ -6242,6 +6292,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
   final String? stoveType;
   final String? housingType;
   final int? entrancesCount;
+  final int? nonlivingCount;
+  final double? nonlivingArea;
   final String? gisOktmo;
   final String? gisState;
   final String? gisLifecycleStage;
@@ -6281,6 +6333,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     this.stoveType,
     this.housingType,
     this.entrancesCount,
+    this.nonlivingCount,
+    this.nonlivingArea,
     this.gisOktmo,
     this.gisState,
     this.gisLifecycleStage,
@@ -6370,6 +6424,12 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     }
     if (!nullToAbsent || entrancesCount != null) {
       map['entrances_count'] = Variable<int>(entrancesCount);
+    }
+    if (!nullToAbsent || nonlivingCount != null) {
+      map['nonliving_count'] = Variable<int>(nonlivingCount);
+    }
+    if (!nullToAbsent || nonlivingArea != null) {
+      map['nonliving_area'] = Variable<double>(nonlivingArea);
     }
     if (!nullToAbsent || gisOktmo != null) {
       map['gis_oktmo'] = Variable<String>(gisOktmo);
@@ -6486,6 +6546,12 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       entrancesCount: entrancesCount == null && nullToAbsent
           ? const Value.absent()
           : Value(entrancesCount),
+      nonlivingCount: nonlivingCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nonlivingCount),
+      nonlivingArea: nonlivingArea == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nonlivingArea),
       gisOktmo: gisOktmo == null && nullToAbsent
           ? const Value.absent()
           : Value(gisOktmo),
@@ -6563,6 +6629,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       stoveType: serializer.fromJson<String?>(json['stoveType']),
       housingType: serializer.fromJson<String?>(json['housingType']),
       entrancesCount: serializer.fromJson<int?>(json['entrancesCount']),
+      nonlivingCount: serializer.fromJson<int?>(json['nonlivingCount']),
+      nonlivingArea: serializer.fromJson<double?>(json['nonlivingArea']),
       gisOktmo: serializer.fromJson<String?>(json['gisOktmo']),
       gisState: serializer.fromJson<String?>(json['gisState']),
       gisLifecycleStage: serializer.fromJson<String?>(
@@ -6619,6 +6687,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       'stoveType': serializer.toJson<String?>(stoveType),
       'housingType': serializer.toJson<String?>(housingType),
       'entrancesCount': serializer.toJson<int?>(entrancesCount),
+      'nonlivingCount': serializer.toJson<int?>(nonlivingCount),
+      'nonlivingArea': serializer.toJson<double?>(nonlivingArea),
       'gisOktmo': serializer.toJson<String?>(gisOktmo),
       'gisState': serializer.toJson<String?>(gisState),
       'gisLifecycleStage': serializer.toJson<String?>(gisLifecycleStage),
@@ -6663,6 +6733,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     Value<String?> stoveType = const Value.absent(),
     Value<String?> housingType = const Value.absent(),
     Value<int?> entrancesCount = const Value.absent(),
+    Value<int?> nonlivingCount = const Value.absent(),
+    Value<double?> nonlivingArea = const Value.absent(),
     Value<String?> gisOktmo = const Value.absent(),
     Value<String?> gisState = const Value.absent(),
     Value<String?> gisLifecycleStage = const Value.absent(),
@@ -6720,6 +6792,12 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     entrancesCount: entrancesCount.present
         ? entrancesCount.value
         : this.entrancesCount,
+    nonlivingCount: nonlivingCount.present
+        ? nonlivingCount.value
+        : this.nonlivingCount,
+    nonlivingArea: nonlivingArea.present
+        ? nonlivingArea.value
+        : this.nonlivingArea,
     gisOktmo: gisOktmo.present ? gisOktmo.value : this.gisOktmo,
     gisState: gisState.present ? gisState.value : this.gisState,
     gisLifecycleStage: gisLifecycleStage.present
@@ -6801,6 +6879,12 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
       entrancesCount: data.entrancesCount.present
           ? data.entrancesCount.value
           : this.entrancesCount,
+      nonlivingCount: data.nonlivingCount.present
+          ? data.nonlivingCount.value
+          : this.nonlivingCount,
+      nonlivingArea: data.nonlivingArea.present
+          ? data.nonlivingArea.value
+          : this.nonlivingArea,
       gisOktmo: data.gisOktmo.present ? data.gisOktmo.value : this.gisOktmo,
       gisState: data.gisState.present ? data.gisState.value : this.gisState,
       gisLifecycleStage: data.gisLifecycleStage.present
@@ -6863,6 +6947,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           ..write('stoveType: $stoveType, ')
           ..write('housingType: $housingType, ')
           ..write('entrancesCount: $entrancesCount, ')
+          ..write('nonlivingCount: $nonlivingCount, ')
+          ..write('nonlivingArea: $nonlivingArea, ')
           ..write('gisOktmo: $gisOktmo, ')
           ..write('gisState: $gisState, ')
           ..write('gisLifecycleStage: $gisLifecycleStage, ')
@@ -6907,6 +6993,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
     stoveType,
     housingType,
     entrancesCount,
+    nonlivingCount,
+    nonlivingArea,
     gisOktmo,
     gisState,
     gisLifecycleStage,
@@ -6950,6 +7038,8 @@ class SavedLocationDb extends DataClass implements Insertable<SavedLocationDb> {
           other.stoveType == this.stoveType &&
           other.housingType == this.housingType &&
           other.entrancesCount == this.entrancesCount &&
+          other.nonlivingCount == this.nonlivingCount &&
+          other.nonlivingArea == this.nonlivingArea &&
           other.gisOktmo == this.gisOktmo &&
           other.gisState == this.gisState &&
           other.gisLifecycleStage == this.gisLifecycleStage &&
@@ -6991,6 +7081,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
   final Value<String?> stoveType;
   final Value<String?> housingType;
   final Value<int?> entrancesCount;
+  final Value<int?> nonlivingCount;
+  final Value<double?> nonlivingArea;
   final Value<String?> gisOktmo;
   final Value<String?> gisState;
   final Value<String?> gisLifecycleStage;
@@ -7030,6 +7122,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.stoveType = const Value.absent(),
     this.housingType = const Value.absent(),
     this.entrancesCount = const Value.absent(),
+    this.nonlivingCount = const Value.absent(),
+    this.nonlivingArea = const Value.absent(),
     this.gisOktmo = const Value.absent(),
     this.gisState = const Value.absent(),
     this.gisLifecycleStage = const Value.absent(),
@@ -7070,6 +7164,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     this.stoveType = const Value.absent(),
     this.housingType = const Value.absent(),
     this.entrancesCount = const Value.absent(),
+    this.nonlivingCount = const Value.absent(),
+    this.nonlivingArea = const Value.absent(),
     this.gisOktmo = const Value.absent(),
     this.gisState = const Value.absent(),
     this.gisLifecycleStage = const Value.absent(),
@@ -7110,6 +7206,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Expression<String>? stoveType,
     Expression<String>? housingType,
     Expression<int>? entrancesCount,
+    Expression<int>? nonlivingCount,
+    Expression<double>? nonlivingArea,
     Expression<String>? gisOktmo,
     Expression<String>? gisState,
     Expression<String>? gisLifecycleStage,
@@ -7151,6 +7249,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       if (stoveType != null) 'stove_type': stoveType,
       if (housingType != null) 'housing_type': housingType,
       if (entrancesCount != null) 'entrances_count': entrancesCount,
+      if (nonlivingCount != null) 'nonliving_count': nonlivingCount,
+      if (nonlivingArea != null) 'nonliving_area': nonlivingArea,
       if (gisOktmo != null) 'gis_oktmo': gisOktmo,
       if (gisState != null) 'gis_state': gisState,
       if (gisLifecycleStage != null) 'gis_lifecycle_stage': gisLifecycleStage,
@@ -7197,6 +7297,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     Value<String?>? stoveType,
     Value<String?>? housingType,
     Value<int?>? entrancesCount,
+    Value<int?>? nonlivingCount,
+    Value<double?>? nonlivingArea,
     Value<String?>? gisOktmo,
     Value<String?>? gisState,
     Value<String?>? gisLifecycleStage,
@@ -7238,6 +7340,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
       stoveType: stoveType ?? this.stoveType,
       housingType: housingType ?? this.housingType,
       entrancesCount: entrancesCount ?? this.entrancesCount,
+      nonlivingCount: nonlivingCount ?? this.nonlivingCount,
+      nonlivingArea: nonlivingArea ?? this.nonlivingArea,
       gisOktmo: gisOktmo ?? this.gisOktmo,
       gisState: gisState ?? this.gisState,
       gisLifecycleStage: gisLifecycleStage ?? this.gisLifecycleStage,
@@ -7335,6 +7439,12 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
     if (entrancesCount.present) {
       map['entrances_count'] = Variable<int>(entrancesCount.value);
     }
+    if (nonlivingCount.present) {
+      map['nonliving_count'] = Variable<int>(nonlivingCount.value);
+    }
+    if (nonlivingArea.present) {
+      map['nonliving_area'] = Variable<double>(nonlivingArea.value);
+    }
     if (gisOktmo.present) {
       map['gis_oktmo'] = Variable<String>(gisOktmo.value);
     }
@@ -7409,6 +7519,8 @@ class SavedLocationsCompanion extends UpdateCompanion<SavedLocationDb> {
           ..write('stoveType: $stoveType, ')
           ..write('housingType: $housingType, ')
           ..write('entrancesCount: $entrancesCount, ')
+          ..write('nonlivingCount: $nonlivingCount, ')
+          ..write('nonlivingArea: $nonlivingArea, ')
           ..write('gisOktmo: $gisOktmo, ')
           ..write('gisState: $gisState, ')
           ..write('gisLifecycleStage: $gisLifecycleStage, ')
@@ -20033,6 +20145,8 @@ typedef $$SavedLocationsTableCreateCompanionBuilder =
       Value<String?> stoveType,
       Value<String?> housingType,
       Value<int?> entrancesCount,
+      Value<int?> nonlivingCount,
+      Value<double?> nonlivingArea,
       Value<String?> gisOktmo,
       Value<String?> gisState,
       Value<String?> gisLifecycleStage,
@@ -20074,6 +20188,8 @@ typedef $$SavedLocationsTableUpdateCompanionBuilder =
       Value<String?> stoveType,
       Value<String?> housingType,
       Value<int?> entrancesCount,
+      Value<int?> nonlivingCount,
+      Value<double?> nonlivingArea,
       Value<String?> gisOktmo,
       Value<String?> gisState,
       Value<String?> gisLifecycleStage,
@@ -20321,6 +20437,16 @@ class $$SavedLocationsTableFilterComposer
 
   ColumnFilters<int> get entrancesCount => $composableBuilder(
     column: $table.entrancesCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nonlivingCount => $composableBuilder(
+    column: $table.nonlivingCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get nonlivingArea => $composableBuilder(
+    column: $table.nonlivingArea,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -20610,6 +20736,16 @@ class $$SavedLocationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get nonlivingCount => $composableBuilder(
+    column: $table.nonlivingCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get nonlivingArea => $composableBuilder(
+    column: $table.nonlivingArea,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get gisOktmo => $composableBuilder(
     column: $table.gisOktmo,
     builder: (column) => ColumnOrderings(column),
@@ -20821,6 +20957,16 @@ class $$SavedLocationsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get nonlivingCount => $composableBuilder(
+    column: $table.nonlivingCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get nonlivingArea => $composableBuilder(
+    column: $table.nonlivingArea,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get gisOktmo =>
       $composableBuilder(column: $table.gisOktmo, builder: (column) => column);
 
@@ -21026,6 +21172,8 @@ class $$SavedLocationsTableTableManager
                 Value<String?> stoveType = const Value.absent(),
                 Value<String?> housingType = const Value.absent(),
                 Value<int?> entrancesCount = const Value.absent(),
+                Value<int?> nonlivingCount = const Value.absent(),
+                Value<double?> nonlivingArea = const Value.absent(),
                 Value<String?> gisOktmo = const Value.absent(),
                 Value<String?> gisState = const Value.absent(),
                 Value<String?> gisLifecycleStage = const Value.absent(),
@@ -21065,6 +21213,8 @@ class $$SavedLocationsTableTableManager
                 stoveType: stoveType,
                 housingType: housingType,
                 entrancesCount: entrancesCount,
+                nonlivingCount: nonlivingCount,
+                nonlivingArea: nonlivingArea,
                 gisOktmo: gisOktmo,
                 gisState: gisState,
                 gisLifecycleStage: gisLifecycleStage,
@@ -21106,6 +21256,8 @@ class $$SavedLocationsTableTableManager
                 Value<String?> stoveType = const Value.absent(),
                 Value<String?> housingType = const Value.absent(),
                 Value<int?> entrancesCount = const Value.absent(),
+                Value<int?> nonlivingCount = const Value.absent(),
+                Value<double?> nonlivingArea = const Value.absent(),
                 Value<String?> gisOktmo = const Value.absent(),
                 Value<String?> gisState = const Value.absent(),
                 Value<String?> gisLifecycleStage = const Value.absent(),
@@ -21145,6 +21297,8 @@ class $$SavedLocationsTableTableManager
                 stoveType: stoveType,
                 housingType: housingType,
                 entrancesCount: entrancesCount,
+                nonlivingCount: nonlivingCount,
+                nonlivingArea: nonlivingArea,
                 gisOktmo: gisOktmo,
                 gisState: gisState,
                 gisLifecycleStage: gisLifecycleStage,

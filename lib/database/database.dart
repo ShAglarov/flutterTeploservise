@@ -362,6 +362,9 @@ class SavedLocations extends Table {
   TextColumn get stoveType => text().nullable()();
   TextColumn get housingType => text().nullable()();
   IntColumn get entrancesCount => integer().nullable()();
+  // Нежилые помещения: `rooms` — это КВАРТИРЫ, нежилые в него не входят.
+  IntColumn get nonlivingCount => integer().nullable()();
+  RealColumn get nonlivingArea => real().nullable()();
   TextColumn get gisOktmo => text().nullable()();
   TextColumn get gisState => text().nullable()();
   TextColumn get gisLifecycleStage => text().nullable()();
@@ -504,7 +507,9 @@ class AppDatabase extends _$AppDatabase {
   // 17: у лицевого счёта появились колонки листов «Жилые/Нежилые
   // помещения» шаблона МКД (характеристика помещения, номер подъезда,
   // общее имущество, признак подтверждения).
-  int get schemaVersion => 17;
+  // 18: у дома — количество и площадь НЕЖИЛЫХ помещений (поле rooms
+  // означает квартиры, нежилые в него не входят).
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

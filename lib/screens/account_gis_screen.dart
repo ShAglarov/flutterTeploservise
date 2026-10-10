@@ -304,7 +304,20 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
 
             const SizedBox(height: 12),
             _header('Помещение'),
-            _field(_premisesType, 'Тип помещения/блок', hint: 'Жилое'),
+            // Список, а не свободный ввод: по этому полю помещение
+            // попадает на лист «Жилые» или «Нежилые помещения» шаблона
+            // МКД, и портал сверяет значение посимвольно. Опечатка
+            // «Жилое» вместо «Жилое помещение» выкидывала помещение из
+            // обоих листов.
+            _dropdown(
+              'Тип помещения/блок',
+              gisPremisesTypes.contains(_premisesType.text.trim())
+                  ? _premisesType.text.trim()
+                  : null,
+              gisPremisesTypes,
+              (v) => setState(() => _premisesType.text = v ?? ''),
+              emptyHint: 'по умолчанию — жилое',
+            ),
             _field(_premisesNumber, 'Номер помещения/блока', hint: '1'),
             _field(_roomNumber, 'Номер комнаты'),
             _field(_paymentShare, 'Доля внесения платы, %',

@@ -74,6 +74,39 @@ class AddressSearchHelper {
     return true;
   }
 
+  /// Подходит ли дом под поисковый запрос.
+  ///
+  /// Адрес сверяется нечётко (`fuzzyMatch`): оператор набирает
+  /// «Айвазовского 2», а дом назван «ул. Айвазовского, д. 2А».
+  /// Название УК и кадастровый номер — простой подстрокой: в них нет
+  /// адресных сокращений, а нормализация выбрасывала бы из
+  /// кадастрового номера двоеточия.
+  ///
+  /// Пустой запрос подходит всем: вызывающий решает сам, показывать ли
+  /// полный список.
+  static bool matchesHouse(
+    String query, {
+    required String name,
+    String? managementCompany,
+    String? cadastralNumber,
+  }) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return true;
+
+    if (fuzzyMatch(trimmed, name)) return true;
+
+    final lower = trimmed.toLowerCase();
+    if (managementCompany != null &&
+        managementCompany.toLowerCase().contains(lower)) {
+      return true;
+    }
+    if (cadastralNumber != null &&
+        cadastralNumber.toLowerCase().contains(lower)) {
+      return true;
+    }
+    return false;
+  }
+
   /// Оценка совпадения (0.0 — нет, 1.0 — полное). Для сортировки по релевантности.
   static double matchScore(String query, String candidate) {
     final queryTokens = tokenize(query);

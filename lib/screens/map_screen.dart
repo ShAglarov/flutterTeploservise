@@ -32,6 +32,7 @@ import '../models/permission_key.dart';
 import '../services/location_service.dart';
 import '../services/permission_service.dart';
 import '../services/base_api_service.dart';
+import '../utils/address_search_helper.dart';
 import '../utils/app_theme.dart';
 import '../utils/constants.dart';
 import '../providers/map_tile_provider.dart';
@@ -1642,6 +1643,21 @@ class _MapScreenState extends ConsumerState<MapScreen>
     );
   }
 
+  /// Подходит ли дом под поисковый запрос.
+  ///
+  /// Через `AddressSearchHelper`: адрес сверяется нечётко, поэтому
+  /// «Айвазовского 2» находит дом «ул. Айвазовского, д. 2А». Простой
+  /// `contains` такой дом не нашёл бы. Плюс кадастровый номер — по нему
+  /// дом ищут, когда сверяют выгрузку с порталом, а название в
+  /// приложении и в Росреестре расходится.
+  bool _houseMatches(SavedLocationResponse loc, String query) =>
+      AddressSearchHelper.matchesHouse(
+        query,
+        name: loc.name,
+        managementCompany: loc.managementCompanyName,
+        cadastralNumber: loc.cadastralNumber,
+      );
+
   void _open2GIS(double lat, double lng) async {
     final url = Uri.parse('https://2gis.ru/search/$lat,$lng');
     if (await canLaunchUrl(url)) {
@@ -1651,14 +1667,32 @@ class _MapScreenState extends ConsumerState<MapScreen>
 
   Widget _buildList(MapDataState data) {
     if (_selectedBoilerHouse != null) {
+      // Поиск внутри котельной фильтруем ЗДЕСЬ, по самому запросу.
+      //
+      // `filteredMapData` оставляет в `locations` ВСЕ дома найденной
+      // котельной: на карте так и нужно — нашёл котельную, видишь её
+      // дома. Но в списке внутри котельной это выглядело как
+      // неработающий поиск: что бы оператор ни набрал, список не
+      // менялся, потому что сама котельная уже совпала с запросом.
+      final query = ref.watch(mapSearchQueryProvider).trim().toLowerCase();
       final filteredLocations = data.locations
           .where((loc) => loc.boilerHouseId == _selectedBoilerHouse!.id)
+          .where((loc) => query.isEmpty || _houseMatches(loc, query))
           .toList();
 
       if (filteredLocations.isEmpty) {
         return Padding(
           padding: const EdgeInsets.only(top: 40),
-          child: Center(child: Text('Нет привязанных домов', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(140)))),
+          child: Center(
+            child: Text(
+              query.isEmpty
+                  ? 'Нет привязанных домов'
+                  : 'Нет домов по запросу «$query»',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(140),
+              ),
+            ),
+          ),
         );
       }
 

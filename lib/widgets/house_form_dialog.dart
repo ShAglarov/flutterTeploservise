@@ -47,6 +47,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
   late final TextEditingController _cadastralController;
   late final TextEditingController _commissioningDateController;
   late final TextEditingController _entrancesController;
+  // Нежилые помещения: в поле «Квартир» они не входят.
+  late final TextEditingController _nonlivingCountController;
+  late final TextEditingController _nonlivingAreaController;
   String? _stoveType;
   String? _housingType;
 
@@ -89,6 +92,10 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _cadastralController = TextEditingController(text: initial?.cadastralNumber ?? '');
     _commissioningDateController = TextEditingController(text: initial?.commissioningDate ?? '');
     _entrancesController = TextEditingController(text: initial?.entrancesCount?.toString() ?? '');
+    _nonlivingCountController =
+        TextEditingController(text: initial?.nonlivingCount?.toString() ?? '');
+    _nonlivingAreaController =
+        TextEditingController(text: initial?.nonlivingArea?.toString() ?? '');
     _gisOktmoController = TextEditingController(text: initial?.gisOktmo ?? '');
     _gisStateController = TextEditingController(text: initial?.gisState ?? '');
     _gisLifecycleController = TextEditingController(text: initial?.gisLifecycleStage ?? '');
@@ -244,6 +251,11 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     _gisTimezoneController.dispose();
     _gisHostelTypeController.dispose();
     _commissioningDateController.dispose();
+    // _entrancesController не освобождался — утечка, видная только при
+    // многократном открытии карточки. Заодно и новые поля.
+    _entrancesController.dispose();
+    _nonlivingCountController.dispose();
+    _nonlivingAreaController.dispose();
     super.dispose();
   }
 
@@ -290,6 +302,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           stoveType: _stoveType,
           housingType: _housingType,
           entrancesCount: int.tryParse(_entrancesController.text),
+          nonlivingCount: int.tryParse(_nonlivingCountController.text),
+          nonlivingArea: double.tryParse(
+              _nonlivingAreaController.text.replaceAll(',', '.')),
           // ГИС ЖКХ: пустое поле отправляем как null — «не заполнено».
           gisOktmo: _textOrNull(_gisOktmoController),
           gisState: _textOrNull(_gisStateController),
@@ -324,6 +339,9 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
           stoveType: _stoveType,
           housingType: _housingType,
           entrancesCount: int.tryParse(_entrancesController.text),
+          nonlivingCount: int.tryParse(_nonlivingCountController.text),
+          nonlivingArea: double.tryParse(
+              _nonlivingAreaController.text.replaceAll(',', '.')),
           // ГИС ЖКХ: пустое поле отправляем как null — «не заполнено».
           gisOktmo: _textOrNull(_gisOktmoController),
           gisState: _textOrNull(_gisStateController),
@@ -434,6 +452,8 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
       _selectedManagementCompanyId = result.managementCompanyId;
       _selectedManagementCompanyName = result.managementCompanyName;
       _entrancesController.text = result.entrancesCount?.toString() ?? '';
+      _nonlivingCountController.text = result.nonlivingCount?.toString() ?? '';
+      _nonlivingAreaController.text = result.nonlivingArea?.toString() ?? '';
       _stoveType = result.stoveType;
       _housingType = result.housingType;
       _commissioningDateController.text = result.commissioningDate ?? '';
@@ -512,7 +532,15 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                         _buildDivider(),
                         _buildInputRow(Icons.calendar_month, Colors.teal, 'Год постройки', _yearController, hint: '2020', keyboardType: TextInputType.number),
                         _buildDivider(),
-                        _buildInputRow(Icons.door_front_door, Colors.orange, 'Помещений', _roomsController, hint: '10', keyboardType: TextInputType.number),
+                        // «Квартир», а не «Помещений»: в портал это поле
+                        // уходит параметром «Количество жилых помещений
+                        // (квартир)», и нежилые в него не входят — для
+                        // них отдельные поля ниже.
+                        _buildInputRow(Icons.door_front_door, Colors.orange, 'Квартир', _roomsController, hint: '10', keyboardType: TextInputType.number),
+                        _buildDivider(),
+                        _buildInputRow(Icons.storefront, Colors.brown, 'Нежилых помещений', _nonlivingCountController, hint: '3', keyboardType: TextInputType.number),
+                        _buildDivider(),
+                        _buildInputRow(Icons.square_foot, Colors.brown, 'Площадь нежилых, м²', _nonlivingAreaController, hint: '240.5', keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                         _buildDivider(),
                         _buildInputRow(Icons.people, Colors.orange, 'Жильцов', _residentsController, hint: '4', keyboardType: TextInputType.number),
                       ]),
