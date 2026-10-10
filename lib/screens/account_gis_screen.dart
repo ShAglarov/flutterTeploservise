@@ -8,6 +8,7 @@ import '../services/location_service.dart';
 import 'account_details_screen.dart';
 import '../services/permission_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/gis_dictionaries.dart';
 
 /// Правка полей ГИС ЖКХ у лицевого счёта.
 ///
@@ -48,6 +49,11 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
   late final TextEditingController _premisesNumber;
   late final TextEditingController _roomNumber;
   late final TextEditingController _paymentShare;
+  // Листы «Жилые/Нежилые помещения» шаблона МКД.
+  late final TextEditingController _entranceNumber;
+  String? _premisesCharacteristic;
+  bool? _commonProperty;
+  bool? _confirmed;
   // Лист «Доп критерии поиска в ЕГРП» шаблона МКД.
   late final TextEditingController _egrpConditional;
   late final TextEditingController _egrpRegNumber;
@@ -89,6 +95,13 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
     _premisesNumber = TextEditingController(text: a.gisPremisesNumber ?? '');
     _roomNumber = TextEditingController(text: a.gisRoomNumber ?? '');
     _paymentShare = TextEditingController(text: a.gisPaymentShare?.toString() ?? '');
+    _entranceNumber = TextEditingController(text: a.gisEntranceNumber ?? '');
+    _premisesCharacteristic =
+        gisPremisesCharacteristics.contains(a.gisPremisesCharacteristic)
+            ? a.gisPremisesCharacteristic
+            : null;
+    _commonProperty = a.gisCommonProperty;
+    _confirmed = a.gisConfirmed;
     _egrpConditional =
         TextEditingController(text: a.gisEgrpConditionalNumber ?? '');
     _egrpRegNumber =
@@ -106,6 +119,7 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
       _docType, _docNumber, _docSeries, _docDate, _ogrn, _nza, _kpp,
       _area, _livingArea, _heatedArea, _residents,
       _premisesType, _premisesNumber, _roomNumber, _paymentShare,
+      _entranceNumber,
       _egrpConditional, _egrpRegNumber, _egrpRegDate,
     ]) {
       c.dispose();
@@ -152,6 +166,10 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
         gisPremisesNumber: _t(_premisesNumber),
         gisRoomNumber: _t(_roomNumber),
         gisPaymentShare: _d(_paymentShare),
+        gisPremisesCharacteristic: _premisesCharacteristic,
+        gisEntranceNumber: _t(_entranceNumber),
+        gisCommonProperty: _commonProperty,
+        gisConfirmed: _confirmed,
         gisEgrpConditionalNumber: _t(_egrpConditional),
         gisEgrpRegistrationNumber: _t(_egrpRegNumber),
         gisEgrpRegistrationDate: _t(_egrpRegDate),
@@ -291,6 +309,21 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
             _field(_roomNumber, 'Номер комнаты'),
             _field(_paymentShare, 'Доля внесения платы, %',
                 hint: '100', number: true),
+            // Пусто = сервер выведет характеристику сам при выгрузке.
+            // Портал требует её при подтверждении сведений поставщиком.
+            _dropdown(
+              'Характеристика помещения',
+              _premisesCharacteristic,
+              gisPremisesCharacteristics,
+              (v) => setState(() => _premisesCharacteristic = v),
+              emptyHint: 'определяется автоматически',
+            ),
+            _field(_entranceNumber, 'Номер подъезда',
+                hint: 'пусто — отдельный вход'),
+            _tristate('Сведения подтверждены поставщиком', _confirmed,
+                (v) => setState(() => _confirmed = v)),
+            _tristate('Нежилое: общее имущество МКД', _commonProperty,
+                (v) => setState(() => _commonProperty = v)),
 
             const SizedBox(height: 12),
             _header('Привязка к ЕГРП'),
@@ -385,6 +418,39 @@ class _AccountGisScreenState extends ConsumerState<AccountGisScreen> {
                       : null;
                 }
               : null,
+        ),
+      );
+
+  /// Выбор значения из справочника портала. Пустой вариант оставлен:
+  /// незаполненное поле сервер либо выведет сам, либо не станет писать
+  /// в файл, а выдуманное значение портал отклонит.
+  Widget _dropdown(
+    String label,
+    String? value,
+    List<String> options,
+    ValueChanged<String?> onChanged, {
+    String? emptyHint,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: label,
+            helperText: emptyHint,
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+          items: [
+            DropdownMenuItem<String>(
+              value: null,
+              child: Text(emptyHint == null ? 'Не указано' : '— не указано —'),
+            ),
+            for (final o in options)
+              DropdownMenuItem<String>(value: o, child: Text(o)),
+          ],
+          onChanged: onChanged,
         ),
       );
 

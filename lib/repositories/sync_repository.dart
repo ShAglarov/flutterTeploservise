@@ -570,6 +570,11 @@ class SyncRepository {
                   gisPremisesNumber: Value(acc.gisPremisesNumber),
                   gisRoomNumber: Value(acc.gisRoomNumber),
                   gisPaymentShare: Value(acc.gisPaymentShare),
+                  gisPremisesCharacteristic:
+                      Value(acc.gisPremisesCharacteristic),
+                  gisEntranceNumber: Value(acc.gisEntranceNumber),
+                  gisCommonProperty: Value(acc.gisCommonProperty),
+                  gisConfirmed: Value(acc.gisConfirmed),
                   gisStatus: Value(acc.gisStatus),
                 ),
                 mode: InsertMode.insertOrReplace,

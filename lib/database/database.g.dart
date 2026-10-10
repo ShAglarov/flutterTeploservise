@@ -11592,6 +11592,57 @@ class $MyAccountsTable extends MyAccounts
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _gisPremisesCharacteristicMeta =
+      const VerificationMeta('gisPremisesCharacteristic');
+  @override
+  late final GeneratedColumn<String> gisPremisesCharacteristic =
+      GeneratedColumn<String>(
+        'gis_premises_characteristic',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _gisEntranceNumberMeta = const VerificationMeta(
+    'gisEntranceNumber',
+  );
+  @override
+  late final GeneratedColumn<String> gisEntranceNumber =
+      GeneratedColumn<String>(
+        'gis_entrance_number',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _gisCommonPropertyMeta = const VerificationMeta(
+    'gisCommonProperty',
+  );
+  @override
+  late final GeneratedColumn<bool> gisCommonProperty = GeneratedColumn<bool>(
+    'gis_common_property',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gis_common_property" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _gisConfirmedMeta = const VerificationMeta(
+    'gisConfirmed',
+  );
+  @override
+  late final GeneratedColumn<bool> gisConfirmed = GeneratedColumn<bool>(
+    'gis_confirmed',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("gis_confirmed" IN (0, 1))',
+    ),
+  );
   static const VerificationMeta _gisStatusMeta = const VerificationMeta(
     'gisStatus',
   );
@@ -11656,6 +11707,10 @@ class $MyAccountsTable extends MyAccounts
     gisPremisesNumber,
     gisRoomNumber,
     gisPaymentShare,
+    gisPremisesCharacteristic,
+    gisEntranceNumber,
+    gisCommonProperty,
+    gisConfirmed,
     gisStatus,
     id,
   ];
@@ -11961,6 +12016,42 @@ class $MyAccountsTable extends MyAccounts
         ),
       );
     }
+    if (data.containsKey('gis_premises_characteristic')) {
+      context.handle(
+        _gisPremisesCharacteristicMeta,
+        gisPremisesCharacteristic.isAcceptableOrUnknown(
+          data['gis_premises_characteristic']!,
+          _gisPremisesCharacteristicMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_entrance_number')) {
+      context.handle(
+        _gisEntranceNumberMeta,
+        gisEntranceNumber.isAcceptableOrUnknown(
+          data['gis_entrance_number']!,
+          _gisEntranceNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_common_property')) {
+      context.handle(
+        _gisCommonPropertyMeta,
+        gisCommonProperty.isAcceptableOrUnknown(
+          data['gis_common_property']!,
+          _gisCommonPropertyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gis_confirmed')) {
+      context.handle(
+        _gisConfirmedMeta,
+        gisConfirmed.isAcceptableOrUnknown(
+          data['gis_confirmed']!,
+          _gisConfirmedMeta,
+        ),
+      );
+    }
     if (data.containsKey('gis_status')) {
       context.handle(
         _gisStatusMeta,
@@ -12131,6 +12222,22 @@ class $MyAccountsTable extends MyAccounts
         DriftSqlType.double,
         data['${effectivePrefix}gis_payment_share'],
       ),
+      gisPremisesCharacteristic: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_premises_characteristic'],
+      ),
+      gisEntranceNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gis_entrance_number'],
+      ),
+      gisCommonProperty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gis_common_property'],
+      ),
+      gisConfirmed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}gis_confirmed'],
+      ),
       gisStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}gis_status'],
@@ -12187,6 +12294,10 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
   final String? gisPremisesNumber;
   final String? gisRoomNumber;
   final double? gisPaymentShare;
+  final String? gisPremisesCharacteristic;
+  final String? gisEntranceNumber;
+  final bool? gisCommonProperty;
+  final bool? gisConfirmed;
   final String? gisStatus;
   final int id;
   const MyAccountDb({
@@ -12228,6 +12339,10 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     this.gisPremisesNumber,
     this.gisRoomNumber,
     this.gisPaymentShare,
+    this.gisPremisesCharacteristic,
+    this.gisEntranceNumber,
+    this.gisCommonProperty,
+    this.gisConfirmed,
     this.gisStatus,
     required this.id,
   });
@@ -12346,6 +12461,20 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     if (!nullToAbsent || gisPaymentShare != null) {
       map['gis_payment_share'] = Variable<double>(gisPaymentShare);
     }
+    if (!nullToAbsent || gisPremisesCharacteristic != null) {
+      map['gis_premises_characteristic'] = Variable<String>(
+        gisPremisesCharacteristic,
+      );
+    }
+    if (!nullToAbsent || gisEntranceNumber != null) {
+      map['gis_entrance_number'] = Variable<String>(gisEntranceNumber);
+    }
+    if (!nullToAbsent || gisCommonProperty != null) {
+      map['gis_common_property'] = Variable<bool>(gisCommonProperty);
+    }
+    if (!nullToAbsent || gisConfirmed != null) {
+      map['gis_confirmed'] = Variable<bool>(gisConfirmed);
+    }
     if (!nullToAbsent || gisStatus != null) {
       map['gis_status'] = Variable<String>(gisStatus);
     }
@@ -12463,6 +12592,19 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
       gisPaymentShare: gisPaymentShare == null && nullToAbsent
           ? const Value.absent()
           : Value(gisPaymentShare),
+      gisPremisesCharacteristic:
+          gisPremisesCharacteristic == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisPremisesCharacteristic),
+      gisEntranceNumber: gisEntranceNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisEntranceNumber),
+      gisCommonProperty: gisCommonProperty == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisCommonProperty),
+      gisConfirmed: gisConfirmed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gisConfirmed),
       gisStatus: gisStatus == null && nullToAbsent
           ? const Value.absent()
           : Value(gisStatus),
@@ -12516,6 +12658,14 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
       ),
       gisRoomNumber: serializer.fromJson<String?>(json['gisRoomNumber']),
       gisPaymentShare: serializer.fromJson<double?>(json['gisPaymentShare']),
+      gisPremisesCharacteristic: serializer.fromJson<String?>(
+        json['gisPremisesCharacteristic'],
+      ),
+      gisEntranceNumber: serializer.fromJson<String?>(
+        json['gisEntranceNumber'],
+      ),
+      gisCommonProperty: serializer.fromJson<bool?>(json['gisCommonProperty']),
+      gisConfirmed: serializer.fromJson<bool?>(json['gisConfirmed']),
       gisStatus: serializer.fromJson<String?>(json['gisStatus']),
       id: serializer.fromJson<int>(json['id']),
     );
@@ -12562,6 +12712,12 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
       'gisPremisesNumber': serializer.toJson<String?>(gisPremisesNumber),
       'gisRoomNumber': serializer.toJson<String?>(gisRoomNumber),
       'gisPaymentShare': serializer.toJson<double?>(gisPaymentShare),
+      'gisPremisesCharacteristic': serializer.toJson<String?>(
+        gisPremisesCharacteristic,
+      ),
+      'gisEntranceNumber': serializer.toJson<String?>(gisEntranceNumber),
+      'gisCommonProperty': serializer.toJson<bool?>(gisCommonProperty),
+      'gisConfirmed': serializer.toJson<bool?>(gisConfirmed),
       'gisStatus': serializer.toJson<String?>(gisStatus),
       'id': serializer.toJson<int>(id),
     };
@@ -12606,6 +12762,10 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     Value<String?> gisPremisesNumber = const Value.absent(),
     Value<String?> gisRoomNumber = const Value.absent(),
     Value<double?> gisPaymentShare = const Value.absent(),
+    Value<String?> gisPremisesCharacteristic = const Value.absent(),
+    Value<String?> gisEntranceNumber = const Value.absent(),
+    Value<bool?> gisCommonProperty = const Value.absent(),
+    Value<bool?> gisConfirmed = const Value.absent(),
     Value<String?> gisStatus = const Value.absent(),
     int? id,
   }) => MyAccountDb(
@@ -12667,6 +12827,16 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     gisPaymentShare: gisPaymentShare.present
         ? gisPaymentShare.value
         : this.gisPaymentShare,
+    gisPremisesCharacteristic: gisPremisesCharacteristic.present
+        ? gisPremisesCharacteristic.value
+        : this.gisPremisesCharacteristic,
+    gisEntranceNumber: gisEntranceNumber.present
+        ? gisEntranceNumber.value
+        : this.gisEntranceNumber,
+    gisCommonProperty: gisCommonProperty.present
+        ? gisCommonProperty.value
+        : this.gisCommonProperty,
+    gisConfirmed: gisConfirmed.present ? gisConfirmed.value : this.gisConfirmed,
     gisStatus: gisStatus.present ? gisStatus.value : this.gisStatus,
     id: id ?? this.id,
   );
@@ -12758,6 +12928,18 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
       gisPaymentShare: data.gisPaymentShare.present
           ? data.gisPaymentShare.value
           : this.gisPaymentShare,
+      gisPremisesCharacteristic: data.gisPremisesCharacteristic.present
+          ? data.gisPremisesCharacteristic.value
+          : this.gisPremisesCharacteristic,
+      gisEntranceNumber: data.gisEntranceNumber.present
+          ? data.gisEntranceNumber.value
+          : this.gisEntranceNumber,
+      gisCommonProperty: data.gisCommonProperty.present
+          ? data.gisCommonProperty.value
+          : this.gisCommonProperty,
+      gisConfirmed: data.gisConfirmed.present
+          ? data.gisConfirmed.value
+          : this.gisConfirmed,
       gisStatus: data.gisStatus.present ? data.gisStatus.value : this.gisStatus,
       id: data.id.present ? data.id.value : this.id,
     );
@@ -12804,6 +12986,10 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
           ..write('gisPremisesNumber: $gisPremisesNumber, ')
           ..write('gisRoomNumber: $gisRoomNumber, ')
           ..write('gisPaymentShare: $gisPaymentShare, ')
+          ..write('gisPremisesCharacteristic: $gisPremisesCharacteristic, ')
+          ..write('gisEntranceNumber: $gisEntranceNumber, ')
+          ..write('gisCommonProperty: $gisCommonProperty, ')
+          ..write('gisConfirmed: $gisConfirmed, ')
           ..write('gisStatus: $gisStatus, ')
           ..write('id: $id')
           ..write(')'))
@@ -12850,6 +13036,10 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
     gisPremisesNumber,
     gisRoomNumber,
     gisPaymentShare,
+    gisPremisesCharacteristic,
+    gisEntranceNumber,
+    gisCommonProperty,
+    gisConfirmed,
     gisStatus,
     id,
   ]);
@@ -12895,6 +13085,10 @@ class MyAccountDb extends DataClass implements Insertable<MyAccountDb> {
           other.gisPremisesNumber == this.gisPremisesNumber &&
           other.gisRoomNumber == this.gisRoomNumber &&
           other.gisPaymentShare == this.gisPaymentShare &&
+          other.gisPremisesCharacteristic == this.gisPremisesCharacteristic &&
+          other.gisEntranceNumber == this.gisEntranceNumber &&
+          other.gisCommonProperty == this.gisCommonProperty &&
+          other.gisConfirmed == this.gisConfirmed &&
           other.gisStatus == this.gisStatus &&
           other.id == this.id);
 }
@@ -12938,6 +13132,10 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
   final Value<String?> gisPremisesNumber;
   final Value<String?> gisRoomNumber;
   final Value<double?> gisPaymentShare;
+  final Value<String?> gisPremisesCharacteristic;
+  final Value<String?> gisEntranceNumber;
+  final Value<bool?> gisCommonProperty;
+  final Value<bool?> gisConfirmed;
   final Value<String?> gisStatus;
   final Value<int> id;
   const MyAccountsCompanion({
@@ -12979,6 +13177,10 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     this.gisPremisesNumber = const Value.absent(),
     this.gisRoomNumber = const Value.absent(),
     this.gisPaymentShare = const Value.absent(),
+    this.gisPremisesCharacteristic = const Value.absent(),
+    this.gisEntranceNumber = const Value.absent(),
+    this.gisCommonProperty = const Value.absent(),
+    this.gisConfirmed = const Value.absent(),
     this.gisStatus = const Value.absent(),
     this.id = const Value.absent(),
   });
@@ -13021,6 +13223,10 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     this.gisPremisesNumber = const Value.absent(),
     this.gisRoomNumber = const Value.absent(),
     this.gisPaymentShare = const Value.absent(),
+    this.gisPremisesCharacteristic = const Value.absent(),
+    this.gisEntranceNumber = const Value.absent(),
+    this.gisCommonProperty = const Value.absent(),
+    this.gisConfirmed = const Value.absent(),
     this.gisStatus = const Value.absent(),
     this.id = const Value.absent(),
   }) : locationUUID = Value(locationUUID);
@@ -13063,6 +13269,10 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     Expression<String>? gisPremisesNumber,
     Expression<String>? gisRoomNumber,
     Expression<double>? gisPaymentShare,
+    Expression<String>? gisPremisesCharacteristic,
+    Expression<String>? gisEntranceNumber,
+    Expression<bool>? gisCommonProperty,
+    Expression<bool>? gisConfirmed,
     Expression<String>? gisStatus,
     Expression<int>? id,
   }) {
@@ -13105,6 +13315,11 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
       if (gisPremisesNumber != null) 'gis_premises_number': gisPremisesNumber,
       if (gisRoomNumber != null) 'gis_room_number': gisRoomNumber,
       if (gisPaymentShare != null) 'gis_payment_share': gisPaymentShare,
+      if (gisPremisesCharacteristic != null)
+        'gis_premises_characteristic': gisPremisesCharacteristic,
+      if (gisEntranceNumber != null) 'gis_entrance_number': gisEntranceNumber,
+      if (gisCommonProperty != null) 'gis_common_property': gisCommonProperty,
+      if (gisConfirmed != null) 'gis_confirmed': gisConfirmed,
       if (gisStatus != null) 'gis_status': gisStatus,
       if (id != null) 'id': id,
     });
@@ -13149,6 +13364,10 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     Value<String?>? gisPremisesNumber,
     Value<String?>? gisRoomNumber,
     Value<double?>? gisPaymentShare,
+    Value<String?>? gisPremisesCharacteristic,
+    Value<String?>? gisEntranceNumber,
+    Value<bool?>? gisCommonProperty,
+    Value<bool?>? gisConfirmed,
     Value<String?>? gisStatus,
     Value<int>? id,
   }) {
@@ -13191,6 +13410,11 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
       gisPremisesNumber: gisPremisesNumber ?? this.gisPremisesNumber,
       gisRoomNumber: gisRoomNumber ?? this.gisRoomNumber,
       gisPaymentShare: gisPaymentShare ?? this.gisPaymentShare,
+      gisPremisesCharacteristic:
+          gisPremisesCharacteristic ?? this.gisPremisesCharacteristic,
+      gisEntranceNumber: gisEntranceNumber ?? this.gisEntranceNumber,
+      gisCommonProperty: gisCommonProperty ?? this.gisCommonProperty,
+      gisConfirmed: gisConfirmed ?? this.gisConfirmed,
       gisStatus: gisStatus ?? this.gisStatus,
       id: id ?? this.id,
     );
@@ -13313,6 +13537,20 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
     if (gisPaymentShare.present) {
       map['gis_payment_share'] = Variable<double>(gisPaymentShare.value);
     }
+    if (gisPremisesCharacteristic.present) {
+      map['gis_premises_characteristic'] = Variable<String>(
+        gisPremisesCharacteristic.value,
+      );
+    }
+    if (gisEntranceNumber.present) {
+      map['gis_entrance_number'] = Variable<String>(gisEntranceNumber.value);
+    }
+    if (gisCommonProperty.present) {
+      map['gis_common_property'] = Variable<bool>(gisCommonProperty.value);
+    }
+    if (gisConfirmed.present) {
+      map['gis_confirmed'] = Variable<bool>(gisConfirmed.value);
+    }
     if (gisStatus.present) {
       map['gis_status'] = Variable<String>(gisStatus.value);
     }
@@ -13363,6 +13601,10 @@ class MyAccountsCompanion extends UpdateCompanion<MyAccountDb> {
           ..write('gisPremisesNumber: $gisPremisesNumber, ')
           ..write('gisRoomNumber: $gisRoomNumber, ')
           ..write('gisPaymentShare: $gisPaymentShare, ')
+          ..write('gisPremisesCharacteristic: $gisPremisesCharacteristic, ')
+          ..write('gisEntranceNumber: $gisEntranceNumber, ')
+          ..write('gisCommonProperty: $gisCommonProperty, ')
+          ..write('gisConfirmed: $gisConfirmed, ')
           ..write('gisStatus: $gisStatus, ')
           ..write('id: $id')
           ..write(')'))
@@ -23824,6 +24066,10 @@ typedef $$MyAccountsTableCreateCompanionBuilder =
       Value<String?> gisPremisesNumber,
       Value<String?> gisRoomNumber,
       Value<double?> gisPaymentShare,
+      Value<String?> gisPremisesCharacteristic,
+      Value<String?> gisEntranceNumber,
+      Value<bool?> gisCommonProperty,
+      Value<bool?> gisConfirmed,
       Value<String?> gisStatus,
       Value<int> id,
     });
@@ -23867,6 +24113,10 @@ typedef $$MyAccountsTableUpdateCompanionBuilder =
       Value<String?> gisPremisesNumber,
       Value<String?> gisRoomNumber,
       Value<double?> gisPaymentShare,
+      Value<String?> gisPremisesCharacteristic,
+      Value<String?> gisEntranceNumber,
+      Value<bool?> gisCommonProperty,
+      Value<bool?> gisConfirmed,
       Value<String?> gisStatus,
       Value<int> id,
     });
@@ -24067,6 +24317,26 @@ class $$MyAccountsTableFilterComposer
 
   ColumnFilters<double> get gisPaymentShare => $composableBuilder(
     column: $table.gisPaymentShare,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisPremisesCharacteristic => $composableBuilder(
+    column: $table.gisPremisesCharacteristic,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gisEntranceNumber => $composableBuilder(
+    column: $table.gisEntranceNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gisCommonProperty => $composableBuilder(
+    column: $table.gisCommonProperty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get gisConfirmed => $composableBuilder(
+    column: $table.gisConfirmed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -24280,6 +24550,26 @@ class $$MyAccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get gisPremisesCharacteristic => $composableBuilder(
+    column: $table.gisPremisesCharacteristic,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gisEntranceNumber => $composableBuilder(
+    column: $table.gisEntranceNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gisCommonProperty => $composableBuilder(
+    column: $table.gisCommonProperty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get gisConfirmed => $composableBuilder(
+    column: $table.gisConfirmed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get gisStatus => $composableBuilder(
     column: $table.gisStatus,
     builder: (column) => ColumnOrderings(column),
@@ -24462,6 +24752,26 @@ class $$MyAccountsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get gisPremisesCharacteristic => $composableBuilder(
+    column: $table.gisPremisesCharacteristic,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gisEntranceNumber => $composableBuilder(
+    column: $table.gisEntranceNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get gisCommonProperty => $composableBuilder(
+    column: $table.gisCommonProperty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get gisConfirmed => $composableBuilder(
+    column: $table.gisConfirmed,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get gisStatus =>
       $composableBuilder(column: $table.gisStatus, builder: (column) => column);
 
@@ -24538,6 +24848,10 @@ class $$MyAccountsTableTableManager
                 Value<String?> gisPremisesNumber = const Value.absent(),
                 Value<String?> gisRoomNumber = const Value.absent(),
                 Value<double?> gisPaymentShare = const Value.absent(),
+                Value<String?> gisPremisesCharacteristic = const Value.absent(),
+                Value<String?> gisEntranceNumber = const Value.absent(),
+                Value<bool?> gisCommonProperty = const Value.absent(),
+                Value<bool?> gisConfirmed = const Value.absent(),
                 Value<String?> gisStatus = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => MyAccountsCompanion(
@@ -24579,6 +24893,10 @@ class $$MyAccountsTableTableManager
                 gisPremisesNumber: gisPremisesNumber,
                 gisRoomNumber: gisRoomNumber,
                 gisPaymentShare: gisPaymentShare,
+                gisPremisesCharacteristic: gisPremisesCharacteristic,
+                gisEntranceNumber: gisEntranceNumber,
+                gisCommonProperty: gisCommonProperty,
+                gisConfirmed: gisConfirmed,
                 gisStatus: gisStatus,
                 id: id,
               ),
@@ -24622,6 +24940,10 @@ class $$MyAccountsTableTableManager
                 Value<String?> gisPremisesNumber = const Value.absent(),
                 Value<String?> gisRoomNumber = const Value.absent(),
                 Value<double?> gisPaymentShare = const Value.absent(),
+                Value<String?> gisPremisesCharacteristic = const Value.absent(),
+                Value<String?> gisEntranceNumber = const Value.absent(),
+                Value<bool?> gisCommonProperty = const Value.absent(),
+                Value<bool?> gisConfirmed = const Value.absent(),
                 Value<String?> gisStatus = const Value.absent(),
                 Value<int> id = const Value.absent(),
               }) => MyAccountsCompanion.insert(
@@ -24663,6 +24985,10 @@ class $$MyAccountsTableTableManager
                 gisPremisesNumber: gisPremisesNumber,
                 gisRoomNumber: gisRoomNumber,
                 gisPaymentShare: gisPaymentShare,
+                gisPremisesCharacteristic: gisPremisesCharacteristic,
+                gisEntranceNumber: gisEntranceNumber,
+                gisCommonProperty: gisCommonProperty,
+                gisConfirmed: gisConfirmed,
                 gisStatus: gisStatus,
                 id: id,
               ),

@@ -274,6 +274,13 @@ class AccountResponse {
   final String? gisPremisesNumber;
   final String? gisRoomNumber;
   final double? gisPaymentShare;
+  // Листы «Жилые помещения» и «Нежилые помещения» шаблона МКД.
+  // Характеристика помещения обязательна при «Информация подтверждена
+  // поставщиком» = «Да»: без неё портал отклоняет строку (INT004144).
+  final String? gisPremisesCharacteristic;
+  final String? gisEntranceNumber;
+  final bool? gisCommonProperty;
+  final bool? gisConfirmed;
   // Лист «Доп критерии поиска в ЕГРП» шаблона МКД: нужен, когда
   // привязать помещение по кадастровому номеру не удалось.
   final String? gisEgrpConditionalNumber;
@@ -322,6 +329,10 @@ class AccountResponse {
     this.gisPremisesNumber,
     this.gisRoomNumber,
     this.gisPaymentShare,
+    this.gisPremisesCharacteristic,
+    this.gisEntranceNumber,
+    this.gisCommonProperty,
+    this.gisConfirmed,
     this.gisEgrpConditionalNumber,
     this.gisEgrpRegistrationNumber,
     this.gisEgrpRegistrationDate,
@@ -415,6 +426,11 @@ class AccountUpdate {
   final String? gisPremisesNumber;
   final String? gisRoomNumber;
   final double? gisPaymentShare;
+  // Листы «Жилые/Нежилые помещения» шаблона МКД.
+  final String? gisPremisesCharacteristic;
+  final String? gisEntranceNumber;
+  final bool? gisCommonProperty;
+  final bool? gisConfirmed;
   // Лист «Доп критерии поиска в ЕГРП» шаблона МКД: нужен, когда
   // привязать помещение по кадастровому номеру не удалось.
   final String? gisEgrpConditionalNumber;
@@ -458,6 +474,10 @@ class AccountUpdate {
     this.gisPremisesNumber,
     this.gisRoomNumber,
     this.gisPaymentShare,
+    this.gisPremisesCharacteristic,
+    this.gisEntranceNumber,
+    this.gisCommonProperty,
+    this.gisConfirmed,
     this.gisEgrpConditionalNumber,
     this.gisEgrpRegistrationNumber,
     this.gisEgrpRegistrationDate,

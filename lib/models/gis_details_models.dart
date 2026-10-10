@@ -184,6 +184,11 @@ class GisRoom {
   final double? area;
   final String? cadastralNumber;
   final bool confirmed;
+  // Лист «Доп критерии поиска в ЕГРП», колонка D «Номер комнаты»:
+  // привязку к ЕГРП можно задать комнате, а не только помещению.
+  final String? gisEgrpConditionalNumber;
+  final String? gisEgrpRegistrationNumber;
+  final DateTime? gisEgrpRegistrationDate;
   final String? gisStatus;
 
   const GisRoom({
@@ -193,8 +198,14 @@ class GisRoom {
     this.area,
     this.cadastralNumber,
     this.confirmed = true,
+    this.gisEgrpConditionalNumber,
+    this.gisEgrpRegistrationNumber,
+    this.gisEgrpRegistrationDate,
     this.gisStatus,
   });
+
+  static DateTime? _date(dynamic value) =>
+      value == null ? null : DateTime.tryParse(value.toString());
 
   factory GisRoom.fromJson(Map<String, dynamic> json) => GisRoom(
         id: json['id'] as int?,
@@ -203,6 +214,11 @@ class GisRoom {
         area: (json['area'] as num?)?.toDouble(),
         cadastralNumber: json['cadastral_number'] as String?,
         confirmed: json['confirmed'] as bool? ?? true,
+        gisEgrpConditionalNumber:
+            json['gis_egrp_conditional_number'] as String?,
+        gisEgrpRegistrationNumber:
+            json['gis_egrp_registration_number'] as String?,
+        gisEgrpRegistrationDate: _date(json['gis_egrp_registration_date']),
         gisStatus: json['gis_status'] as String?,
       );
 
@@ -212,6 +228,13 @@ class GisRoom {
         if (area != null) 'area': area,
         if (cadastralNumber != null) 'cadastral_number': cadastralNumber,
         'confirmed': confirmed,
+        if (gisEgrpConditionalNumber != null)
+          'gis_egrp_conditional_number': gisEgrpConditionalNumber,
+        if (gisEgrpRegistrationNumber != null)
+          'gis_egrp_registration_number': gisEgrpRegistrationNumber,
+        if (gisEgrpRegistrationDate != null)
+          'gis_egrp_registration_date':
+              gisEgrpRegistrationDate!.toIso8601String().split('T').first,
       };
 }
 

@@ -283,6 +283,19 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
     final area = TextEditingController(text: item?.area?.toString() ?? '');
     final cadastral =
         TextEditingController(text: item?.cadastralNumber ?? '');
+    // Привязка комнаты к ЕГРП — колонка D листа «Доп критерии поиска в
+    // ЕГРП». Нужна, когда по кадастровому номеру комнату не нашли.
+    final egrpConditional =
+        TextEditingController(text: item?.gisEgrpConditionalNumber ?? '');
+    final egrpRegNumber =
+        TextEditingController(text: item?.gisEgrpRegistrationNumber ?? '');
+    final egrpRegDate = TextEditingController(
+      text: item?.gisEgrpRegistrationDate
+              ?.toIso8601String()
+              .split('T')
+              .first ??
+          '',
+    );
     var confirmed = item?.confirmed ?? true;
 
     final saved = await showDialog<bool>(
@@ -323,6 +336,29 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
                   value: confirmed,
                   onChanged: (v) => setDialog(() => confirmed = v),
                 ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: egrpConditional,
+                  decoration: const InputDecoration(
+                    labelText: 'Условный номер ЕГРП',
+                    helperText: 'лист «Доп критерии поиска в ЕГРП»',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: egrpRegNumber,
+                  decoration: const InputDecoration(
+                    labelText: 'Номер гос. регистрации права',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: egrpRegDate,
+                  decoration: const InputDecoration(
+                    labelText: 'Дата гос. регистрации права',
+                    hintText: 'ГГГГ-ММ-ДД',
+                  ),
+                ),
               ],
             ),
           ),
@@ -350,6 +386,13 @@ class _AccountDetailsScreenState extends ConsumerState<AccountDetailsScreen> {
       cadastralNumber:
           cadastral.text.trim().isEmpty ? null : cadastral.text.trim(),
       confirmed: confirmed,
+      gisEgrpConditionalNumber: egrpConditional.text.trim().isEmpty
+          ? null
+          : egrpConditional.text.trim(),
+      gisEgrpRegistrationNumber: egrpRegNumber.text.trim().isEmpty
+          ? null
+          : egrpRegNumber.text.trim(),
+      gisEgrpRegistrationDate: DateTime.tryParse(egrpRegDate.text.trim()),
     );
     try {
       final service = ref.read(gisDetailsServiceProvider);

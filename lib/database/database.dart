@@ -303,6 +303,13 @@ class MyAccounts extends Table {
   TextColumn get gisPremisesNumber => text().nullable()();
   TextColumn get gisRoomNumber => text().nullable()();
   RealColumn get gisPaymentShare => real().nullable()();
+  // Листы «Жилые/Нежилые помещения» шаблона МКД. Характеристика
+  // помещения обязательна при «Информация подтверждена поставщиком»:
+  // без неё портал отклоняет строку (INT004144).
+  TextColumn get gisPremisesCharacteristic => text().nullable()();
+  TextColumn get gisEntranceNumber => text().nullable()();
+  BoolColumn get gisCommonProperty => boolean().nullable()();
+  BoolColumn get gisConfirmed => boolean().nullable()();
   TextColumn get gisStatus => text().nullable()();
 
   // We add an auto id to serve as simple PK. The unique constraint is on (locationUUID, accountNumber)
@@ -494,7 +501,10 @@ class AppDatabase extends _$AppDatabase {
   // 15: добавлены индексы affected_houses_incident_id и
   // incident_photos_incident_id. Бамп нужен, чтобы уже установленные копии
   // прошли onUpgrade и пересоздали схему с индексами.
-  int get schemaVersion => 16;
+  // 17: у лицевого счёта появились колонки листов «Жилые/Нежилые
+  // помещения» шаблона МКД (характеристика помещения, номер подъезда,
+  // общее имущество, признак подтверждения).
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

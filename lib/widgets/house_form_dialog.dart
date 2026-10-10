@@ -1081,7 +1081,12 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
     );
   }
 
-  /// Часовая зона: выбираем по городу, в портал уходит идентификатор Olson.
+  /// Часовая зона: выбираем по городу, храним идентификатор Olson.
+  ///
+  /// В файл для портала сервер пишет ГОРОД: колонка J «Часовая зона по
+  /// Olson» ограничена списком `Olson!$C$1:$C$21` — это города, и
+  /// «Europe/Moscow» портал отвергает. Храним всё равно идентификатор:
+  /// он однозначен, а города в справочнике портала могут переименовать.
   Widget _buildTimezonePicker() {
     final current = _gisTimezoneController.text;
     final match = gisTimezones.where((z) => z.id == current).firstOrNull;
