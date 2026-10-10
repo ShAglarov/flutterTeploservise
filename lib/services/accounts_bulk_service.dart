@@ -249,6 +249,18 @@ class ParsedApartments {
   }
 }
 
+/// Дома котельных и число счетов-сирот.
+///
+/// Сироты лежат в домах АДРЕСНОЙ БАЗЫ — той, из которой дом выбирают
+/// кнопкой «Копировать из…». На экране таких домов нет, поэтому
+/// оператор видит «счетов нет», а их номера заняты.
+class HousesInfo {
+  final List<BulkHouse> houses;
+  final int orphanAccounts;
+
+  const HousesInfo({required this.houses, this.orphanAccounts = 0});
+}
+
 /// Итог очистки лицевых счетов домов.
 class ClearResult {
   final bool dryRun;
@@ -332,12 +344,15 @@ class AccountsBulkService {
   /// запроса, поэтому таймаут поднят.
   static const _long = Duration(minutes: 5);
 
-  Future<List<BulkHouse>> houses() async {
+  Future<HousesInfo> houses() async {
     final response = await _dio.get('/accounts/bulk-generate/candidates');
     final data = (response.data as Map).cast<String, dynamic>();
-    return ((data['houses'] as List?) ?? const [])
-        .map((e) => BulkHouse.fromJson((e as Map).cast<String, dynamic>()))
-        .toList();
+    return HousesInfo(
+      houses: ((data['houses'] as List?) ?? const [])
+          .map((e) => BulkHouse.fromJson((e as Map).cast<String, dynamic>()))
+          .toList(),
+      orphanAccounts: (data['orphan_accounts'] as num?)?.toInt() ?? 0,
+    );
   }
 
   Future<List<TemplateField>> templateFields() async {
@@ -465,6 +480,7 @@ class AccountsBulkService {
   Future<ClearResult> clearByHouses({
     required List<int> locationIds,
     bool force = false,
+    bool includeOrphans = false,
     bool dryRun = false,
   }) async {
     final response = await _dio.post(
@@ -472,6 +488,7 @@ class AccountsBulkService {
       data: {
         'location_ids': locationIds,
         'force': force,
+        'include_orphans': includeOrphans,
         'dry_run': dryRun,
       },
       options: Options(receiveTimeout: _long),

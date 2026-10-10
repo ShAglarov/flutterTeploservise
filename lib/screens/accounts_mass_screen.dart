@@ -83,6 +83,11 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
   ClearResult? _clearResult;
   bool _clearForce = false;
 
+  /// Счета в домах адресной базы: на экране этих домов нет, а номера
+  /// они занимают. Отсюда «номер уже занят» при пустых домах котельных.
+  int _orphanAccounts = 0;
+  bool _clearOrphans = false;
+
   @override
   void initState() {
     super.initState();
@@ -103,9 +108,11 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
       _loadError = null;
     });
     try {
-      final houses = await ref.read(accountsBulkServiceProvider).houses();
+      final info = await ref.read(accountsBulkServiceProvider).houses();
+      final houses = info.houses;
       setState(() {
         _houses = houses;
+        _orphanAccounts = info.orphanAccounts;
         // По умолчанию отмечается то, что нужно создавать: дом без
         // счетов и с заполненным числом квартир. Это и есть просьба
         // «снять галочку с домов, где счета уже созданы». В режиме
@@ -367,6 +374,7 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           await ref.read(accountsBulkServiceProvider).clearByHouses(
                 locationIds: _selected.toList(),
                 force: _clearForce,
+                includeOrphans: _clearOrphans,
                 dryRun: true,
               );
       setState(() => _clearResult = result);
@@ -387,8 +395,15 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Будет удалено до $count счетов '
-                'по $_selectedCount домам.'),
+            Text(
+              [
+                if (count > 0)
+                  'Будет удалено до $count счетов по $_selectedCount домам.',
+                if (_clearOrphans && _orphanAccounts > 0)
+                  'Плюс $_orphanAccounts счетов из адресной базы '
+                      '(дома без котельной).',
+              ].join('\n\n'),
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
@@ -435,6 +450,7 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           await ref.read(accountsBulkServiceProvider).clearByHouses(
                 locationIds: _selected.toList(),
                 force: _clearForce,
+                includeOrphans: _clearOrphans,
                 dryRun: false,
               );
       setState(() => _clearResult = result);
@@ -601,8 +617,10 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
     return switch (_mode) {
       // Путь обязателен: создание отправляет сам файл.
       _Mode.fromFile => _fileRowsCount > 0 && _filePath != null,
-      // Удалять нечего, если в отмеченных домах нет счетов.
-      _Mode.clear => _selected.isNotEmpty && _selectedAccountsCount > 0,
+      // Удалять нечего, если в отмеченных домах нет счетов. Но сироты
+      // домов не требуют: их можно снести одной галочкой.
+      _Mode.clear => (_selected.isNotEmpty && _selectedAccountsCount > 0) ||
+          (_clearOrphans && _orphanAccounts > 0),
       _Mode.byHouses => _selected.isNotEmpty,
     };
   }
@@ -912,6 +930,10 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
         ),
         const SizedBox(height: 12),
         _buildForceSwitch(),
+        if (_orphanAccounts > 0) ...[
+          const SizedBox(height: 12),
+          _buildOrphansSwitch(),
+        ],
         const SizedBox(height: 12),
         _buildDedupeCard(),
       ],
@@ -954,6 +976,61 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           on ? Icons.warning_amber : Icons.shield_outlined,
           color: on ? AppTheme.errorRed : AppTheme.successGreen,
         ),
+      ),
+    );
+  }
+
+  /// Счета в домах адресной базы — причина «номер уже занят».
+  Widget _buildOrphansSwitch() {
+    final on = _clearOrphans;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.warningOrange.withAlpha(on ? 28 : 14),
+        border: Border.all(color: AppTheme.warningOrange.withAlpha(110)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            value: on,
+            onChanged: _busy
+                ? null
+                : (value) => setState(() {
+                      _clearOrphans = value;
+                      _clearResult = null;
+                    }),
+            title: Text(
+              'Удалить счета из адресной базы: $_orphanAccounts',
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            subtitle: const Text(
+              'Эти счета лежат в домах, не привязанных к котельной. '
+              'На экране таких домов нет, в выгрузку ГИС они не идут, '
+              'но номера занимают.',
+              style: TextStyle(fontSize: 12),
+            ),
+            secondary: const Icon(Icons.link_off,
+                color: AppTheme.warningOrange),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Icon(Icons.info_outline, size: 16, color: Colors.indigo),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Из-за них загрузка файла писала «номер уже занят», '
+                    'хотя в домах котельных счетов не было.',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

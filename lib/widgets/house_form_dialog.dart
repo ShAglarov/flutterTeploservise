@@ -487,22 +487,28 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-      child: Container(
-        width: 500,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: screenHeight - 48,
+          maxWidth: 500,
         ),
+        child: Container(
+          width: 500,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Theme.of(context).colorScheme.onSurface.withAlpha(25)),
+          ),
         child: Column(
           children: [
             _buildHeader(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 60),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -517,6 +523,73 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                           'Выбрать',
                           onTap: _selectFromDatabase,
                         ),
+                      ]),
+
+                      _SectionHeader('Документы'),
+                      _buildSection([
+                        _buildActionRow(
+                          Icons.upload_file,
+                          Colors.indigo,
+                          'Загрузить документ',
+                          _isUploadingDoc ? 'Загрузка...' : 'Выбрать файл',
+                          onTap: _isUploadingDoc ? null : _uploadDocument,
+                        ),
+                        if (_documents.isNotEmpty) ...[
+                          _buildDivider(),
+                          ..._documents.map((doc) => Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _getDocIcon(doc['content_type'] ?? ''),
+                                      size: 20,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            doc['title'] ?? doc['filename'] ?? 'Документ',
+                                            style: TextStyle(
+                                              color: Theme.of(context).colorScheme.onSurface,
+                                              fontSize: 14,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            '${doc['document_type_label'] ?? ''} • ${_formatFileSize(doc['file_size'])}',
+                                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                      onPressed: () => _deleteDocument(doc['id']),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (doc != _documents.last) _buildDivider(),
+                            ],
+                          )),
+                        ],
+                        if (widget.initialLocation == null) ...[
+                          _buildDivider(),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Text(
+                              'Документы можно загрузить после сохранения дома',
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        ],
                       ]),
                       
                       _SectionHeader('Основная информация'),
@@ -757,73 +830,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
                         ),
                       ]),
 
-                      _SectionHeader('Документы'),
-                      _buildSection([
-                        _buildActionRow(
-                          Icons.upload_file,
-                          Colors.indigo,
-                          'Загрузить документ',
-                          _isUploadingDoc ? 'Загрузка...' : 'Выбрать файл',
-                          onTap: _isUploadingDoc ? null : _uploadDocument,
-                        ),
-                        if (_documents.isNotEmpty) ...[
-                          _buildDivider(),
-                          ..._documents.map((doc) => Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _getDocIcon(doc['content_type'] ?? ''),
-                                      size: 20,
-                                      color: Colors.blue,
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            doc['title'] ?? doc['filename'] ?? 'Документ',
-                                            style: TextStyle(
-                                              color: Theme.of(context).colorScheme.onSurface,
-                                              fontSize: 14,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            '${doc['document_type_label'] ?? ''} • ${_formatFileSize(doc['file_size'])}',
-                                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                      onPressed: () => _deleteDocument(doc['id']),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (doc != _documents.last) _buildDivider(),
-                            ],
-                          )),
-                        ],
-                        if (widget.initialLocation == null) ...[
-                          _buildDivider(),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Text(
-                              'Документы можно загрузить после сохранения дома',
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
-                            ),
-                          ),
-                        ],
-                      ]),
-                      
+
                        _SectionHeader('Управление и связи'),
                       _buildSection([
                         _buildActionRow(
@@ -853,6 +860,7 @@ class _HouseFormDialogState extends ConsumerState<HouseFormDialog> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
