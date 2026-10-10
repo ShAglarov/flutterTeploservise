@@ -25,6 +25,7 @@ import '../repositories/sync_repository.dart';
 import '../utils/app_theme.dart';
 import '../utils/time_formatter.dart';
 import '../widgets/user_avatar_widget.dart';
+import 'accounts_mass_screen.dart';
 import 'action_log_list_screen.dart';
 import 'permission_editor_screen.dart';
 import 'profile_screen.dart';
@@ -576,6 +577,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ]),
           _buildSectionFooter(
               'Данные организаций изолированы друг от друга'),
+          const SizedBox(height: 24),
+        ],
+
+        // ═══════ Лицевые счета ═══════
+        // Своё право (account.create), а не права на обмен данными:
+        // счета создаются здесь, а шаблонами ГИС ниже только обмениваются.
+        if (ref.watch(permissionStateProvider).hasPermission(PermissionKey.accountCreate)) ...[
+          _buildSectionHeader('Лицевые счета'),
+          const SizedBox(height: 8),
+          _buildCard([
+            _buildNavRow(
+              icon: Icons.playlist_add,
+              iconColor: Colors.indigo,
+              title: 'Лицевые счета по квартирам',
+              subtitle: 'Массовое создание сразу по домам котельных или из таблицы',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AccountsMassScreen()),
+                );
+              },
+            ),
+          ]),
+          _buildSectionFooter(
+              'Дома, где счета уже созданы, снимаются автоматически'),
           const SizedBox(height: 24),
         ],
 
