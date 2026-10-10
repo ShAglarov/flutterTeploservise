@@ -119,6 +119,8 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
   }
 
   String _errorText(Object e) {
+    // Клиент новее сервера: замена не выполнена, счета не тронуты.
+    if (e is BulkReplaceUnsupported) return e.toString();
     if (e is DioException) {
       final data = e.response?.data;
       String? detail;

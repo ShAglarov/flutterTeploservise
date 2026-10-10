@@ -249,6 +249,20 @@ class ParsedApartments {
   }
 }
 
+/// Сервер не умеет замену: обновлён клиент, но не бэкенд.
+///
+/// Отдельным типом, а не текстом в общей ошибке: экран по нему
+/// показывает, что именно делать, и — главное — НЕ сообщает об успехе.
+class BulkReplaceUnsupported implements Exception {
+  const BulkReplaceUnsupported();
+
+  @override
+  String toString() =>
+      'Сервер не поддерживает замену лицевых счетов: обновлён клиент, '
+      'но не серверная часть. Запустите deploy_accounts_mass.sh — '
+      'до этого замена молча добавляла бы счета к прежним.';
+}
+
 class AccountsBulkService {
   final Dio _dio;
 
@@ -368,7 +382,20 @@ class AccountsBulkService {
       },
       options: Options(receiveTimeout: _long, sendTimeout: _long),
     );
-    return BulkResult.fromJson((response.data as Map).cast());
+    final result = BulkResult.fromJson((response.data as Map).cast());
+
+    // СТРАХОВКА ОТ СТАРОГО БЭКЕНДА.
+    //
+    // FastAPI молча отбрасывает неизвестные query-параметры: сервер без
+    // поддержки замены принял бы запрос, проигнорировал
+    // `replace_existing` и ДОБАВИЛ счета к прежним вместо замены.
+    // Ответ такого сервера не содержит `replaced`, поэтому ловим это
+    // здесь и говорим прямо, вместо того чтобы показать «создано N» и
+    // оставить дубли в базе.
+    if (replaceExisting && !result.replaced) {
+      throw const BulkReplaceUnsupported();
+    }
+    return result;
   }
 
   /// Создание счетов по уже разобранным строкам.
