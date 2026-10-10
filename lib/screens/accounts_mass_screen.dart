@@ -986,6 +986,36 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           if (result.skipped > 0)
             Text('Пропущено: ${result.skipped}',
                 style: const TextStyle(fontSize: 13)),
+          // Ноль с непустым файлом почти всегда значит одно: адреса не
+          // сопоставились с домами. Это главное, что нужно показать, —
+          // иначе итог «создано 0» выглядит как поломка.
+          if (result.unresolvedAddresses.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Не нашлось домов по адресам: '
+              '${result.unresolvedAddresses.length}',
+              style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.warningOrange),
+            ),
+            const SizedBox(height: 4),
+            for (final a in result.unresolvedAddresses.take(8))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text('• $a', style: const TextStyle(fontSize: 12)),
+              ),
+            if (result.unresolvedAddresses.length > 8)
+              Text(
+                  '…и ещё ${result.unresolvedAddresses.length - 8} адресов',
+                  style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 4),
+            const Text(
+              'Проверьте, что дом с таким адресом есть в приложении и '
+              'привязан к котельной.',
+              style: TextStyle(fontSize: 11),
+            ),
+          ],
           if (houses.isNotEmpty) ...[
             const SizedBox(height: 8),
             for (final h in houses.take(12))
