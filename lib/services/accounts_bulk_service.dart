@@ -249,6 +249,66 @@ class ParsedApartments {
   }
 }
 
+/// Итог очистки лицевых счетов домов.
+class ClearResult {
+  final bool dryRun;
+  final int deleted;
+
+  /// Сколько будет удалено в пробном прогоне.
+  final int wouldDelete;
+
+  /// Всего счетов в выбранных домах.
+  final int total;
+
+  /// Сохранено: за счётом платежи, квитанции или обещания оплаты.
+  final int keptWithHistory;
+  final List<String> warnings;
+
+  const ClearResult({
+    required this.dryRun,
+    required this.deleted,
+    required this.wouldDelete,
+    required this.total,
+    required this.keptWithHistory,
+    required this.warnings,
+  });
+
+  factory ClearResult.fromJson(Map<String, dynamic> json) => ClearResult(
+        dryRun: json['dry_run'] as bool? ?? false,
+        deleted: (json['deleted'] as num?)?.toInt() ?? 0,
+        wouldDelete: (json['would_delete'] as num?)?.toInt() ?? 0,
+        total: (json['total'] as num?)?.toInt() ?? 0,
+        keptWithHistory: (json['kept_with_history'] as num?)?.toInt() ?? 0,
+        warnings: ((json['warnings'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
+      );
+}
+
+/// Итог чистки дублей адресной базы.
+class DedupeResult {
+  final bool dryRun;
+  final int removed;
+  final int wouldRemove;
+
+  /// Сколько адресов имело дубли.
+  final int groupsTotal;
+
+  const DedupeResult({
+    required this.dryRun,
+    required this.removed,
+    required this.wouldRemove,
+    required this.groupsTotal,
+  });
+
+  factory DedupeResult.fromJson(Map<String, dynamic> json) => DedupeResult(
+        dryRun: json['dry_run'] as bool? ?? false,
+        removed: (json['removed'] as num?)?.toInt() ?? 0,
+        wouldRemove: (json['would_remove'] as num?)?.toInt() ?? 0,
+        groupsTotal: (json['groups_total'] as num?)?.toInt() ?? 0,
+      );
+}
+
 /// Сервер не умеет замену: обновлён клиент, но не бэкенд.
 ///
 /// Отдельным типом, а не текстом в общей ошибке: экран по нему
@@ -396,6 +456,39 @@ class AccountsBulkService {
       throw const BulkReplaceUnsupported();
     }
     return result;
+  }
+
+  /// Полная очистка лицевых счетов выбранных домов.
+  ///
+  /// `force` — удалять и счета с платежами, вместе с квитанциями и
+  /// кассовыми операциями. Без него такие счета сохраняются.
+  Future<ClearResult> clearByHouses({
+    required List<int> locationIds,
+    bool force = false,
+    bool dryRun = false,
+  }) async {
+    final response = await _dio.post(
+      '/accounts/clear-by-houses',
+      data: {
+        'location_ids': locationIds,
+        'force': force,
+        'dry_run': dryRun,
+      },
+      options: Options(receiveTimeout: _long),
+    );
+    return ClearResult.fromJson((response.data as Map).cast());
+  }
+
+  /// Удаление дублей адресной базы — той, из которой дом выбирают
+  /// кнопкой «Копировать из…». Дома котельных и дома со счетами не
+  /// трогает.
+  Future<DedupeResult> dedupeLocations({bool dryRun = true}) async {
+    final response = await _dio.post(
+      '/locations/dedupe',
+      queryParameters: {'dry_run': dryRun},
+      options: Options(receiveTimeout: _long),
+    );
+    return DedupeResult.fromJson((response.data as Map).cast());
   }
 
   /// Создание счетов по уже разобранным строкам.

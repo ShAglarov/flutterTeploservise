@@ -18,6 +18,9 @@ enum _Mode {
 
   /// Таблица: дом у каждой строки свой, площади и ФИО из файла.
   fromFile,
+
+  /// Полная очистка лицевых счетов выбранных домов.
+  clear,
 }
 
 /// Массовое создание лицевых счетов по всему жилфонду.
@@ -76,6 +79,10 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
   String? _error;
   BulkResult? _result;
 
+  /// Итог очистки и признак «удалять вместе с историей платежей».
+  ClearResult? _clearResult;
+  bool _clearForce = false;
+
   @override
   void initState() {
     super.initState();
@@ -99,15 +106,11 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
       final houses = await ref.read(accountsBulkServiceProvider).houses();
       setState(() {
         _houses = houses;
-        _selected
-          ..clear()
-          // По умолчанию отмечаем только то, что действительно нужно
-          // создавать: дом без счетов и с заполненным числом квартир.
-          // Это и есть просьба «снять галочку с домов, где счета уже
-          // созданы» — оператору не приходится снимать их вручную.
-          ..addAll(houses
-              .where((h) => h.canGenerate && !h.hasAccounts)
-              .map((h) => h.id));
+        // По умолчанию отмечается то, что нужно создавать: дом без
+        // счетов и с заполненным числом квартир. Это и есть просьба
+        // «снять галочку с домов, где счета уже созданы». В режиме
+        // очистки не отмечается ничего — см. _applyDefaultSelection.
+        _applyDefaultSelection();
         _loading = false;
       });
     } catch (e) {
@@ -277,6 +280,178 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
 
   // ─────────────────────── создание ───────────────────────
 
+  // ─────────────────────── очистка и дубли ───────────────────────
+
+  /// Чистка дублей адресной базы: сначала пробный прогон, потом спрос.
+  Future<void> _dedupe() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    DedupeResult plan;
+    try {
+      plan = await ref
+          .read(accountsBulkServiceProvider)
+          .dedupeLocations(dryRun: true);
+    } catch (e) {
+      setState(() {
+        _error = _errorText(e);
+        _busy = false;
+      });
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _busy = false);
+
+    if (plan.wouldRemove == 0) {
+      _toast('Дублей в адресной базе нет');
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Убрать дубли?'),
+        content: Text(
+          'Будет удалено ${plan.wouldRemove} лишних записей '
+          'по ${plan.groupsTotal} адресам.\n\n'
+          'Это адресная база для кнопки «Копировать из…». Дома '
+          'котельных, дома со счетами, подъездами и инцидентами не '
+          'затрагиваются — на каждый адрес останется одна запись.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Убрать'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _busy = true);
+    try {
+      final done = await ref
+          .read(accountsBulkServiceProvider)
+          .dedupeLocations(dryRun: false);
+      if (!mounted) return;
+      _toast('Удалено дублей: ${done.removed}');
+      await _load();
+    } catch (e) {
+      setState(() => _error = _errorText(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _toast(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  /// Пробный прогон очистки — сколько счетов удалится.
+  Future<void> _clearPreview() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _clearResult = null;
+    });
+    try {
+      final result =
+          await ref.read(accountsBulkServiceProvider).clearByHouses(
+                locationIds: _selected.toList(),
+                force: _clearForce,
+                dryRun: true,
+              );
+      setState(() => _clearResult = result);
+    } catch (e) {
+      setState(() => _error = _errorText(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _clear() async {
+    final count = _selectedAccountsCount;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить лицевые счета?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Будет удалено до $count счетов '
+                'по $_selectedCount домам.'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.errorRed.withAlpha(28),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _clearForce
+                    ? 'Вместе со счетами удалятся их платежи, квитанции, '
+                        'кассовые операции, показания счётчиков, льготы '
+                        'и субсидии. Отменить это нельзя.'
+                    : 'Вместе со счетами удалятся их показания счётчиков, '
+                        'льготы и субсидии. Счета с платежами и '
+                        'квитанциями будут сохранены.',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            style:
+                FilledButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+      _clearResult = null;
+    });
+    try {
+      final result =
+          await ref.read(accountsBulkServiceProvider).clearByHouses(
+                locationIds: _selected.toList(),
+                force: _clearForce,
+                dryRun: false,
+              );
+      setState(() => _clearResult = result);
+      // Счёта в домах не стало — перечитываем список и снимаем отметки.
+      await _load();
+    } catch (e) {
+      setState(() => _error = _errorText(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Сколько счетов в отмеченных домах.
+  int get _selectedAccountsCount => _houses
+      .where((h) => _selected.contains(h.id))
+      .fold<int>(0, (sum, h) => sum + h.accountsCount);
+
   /// Пробный прогон: сервер считает итог, ничего не записывая.
   Future<void> _preview() => _run(dryRun: true);
 
@@ -419,11 +594,17 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
   /// Можно ли запускать.
   bool get _canRun {
     if (_busy) return false;
-    if (_numberTemplate.text.trim().isEmpty) return false;
-    return _mode == _Mode.fromFile
-        // Путь обязателен: создание отправляет сам файл.
-        ? _fileRowsCount > 0 && _filePath != null
-        : _selected.isNotEmpty;
+    // Шаблон номера нужен только при создании — очистка не нумерует.
+    if (_mode != _Mode.clear && _numberTemplate.text.trim().isEmpty) {
+      return false;
+    }
+    return switch (_mode) {
+      // Путь обязателен: создание отправляет сам файл.
+      _Mode.fromFile => _fileRowsCount > 0 && _filePath != null,
+      // Удалять нечего, если в отмеченных домах нет счетов.
+      _Mode.clear => _selected.isNotEmpty && _selectedAccountsCount > 0,
+      _Mode.byHouses => _selected.isNotEmpty,
+    };
   }
 
   // ─────────────────────────── интерфейс ───────────────────────────
@@ -482,19 +663,31 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
       children: [
         _buildModeSwitch(),
         const SizedBox(height: 16),
-        if (_mode == _Mode.byHouses) ...[
+        if (_mode == _Mode.clear) ...[
+          _buildClearHeader(),
+          const SizedBox(height: 8),
+          _buildHousesList(),
+        ] else if (_mode == _Mode.byHouses) ...[
           _buildHousesHeader(),
           const SizedBox(height: 8),
           _buildHousesList(),
         ] else
           _buildFileSection(),
-        const SizedBox(height: 20),
-        _buildNumbering(),
-        const SizedBox(height: 20),
-        _buildGisFields(),
+        // Нумерация и поля ГИС нужны только при создании: очистка
+        // ничего не создаёт.
+        if (_mode != _Mode.clear) ...[
+          const SizedBox(height: 20),
+          _buildNumbering(),
+          const SizedBox(height: 20),
+          _buildGisFields(),
+        ],
         if (_error != null) ...[
           const SizedBox(height: 16),
           _buildError(_error!),
+        ],
+        if (_clearResult != null) ...[
+          const SizedBox(height: 16),
+          _buildClearResult(_clearResult!),
         ],
         if (_result != null) ...[
           const SizedBox(height: 16),
@@ -515,28 +708,57 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
     );
   }
 
-  Widget _buildModeSwitch() => SegmentedButton<_Mode>(
-        segments: const [
-          ButtonSegment(
-            value: _Mode.byHouses,
-            icon: Icon(Icons.apartment),
-            label: Text('По домам'),
+  Widget _buildModeSwitch() {
+    final canDelete = ref
+        .watch(permissionStateProvider)
+        .hasPermission(PermissionKey.accountDelete);
+    return SegmentedButton<_Mode>(
+      segments: [
+        const ButtonSegment(
+          value: _Mode.byHouses,
+          icon: Icon(Icons.apartment),
+          label: Text('По домам'),
+        ),
+        const ButtonSegment(
+          value: _Mode.fromFile,
+          icon: Icon(Icons.table_chart),
+          label: Text('Из файла'),
+        ),
+        // Очистка — только с правом на удаление счетов.
+        if (canDelete)
+          const ButtonSegment(
+            value: _Mode.clear,
+            icon: Icon(Icons.delete_sweep),
+            label: Text('Очистка'),
           ),
-          ButtonSegment(
-            value: _Mode.fromFile,
-            icon: Icon(Icons.table_chart),
-            label: Text('Из файла'),
-          ),
-        ],
-        selected: {_mode},
-        onSelectionChanged: _busy
-            ? null
-            : (value) => setState(() {
-                  _mode = value.first;
-                  _result = null;
-                  _error = null;
-                }),
-      );
+      ],
+      selected: {_mode},
+      onSelectionChanged: _busy
+          ? null
+          : (value) => setState(() {
+                _mode = value.first;
+                _result = null;
+                _clearResult = null;
+                _error = null;
+                // Выбор домов у режимов разный: в очистке отмечать
+                // надо дома СО счетами, а не без них.
+                _applyDefaultSelection();
+              }),
+    );
+  }
+
+  /// Отметки по умолчанию для текущего режима.
+  void _applyDefaultSelection() {
+    _selected.clear();
+    if (_mode == _Mode.clear) {
+      // В очистке по умолчанию НИЧЕГО не отмечено: это удаление, и
+      // отмечать дома за оператора нельзя.
+      return;
+    }
+    _selected.addAll(
+      _houses.where((h) => h.canGenerate && !h.hasAccounts).map((h) => h.id),
+    );
+  }
 
   Widget _buildError(String text) => Container(
         padding: const EdgeInsets.all(12),
@@ -624,6 +846,143 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
     );
   }
 
+  // ─────────────────────── режим «Очистка» ───────────────────────
+
+  Widget _buildClearHeader() {
+    final withAccounts = _houses.where((h) => h.hasAccounts).toList();
+    final totalAccounts =
+        withAccounts.fold<int>(0, (sum, h) => sum + h.accountsCount);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle(
+          'Очистка лицевых счетов',
+          hint: 'Отметьте дома — все их лицевые счета будут удалены. '
+              'Вместе со счётом уходят его квитанции, показания '
+              'счётчиков, льготы и субсидии.',
+        ),
+        TextField(
+          controller: _search,
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: 'Поиск по адресу, котельной, кадастровому номеру',
+            prefixIcon: const Icon(Icons.search, size: 20),
+            suffixIcon: _search.text.isEmpty
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.clear, size: 18),
+                    onPressed: () => setState(() => _search.clear()),
+                  ),
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ActionChip(
+              avatar: const Icon(Icons.playlist_add_check, size: 18),
+              label: const Text('Только со счетами'),
+              onPressed: () => setState(() {
+                _selected
+                  ..clear()
+                  ..addAll(_visible
+                      .where((h) => h.hasAccounts)
+                      .map((h) => h.id));
+              }),
+            ),
+            ActionChip(
+              avatar: const Icon(Icons.remove_done, size: 18),
+              label: const Text('Снять все'),
+              onPressed: () => setState(_selected.clear),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Домов со счетами: ${withAccounts.length} • '
+          'счетов всего: $totalAccounts',
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurface.withAlpha(130),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildForceSwitch(),
+        const SizedBox(height: 12),
+        _buildDedupeCard(),
+      ],
+    );
+  }
+
+  /// Удалять ли счета, за которыми платежи.
+  Widget _buildForceSwitch() {
+    final on = _clearForce;
+    return Container(
+      decoration: BoxDecoration(
+        color: on ? AppTheme.errorRed.withAlpha(22) : null,
+        border: Border.all(
+          color: on
+              ? AppTheme.errorRed.withAlpha(110)
+              : Theme.of(context).colorScheme.onSurface.withAlpha(40),
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: SwitchListTile(
+        value: on,
+        onChanged: _busy
+            ? null
+            : (value) => setState(() {
+                  _clearForce = value;
+                  _clearResult = null;
+                }),
+        title: const Text(
+          'Удалять и счета с платежами',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          on
+              ? 'Вместе со счётом удалятся его платежи, квитанции и '
+                  'кассовые операции — восстановить нельзя'
+              : 'Счета с платежами и квитанциями будут сохранены',
+          style: const TextStyle(fontSize: 12),
+        ),
+        secondary: Icon(
+          on ? Icons.warning_amber : Icons.shield_outlined,
+          color: on ? AppTheme.errorRed : AppTheme.successGreen,
+        ),
+      ),
+    );
+  }
+
+  /// Кнопка чистки дублей адресной базы.
+  Widget _buildDedupeCard() {
+    final canDelete = ref
+        .watch(permissionStateProvider)
+        .hasPermission(PermissionKey.savedLocationDelete);
+    if (!canDelete) return const SizedBox.shrink();
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        leading: const Icon(Icons.cleaning_services_outlined,
+            color: Colors.indigo),
+        title: const Text('Убрать дубли из общей базы'),
+        subtitle: const Text(
+          'Адресная база для кнопки «Копировать из…»: на один адрес '
+          'останется одна запись. Дома котельных и дома со счетами '
+          'не затрагиваются.',
+          style: TextStyle(fontSize: 12),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: _busy ? null : _dedupe,
+      ),
+    );
+  }
+
   Widget _buildHousesList() {
     final groups = _grouped;
     if (groups.isEmpty) {
@@ -650,13 +1009,22 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
     );
   }
 
+  /// Можно ли отметить дом в текущем режиме.
+  ///
+  /// В очистке — у дома есть счета (нечего удалять в пустом), при
+  /// создании — заполнено количество квартир.
+  bool _selectable(BulkHouse house) =>
+      _mode == _Mode.clear ? house.hasAccounts : house.canGenerate;
+
   Widget _buildGroup(String boiler, List<BulkHouse> houses) {
-    final selectable = houses.where((h) => h.canGenerate).toList();
+    final selectable = houses.where(_selectable).toList();
     final allSelected = selectable.isNotEmpty &&
         selectable.every((h) => _selected.contains(h.id));
     final someSelected = selectable.any((h) => _selected.contains(h.id));
-    final planned =
-        houses.fold<int>(0, (sum, h) => sum + h.plannedCount);
+    // В очистке считаем существующие счета, при создании — будущие.
+    final planned = _mode == _Mode.clear
+        ? houses.fold<int>(0, (sum, h) => sum + h.accountsCount)
+        : houses.fold<int>(0, (sum, h) => sum + h.plannedCount);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -681,7 +1049,9 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
           subtitle: Text(
-            'домов ${houses.length} • к созданию $planned',
+            _mode == _Mode.clear
+                ? 'домов ${houses.length} • счетов $planned'
+                : 'домов ${houses.length} • к созданию $planned',
             style: const TextStyle(fontSize: 12),
           ),
           children: [
@@ -694,34 +1064,48 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
 
   Widget _buildHouseRow(BulkHouse house) {
     final cs = Theme.of(context).colorScheme;
-    final subtitle = <String>[
-      if (house.canGenerate)
-        'квартир ${house.apartments}'
-      else
-        'не указано количество квартир',
-      if (house.hasAccounts) 'счетов ${house.accountsCount}',
-    ].join(' • ');
+    final clearing = _mode == _Mode.clear;
+    final ok = _selectable(house);
+    final subtitle = clearing
+        ? (house.hasAccounts
+            ? 'счетов ${house.accountsCount} — будут удалены'
+            : 'счетов нет')
+        : <String>[
+            if (house.canGenerate)
+              'квартир ${house.apartments}'
+            else
+              'не указано количество квартир',
+            if (house.hasAccounts) 'счетов ${house.accountsCount}',
+          ].join(' • ');
 
     return CheckboxListTile(
       dense: true,
       controlAffinity: ListTileControlAffinity.leading,
       value: _selected.contains(house.id),
-      // Дом без количества квартир отметить нельзя: создавать нечего,
-      // и сервер всё равно вернул бы его в причинах.
-      onChanged: house.canGenerate
-          ? (value) => _toggleHouse(house, value)
-          : null,
+      // Отметить нельзя то, с чем в этом режиме делать нечего: дом без
+      // количества квартир при создании, дом без счетов при очистке.
+      onChanged: ok ? (value) => _toggleHouse(house, value) : null,
       title: Text(house.name, style: const TextStyle(fontSize: 13)),
       subtitle: Text(
         subtitle,
         style: TextStyle(
           fontSize: 11,
-          color: house.canGenerate
-              ? cs.onSurface.withAlpha(140)
-              : AppTheme.warningOrange,
+          color: ok
+              ? (clearing ? AppTheme.errorRed : cs.onSurface.withAlpha(140))
+              : cs.onSurface.withAlpha(90),
         ),
       ),
-      secondary: house.plannedCount > 0
+      secondary: clearing
+          ? (house.hasAccounts
+              ? Chip(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  backgroundColor: AppTheme.errorRed.withAlpha(28),
+                  label: Text('−${house.accountsCount}',
+                      style: const TextStyle(fontSize: 11)),
+                )
+              : null)
+          : house.plannedCount > 0
           ? Chip(
               visualDensity: VisualDensity.compact,
               padding: EdgeInsets.zero,
@@ -1246,15 +1630,61 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
     );
   }
 
+  Widget _buildClearResult(ClearResult result) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: result.dryRun
+            ? cs.surfaceContainerHighest
+            : AppTheme.errorRed.withAlpha(24),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            result.dryRun
+                ? 'Предварительный расчёт очистки'
+                : 'Удалено ${result.deleted} лицевых счетов',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          if (result.dryRun)
+            Text('Будет удалено: ${result.wouldDelete} из ${result.total}',
+                style: const TextStyle(fontSize: 13)),
+          if (result.keptWithHistory > 0)
+            Text(
+              'Сохранено (есть платежи): ${result.keptWithHistory}',
+              style: const TextStyle(
+                  fontSize: 13, color: AppTheme.warningOrange),
+            ),
+          if (result.warnings.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final w in result.warnings.take(10))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text('• $w', style: const TextStyle(fontSize: 11)),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomBar(bool canCreate) {
     final isFile = _mode == _Mode.fromFile;
+    final isClear = _mode == _Mode.clear;
     final count = isFile ? _fileRowsCount : _plannedCount;
-    final summary = isFile
-        ? (_parsed == null
-            ? 'Файл не выбран'
-            : 'строк $count'
-                '${_parsed!.multiHouse ? ', домов ${_parsed!.addresses.length}' : ''}')
-        : 'выбрано домов $_selectedCount • к созданию $count';
+    final summary = isClear
+        ? 'выбрано домов $_selectedCount • '
+            'счетов к удалению $_selectedAccountsCount'
+        : isFile
+            ? (_parsed == null
+                ? 'Файл не выбран'
+                : 'строк $count'
+                    '${_parsed!.multiHouse ? ', домов ${_parsed!.addresses.length}' : ''}')
+            : 'выбрано домов $_selectedCount • к созданию $count';
 
     return SafeArea(
       child: Padding(
@@ -1278,7 +1708,9 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
                 // стоит показать числом, а не «создано 4800, упс».
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _canRun ? _preview : null,
+                    onPressed: _canRun
+                        ? (isClear ? _clearPreview : _preview)
+                        : null,
                     icon: const Icon(Icons.calculate_outlined, size: 18),
                     label: const Text('Проверить'),
                   ),
@@ -1286,19 +1718,30 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: _canRun && canCreate ? _create : null,
-                    style: isFile && _replaceExisting
-                        ? FilledButton.styleFrom(
-                            backgroundColor: AppTheme.warningOrange)
+                    onPressed: _canRun && (isClear || canCreate)
+                        ? (isClear ? _clear : _create)
                         : null,
+                    style: isClear
+                        ? FilledButton.styleFrom(
+                            backgroundColor: AppTheme.errorRed)
+                        : isFile && _replaceExisting
+                            ? FilledButton.styleFrom(
+                                backgroundColor: AppTheme.warningOrange)
+                            : null,
                     icon: Icon(
-                      isFile && _replaceExisting
-                          ? Icons.swap_horiz
-                          : Icons.playlist_add,
+                      isClear
+                          ? Icons.delete_sweep
+                          : isFile && _replaceExisting
+                              ? Icons.swap_horiz
+                              : Icons.playlist_add,
                       size: 18,
                     ),
                     label: Text(
-                      isFile && _replaceExisting ? 'Заменить' : 'Создать',
+                      isClear
+                          ? 'Удалить'
+                          : isFile && _replaceExisting
+                              ? 'Заменить'
+                              : 'Создать',
                     ),
                   ),
                 ),
