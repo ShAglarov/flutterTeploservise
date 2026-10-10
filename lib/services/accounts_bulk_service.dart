@@ -82,6 +82,19 @@ class BulkResult {
   /// Адреса из файла, которым не нашлось дома.
   final List<String> unresolvedAddresses;
 
+  /// Была ли это замена ранее загруженных счетов.
+  final bool replaced;
+
+  /// Сколько счетов удалено — всего и из них «не было в файле».
+  final int deleted;
+  final int deletedAbsent;
+
+  /// Обновлено на месте: счёт с платежами удалять нельзя.
+  final int updated;
+
+  /// Оставлено, хотя в файле их нет: за ними деньги.
+  final int keptWithHistory;
+
   const BulkResult({
     required this.dryRun,
     required this.created,
@@ -90,6 +103,11 @@ class BulkResult {
     required this.warnings,
     required this.houses,
     required this.unresolvedAddresses,
+    this.replaced = false,
+    this.deleted = 0,
+    this.deletedAbsent = 0,
+    this.updated = 0,
+    this.keptWithHistory = 0,
   });
 
   factory BulkResult.fromJson(Map<String, dynamic> json) => BulkResult(
@@ -107,6 +125,11 @@ class BulkResult {
             ((json['unresolved_addresses'] as List?) ?? const [])
                 .map((e) => e.toString())
                 .toList(),
+        replaced: json['replaced'] as bool? ?? false,
+        deleted: (json['deleted'] as num?)?.toInt() ?? 0,
+        deletedAbsent: (json['deleted_absent'] as num?)?.toInt() ?? 0,
+        updated: (json['updated'] as num?)?.toInt() ?? 0,
+        keptWithHistory: (json['kept_with_history'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -323,6 +346,7 @@ class AccountsBulkService {
     required String premisesType,
     required String accountType,
     bool preferFileNumbers = true,
+    bool replaceExisting = false,
     bool dryRun = false,
   }) async {
     final form = FormData.fromMap({
@@ -339,6 +363,7 @@ class AccountsBulkService {
         'premises_type': premisesType,
         'account_type': accountType,
         'prefer_file_numbers': preferFileNumbers,
+        'replace_existing': replaceExisting,
         'dry_run': dryRun,
       },
       options: Options(receiveTimeout: _long, sendTimeout: _long),

@@ -49,6 +49,12 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
   final _search = TextEditingController();
 
   _Mode _mode = _Mode.byHouses;
+
+  /// Заменить ранее загруженные счета домов из файла.
+  ///
+  /// Выключено по умолчанию: обычная загрузка только добавляет, а
+  /// замена удаляет записи — такое не должно включаться само.
+  bool _replaceExisting = false;
   String _premisesType = gisPremisesTypes.first;
   String _accountType = gisAccountTypes.first;
 
@@ -284,14 +290,72 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
     final where = isFile
         ? 'по файлу «${_fileName ?? ''}»'
         : 'по $_selectedCount домам';
+    final replacing = isFile && _replaceExisting;
+
+    // При замене спрашиваем иначе: это удаление, и число удаляемых
+    // счетов оператор должен увидеть ДО запуска, а не в итоге.
+    // Берём его из пробного прогона, если он уже был.
+    final preview = _result;
+    final willDelete = (preview != null && preview.replaced)
+        ? preview.deleted
+        : null;
+
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Создать лицевые счета?'),
-        content: Text(
-          'Будет создано до $count счетов $where.\n\n'
-          'Помещения, для которых счёт уже есть, пропускаются — '
-          'повторный запуск ничего не продублирует.',
+        title: Text(replacing
+            ? 'Заменить лицевые счета?'
+            : 'Создать лицевые счета?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (replacing) ...[
+              Text(
+                'Счета домов из файла «${_fileName ?? ''}» будут '
+                'заменены данными файла: $count строк.',
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.warningOrange.withAlpha(28),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      willDelete == null
+                          ? 'Прежние счета этих домов будут удалены.'
+                          : 'Будет удалено счетов: $willDelete',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Счёт с платежами, квитанциями или кассовыми '
+                      'операциями не удаляется — обновляется. Остальные '
+                      'удаляются вместе с показаниями счётчиков.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    if (willDelete == null) ...[
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Нажмите «Проверить», чтобы увидеть точное число '
+                        'до записи.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ] else
+              Text(
+                'Будет создано до $count счетов $where.\n\n'
+                'Помещения, для которых счёт уже есть, пропускаются — '
+                'повторный запуск ничего не продублирует.',
+              ),
+          ],
         ),
         actions: [
           TextButton(
@@ -299,8 +363,12 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
             child: const Text('Отмена'),
           ),
           FilledButton(
+            style: replacing
+                ? FilledButton.styleFrom(
+                    backgroundColor: AppTheme.warningOrange)
+                : null,
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Создать'),
+            child: Text(replacing ? 'Заменить' : 'Создать'),
           ),
         ],
       ),
@@ -324,6 +392,7 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
               jkuTemplate: jku.isEmpty ? null : jku,
               premisesType: _premisesType,
               accountType: _accountType,
+              replaceExisting: _replaceExisting,
               dryRun: dryRun,
             )
           : await service.generateByHouses(
@@ -722,7 +791,83 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           const SizedBox(height: 12),
           _buildParsedSummary(parsed),
         ],
+        const SizedBox(height: 12),
+        _buildReplaceSwitch(),
       ],
+    );
+  }
+
+  /// Галочка полной замены. Отдельной карточкой и оранжевым, когда
+  /// включена: это единственное место экрана, которое УДАЛЯЕТ записи.
+  ///
+  /// Без права на удаление не показываем совсем: сервер всё равно
+  /// ответит 403, а выключенный переключатель оператор счёл бы сбоем.
+  Widget _buildReplaceSwitch() {
+    final canDelete = ref
+        .watch(permissionStateProvider)
+        .hasPermission(PermissionKey.accountDelete);
+    if (!canDelete) return const SizedBox.shrink();
+
+    final on = _replaceExisting;
+    return Container(
+      decoration: BoxDecoration(
+        color: on ? AppTheme.warningOrange.withAlpha(22) : null,
+        border: Border.all(
+          color: on
+              ? AppTheme.warningOrange.withAlpha(110)
+              : Theme.of(context).colorScheme.onSurface.withAlpha(40),
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            value: on,
+            onChanged: _busy
+                ? null
+                : (value) => setState(() {
+                      _replaceExisting = value;
+                      // Прежний итог относился к другому режиму.
+                      _result = null;
+                    }),
+            title: const Text(
+              'Заменить ранее загруженные',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              on
+                  ? 'Счета домов из файла будут перезаписаны, лишние — '
+                      'удалены'
+                  : 'Сейчас существующие помещения просто пропускаются',
+              style: const TextStyle(fontSize: 12),
+            ),
+            secondary: Icon(
+              on ? Icons.swap_horiz : Icons.playlist_add,
+              color: on ? AppTheme.warningOrange : Colors.teal,
+            ),
+          ),
+          if (on)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.shield_outlined,
+                      size: 16, color: AppTheme.successGreen),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Счёт, по которому уже были платежи, квитанции или '
+                      'кассовые операции, НЕ удаляется — он обновляется '
+                      'данными из файла. История платежей сохраняется.',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -983,6 +1128,36 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           if (result.dryRun)
             Text('Будет создано: ${result.wouldCreate}',
                 style: const TextStyle(fontSize: 13)),
+          // Замена: удалено и обновлено — отдельными строками. В пробном
+          // прогоне это прогноз, поэтому формулировка в будущем времени.
+          if (result.replaced) ...[
+            if (result.deleted > 0)
+              Text(
+                result.dryRun
+                    ? 'Будет удалено: ${result.deleted}'
+                    : 'Удалено: ${result.deleted}',
+                style: const TextStyle(
+                    fontSize: 13, color: AppTheme.warningOrange),
+              ),
+            if (result.deletedAbsent > 0)
+              Text(
+                'из них не было в файле: ${result.deletedAbsent}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            if (result.updated > 0)
+              Text(
+                result.dryRun
+                    ? 'Будет обновлено (есть платежи): ${result.updated}'
+                    : 'Обновлено (есть платежи): ${result.updated}',
+                style: const TextStyle(fontSize: 13),
+              ),
+            if (result.keptWithHistory > 0)
+              Text(
+                'Оставлено с историей, хотя в файле их нет: '
+                '${result.keptWithHistory}',
+                style: const TextStyle(fontSize: 12),
+              ),
+          ],
           if (result.skipped > 0)
             Text('Пропущено: ${result.skipped}',
                 style: const TextStyle(fontSize: 13)),
@@ -1110,8 +1285,19 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
                 Expanded(
                   child: FilledButton.icon(
                     onPressed: _canRun && canCreate ? _create : null,
-                    icon: const Icon(Icons.playlist_add, size: 18),
-                    label: const Text('Создать'),
+                    style: isFile && _replaceExisting
+                        ? FilledButton.styleFrom(
+                            backgroundColor: AppTheme.warningOrange)
+                        : null,
+                    icon: Icon(
+                      isFile && _replaceExisting
+                          ? Icons.swap_horiz
+                          : Icons.playlist_add,
+                      size: 18,
+                    ),
+                    label: Text(
+                      isFile && _replaceExisting ? 'Заменить' : 'Создать',
+                    ),
                   ),
                 ),
               ],
