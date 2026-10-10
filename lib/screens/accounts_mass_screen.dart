@@ -2,10 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../models/permission_key.dart';
 import '../services/accounts_bulk_service.dart';
+import '../services/file_export_helper.dart';
 import '../services/permission_service.dart';
 import '../utils/address_search_helper.dart';
 import '../utils/app_theme.dart';
@@ -213,13 +213,13 @@ class _AccountsMassScreenState extends ConsumerState<AccountsMassScreen> {
           .read(accountsBulkServiceProvider)
           .downloadTemplate(prefill: true);
       if (!mounted) return;
-      // Сразу отдаём в «Поделиться»: иначе файл лежит во временной
-      // папке, и оператор не знает, где его искать.
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          text: 'Шаблон для создания лицевых счетов',
-        ),
+      // FileExportHelper: десктоп → «Сохранить как», мобильные → share
+      // с правильным sharePositionOrigin (iPad без него крашится).
+      await FileExportHelper.exportFile(
+        sourceFile: file,
+        fileName: 'шаблон_лицевых_счетов.xlsx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        subject: 'Шаблон для создания лицевых счетов',
       );
     } catch (e) {
       setState(() => _error = _errorText(e));
