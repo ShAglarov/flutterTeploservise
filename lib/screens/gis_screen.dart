@@ -155,15 +155,98 @@ class _GisScreenState extends ConsumerState<GisScreen> {
     final path = picked?.files.single.path;
     if (path == null) return;
 
+    // Режим спрашиваем ПОСЛЕ выбора файла: до него вопрос непонятен, а
+    // отменить выбор файла всё равно можно кнопкой «Отмена».
+    final fillEmptyOnly = await _askImportMode(title);
+    if (fillEmptyOnly == null) return;
+
     setState(() => _busyKind = 'import_$kind');
     try {
-      final result = await ref.read(gisServiceProvider).import(kind, path);
+      final result = await ref
+          .read(gisServiceProvider)
+          .import(kind, path, fillEmptyOnly: fillEmptyOnly);
       if (mounted) await _showResult(title, result);
     } catch (e) {
       _toast(_errorText(e), AppTheme.errorRed);
     } finally {
       if (mounted) setState(() => _busyKind = null);
     }
+  }
+
+  /// Что делать с полями, которые уже заполнены в приложении.
+  ///
+  /// Возвращает `true` — только дополнять пустые, `false` — обновить
+  /// всё из файла, `null` — оператор отменил загрузку.
+  ///
+  /// По умолчанию выбрано обновление: шаблон правят именно для того,
+  /// чтобы массово поменять данные, и «дополнять пустые» в этом случае
+  /// выглядело бы как будто загрузка ничего не сделала.
+  Future<bool?> _askImportMode(String title) async {
+    var fillEmptyOnly = false;
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Как поступить с полями, которые уже заполнены в приложении?',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              RadioGroup<bool>(
+                groupValue: fillEmptyOnly,
+                onChanged: (v) => setDialog(() => fillEmptyOnly = v ?? false),
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioListTile<bool>(
+                      contentPadding: EdgeInsets.zero,
+                      value: false,
+                      title: Text('Обновить все данные из файла'),
+                      subtitle: Text(
+                        'файл — источник истины: заполненные поля заменяются',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    RadioListTile<bool>(
+                      contentPadding: EdgeInsets.zero,
+                      value: true,
+                      title: Text('Только дополнить пустые'),
+                      subtitle: Text(
+                        'введённое в приложении остаётся как есть',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Пустая ячейка в файле не очищает поле ни в одном режиме.',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(ctx).colorScheme.onSurface.withAlpha(140),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(fillEmptyOnly),
+              child: const Text('Загрузить'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _showResult(String title, GisImportResult r) async {

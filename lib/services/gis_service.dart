@@ -188,7 +188,16 @@ class GisService {
 
   Future<GisExportResult> downloadBlank(String kind) => _download('/gis/templates/$kind/blank');
 
-  Future<GisImportResult> import(String kind, String filePath) async {
+  /// Загрузка заполненного шаблона.
+  ///
+  /// `fillEmptyOnly` — только дополнять пустые поля. По умолчанию файл
+  /// перезаписывает значения в приложении: так работает массовое
+  /// обновление данных из шаблона.
+  Future<GisImportResult> import(
+    String kind,
+    String filePath, {
+    bool fillEmptyOnly = false,
+  }) async {
     final endpoint = {
       'mkd': '/gis/import/houses',
       'ls': '/gis/import/accounts',
@@ -205,6 +214,7 @@ class GisService {
     final response = await _dio.post(
       endpoint,
       data: form,
+      queryParameters: {'fill_empty_only': fillEmptyOnly},
       // Разбор большого файла на сервере может занять минуту.
       options: Options(receiveTimeout: const Duration(minutes: 3)),
     );
